@@ -141,3 +141,12 @@
 - Live validation confirmed the repaired discovery path can now resolve real 2024-2025 tournament metadata and find real PDF-backed result pages again; the next blocker is finishing the full mapping run around remaining live-site edge cases (for example tournaments without linked PDFs or water-body names that yield no USGS candidates) so the first curated real-data batch can be assembled.
 - Follow-up live run succeeded after the 404 hardening: `scripts/suggest_bassmaster_mappings.py --bassmaster-start-year 2024 --bassmaster-end-year 2025 --top-n 3` produced `castline/validation/data/raw/bassmaster_usgs_mapping_suggestions.csv` with 37 ranked rows across 25 tournaments, including usable candidates for places like Lake Okeechobee and Saginaw Bay while leaving harder cases flagged as `needs-research`.
 
+## 2026-03-15 07:26 America/Edmonton — mapping export + first curated batch handoff
+- Started and completed a new validation feature lane: **export curated Bassmaster mappings from the ranked review sheet**.
+- Added `export_curated_bassmaster_mappings()` plus `scripts/export_bassmaster_mappings.py`, so the review sheet can now be turned into the compact `tournament_slug,usgs_site_id,species` CSV the outcomes collector already consumes.
+- Hardened the outcomes collector so `--mapping` accepts either the compact mapping CSV or the edited ranked review sheet directly.
+- Improved PDF median-weight extraction with a compact inline-text fallback, which helps on result PDFs whose text extraction collapses rows together.
+- Added regression tests for compact PDF weight parsing, review-sheet export, and collecting outcomes directly from a review-sheet mapping file.
+- Produced the first curated compact mapping batch at `castline/validation/data/raw/bassmaster_usgs_mapping.csv` with initial approved mappings for 13 tournaments.
+- Net effect: Phase 0 no longer needs manual format conversion between mapping review and outcome collection. The active blocker has shifted from mapping-format plumbing to actually running the first real-data validation pass on the curated batch.
+

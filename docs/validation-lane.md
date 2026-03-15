@@ -45,7 +45,16 @@ python scripts/suggest_bassmaster_mappings.py \
 
 This emits `castline/validation/data/raw/bassmaster_usgs_mapping_suggestions.csv` as a ranked review sheet instead of a single opaque guess. Each tournament gets the top candidate rows with station name, site type, candidate count, lightweight token-overlap score, plus `review_status`, `selected_usgs_site_id`, and `review_notes` columns for manual curation.
 
-### 3. Normalize outcomes into the working raw-data location
+### 3. Export curated mappings from the ranked review sheet
+
+```bash
+python scripts/export_bassmaster_mappings.py \
+  --review-sheet castline/validation/data/raw/bassmaster_usgs_mapping_suggestions.csv
+```
+
+This writes `castline/validation/data/raw/bassmaster_usgs_mapping.csv` containing only the reviewed tournament-to-gauge selections.
+
+### 4. Normalize outcomes into the working raw-data location
 
 ```bash
 python scripts/collect_historical_outcomes.py --source path/to/outcomes.csv
@@ -57,10 +66,12 @@ Or scrape official Bassmaster result pages directly:
 python scripts/collect_historical_outcomes.py \
   --bassmaster-start-year 2024 \
   --bassmaster-end-year 2024 \
-  --mapping path/to/bassmaster_usgs_mapping.csv
+  --mapping castline/validation/data/raw/bassmaster_usgs_mapping.csv
 ```
 
-Bassmaster mapping CSV columns:
+Bassmaster collection also accepts the edited ranked review sheet directly as `--mapping` if the chosen rows have `selected_usgs_site_id` filled in.
+
+Compact mapping CSV columns:
 
 - `tournament_slug`
 - `usgs_site_id`
@@ -68,7 +79,7 @@ Bassmaster mapping CSV columns:
 
 This adapter walks official Bassmaster `/results/` pages via the Bassmaster WordPress API, downloads linked standings PDFs, and emits one normalized row per tournament day with median daily weight.
 
-### 4. Pull USGS daily values keyed off those rows
+### 5. Pull USGS daily values keyed off those rows
 
 ```bash
 python scripts/collect_usgs_history.py --outcomes castline/validation/data/raw/historical_outcomes.csv --lookback-days 7
@@ -107,6 +118,7 @@ If you already know the correct station, include `iem_station` or `weather_stati
 - Manifest-driven outcomes normalization for real historical rows
 - Official Bassmaster result-page adapter that turns standings PDFs into per-day median outcome rows
 - First-pass Bassmaster-to-USGS mapping suggester built from USGS site-service candidate search
+- Review-sheet-to-curated-mapping export path so ranked suggestions can feed the real collectors without hand-reformatting
 - Event-to-USGS daily-value collection and per-event feature extraction
 - Direct IEM ASOS weather collection keyed from the outcomes manifest, with station auto-selection and optional station overrides
 - Manifest-driven weather/IEM-style join keyed by `event_id`

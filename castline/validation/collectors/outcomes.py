@@ -311,20 +311,37 @@ def _fetch_bassmaster_results_index(
 
 
 _ROW_PATTERN = re.compile(r'^(\d+)\s+(\d)(\d+)-\s*(\d+)\s+(\d)(\d+)-\s*(\d+)', re.MULTILINE)
+_INLINE_ROW_PATTERN = re.compile(r'(?:^|\b)(\d{1,3})\s+(\d{2,3}-\s*\d{1,2})\s+(\d{2,4}-\s*\d{1,2})')
 
 
 def _weight_to_pounds(pounds: str, ounces: str) -> float:
     return int(pounds) + (int(ounces) / 16.0)
 
 
-def _extract_median_weight_from_pdf(pdf_bytes: bytes) -> float:
-    reader = PdfReader(BytesIO(pdf_bytes))
-    text = '\n'.join(page.extract_text() or '' for page in reader.pages)
+def _extract_weight_candidates(text: str) -> list[float]:
     weights = [
         _weight_to_pounds(match.group(3), match.group(4))
         for match in _ROW_PATTERN.finditer(text)
         if int(match.group(2)) >= 0
     ]
+    if weights:
+        return weights
+
+    compact_text = re.sub(r'\s+', ' ', text)
+    weights: list[float] = []
+    for match in _INLINE_ROW_PATTERN.finditer(compact_text):
+        today_token = match.group(2)
+        fish_count = int(today_token[0])
+        pounds_part, ounces_part = today_token[1:].split('-', 1)
+        if fish_count >= 0:
+            weights.append(_weight_to_pounds(pounds_part.strip(), ounces_part.strip()))
+    return weights
+
+
+def _extract_median_weight_from_pdf(pdf_bytes: bytes) -> float:
+    reader = PdfReader(BytesIO(pdf_bytes))
+    text = '\n'.join(page.extract_text() or '' for page in reader.pages)
+    weights = _extract_weight_candidates(text)
     if not weights:
         raise ValueError('could not extract competitor daily weights from results PDF')
     return round(float(pd.Series(weights).median()), 4)
@@ -523,15 +540,85 @@ def suggest_bassmaster_usgs_mappings(
     return suggestions
 
 
+def export_curated_bassmaster_mappings(*, review_sheet_path: Path, output_path: Path) -> pd.DataFrame:
+    mapping = pd.read_csv(review_sheet_path, dtype=str).fillna('')
+    curated = _extract_mapping_from_review_sheet(mapping)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    curated.to_csv(output_path, index=False)
+    return curated
+
+
+def _extract_mapping_from_review_sheet(mapping: pd.DataFrame) -> pd.DataFrame:
+    if 'tournament_slug' not in mapping.columns:
+        raise ValueError('review-sheet mapping file must include tournament_slug')
+
+    working = mapping.copy().fillna('')
+    if 'species' not in working.columns:
+        working['species'] = DEFAULT_BASSMASTER_SPECIES
+    if 'selected_usgs_site_id' not in working.columns:
+        working['selected_usgs_site_id'] = ''
+    if 'suggested_usgs_site_id' not in working.columns:
+        working['suggested_usgs_site_id'] = ''
+    if 'review_status' not in working.columns:
+        working['review_status'] = ''
+    if 'candidate_rank' not in working.columns:
+        working['candidate_rank'] = ''
+
+    working['review_status'] = working['review_status'].astype(str).str.strip().str.lower()
+    working['selected_usgs_site_id'] = working['selected_usgs_site_id'].astype(str).str.replace('USGS-', '', regex=False).str.strip()
+    working['suggested_usgs_site_id'] = working['suggested_usgs_site_id'].astype(str).str.replace('USGS-', '', regex=False).str.strip()
+    working['candidate_rank'] = pd.to_numeric(working['candidate_rank'], errors='coerce')
+
+    approved_statuses = {'approved', 'selected', 'confirmed', 'locked'}
+    selected_rows = working.loc[working['selected_usgs_site_id'].ne('')].copy()
+    approved_rows = working.loc[
+        working['selected_usgs_site_id'].eq('')
+        & working['review_status'].isin(approved_statuses)
+        & working['suggested_usgs_site_id'].ne('')
+    ].copy()
+    if not approved_rows.empty:
+        approved_rows['selected_usgs_site_id'] = approved_rows['suggested_usgs_site_id']
+        selected_rows = pd.concat([selected_rows, approved_rows], ignore_index=True)
+
+    if selected_rows.empty:
+        raise ValueError(
+            'review-sheet mapping file does not contain any selected mappings. '
+            'Populate selected_usgs_site_id or mark approved rows with a suggested_usgs_site_id.'
+        )
+
+    conflicts = (
+        selected_rows.groupby('tournament_slug')['selected_usgs_site_id']
+        .nunique()
+        .loc[lambda series: series > 1]
+    )
+    if not conflicts.empty:
+        raise ValueError(
+            'conflicting selected_usgs_site_id values found for tournament_slug(s): '
+            f"{conflicts.index.tolist()}"
+        )
+
+    selected_rows = selected_rows.sort_values(['tournament_slug', 'candidate_rank'], ascending=[True, True])
+    selected_rows = selected_rows.drop_duplicates(subset=['tournament_slug'], keep='first')
+    selected_rows = selected_rows.rename(columns={'selected_usgs_site_id': 'usgs_site_id'})
+    return selected_rows[['tournament_slug', 'usgs_site_id', 'species']].reset_index(drop=True)
+
+
 def _load_mapping(mapping_path: Path | None) -> pd.DataFrame | None:
     if mapping_path is None:
         return None
     mapping = pd.read_csv(mapping_path, dtype=str).fillna('')
-    if 'tournament_slug' not in mapping.columns or 'usgs_site_id' not in mapping.columns:
-        raise ValueError('mapping file must include tournament_slug and usgs_site_id columns')
-    if 'species' not in mapping.columns:
-        mapping['species'] = DEFAULT_BASSMASTER_SPECIES
-    return mapping[['tournament_slug', 'usgs_site_id', 'species']]
+    if 'tournament_slug' not in mapping.columns:
+        raise ValueError('mapping file must include tournament_slug')
+    if 'usgs_site_id' in mapping.columns:
+        if 'species' not in mapping.columns:
+            mapping['species'] = DEFAULT_BASSMASTER_SPECIES
+        return mapping[['tournament_slug', 'usgs_site_id', 'species']]
+    if 'selected_usgs_site_id' in mapping.columns or 'suggested_usgs_site_id' in mapping.columns:
+        return _extract_mapping_from_review_sheet(mapping)
+    raise ValueError(
+        'mapping file must include tournament_slug plus either usgs_site_id, '
+        'or review-sheet columns like selected_usgs_site_id/suggested_usgs_site_id'
+    )
 
 
 def _collect_bassmaster_outcomes(

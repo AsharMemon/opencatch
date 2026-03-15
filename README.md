@@ -75,23 +75,32 @@ python scripts/suggest_bassmaster_mappings.py \
 
 This writes `castline/validation/data/raw/bassmaster_usgs_mapping_suggestions.csv` as a review sheet with the top ranked USGS candidates per tournament plus station metadata, match scores, `review_status`, `selected_usgs_site_id`, and `review_notes` columns so curation can happen in-place instead of starting from a blank mapping file.
 
-4. Build the outcomes manifest directly from official Bassmaster result pages plus a small gauge mapping file:
+4. Turn the ranked review sheet into a compact mapping file once you've curated `selected_usgs_site_id` values:
+
+```bash
+python scripts/export_bassmaster_mappings.py \
+  --review-sheet castline/validation/data/raw/bassmaster_usgs_mapping_suggestions.csv
+```
+
+This writes `castline/validation/data/raw/bassmaster_usgs_mapping.csv` with:
+- `tournament_slug`
+- `usgs_site_id`
+- `species`
+
+5. Build the outcomes manifest directly from official Bassmaster result pages plus either that compact mapping file **or the edited review sheet itself**:
 
 ```bash
 python scripts/collect_historical_outcomes.py \
   --bassmaster-start-year 2024 \
   --bassmaster-end-year 2024 \
-  --mapping path/to/bassmaster_usgs_mapping.csv
+  --mapping castline/validation/data/raw/bassmaster_usgs_mapping.csv
 ```
 
-Bassmaster mapping CSV columns:
-- `tournament_slug`
-- `usgs_site_id`
-- `species` (optional; defaults to `black_bass`)
+The Bassmaster adapter also accepts the edited ranked review sheet directly as `--mapping` as long as the chosen rows have `selected_usgs_site_id` values filled in.
 
 The Bassmaster adapter uses the official Bassmaster WordPress API to discover `/results/` posts, downloads linked standings PDFs, extracts per-day competitor weights, and emits one normalized row per tournament day with median daily weight.
 
-5. Pull matching USGS daily-value history and derive event features:
+6. Pull matching USGS daily-value history and derive event features:
 
 ```bash
 python scripts/collect_usgs_history.py --outcomes castline/validation/data/raw/historical_outcomes.csv --lookback-days 7

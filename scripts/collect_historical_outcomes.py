@@ -36,7 +36,7 @@ def main() -> None:
         '--mapping',
         type=Path,
         default=None,
-        help='CSV mapping for source adapters. For Bassmaster, requires tournament_slug and usgs_site_id; species is optional.',
+        help='CSV mapping for source adapters. For Bassmaster this can be either a compact tournament_slug/usgs_site_id mapping file or an edited ranked review sheet with selected_usgs_site_id values.',
     )
     args = parser.parse_args()
 

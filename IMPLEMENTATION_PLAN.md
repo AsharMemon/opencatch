@@ -109,6 +109,7 @@ Current sub-status:
 - ranked Bassmaster-to-USGS mapping review-sheet tooling now exists to accelerate gauge curation with multiple candidates per tournament
 - Bassmaster event discovery now uses the WordPress search endpoint plus parent-tournament lookups, restoring the path to live tournament discovery after the results-index query stopped returning rows
 - direct IEM ASOS weather collection now exists from the outcomes manifest, including state-network station selection and per-event weather summaries
+- the ranked mapping review sheet can now be exported into the compact mapping CSV the Bassmaster outcomes collector consumes, and the collector also accepts the edited review sheet directly
 - next gap is curating a first real mapped tournament batch at useful scale, then running the first real-data comparison judgment
 
 Deliverables:
@@ -226,4 +227,5 @@ These remain important, but only after the thesis is being validated and the fir
 
 ## Immediate next action
 
-**Curate the generated Bassmaster→USGS ranked review sheet into the first real mapped tournament batch, then run the manifest-driven USGS + IEM collectors and produce the first real-data thesis judgment.**
+**Run the manifest-driven USGS + IEM collectors on the first curated Bassmaster→USGS mapping batch and produce the first real-data thesis judgment; expand mapping coverage only if the initial run is too thin or too noisy to trust.**
+n run the manifest-driven USGS + IEM collectors and produce the first real-data thesis judgment.**

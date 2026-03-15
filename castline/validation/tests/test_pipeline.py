@@ -4,10 +4,29 @@ import pandas as pd
 import requests
 
 from castline.validation.assembly.dataset import assemble_validation_dataset
-from castline.validation.collectors.outcomes import collect_historical_outcomes, suggest_bassmaster_usgs_mappings
+from castline.validation.collectors.outcomes import (
+    _extract_weight_candidates,
+    collect_historical_outcomes,
+    export_curated_bassmaster_mappings,
+    suggest_bassmaster_usgs_mappings,
+)
 from castline.validation.collectors.usgs import collect_usgs_history
 from castline.validation.collectors.weather import collect_weather_history
 from castline.validation.models.comparison import compare_models
+
+
+def test_inline_bassmaster_weight_extraction_handles_compact_pdf_text():
+    text = (
+        'STANDINGS BOATER DAY 2 '
+        '1  520-10 1043-12 5 10Peyton Harris - Dalton HeadUniversity of Montevallo 250.00 '
+        '2  521- 7 1042- 7 5 10Bryce Dimauro - Tripp BerlinskyBryan College 249.00 '
+        '3  519-13 1041- 5 5 10Elliot Wielgopolski - Aaron JagdfeldAdrian College 248.00'
+    )
+
+    weights = _extract_weight_candidates(text)
+
+    assert weights == [20.625, 21.4375, 19.8125]
+
 
 
 def test_sample_pipeline(tmp_path):
@@ -390,6 +409,163 @@ def test_usgs_site_candidate_404_returns_empty_dataframe():
     )
 
     assert df.empty
+
+
+
+def test_export_curated_bassmaster_mappings_from_review_sheet(tmp_path):
+    review_sheet_path = tmp_path / 'mapping_review.csv'
+    pd.DataFrame(
+        [
+            {
+                'tournament_slug': '2024-lake-okeechobee',
+                'candidate_rank': 1,
+                'suggested_usgs_site_id': '02276400',
+                'selected_usgs_site_id': '02276400',
+                'review_status': 'suggested',
+                'species': 'black_bass',
+            },
+            {
+                'tournament_slug': '2024-lake-okeechobee',
+                'candidate_rank': 2,
+                'suggested_usgs_site_id': '264631080542600',
+                'selected_usgs_site_id': '',
+                'review_status': 'candidate',
+                'species': 'black_bass',
+            },
+            {
+                'tournament_slug': '2024-grand-lake',
+                'candidate_rank': 1,
+                'suggested_usgs_site_id': '07190000',
+                'selected_usgs_site_id': '',
+                'review_status': 'approved',
+                'species': 'black_bass',
+            },
+            {
+                'tournament_slug': '2024-needs-research',
+                'candidate_rank': 1,
+                'suggested_usgs_site_id': '',
+                'selected_usgs_site_id': '',
+                'review_status': 'needs-research',
+                'species': 'black_bass',
+            },
+        ]
+    ).to_csv(review_sheet_path, index=False)
+
+    output_path = tmp_path / 'bassmaster_mapping.csv'
+    df = export_curated_bassmaster_mappings(review_sheet_path=review_sheet_path, output_path=output_path)
+
+    assert output_path.exists()
+    assert len(df) == 2
+    assert df.to_dict(orient='records') == [
+        {
+            'tournament_slug': '2024-grand-lake',
+            'usgs_site_id': '07190000',
+            'species': 'black_bass',
+        },
+        {
+            'tournament_slug': '2024-lake-okeechobee',
+            'usgs_site_id': '02276400',
+            'species': 'black_bass',
+        },
+    ]
+
+
+
+def test_collect_historical_outcomes_accepts_review_sheet_mapping(tmp_path, monkeypatch):
+    review_sheet_path = tmp_path / 'mapping_review.csv'
+    pd.DataFrame(
+        [
+            {
+                'tournament_slug': '2024-test-open',
+                'candidate_rank': 1,
+                'suggested_usgs_site_id': '01646500',
+                'selected_usgs_site_id': '01646500',
+                'review_status': 'suggested',
+                'species': 'smallmouth_bass',
+            }
+        ]
+    ).to_csv(review_sheet_path, index=False)
+
+    tournament_search_payload = [
+        {
+            'id': 123,
+            'url': 'https://www.bassmaster.com/tournament/2024-test-open/results/',
+            '_links': {
+                'self': [
+                    {'href': 'https://www.bassmaster.com/wp-json/wp/v2/tournament/123'}
+                ]
+            },
+        }
+    ]
+    tournament_detail_payload = {
+        'link': 'https://www.bassmaster.com/tournament/2024-test-open/results/',
+        'title': {'rendered': 'Results'},
+        'content': {
+            'rendered': '<h2><a href="https://example.com/test-open-day-2.pdf">LINK: TOURNAMENT RESULTS</a></h2>'
+        },
+        'meta': {},
+    }
+    tournament_parent_payload = [
+        {
+            'link': 'https://www.bassmaster.com/tournament/2024-test-open/',
+            'title': {'rendered': '2024 Test Open'},
+            'content': {'rendered': ''},
+            'meta': {
+                'bassmaster_tournament_start_date': '2024-06-06',
+                'bassmaster_tournament_body_of_water': 'Saginaw Bay',
+                'bassmaster_tournament_city': 'Saginaw',
+                'bassmaster_tournament_state': 'MI',
+            },
+        }
+    ]
+
+    class FakeResponse:
+        def __init__(self, payload=None, content: bytes = b'', status_code: int = 200):
+            self._payload = payload
+            self.content = content
+            self.status_code = status_code
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return self._payload
+
+    class FakeSession:
+        def get(self, url, params=None, timeout=30, headers=None):
+            if 'wp-json/wp/v2/search' in url:
+                if params and params.get('page') == 1:
+                    return FakeResponse(payload=tournament_search_payload)
+                return FakeResponse(payload=[])
+            if url == 'https://www.bassmaster.com/wp-json/wp/v2/tournament/123':
+                return FakeResponse(payload=tournament_detail_payload)
+            if 'wp-json/wp/v2/tournament' in url and params and params.get('slug') == '2024-test-open':
+                return FakeResponse(payload=tournament_parent_payload)
+            if url == 'https://example.com/test-open-day-2.pdf':
+                return FakeResponse(content=b'%PDF-1.4 fake bytes')
+            raise AssertionError(f'unexpected URL {url}')
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr('castline.validation.collectors.outcomes.requests.Session', lambda: FakeSession())
+    monkeypatch.setattr(
+        'castline.validation.collectors.outcomes._extract_median_weight_from_pdf',
+        lambda pdf_bytes: 15.75,
+    )
+
+    output_path = tmp_path / 'historical_outcomes.csv'
+    df = collect_historical_outcomes(
+        output_path,
+        bassmaster_years=(2024, 2024),
+        mapping_path=review_sheet_path,
+    )
+
+    assert len(df) == 1
+    assert df.iloc[0]['event_id'] == '2024-test-open-day-2'
+    assert df.iloc[0]['usgs_site_id'] == '01646500'
+    assert df.iloc[0]['species'] == 'smallmouth_bass'
+    assert output_path.exists()
 
 
 
