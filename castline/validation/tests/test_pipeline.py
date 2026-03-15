@@ -3,7 +3,7 @@ from __future__ import annotations
 import pandas as pd
 
 from castline.validation.assembly.dataset import assemble_validation_dataset
-from castline.validation.collectors.outcomes import collect_historical_outcomes
+from castline.validation.collectors.outcomes import collect_historical_outcomes, suggest_bassmaster_usgs_mappings
 from castline.validation.collectors.usgs import collect_usgs_history
 from castline.validation.collectors.weather import collect_weather_history
 from castline.validation.models.comparison import compare_models
@@ -98,6 +98,78 @@ def test_real_usgs_collection_from_outcomes_manifest(tmp_path, monkeypatch):
     assert row['temp_delta_24h_c'] == 1.5
     assert round(row['flow_delta_24h_pct'], 4) == 10.0
     assert row['source_mode'] == 'usgs_daily_values'
+
+
+def test_bassmaster_mapping_suggestions_from_official_results_pages(tmp_path, monkeypatch):
+    tournament_payload = [
+        {
+            'link': 'https://www.bassmaster.com/tournament/2024-test-open/results/',
+            'title': {'rendered': '2024 Test Open - Results'},
+            'content': {
+                'rendered': '<h2><a href="https://example.com/test-open-day-2.pdf">LINK: TOURNAMENT RESULTS</a></h2>'
+            },
+            'meta': {
+                'bassmaster_tournament_start_date': '2024-06-06',
+                'bassmaster_tournament_body_of_water': 'Saginaw Bay',
+                'bassmaster_tournament_city': 'Saginaw',
+                'bassmaster_tournament_state': 'Michigan',
+            },
+        }
+    ]
+
+    usgs_rdb = """# ----------------------------------
+# Data provided for test
+agency_cd	site_no	station_nm	site_tp_cd
+5s	15s	50s	7s
+USGS	04157005	SAGINAW RIVER AT SAGINAW, MI	ST
+USGS	04156800	BAY COUNTY LAKE MONITOR AT SAGINAW BAY	LK
+"""
+
+    class FakeResponse:
+        def __init__(self, payload=None, content: bytes = b'', text: str = ''):
+            self._payload = payload
+            self.content = content
+            self.text = text
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return self._payload
+
+    class FakeSession:
+        def get(self, url, params=None, timeout=30, headers=None):
+            if 'wp-json/wp/v2/tournament' in url:
+                if params and params.get('page') == 1:
+                    return FakeResponse(payload=tournament_payload)
+                return FakeResponse(payload=[])
+            if 'waterservices.usgs.gov/nwis/site/' in url:
+                assert params['stateCd'] == 'MI'
+                assert params['siteName'] == 'Saginaw Bay'
+                return FakeResponse(text=usgs_rdb)
+            raise AssertionError(f'unexpected URL {url}')
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr('castline.validation.collectors.outcomes.requests.Session', lambda: FakeSession())
+
+    output_path = tmp_path / 'mapping_suggestions.csv'
+    df = suggest_bassmaster_usgs_mappings(
+        start_year=2024,
+        end_year=2024,
+        output_path=output_path,
+    )
+
+    assert len(df) == 1
+    row = df.iloc[0]
+    assert row['tournament_slug'] == '2024-test-open'
+    assert row['state'] == 'Michigan'
+    assert row['suggested_usgs_site_id'] == '04156800'
+    assert row['suggested_site_type'] == 'LK'
+    assert row['candidate_count'] == 2
+    assert output_path.exists()
+
 
 
 def test_bassmaster_collection_from_official_results_pages(tmp_path, monkeypatch):

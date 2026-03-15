@@ -8,6 +8,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
+from io import StringIO
 
 import pandas as pd
 import requests
@@ -89,8 +90,10 @@ SAMPLE_OUTCOMES = [
 ]
 
 BASSMASTER_API_URL = 'https://www.bassmaster.com/wp-json/wp/v2/tournament'
+USGS_SITE_SERVICE_URL = 'https://waterservices.usgs.gov/nwis/site/'
 DEFAULT_HEADERS = {'User-Agent': 'Mozilla/5.0 (CASTLINE validation collector)'}
 DEFAULT_BASSMASTER_SPECIES = 'black_bass'
+DEFAULT_SITE_TYPES = ('LK', 'ST', 'ST-CA', 'ST-DCH', 'ES')
 
 
 @dataclass(slots=True)
@@ -98,6 +101,9 @@ class BassmasterTournamentResult:
     tournament_slug: str
     event_name: str
     location: str
+    water_body: str
+    city: str
+    state: str
     start_date: pd.Timestamp
     results_pdf_url: str
 
@@ -170,13 +176,16 @@ def _clean_text(value: Any) -> str:
     return BeautifulSoup(str(value or ''), 'html.parser').get_text(' ', strip=True)
 
 
+def _get_tournament_place(meta: dict[str, Any]) -> tuple[str, str, str, str]:
+    water_body = _clean_text(meta.get('bassmaster_tournament_body_of_water', ''))
+    city = _clean_text(meta.get('bassmaster_tournament_city', ''))
+    state = _clean_text(meta.get('bassmaster_tournament_state', ''))
+    parts = [water_body, city, state]
+    return water_body, city, state, ', '.join(part for part in parts if part)
+
+
 def _build_location(meta: dict[str, Any]) -> str:
-    parts = [
-        _clean_text(meta.get('bassmaster_tournament_body_of_water', '')),
-        _clean_text(meta.get('bassmaster_tournament_city', '')),
-        _clean_text(meta.get('bassmaster_tournament_state', '')),
-    ]
-    return ', '.join(part for part in parts if part)
+    return _get_tournament_place(meta)[-1]
 
 
 def _fetch_bassmaster_results_index(
@@ -223,11 +232,15 @@ def _fetch_bassmaster_results_index(
             if not pdf_url:
                 continue
 
+            water_body, city, state, location = _get_tournament_place(meta)
             tournaments.append(
                 BassmasterTournamentResult(
                     tournament_slug=link.rstrip('/').split('/')[-2],
                     event_name=_clean_text(item.get('title', {}).get('rendered', 'Results')).replace(' – Results', '').replace(' - Results', ''),
-                    location=_build_location(meta),
+                    location=location,
+                    water_body=water_body,
+                    city=city,
+                    state=state,
                     start_date=start_date,
                     results_pdf_url=pdf_url,
                 )
@@ -261,6 +274,158 @@ def _extract_median_weight_from_pdf(pdf_bytes: bytes) -> float:
 def _extract_day_from_pdf_url(pdf_url: str) -> int:
     match = re.search(r'day[-_ ]?(\d+)', pdf_url, flags=re.IGNORECASE)
     return int(match.group(1)) if match else 1
+
+
+def _tokenize_location_text(value: str) -> set[str]:
+    return {token for token in re.findall(r'[a-z0-9]+', (value or '').lower()) if len(token) >= 3}
+
+
+_STATE_TOKEN_ALIASES = {
+    'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR', 'california': 'CA',
+    'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE', 'florida': 'FL', 'georgia': 'GA',
+    'hawaii': 'HI', 'idaho': 'ID', 'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA', 'kansas': 'KS',
+    'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD', 'massachusetts': 'MA',
+    'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS', 'missouri': 'MO', 'montana': 'MT',
+    'nebraska': 'NE', 'nevada': 'NV', 'newhampshire': 'NH', 'newjersey': 'NJ', 'newmexico': 'NM',
+    'newyork': 'NY', 'northcarolina': 'NC', 'northdakota': 'ND', 'ohio': 'OH', 'oklahoma': 'OK',
+    'oregon': 'OR', 'pennsylvania': 'PA', 'rhodeisland': 'RI', 'southcarolina': 'SC', 'southdakota': 'SD',
+    'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT', 'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA',
+    'westvirginia': 'WV', 'wisconsin': 'WI', 'wyoming': 'WY', 'districtcolumbia': 'DC',
+}
+
+
+def _normalize_state_code(value: str) -> str:
+    cleaned = re.sub(r'[^A-Za-z]', '', str(value or '')).strip()
+    if not cleaned:
+        return ''
+    if len(cleaned) == 2:
+        return cleaned.upper()
+    return _STATE_TOKEN_ALIASES.get(cleaned.lower(), '')
+
+
+def _parse_rdb_table(text: str) -> pd.DataFrame:
+    lines = [line for line in text.splitlines() if line and not line.startswith('#')]
+    if len(lines) < 3:
+        return pd.DataFrame()
+    return pd.read_csv(StringIO('\n'.join([lines[0], *lines[2:]])), sep='\t', dtype=str).fillna('')
+
+
+def _score_site_match(*, water_body: str, city: str, station_name: str, site_type: str) -> float:
+    water_tokens = _tokenize_location_text(water_body)
+    city_tokens = _tokenize_location_text(city)
+    station_tokens = _tokenize_location_text(station_name)
+    score = 0.0
+    score += len(water_tokens & station_tokens) * 3.0
+    score += len(city_tokens & station_tokens) * 1.0
+    preferred_types = set(DEFAULT_SITE_TYPES)
+    if site_type in preferred_types:
+        score += 1.5
+    return score
+
+
+def _fetch_usgs_site_candidates(*, water_body: str, state: str, session: requests.Session, timeout: int = 30) -> pd.DataFrame:
+    state_code = _normalize_state_code(state)
+    if not water_body or not state_code:
+        return pd.DataFrame()
+
+    response = session.get(
+        USGS_SITE_SERVICE_URL,
+        params={
+            'format': 'rdb',
+            'siteStatus': 'all',
+            'stateCd': state_code,
+            'siteType': ','.join(DEFAULT_SITE_TYPES),
+            'siteOutput': 'expanded',
+            'siteName': water_body,
+        },
+        headers=DEFAULT_HEADERS,
+        timeout=timeout,
+    )
+    response.raise_for_status()
+    return _parse_rdb_table(response.text)
+
+
+def suggest_bassmaster_usgs_mappings(
+    *,
+    start_year: int,
+    end_year: int,
+    output_path: Path,
+    session: requests.Session | None = None,
+) -> pd.DataFrame:
+    owned_session = session is None
+    session = session or requests.Session()
+
+    try:
+        tournaments = _fetch_bassmaster_results_index(session=session, start_year=start_year, end_year=end_year)
+        rows: list[dict[str, Any]] = []
+        candidate_cache: dict[tuple[str, str], pd.DataFrame] = {}
+
+        for tournament in tournaments:
+            cache_key = (tournament.water_body, tournament.state)
+            candidates = candidate_cache.get(cache_key)
+            if candidates is None:
+                candidates = _fetch_usgs_site_candidates(
+                    water_body=tournament.water_body,
+                    state=tournament.state,
+                    session=session,
+                )
+                candidate_cache[cache_key] = candidates
+
+            if candidates.empty:
+                rows.append(
+                    {
+                        'tournament_slug': tournament.tournament_slug,
+                        'event_name': tournament.event_name,
+                        'water_body': tournament.water_body,
+                        'city': tournament.city,
+                        'state': tournament.state,
+                        'location': tournament.location,
+                        'suggested_usgs_site_id': '',
+                        'suggested_station_name': '',
+                        'suggested_site_type': '',
+                        'match_score': 0.0,
+                        'candidate_count': 0,
+                        'species': DEFAULT_BASSMASTER_SPECIES,
+                    }
+                )
+                continue
+
+            scored = candidates.copy()
+            scored['match_score'] = scored.apply(
+                lambda row: _score_site_match(
+                    water_body=tournament.water_body,
+                    city=tournament.city,
+                    station_name=str(row.get('station_nm', '')),
+                    site_type=str(row.get('site_tp_cd', '')),
+                ),
+                axis=1,
+            )
+            scored = scored.sort_values(['match_score', 'site_no'], ascending=[False, True]).reset_index(drop=True)
+            best = scored.iloc[0]
+            rows.append(
+                {
+                    'tournament_slug': tournament.tournament_slug,
+                    'event_name': tournament.event_name,
+                    'water_body': tournament.water_body,
+                    'city': tournament.city,
+                    'state': tournament.state,
+                    'location': tournament.location,
+                    'suggested_usgs_site_id': str(best.get('site_no', '')).replace('USGS-', ''),
+                    'suggested_station_name': str(best.get('station_nm', '')),
+                    'suggested_site_type': str(best.get('site_tp_cd', '')),
+                    'match_score': float(best.get('match_score', 0.0) or 0.0),
+                    'candidate_count': int(len(scored)),
+                    'species': DEFAULT_BASSMASTER_SPECIES,
+                }
+            )
+    finally:
+        if owned_session:
+            session.close()
+
+    suggestions = pd.DataFrame(rows).sort_values(['state', 'water_body', 'tournament_slug']).reset_index(drop=True)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    suggestions.to_csv(output_path, index=False)
+    return suggestions
 
 
 def _load_mapping(mapping_path: Path | None) -> pd.DataFrame | None:

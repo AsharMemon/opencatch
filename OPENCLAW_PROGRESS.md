@@ -98,3 +98,17 @@
 - Updated `README.md`, `docs/validation-lane.md`, and `IMPLEMENTATION_PLAN.md` to reflect that Bassmaster result-page scraping is now implemented.
 - Validation status after this change: `pytest castline/validation/tests/test_pipeline.py castline/validation/tests/test_evaluate.py` ✅ (5 passed).
 - Remaining blocker is now narrower: we still need a practical gauge-mapping file for the tournament slugs we care about, plus real weather joins for those same event IDs, before Phase 0 can produce a trustworthy weak/viable/strong judgment.
+
+## 2026-03-15 05:55 America/Edmonton — repo hygiene cleanup
+- Added a workspace `.gitignore` so local runtime noise stops polluting CASTLINE diffs.
+- Stopped tracking Python bytecode caches, `.openclaw` session state, the local SQLite DB, and Expo/Python environment noise.
+- This was support cleanup only; it does not change the active product/validation priority.
+- The real blocker remains unchanged: land tournament-to-USGS mappings plus matching weather rows for a first trustworthy real-data Phase 0 run.
+
+## 2026-03-15 05:58 America/Edmonton — Bassmaster mapping suggester handoff
+- Started and completed a new validation feature lane: **first-pass tournament-to-USGS gauge suggestion generation**.
+- Added `suggest_bassmaster_usgs_mappings()` in `castline/validation/collectors/outcomes.py`, which reuses the official Bassmaster results index, queries the USGS site service by tournament water body/state, scores candidate gauges, and writes a curated-start CSV with suggested `usgs_site_id`, station name, site type, and candidate counts.
+- Added `scripts/suggest_bassmaster_mappings.py` so the mapping pass is runnable from the repo without hand-coding lookups.
+- Added a new unit test covering the suggestion flow with mocked Bassmaster + USGS responses; validation suite now passes with `.venv/bin/python -m pytest castline/validation/tests/test_pipeline.py castline/validation/tests/test_evaluate.py` ✅ (6 passed).
+- Updated `README.md`, `docs/validation-lane.md`, and `IMPLEMENTATION_PLAN.md` to reflect that mapping suggestion tooling now exists.
+- Net effect: the blocker has narrowed again — we no longer start mapping from zero, but we still need a curated mapping CSV plus matched weather rows to produce the first trustworthy real-data Phase 0 judgment.

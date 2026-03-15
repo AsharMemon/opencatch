@@ -34,7 +34,17 @@ Required columns:
 - `baseline_signal`
 - `usgs_site_id`
 
-### 2. Normalize outcomes into the working raw-data location
+### 2. Generate first-pass USGS mapping suggestions for Bassmaster tournaments
+
+```bash
+python scripts/suggest_bassmaster_mappings.py \
+  --bassmaster-start-year 2024 \
+  --bassmaster-end-year 2024
+```
+
+This emits `castline/validation/data/raw/bassmaster_usgs_mapping_suggestions.csv` with one suggested gauge per tournament, including station name, site type, candidate count, and a lightweight token-overlap score.
+
+### 3. Normalize outcomes into the working raw-data location
 
 ```bash
 python scripts/collect_historical_outcomes.py --source path/to/outcomes.csv
@@ -57,7 +67,7 @@ Bassmaster mapping CSV columns:
 
 This adapter walks official Bassmaster `/results/` pages via the Bassmaster WordPress API, downloads linked standings PDFs, and emits one normalized row per tournament day with median daily weight.
 
-### 3. Pull USGS daily values keyed off those rows
+### 4. Pull USGS daily values keyed off those rows
 
 ```bash
 python scripts/collect_usgs_history.py --outcomes castline/validation/data/raw/historical_outcomes.csv --lookback-days 7
@@ -79,6 +89,7 @@ This currently uses the USGS daily-values API and derives per-event:
 - Sample-backed weather collector scaffold
 - Manifest-driven outcomes normalization for real historical rows
 - Official Bassmaster result-page adapter that turns standings PDFs into per-day median outcome rows
+- First-pass Bassmaster-to-USGS mapping suggester built from USGS site-service candidate search
 - Event-to-USGS daily-value collection and per-event feature extraction
 - Manifest-driven weather/IEM-style join keyed by `event_id`
 - Dataset assembler with weather-aware feature engineering
@@ -87,6 +98,6 @@ This currently uses the USGS daily-values API and derives per-event:
 ## Intended next extension points
 
 - Real tournament/creel source ingestion adapters for building the outcomes manifest itself
-- Event-to-gauge mapping automation instead of manual `usgs_site_id`
+- Better event-to-gauge mapping automation than the current first-pass suggestion scoring
 - Direct IEM/ASOS fetch adapters instead of normalized weather CSV handoff
 - Out-of-sample temporal evaluation instead of same-sample scaffold scoring

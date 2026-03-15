@@ -106,7 +106,8 @@ Current sub-status:
 - baseline-vs-environment comparison harness now exists in `castline/validation/`
 - manifest-driven USGS collection and weather joins are wired into the dataset path
 - official Bassmaster result-page scraping now exists for building tournament-day outcomes from standings PDFs
-- next gap is feeding it mapped real tournament rows plus matched weather/environment coverage at useful scale
+- first-pass Bassmaster-to-USGS mapping suggestion tooling now exists to accelerate gauge curation
+- next gap is turning those suggestions into curated mapped real tournament rows plus matched weather/environment coverage at useful scale
 
 Deliverables:
 - validation-first repository structure
