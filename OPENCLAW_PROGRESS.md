@@ -250,6 +250,12 @@
 - The approved mapping batch has also been expanded substantially in the working tree for the next push, including new attempts for Champlain, Clarks Hill, Hartwell, Sam Rayburn, Kentucky Lake, Harris Chain, and Chickamauga.
 - Active next move remains the same in spirit but sharper in practice: use these guards/fallbacks to attack blocked multi-tournament waters and push the guarded dataset past 16 usable rows.
 
+## 2026-03-15 08:51 America/Edmonton — threshold nearly reached
+- Latest guarded rerun artifacts now show **15 assembled / 15 fully usable rows** in `castline/validation/data/processed/validation_dataset.csv` and `castline/validation/artifacts/validation_summary.md`.
+- Thesis is still withheld as `insufficient_data`, but the gap has narrowed to **exactly one more trustworthy fully populated row**.
+- Practical meaning: the project is no longer broadly blocked on pipeline fragility or total coverage collapse; it is at the edge of the first real weak/viable/strong judgment.
+- Immediate next move: secure one additional trustworthy row from the highest-probability blocked waters and rerun the guarded comparison.
+
 ## 2026-03-15 08:34 America/Edmonton — threshold-push lane launched
 - Spawned a focused sub-agent lane: `castline-threshold-push`.
 - Scope: promote any additional coverage-backed recommendations into the approved compact mapping batch, rerun the full real-data Phase 0 pipeline, and determine whether the usable-row count can finally clear the 16-row judgment threshold.

@@ -2,7 +2,7 @@
 
 # CASTLINE implementation plan — source of truth
 
-_Last updated: 2026-03-15 08:46 America/Edmonton_
+_Last updated: 2026-03-15 08:51 America/Edmonton_
 
 ## Build posture
 
