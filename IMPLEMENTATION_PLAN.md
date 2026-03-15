@@ -112,7 +112,8 @@ Current sub-status:
 - the ranked mapping review sheet can now be exported into the compact mapping CSV the Bassmaster outcomes collector consumes, and the collector also accepts the edited review sheet directly
 - coverage validation tooling now exists to score ranked USGS candidates against real daily-value availability for the actual tournament dates
 - the Bassmaster→USGS suggester now retries USGS-friendly aliases / normalized water-body names, which removed the zero-candidate tournament set in the live 2024-2025 review sheet
-- rerunning the live review + coverage pass increased coverage-backed tournaments from 1 to 4; the remaining job is promoting those recommendations into the approved mapping batch and pushing the guarded end-to-end dataset past the minimum-row threshold
+- rerunning the live review + coverage pass increased coverage-backed tournaments from 1 to 4, and successive remap/fallback work has now pushed the guarded real-data dataset to 15 fully usable rows
+- the next best path is no longer blind gauge churn; it is landing one more trustworthy fully populated row by attacking the highest-probability blocked waters with better USGS candidate discovery plus weather-station fallback
 
 Deliverables:
 - validation-first repository structure
@@ -229,5 +230,4 @@ These remain important, but only after the thesis is being validated and the fir
 
 ## Immediate next action
 
-**Promote the new coverage-backed recommendations from `castline/validation/data/raw/bassmaster_usgs_mapping_coverage.csv` into the approved mapping batch, then rerun the full manifest-driven outcomes + USGS + IEM pipeline and record the first non-withheld thesis judgment once the usable-row threshold is met.**
-erun the full manifest-driven outcomes + USGS + IEM pipeline and record the first non-withheld thesis judgment once the usable-row threshold is met.**
+**Push the guarded real-data dataset from 15 usable rows over the 16-row judgment threshold by landing at least one additional trustworthy fully populated row — starting with the highest-probability blocked waters (Clarks Hill, Sam Rayburn, Harris Chain, Chickamauga) — then rerun the full manifest-driven outcomes + USGS + IEM pipeline and record the first non-withheld thesis judgment.**
