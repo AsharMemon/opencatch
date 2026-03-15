@@ -222,10 +222,11 @@ USGS	04156800	BAY COUNTY LAKE MONITOR AT SAGINAW BAY	LK
 """
 
     class FakeResponse:
-        def __init__(self, payload=None, content: bytes = b'', text: str = ''):
+        def __init__(self, payload=None, content: bytes = b'', text: str = '', status_code: int = 200):
             self._payload = payload
             self.content = content
             self.text = text
+            self.status_code = status_code
 
         def raise_for_status(self):
             return None
@@ -366,6 +367,30 @@ def test_bassmaster_results_index_stops_cleanly_on_wordpress_page_overflow(tmp_p
 
     assert len(df) == 1
     assert df.iloc[0]['tournament_slug'] == '2024-test-open'
+
+
+def test_usgs_site_candidate_404_returns_empty_dataframe():
+    from castline.validation.collectors.outcomes import _fetch_usgs_site_candidates
+
+    class FakeResponse:
+        status_code = 404
+        text = ''
+
+        def raise_for_status(self):
+            raise AssertionError('404 should be handled without raise_for_status')
+
+    class FakeSession:
+        def get(self, url, params=None, timeout=30, headers=None):
+            return FakeResponse()
+
+    df = _fetch_usgs_site_candidates(
+        water_body='Clarks Hill Reservoir',
+        state='GA',
+        session=FakeSession(),
+    )
+
+    assert df.empty
+
 
 
 def test_bassmaster_collection_from_official_results_pages(tmp_path, monkeypatch):

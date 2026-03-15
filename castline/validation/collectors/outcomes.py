@@ -400,6 +400,8 @@ def _fetch_usgs_site_candidates(*, water_body: str, state: str, session: request
         headers=DEFAULT_HEADERS,
         timeout=timeout,
     )
+    if response.status_code == 404:
+        return pd.DataFrame()
     response.raise_for_status()
     return _parse_rdb_table(response.text)
 

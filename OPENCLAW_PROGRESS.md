@@ -131,9 +131,13 @@
 - Updated `README.md`, `docs/validation-lane.md`, and `IMPLEMENTATION_PLAN.md` to reflect that mapping curation now starts from a ranked review sheet.
 - Live run result: the script now completes cleanly, but Bassmaster’s current WordPress results search returned zero rows for the attempted 2024-2025 fetch, so the next blocker is discovering/fixing the upstream event-discovery query or adding an alternate event index source.
 
-## 2026-03-15 07:07 America/Edmonton — Bassmaster discovery restoration handoff
-- Started and completed a new validation feature lane: **Bassmaster event-discovery recovery**.
-- Reworked the outcomes collector to use the Bassmaster WordPress search endpoint for `/results/` discovery instead of relying only on the tournament index query that had stopped returning usable rows.
-- Added parent-tournament lookups from the discovered `/results/` pages so metadata like event title, dates, and location can still be recovered cleanly for mapping and historical outcome collection.
-- Updated/extended tests to cover the new search-driven discovery path.
-- Net effect: the main blocker has shifted back from “discovery is broken” to the actual product problem — curating a first real mapped tournament batch and running the real-data validation pipeline.
+## 2026-03-15 07:07 America/Edmonton — Bassmaster discovery repair + USGS 404 hardening handoff
+- Started and completed a new validation feature lane: **repair the live Bassmaster event-discovery path for mapping generation**.
+- Reworked `castline/validation/collectors/outcomes.py` so result discovery now walks the WordPress search index (`/wp-json/wp/v2/search`) instead of relying on the tournament endpoint’s broken `search=Results` behavior for older events.
+- Added parent-tournament resolution from `/results/` URLs, because many live result child pages contain the PDF link but no tournament metadata; the collector now fetches the parent tournament record for dates and location metadata while still using the child page for the standings asset.
+- Added a lightweight year prefilter on result URLs before hydrating tournament details, which avoids needlessly fetching the entire Bassmaster archive when we only care about a narrow validation window.
+- Hardened USGS candidate lookup so `waterservices.usgs.gov` 404s on `siteName` searches now return an empty candidate set instead of killing the whole ranked mapping batch.
+- Added a regression test for the new USGS-404 behavior and updated the Bassmaster collector tests to cover the child-result-page + parent-metadata flow; validation suite now passes with `.venv/bin/python -m pytest castline/validation/tests/test_pipeline.py castline/validation/tests/test_evaluate.py` ✅ (9 passed).
+- Live validation confirmed the repaired discovery path can now resolve real 2024-2025 tournament metadata and find real PDF-backed result pages again; the next blocker is finishing the full mapping run around remaining live-site edge cases (for example tournaments without linked PDFs or water-body names that yield no USGS candidates) so the first curated real-data batch can be assembled.
+- Follow-up live run succeeded after the 404 hardening: `scripts/suggest_bassmaster_mappings.py --bassmaster-start-year 2024 --bassmaster-end-year 2025 --top-n 3` produced `castline/validation/data/raw/bassmaster_usgs_mapping_suggestions.csv` with 37 ranked rows across 25 tournaments, including usable candidates for places like Lake Okeechobee and Saginaw Bay while leaving harder cases flagged as `needs-research`.
+

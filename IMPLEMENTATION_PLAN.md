@@ -226,4 +226,4 @@ These remain important, but only after the thesis is being validated and the fir
 
 ## Immediate next action
 
-**Fix or augment the upstream Bassmaster event-discovery path so the ranked mapping review sheet can populate with real tournaments again, then curate the first mapped batch and run the manifest-driven USGS + IEM collectors for the first real-data thesis judgment.**
+**Curate the generated Bassmaster→USGS ranked review sheet into the first real mapped tournament batch, then run the manifest-driven USGS + IEM collectors and produce the first real-data thesis judgment.**
