@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "CASTLINE",
+    "slug": "castline-mobile",
+    "scheme": "castline",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#07111A"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.castline.mobile"
+    }
+  }
+}
