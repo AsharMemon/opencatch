@@ -40,6 +40,23 @@ Required columns:
 python scripts/collect_historical_outcomes.py --source path/to/outcomes.csv
 ```
 
+Or scrape official Bassmaster result pages directly:
+
+```bash
+python scripts/collect_historical_outcomes.py \
+  --bassmaster-start-year 2024 \
+  --bassmaster-end-year 2024 \
+  --mapping path/to/bassmaster_usgs_mapping.csv
+```
+
+Bassmaster mapping CSV columns:
+
+- `tournament_slug`
+- `usgs_site_id`
+- `species` (optional)
+
+This adapter walks official Bassmaster `/results/` pages via the Bassmaster WordPress API, downloads linked standings PDFs, and emits one normalized row per tournament day with median daily weight.
+
 ### 3. Pull USGS daily values keyed off those rows
 
 ```bash
@@ -61,6 +78,7 @@ This currently uses the USGS daily-values API and derives per-event:
 - Sample-backed USGS history collector scaffold
 - Sample-backed weather collector scaffold
 - Manifest-driven outcomes normalization for real historical rows
+- Official Bassmaster result-page adapter that turns standings PDFs into per-day median outcome rows
 - Event-to-USGS daily-value collection and per-event feature extraction
 - Manifest-driven weather/IEM-style join keyed by `event_id`
 - Dataset assembler with weather-aware feature engineering

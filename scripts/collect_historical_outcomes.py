@@ -20,12 +20,42 @@ def main() -> None:
         default=None,
         help='Path to a normalized CSV with tournament/outcome rows.',
     )
+    parser.add_argument(
+        '--bassmaster-start-year',
+        type=int,
+        default=None,
+        help='Start year for scraping Bassmaster tournament result PDFs via the official WordPress API.',
+    )
+    parser.add_argument(
+        '--bassmaster-end-year',
+        type=int,
+        default=None,
+        help='End year for scraping Bassmaster tournament result PDFs via the official WordPress API.',
+    )
+    parser.add_argument(
+        '--mapping',
+        type=Path,
+        default=None,
+        help='CSV mapping for source adapters. For Bassmaster, requires tournament_slug and usgs_site_id; species is optional.',
+    )
     args = parser.parse_args()
+
+    bassmaster_years: tuple[int, int] | None = None
+    if args.bassmaster_start_year is not None or args.bassmaster_end_year is not None:
+        if args.bassmaster_start_year is None or args.bassmaster_end_year is None:
+            parser.error('Bassmaster scraping requires both --bassmaster-start-year and --bassmaster-end-year')
+        bassmaster_years = (args.bassmaster_start_year, args.bassmaster_end_year)
 
     paths = ValidationPaths()
     paths.ensure()
     out = paths.raw_data / 'historical_outcomes.csv'
-    df = collect_historical_outcomes(out, sample=args.sample, source_path=args.source)
+    df = collect_historical_outcomes(
+        out,
+        sample=args.sample,
+        source_path=args.source,
+        bassmaster_years=bassmaster_years,
+        mapping_path=args.mapping,
+    )
     print(f'wrote {len(df)} outcome rows to {out}')
 
 

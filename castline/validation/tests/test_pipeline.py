@@ -98,3 +98,92 @@ def test_real_usgs_collection_from_outcomes_manifest(tmp_path, monkeypatch):
     assert row['temp_delta_24h_c'] == 1.5
     assert round(row['flow_delta_24h_pct'], 4) == 10.0
     assert row['source_mode'] == 'usgs_daily_values'
+
+
+def test_bassmaster_collection_from_official_results_pages(tmp_path, monkeypatch):
+    mapping_path = tmp_path / 'bassmaster_mapping.csv'
+    pd.DataFrame(
+        [
+            {
+                'tournament_slug': '2024-test-open',
+                'usgs_site_id': '01646500',
+                'species': 'smallmouth_bass',
+            }
+        ]
+    ).to_csv(mapping_path, index=False)
+
+    tournament_payload = [
+        {
+            'link': 'https://www.bassmaster.com/tournament/2024-test-open/results/',
+            'title': {'rendered': '2024 Test Open - Results'},
+            'content': {
+                'rendered': '<h2><a href="https://example.com/test-open-day-2.pdf">LINK: TOURNAMENT RESULTS</a></h2>'
+            },
+            'meta': {
+                'bassmaster_tournament_start_date': '2024-06-06',
+                'bassmaster_tournament_body_of_water': 'Saginaw Bay',
+                'bassmaster_tournament_city': 'Saginaw',
+                'bassmaster_tournament_state': 'MI',
+            },
+        }
+    ]
+
+    pdf_text = (
+        '2024 Test Open\n'
+        'STANDINGS BOATER DAY 2\n'
+        '1  519- 2 1035- 2 5 10Alpha Team 250.00\n'
+        '2  515- 0 1031- 0 5 10Beta Team 249.00\n'
+        '3  510- 8 1028- 4 5 10Gamma Team 248.00\n'
+    )
+
+    class FakeResponse:
+        def __init__(self, payload=None, content: bytes = b''):
+            self._payload = payload
+            self.content = content
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return self._payload
+
+    class FakeSession:
+        def get(self, url, params=None, timeout=30, headers=None):
+            if 'wp-json/wp/v2/tournament' in url:
+                if params and params.get('page') == 1:
+                    return FakeResponse(payload=tournament_payload)
+                return FakeResponse(payload=[])
+            if url == 'https://example.com/test-open-day-2.pdf':
+                return FakeResponse(content=b'%PDF-1.3 fake')
+            raise AssertionError(f'unexpected URL {url}')
+
+        def close(self):
+            return None
+
+    class FakePage:
+        def extract_text(self):
+            return pdf_text
+
+    class FakePdfReader:
+        def __init__(self, _buffer):
+            self.pages = [FakePage()]
+
+    monkeypatch.setattr('castline.validation.collectors.outcomes.requests.Session', lambda: FakeSession())
+    monkeypatch.setattr('castline.validation.collectors.outcomes.PdfReader', FakePdfReader)
+
+    output_path = tmp_path / 'historical_outcomes.csv'
+    df = collect_historical_outcomes(
+        output_path,
+        bassmaster_years=(2024, 2024),
+        mapping_path=mapping_path,
+    )
+
+    assert len(df) == 1
+    row = df.iloc[0]
+    assert row['event_id'] == '2024-test-open-day-2'
+    assert row['date'] == '2024-06-07'
+    assert row['location'] == 'Saginaw Bay, Saginaw, MI'
+    assert row['species'] == 'smallmouth_bass'
+    assert round(row['median_weight_lb'], 4) == 15.0
+    assert row['usgs_site_id'] == '01646500'
+    assert row['source_mode'] == 'bassmaster:2024-2024'

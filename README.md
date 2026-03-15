@@ -64,13 +64,29 @@ The validation lane now supports a first non-sample ingestion route.
 python scripts/collect_historical_outcomes.py --source path/to/outcomes.csv
 ```
 
-3. Pull matching USGS daily-value history and derive event features:
+3. Or build the outcomes manifest directly from official Bassmaster result pages plus a small gauge mapping file:
+
+```bash
+python scripts/collect_historical_outcomes.py \
+  --bassmaster-start-year 2024 \
+  --bassmaster-end-year 2024 \
+  --mapping path/to/bassmaster_usgs_mapping.csv
+```
+
+Bassmaster mapping CSV columns:
+- `tournament_slug`
+- `usgs_site_id`
+- `species` (optional; defaults to `black_bass`)
+
+The Bassmaster adapter uses the official Bassmaster WordPress API to discover `/results/` posts, downloads linked standings PDFs, extracts per-day competitor weights, and emits one normalized row per tournament day with median daily weight.
+
+4. Pull matching USGS daily-value history and derive event features:
 
 ```bash
 python scripts/collect_usgs_history.py --outcomes castline/validation/data/raw/historical_outcomes.csv --lookback-days 7
 ```
 
-4. Normalize weather/IEM-style event history keyed by the same `event_id` values:
+5. Normalize weather/IEM-style event history keyed by the same `event_id` values:
 
 ```bash
 python scripts/collect_weather_history.py --source path/to/weather_history.csv

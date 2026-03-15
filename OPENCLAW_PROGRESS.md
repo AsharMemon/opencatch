@@ -88,3 +88,13 @@
 - Fixed a real execution bug in all validation scripts by bootstrapping repo-root imports, then fixed `run_baseline_comparison.py`'s broken reporting dependency by adding `write_validation_summary()` to the reporting module.
 - Verified the lane end-to-end: sample collectors + dataset assembly + comparison now run successfully, producing a sample judgment of `viable` (`baseline R2=0.9368`, `full R2=1.0000`, `improvement=6.75%`).
 - Updated docs (`README.md`, `docs/validation-lane.md`) and the source-of-truth plan to reflect that weather joins are now implemented; the remaining gap is real mapped tournament + weather data, not pipeline plumbing.
+
+## 2026-03-15 05:35 America/Edmonton — Bassmaster outcomes adapter handoff
+- Started a new validation feature lane: **official Bassmaster results ingestion** for Phase 0 outcome data.
+- Extended `castline/validation/collectors/outcomes.py` so the collector can now crawl Bassmaster’s official WordPress tournament API, find `/results/` posts, download linked standings PDFs, parse per-day competitor weights, and emit one normalized outcome row per tournament day.
+- Added mapping-aware support for source adapters: `collect_historical_outcomes()` can now merge a small `tournament_slug -> usgs_site_id` CSV, auto-fill a simple seasonal `baseline_signal`, and keep species configurable per tournament family.
+- Extended `scripts/collect_historical_outcomes.py` with `--bassmaster-start-year`, `--bassmaster-end-year`, and `--mapping` so the repo can build real historical outcome manifests instead of waiting on a hand-authored CSV.
+- Added new dependencies (`beautifulsoup4`, `pypdf`) plus a live-structure unit test that mocks the Bassmaster API + standings PDF parse path.
+- Updated `README.md`, `docs/validation-lane.md`, and `IMPLEMENTATION_PLAN.md` to reflect that Bassmaster result-page scraping is now implemented.
+- Validation status after this change: `pytest castline/validation/tests/test_pipeline.py castline/validation/tests/test_evaluate.py` ✅ (5 passed).
+- Remaining blocker is now narrower: we still need a practical gauge-mapping file for the tournament slugs we care about, plus real weather joins for those same event IDs, before Phase 0 can produce a trustworthy weak/viable/strong judgment.

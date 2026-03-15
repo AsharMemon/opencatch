@@ -1,8 +1,18 @@
 from __future__ import annotations
 
+import math
+import re
+from dataclasses import dataclass
+from datetime import timedelta
+from io import BytesIO
 from pathlib import Path
+from typing import Any
+from urllib.parse import urljoin
 
 import pandas as pd
+import requests
+from bs4 import BeautifulSoup
+from pypdf import PdfReader
 
 REQUIRED_OUTCOME_COLUMNS = [
     'event_id',
@@ -78,22 +88,50 @@ SAMPLE_OUTCOMES = [
     },
 ]
 
+BASSMASTER_API_URL = 'https://www.bassmaster.com/wp-json/wp/v2/tournament'
+DEFAULT_HEADERS = {'User-Agent': 'Mozilla/5.0 (CASTLINE validation collector)'}
+DEFAULT_BASSMASTER_SPECIES = 'black_bass'
+
+
+@dataclass(slots=True)
+class BassmasterTournamentResult:
+    tournament_slug: str
+    event_name: str
+    location: str
+    start_date: pd.Timestamp
+    results_pdf_url: str
+
 
 def build_sample_outcomes() -> pd.DataFrame:
     return pd.DataFrame(SAMPLE_OUTCOMES)
 
 
+def _seasonal_baseline_signal(date_value: str) -> float:
+    timestamp = pd.Timestamp(date_value)
+    day_of_year = timestamp.day_of_year
+    signal = 0.5 + 0.3 * math.sin((2 * math.pi * day_of_year) / 365.25)
+    return round(max(0.0, min(1.0, signal)), 4)
+
+
 def _normalize_outcomes(df: pd.DataFrame) -> pd.DataFrame:
-    missing = [column for column in REQUIRED_OUTCOME_COLUMNS if column not in df.columns]
+    normalized = df.copy()
+
+    if 'baseline_signal' not in normalized.columns:
+        normalized['baseline_signal'] = normalized['date'].map(_seasonal_baseline_signal)
+    if 'species' not in normalized.columns:
+        normalized['species'] = DEFAULT_BASSMASTER_SPECIES
+    if 'usgs_site_id' not in normalized.columns:
+        normalized['usgs_site_id'] = ''
+
+    missing = [column for column in REQUIRED_OUTCOME_COLUMNS if column not in normalized.columns]
     if missing:
         raise ValueError(f'missing required outcome columns: {missing}')
 
-    normalized = df.copy()
     normalized['event_id'] = normalized['event_id'].astype(str).str.strip()
     normalized['event_name'] = normalized['event_name'].astype(str).str.strip()
     normalized['location'] = normalized['location'].astype(str).str.strip()
     normalized['species'] = normalized['species'].astype(str).str.strip()
-    normalized['usgs_site_id'] = normalized['usgs_site_id'].astype(str).str.replace('USGS-', '', regex=False).str.strip()
+    normalized['usgs_site_id'] = normalized['usgs_site_id'].fillna('').astype(str).str.replace('USGS-', '', regex=False).str.strip()
     normalized['date'] = pd.to_datetime(normalized['date'], utc=False).dt.strftime('%Y-%m-%d')
     normalized['median_weight_lb'] = pd.to_numeric(normalized['median_weight_lb'])
     normalized['baseline_signal'] = pd.to_numeric(normalized['baseline_signal'])
@@ -102,17 +140,206 @@ def _normalize_outcomes(df: pd.DataFrame) -> pd.DataFrame:
         duplicates = normalized.loc[normalized['event_id'].duplicated(), 'event_id'].tolist()
         raise ValueError(f'duplicate event_id values found: {duplicates}')
 
+    missing_gauges = normalized['usgs_site_id'].eq('')
+    if missing_gauges.any():
+        missing_events = normalized.loc[missing_gauges, 'event_id'].tolist()
+        raise ValueError(
+            'missing usgs_site_id values for event_id(s): '
+            f"{missing_events}. Provide a mapping CSV when using source adapters."
+        )
+
     return normalized.sort_values(['date', 'event_id']).reset_index(drop=True)
+
+
+def _fetch_json(url: str, *, session: requests.Session, params: dict[str, Any] | None = None) -> Any:
+    response = session.get(url, params=params, timeout=30, headers=DEFAULT_HEADERS)
+    response.raise_for_status()
+    return response.json()
+
+
+def _extract_results_pdf_url(rendered_html: str) -> str | None:
+    soup = BeautifulSoup(rendered_html, 'html.parser')
+    for anchor in soup.find_all('a', href=True):
+        href = anchor['href'].strip()
+        if href.lower().endswith('.pdf'):
+            return urljoin('https://www.bassmaster.com', href)
+    return None
+
+
+def _clean_text(value: Any) -> str:
+    return BeautifulSoup(str(value or ''), 'html.parser').get_text(' ', strip=True)
+
+
+def _build_location(meta: dict[str, Any]) -> str:
+    parts = [
+        _clean_text(meta.get('bassmaster_tournament_body_of_water', '')),
+        _clean_text(meta.get('bassmaster_tournament_city', '')),
+        _clean_text(meta.get('bassmaster_tournament_state', '')),
+    ]
+    return ', '.join(part for part in parts if part)
+
+
+def _fetch_bassmaster_results_index(
+    *,
+    session: requests.Session,
+    start_year: int,
+    end_year: int,
+) -> list[BassmasterTournamentResult]:
+    page = 1
+    tournaments: list[BassmasterTournamentResult] = []
+    seen_links: set[str] = set()
+
+    while True:
+        payload = _fetch_json(
+            BASSMASTER_API_URL,
+            session=session,
+            params={
+                'per_page': 100,
+                'page': page,
+                'search': 'Results',
+                '_fields': 'id,slug,link,title,content,meta',
+            },
+        )
+        if not payload:
+            break
+
+        for item in payload:
+            link = str(item.get('link', ''))
+            if not link.endswith('/results/') or link in seen_links:
+                continue
+            seen_links.add(link)
+
+            meta = item.get('meta', {}) or {}
+            start_date_raw = meta.get('bassmaster_tournament_start_date')
+            if not start_date_raw:
+                continue
+            start_date = pd.to_datetime(start_date_raw, errors='coerce')
+            if pd.isna(start_date):
+                continue
+            if not (start_year <= int(start_date.year) <= end_year):
+                continue
+
+            pdf_url = _extract_results_pdf_url(item.get('content', {}).get('rendered', ''))
+            if not pdf_url:
+                continue
+
+            tournaments.append(
+                BassmasterTournamentResult(
+                    tournament_slug=link.rstrip('/').split('/')[-2],
+                    event_name=_clean_text(item.get('title', {}).get('rendered', 'Results')).replace(' – Results', '').replace(' - Results', ''),
+                    location=_build_location(meta),
+                    start_date=start_date,
+                    results_pdf_url=pdf_url,
+                )
+            )
+
+        page += 1
+
+    return sorted(tournaments, key=lambda item: (item.start_date, item.tournament_slug))
+
+
+_ROW_PATTERN = re.compile(r'^(\d+)\s+(\d)(\d+)-\s*(\d+)\s+(\d)(\d+)-\s*(\d+)', re.MULTILINE)
+
+
+def _weight_to_pounds(pounds: str, ounces: str) -> float:
+    return int(pounds) + (int(ounces) / 16.0)
+
+
+def _extract_median_weight_from_pdf(pdf_bytes: bytes) -> float:
+    reader = PdfReader(BytesIO(pdf_bytes))
+    text = '\n'.join(page.extract_text() or '' for page in reader.pages)
+    weights = [
+        _weight_to_pounds(match.group(3), match.group(4))
+        for match in _ROW_PATTERN.finditer(text)
+        if int(match.group(2)) >= 0
+    ]
+    if not weights:
+        raise ValueError('could not extract competitor daily weights from results PDF')
+    return round(float(pd.Series(weights).median()), 4)
+
+
+def _extract_day_from_pdf_url(pdf_url: str) -> int:
+    match = re.search(r'day[-_ ]?(\d+)', pdf_url, flags=re.IGNORECASE)
+    return int(match.group(1)) if match else 1
+
+
+def _load_mapping(mapping_path: Path | None) -> pd.DataFrame | None:
+    if mapping_path is None:
+        return None
+    mapping = pd.read_csv(mapping_path, dtype=str).fillna('')
+    if 'tournament_slug' not in mapping.columns or 'usgs_site_id' not in mapping.columns:
+        raise ValueError('mapping file must include tournament_slug and usgs_site_id columns')
+    if 'species' not in mapping.columns:
+        mapping['species'] = DEFAULT_BASSMASTER_SPECIES
+    return mapping[['tournament_slug', 'usgs_site_id', 'species']]
+
+
+def _collect_bassmaster_outcomes(
+    *,
+    start_year: int,
+    end_year: int,
+    mapping_path: Path | None = None,
+    session: requests.Session | None = None,
+) -> pd.DataFrame:
+    owned_session = session is None
+    session = session or requests.Session()
+    mapping = _load_mapping(mapping_path)
+
+    try:
+        tournaments = _fetch_bassmaster_results_index(session=session, start_year=start_year, end_year=end_year)
+        rows: list[dict[str, Any]] = []
+
+        for tournament in tournaments:
+            response = session.get(tournament.results_pdf_url, timeout=30, headers=DEFAULT_HEADERS)
+            response.raise_for_status()
+            median_weight_lb = _extract_median_weight_from_pdf(response.content)
+            day_number = _extract_day_from_pdf_url(tournament.results_pdf_url)
+            event_date = (tournament.start_date + timedelta(days=day_number - 1)).strftime('%Y-%m-%d')
+            rows.append(
+                {
+                    'event_id': f'{tournament.tournament_slug}-day-{day_number}',
+                    'tournament_slug': tournament.tournament_slug,
+                    'event_name': tournament.event_name,
+                    'date': event_date,
+                    'location': tournament.location,
+                    'species': DEFAULT_BASSMASTER_SPECIES,
+                    'median_weight_lb': median_weight_lb,
+                    'baseline_signal': _seasonal_baseline_signal(event_date),
+                    'results_pdf_url': tournament.results_pdf_url,
+                }
+            )
+    finally:
+        if owned_session:
+            session.close()
+
+    outcomes = pd.DataFrame(rows)
+    if outcomes.empty:
+        raise ValueError(f'no Bassmaster tournament result rows found for years {start_year}-{end_year}')
+
+    if mapping is not None:
+        outcomes = outcomes.merge(mapping, on='tournament_slug', how='left', suffixes=('', '_mapping'))
+        outcomes['species'] = outcomes['species_mapping'].where(outcomes['species_mapping'].notna() & outcomes['species_mapping'].ne(''), outcomes['species'])
+        outcomes = outcomes.drop(columns=['species_mapping'])
+    if 'usgs_site_id' not in outcomes.columns:
+        outcomes['usgs_site_id'] = ''
+
+    return outcomes
 
 
 def collect_historical_outcomes(
     output_path: Path,
     sample: bool = False,
     source_path: Path | None = None,
+    bassmaster_years: tuple[int, int] | None = None,
+    mapping_path: Path | None = None,
 ) -> pd.DataFrame:
     if sample:
         df = build_sample_outcomes()
         source_mode = 'sample'
+    elif bassmaster_years is not None:
+        start_year, end_year = bassmaster_years
+        df = _collect_bassmaster_outcomes(start_year=start_year, end_year=end_year, mapping_path=mapping_path)
+        source_mode = f'bassmaster:{start_year}-{end_year}'
     elif source_path is not None:
         df = pd.read_csv(source_path, dtype={'event_id': str, 'usgs_site_id': str})
         source_mode = f'csv:{Path(source_path).name}'
