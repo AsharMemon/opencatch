@@ -5,23 +5,54 @@ import pandas as pd
 from castline.validation.assembly.dataset import assemble_validation_dataset
 from castline.validation.collectors.outcomes import collect_historical_outcomes
 from castline.validation.collectors.usgs import collect_usgs_history
+from castline.validation.collectors.weather import collect_weather_history
 from castline.validation.models.comparison import compare_models
 
 
 def test_sample_pipeline(tmp_path):
     outcomes_path = tmp_path / 'historical_outcomes.csv'
     usgs_path = tmp_path / 'usgs_history.csv'
+    weather_path = tmp_path / 'weather_history.csv'
     dataset_path = tmp_path / 'validation_dataset.csv'
     report_path = tmp_path / 'report.json'
 
     collect_historical_outcomes(outcomes_path, sample=True)
     collect_usgs_history(usgs_path, sample=True)
-    dataset = assemble_validation_dataset(outcomes_path, usgs_path, dataset_path)
+    collect_weather_history(weather_path, sample=True)
+    dataset = assemble_validation_dataset(outcomes_path, usgs_path, dataset_path, weather_path=weather_path)
     summary = compare_models(dataset_path, report_path)
 
     assert len(dataset) >= 1
+    assert 'precip_24h_mm' in dataset.columns
+    assert 'weather_stability_index' in dataset.columns
     assert report_path.exists()
     assert summary.thesis_rating in {'weak', 'viable', 'strong'}
+
+
+def test_weather_collection_from_source_manifest(tmp_path):
+    weather_source = tmp_path / 'source_weather.csv'
+    pd.DataFrame(
+        [
+            {
+                'event_id': 'evt-001',
+                'air_temp_c': 12.5,
+                'pressure_mb': 1009.4,
+                'wind_speed_kph': 7.2,
+                'cloud_cover_pct': 41.0,
+                'precip_24h_mm': 3.8,
+            }
+        ]
+    ).to_csv(weather_source, index=False)
+
+    normalized_weather = tmp_path / 'weather_history.csv'
+    df = collect_weather_history(normalized_weather, source_path=weather_source)
+
+    assert len(df) == 1
+    row = df.iloc[0]
+    assert row['event_id'] == 'evt-001'
+    assert row['pressure_mb'] == 1009.4
+    assert row['source_mode'] == 'csv:source_weather.csv'
+
 
 
 def test_real_usgs_collection_from_outcomes_manifest(tmp_path, monkeypatch):

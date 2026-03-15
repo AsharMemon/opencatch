@@ -1,0 +1,7 @@
+event_id,event_name,date,location,species,median_weight_lb,baseline_signal,usgs_site_id,source_mode
+sample-001,Sample River Open,2024-04-10,Sample River,smallmouth_bass,11.2,0.42,0000001,sample
+sample-002,Sample River Open,2024-04-11,Sample River,smallmouth_bass,12.1,0.47,0000001,sample
+sample-003,Reservoir Derby,2024-05-02,Blue Reservoir,largemouth_bass,14.9,0.51,0000002,sample
+sample-004,Reservoir Derby,2024-05-03,Blue Reservoir,largemouth_bass,13.4,0.49,0000002,sample
+sample-005,Current Cup,2024-06-14,Tailwater Reach,smallmouth_bass,10.1,0.39,0000003,sample
+sample-006,Current Cup,2024-06-15,Tailwater Reach,smallmouth_bass,10.8,0.41,0000003,sample

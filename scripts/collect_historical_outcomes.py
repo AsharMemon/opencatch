@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from castline.validation.collectors.outcomes import collect_historical_outcomes
 from castline.validation.config import ValidationPaths

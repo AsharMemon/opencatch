@@ -11,6 +11,7 @@ pip install -r requirements.txt
 python manage.py migrate
 python scripts/collect_historical_outcomes.py --sample
 python scripts/collect_usgs_history.py --sample
+python scripts/collect_weather_history.py --sample
 python scripts/assemble_validation_dataset.py
 python scripts/run_baseline_comparison.py
 pytest
@@ -58,14 +59,16 @@ This currently uses the USGS daily-values API and derives per-event:
 - Django scaffold with a validation app and `ValidationRun` model
 - Sample-backed historical outcomes collector scaffold
 - Sample-backed USGS history collector scaffold
+- Sample-backed weather collector scaffold
 - Manifest-driven outcomes normalization for real historical rows
 - Event-to-USGS daily-value collection and per-event feature extraction
-- Dataset assembler
+- Manifest-driven weather/IEM-style join keyed by `event_id`
+- Dataset assembler with weather-aware feature engineering
 - Baseline-vs-full-feature comparison report generator
 
 ## Intended next extension points
 
 - Real tournament/creel source ingestion adapters for building the outcomes manifest itself
 - Event-to-gauge mapping automation instead of manual `usgs_site_id`
-- Weather/IEM join stage
+- Direct IEM/ASOS fetch adapters instead of normalized weather CSV handoff
 - Out-of-sample temporal evaluation instead of same-sample scaffold scoring

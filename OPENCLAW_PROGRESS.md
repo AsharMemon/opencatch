@@ -80,3 +80,11 @@
 - The active feature lane is now **first mapped outcomes dataset acquisition** for Phase 0.
 - Concrete target: land a normalized tournament/creel CSV with event date, waterbody metadata, target variable, and `usgs_site_id` mappings so the new collector scripts can assemble a real comparison dataset.
 - Follow-on target after that dataset lands: add weather/IEM joins and run the first baseline-vs-environment comparison to produce a weak/viable/strong thesis judgment.
+
+## 2026-03-15 05:15 America/Edmonton — weather join + runnable pipeline handoff
+- Added `castline/validation/collectors/weather.py` plus `scripts/collect_weather_history.py` so the validation lane can ingest normalized weather/IEM-style rows keyed by `event_id`.
+- Extended `castline/validation/assembly/dataset.py` to merge weather history into the assembled validation dataset and derive `weather_stability_index` alongside the existing environmental composites.
+- Expanded `castline/validation/models/comparison.py` so the full model can use joined weather columns (`air_temp_c`, `pressure_mb`, `wind_speed_kph`, `cloud_cover_pct`, `precip_24h_mm`) instead of USGS-only features.
+- Fixed a real execution bug in all validation scripts by bootstrapping repo-root imports, then fixed `run_baseline_comparison.py`'s broken reporting dependency by adding `write_validation_summary()` to the reporting module.
+- Verified the lane end-to-end: sample collectors + dataset assembly + comparison now run successfully, producing a sample judgment of `viable` (`baseline R2=0.9368`, `full R2=1.0000`, `improvement=6.75%`).
+- Updated docs (`README.md`, `docs/validation-lane.md`) and the source-of-truth plan to reflect that weather joins are now implemented; the remaining gap is real mapped tournament + weather data, not pipeline plumbing.

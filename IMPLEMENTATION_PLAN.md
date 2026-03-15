@@ -2,7 +2,7 @@
 
 # CASTLINE implementation plan — source of truth
 
-_Last updated: 2026-03-15 04:31 America/Edmonton_
+_Last updated: 2026-03-15 05:15 America/Edmonton_
 
 ## Build posture
 
@@ -104,7 +104,8 @@ If we can do those four things cleanly, CASTLINE becomes real.
 Current sub-status:
 - repository skeleton exists
 - baseline-vs-environment comparison harness now exists in `castline/validation/`
-- next gap is feeding it real historical tournament + USGS/environment rows
+- manifest-driven USGS collection and weather joins are wired into the dataset path
+- next gap is feeding it real historical tournament + mapped weather/environment rows
 
 Deliverables:
 - validation-first repository structure
@@ -221,4 +222,4 @@ These remain important, but only after the thesis is being validated and the fir
 
 ## Immediate next action
 
-**Feed the new manifest-driven validation pipeline a first real batch of historical tournament/creel outcomes with `usgs_site_id` mappings, then add weather/IEM joins so the baseline-vs-environment comparison can produce a real judgment.**
+**Feed the manifest-driven validation pipeline a first real batch of historical tournament/creel outcomes with `usgs_site_id` mappings and matching weather rows so the baseline-vs-environment comparison can produce a real judgment.**

@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from castline.validation.evaluate import ValidationComparison
+from castline.validation.types import ComparisonSummary
 
 
 def render_markdown_report(comparison: ValidationComparison, source_path: str | Path) -> str:
@@ -37,3 +38,29 @@ def render_markdown_report(comparison: ValidationComparison, source_path: str | 
             "- >15% R² improvement => strong",
         ]
     ) + "\n"
+
+
+
+def write_validation_summary(summary: ComparisonSummary, output_path: str | Path) -> Path:
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        "\n".join(
+            [
+                "# CASTLINE Phase 0 Validation Summary",
+                "",
+                "## Result",
+                f"- Judgment: **{summary.thesis_rating}**",
+                f"- Baseline R²: **{summary.baseline_r2:.4f}**",
+                f"- Full-model R²: **{summary.full_r2:.4f}**",
+                f"- Improvement vs baseline: **{summary.improvement_pct:.2f}%**",
+                "",
+                "## Interpretation rubric",
+                "- <5% improvement => weak",
+                "- 5-15% improvement => viable",
+                "- >15% improvement => strong",
+            ]
+        )
+        + "\n"
+    )
+    return output_path

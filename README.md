@@ -34,6 +34,7 @@ python manage.py runserver
 ```bash
 python scripts/collect_historical_outcomes.py --sample
 python scripts/collect_usgs_history.py --sample
+python scripts/collect_weather_history.py --sample
 python scripts/assemble_validation_dataset.py
 python scripts/run_baseline_comparison.py
 ```
@@ -69,7 +70,21 @@ python scripts/collect_historical_outcomes.py --source path/to/outcomes.csv
 python scripts/collect_usgs_history.py --outcomes castline/validation/data/raw/historical_outcomes.csv --lookback-days 7
 ```
 
-This produces per-event historical environmental features keyed to the outcome rows, which can then flow into dataset assembly and the baseline-vs-full-feature comparison.
+4. Normalize weather/IEM-style event history keyed by the same `event_id` values:
+
+```bash
+python scripts/collect_weather_history.py --source path/to/weather_history.csv
+```
+
+Required weather columns:
+- `event_id`
+- `air_temp_c`
+- `pressure_mb`
+- `wind_speed_kph`
+- `cloud_cover_pct`
+- `precip_24h_mm`
+
+This adds baseline weather features into dataset assembly so the comparison workflow can score a richer environmental model against the simpler baseline signal.
 
 ## Notes
 

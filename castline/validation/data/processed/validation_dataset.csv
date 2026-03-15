@@ -1,0 +1,7 @@
+event_id,event_name,date,location,species,median_weight_lb,baseline_signal,usgs_site_id,source_mode,site_id,water_temp_c,discharge_cfs,gage_height_ft,temp_delta_24h_c,flow_delta_24h_pct,air_temp_c,pressure_mb,wind_speed_kph,cloud_cover_pct,precip_24h_mm,source_mode_weather,target_success_score,water_temp_x_flow,weather_stability_index,env_signal
+sample-001,Sample River Open,2024-04-10,Sample River,smallmouth_bass,11.2,0.42,1,sample,USGS-0000001,15.4,520.0,3.6,1.1,-8.0,17.0,1007.0,12.0,64.0,4.2,sample,11.2,8008.0,17.195999999999998,17.259
+sample-002,Sample River Open,2024-04-11,Sample River,smallmouth_bass,12.1,0.47,1,sample,USGS-0000001,16.2,498.0,3.5,1.3,-4.0,18.0,1005.0,10.0,58.0,2.5,sample,12.1,8067.599999999999,17.720000000000002,17.74
+sample-003,Reservoir Derby,2024-05-02,Blue Reservoir,largemouth_bass,14.9,0.51,2,sample,USGS-0000002,20.0,310.0,2.1,0.4,3.0,23.0,1011.0,9.0,32.0,0.0,sample,14.9,6200.0,18.549999999999997,17.685
+sample-004,Reservoir Derby,2024-05-03,Blue Reservoir,largemouth_bass,13.4,0.49,2,sample,USGS-0000002,19.1,345.0,2.3,-0.6,11.0,24.0,1009.0,11.0,44.0,1.3,sample,13.4,6589.500000000001,17.934,15.256
+sample-005,Current Cup,2024-06-14,Tailwater Reach,smallmouth_bass,10.1,0.39,3,sample,USGS-0000003,17.8,760.0,4.9,0.2,14.0,21.0,1004.0,18.0,72.0,8.7,sample,10.1,13528.0,15.616000000000003,14.569
+sample-006,Current Cup,2024-06-15,Tailwater Reach,smallmouth_bass,10.8,0.41,3,sample,USGS-0000003,18.0,722.0,4.7,0.3,-5.0,20.0,1006.0,13.0,61.0,3.1,sample,10.8,12996.0,17.188000000000002,17.282

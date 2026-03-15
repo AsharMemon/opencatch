@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from castline.validation.config import ValidationPaths
 from castline.validation.models.comparison import compare_models
 from castline.validation.reporting.summary import write_validation_summary

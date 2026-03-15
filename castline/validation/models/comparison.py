@@ -13,6 +13,11 @@ from castline.validation.types import ComparisonSummary
 BASELINE_FEATURES = ['baseline_signal']
 FULL_FEATURES = [
     'baseline_signal',
+    'air_temp_c',
+    'pressure_mb',
+    'wind_speed_kph',
+    'cloud_cover_pct',
+    'precip_24h_mm',
     'water_temp_c',
     'discharge_cfs',
     'gage_height_ft',
@@ -20,6 +25,7 @@ FULL_FEATURES = [
     'flow_delta_24h_pct',
     'env_signal',
     'water_temp_x_flow',
+    'weather_stability_index',
 ]
 TARGET = 'target_success_score'
 
@@ -49,6 +55,9 @@ def _fit_and_score(df: pd.DataFrame, feature_names: list[str]) -> dict:
 
 def compare_models(dataset_path: Path, output_path: Path) -> ComparisonSummary:
     df = pd.read_csv(dataset_path)
+    for column in BASELINE_FEATURES + FULL_FEATURES:
+        if column not in df.columns:
+            df[column] = 0.0
     baseline = _fit_and_score(df, BASELINE_FEATURES)
     full = _fit_and_score(df, FULL_FEATURES)
     improvement_pct = ((full['r2'] - baseline['r2']) / max(abs(baseline['r2']), 1e-6)) * 100
