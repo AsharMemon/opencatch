@@ -173,6 +173,80 @@ def test_real_iem_weather_collection_from_outcomes_manifest(tmp_path):
 
 
 
+def test_real_iem_weather_collection_falls_back_to_next_station_when_top_match_has_no_rows(tmp_path):
+    outcomes_source = tmp_path / 'source_outcomes.csv'
+    pd.DataFrame(
+        [
+            {
+                'event_id': 'evt-001',
+                'event_name': 'Reservoir Open',
+                'date': '2024-02-02',
+                'location': 'Clarks Hill Reservoir, Columbia County, GA',
+                'city': 'Columbia County',
+                'state': 'GA',
+                'species': 'black_bass',
+                'median_weight_lb': 12.5,
+                'baseline_signal': 0.42,
+                'usgs_site_id': '02197000',
+            }
+        ]
+    ).to_csv(outcomes_source, index=False)
+
+    class FakeResponse:
+        def __init__(self, *, payload=None, text=''):
+            self._payload = payload
+            self.text = text
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return self._payload
+
+    class FakeSession:
+        def get(self, url, params=None, timeout=30, headers=None):
+            if 'geojson/network.php' in url:
+                assert params['network'] == 'GA_ASOS'
+                return FakeResponse(
+                    payload={
+                        'features': [
+                            {
+                                'id': '19A',
+                                'properties': {'sname': 'AUGUSTA AREA', 'state': 'GA'},
+                                'geometry': {'coordinates': [-82.16, 33.37]},
+                            },
+                            {
+                                'id': 'AGS',
+                                'properties': {'sname': 'AUGUSTA BUSH FIELD', 'state': 'GA'},
+                                'geometry': {'coordinates': [-81.97, 33.37]},
+                            },
+                        ]
+                    }
+                )
+            if 'cgi-bin/request/asos.py' in url and params['station'] == '19A':
+                return FakeResponse(text='station,valid,lon,lat,elevation,tmpf,mslp,skyc1,skyc2,skyc3,skyc4,sknt,p01i\n')
+            if 'cgi-bin/request/asos.py' in url and params['station'] == 'AGS':
+                return FakeResponse(
+                    text='station,valid,lon,lat,elevation,tmpf,mslp,skyc1,skyc2,skyc3,skyc4,sknt,p01i\n'
+                    'AGS,2024-02-02 00:00,-81.97,33.37,144,55.0,1013.0,FEW,,,,8.0,0.00\n'
+                    'AGS,2024-02-02 12:00,-81.97,33.37,144,61.0,1011.0,BKN,,,,10.0,0.05\n'
+                )
+            raise AssertionError(f'unexpected URL {url}')
+
+        def close(self):
+            return None
+
+    normalized_weather = tmp_path / 'weather_history.csv'
+    df = collect_weather_history(normalized_weather, outcomes_path=outcomes_source, session=FakeSession())
+
+    assert len(df) == 1
+    row = df.iloc[0]
+    assert row['iem_station'] == 'AGS'
+    assert row['pressure_mb'] == 1012.0
+    assert row['precip_24h_mm'] == 1.27
+
+
+
 def test_evaluate_usgs_mapping_candidates_prefers_sites_with_real_history(tmp_path, monkeypatch):
     outcomes_source = tmp_path / 'source_outcomes.csv'
     pd.DataFrame(
@@ -281,6 +355,65 @@ def test_evaluate_usgs_mapping_candidates_prefers_sites_with_real_history(tmp_pa
     recommended_tour_2 = df.loc[(df['tournament_slug'] == 'tour-2') & (df['recommended_by_coverage'])].iloc[0]
     assert recommended_tour_2['suggested_usgs_site_id'] == '33333333'
     assert recommended_tour_2['usable_event_count'] == 1
+
+
+
+def test_evaluate_usgs_mapping_candidates_does_not_recommend_zero_coverage_rows(tmp_path, monkeypatch):
+    outcomes_source = tmp_path / 'source_outcomes.csv'
+    pd.DataFrame(
+        [
+            {
+                'event_id': 'evt-001',
+                'tournament_slug': 'tour-1',
+                'event_name': 'Lake Open Day 1',
+                'date': '2024-04-10',
+                'location': 'Example Lake',
+                'species': 'black_bass',
+                'median_weight_lb': 10.0,
+                'baseline_signal': 0.5,
+                'usgs_site_id': '00000001',
+            }
+        ]
+    ).to_csv(outcomes_source, index=False)
+    normalized_outcomes = tmp_path / 'historical_outcomes.csv'
+    collect_historical_outcomes(normalized_outcomes, source_path=outcomes_source)
+
+    suggestions_path = tmp_path / 'mapping_suggestions.csv'
+    pd.DataFrame(
+        [
+            {
+                'tournament_slug': 'tour-1',
+                'candidate_rank': 1,
+                'suggested_usgs_site_id': '11111111',
+                'selected_usgs_site_id': '11111111',
+                'review_status': 'suggested',
+            },
+            {
+                'tournament_slug': 'tour-1',
+                'candidate_rank': 2,
+                'suggested_usgs_site_id': '22222222',
+                'selected_usgs_site_id': '',
+                'review_status': 'candidate',
+            },
+        ]
+    ).to_csv(suggestions_path, index=False)
+
+    monkeypatch.setattr(
+        'castline.validation.collectors.usgs.fetch_usgs_daily_values',
+        lambda *args, **kwargs: pd.DataFrame(columns=['date', 'water_temp_c', 'discharge_cfs', 'gage_height_ft', 'site_id']),
+    )
+
+    coverage_path = tmp_path / 'coverage.csv'
+    df = evaluate_usgs_mapping_candidates(
+        outcomes_path=normalized_outcomes,
+        suggestions_path=suggestions_path,
+        output_path=coverage_path,
+        lookback_days=7,
+    )
+
+    assert not df['recommended_by_coverage'].any()
+    assert df['recommended_usgs_site_id'].fillna('').eq('').all()
+    assert df['review_status'].tolist() == ['suggested', 'candidate']
 
 
 

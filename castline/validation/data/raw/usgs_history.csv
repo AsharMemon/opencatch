@@ -1,5 +1,8 @@
 event_id,site_id,observation_date,water_temp_c,discharge_cfs,gage_height_ft,temp_delta_24h_c,flow_delta_24h_pct,source_mode
 2024-strike-king-bassmaster-college-series-at-lake-murray-presented-by-bass-pro-shops-day-2,USGS-02168500,2024-01-27,9.7,0.0,0.0,-0.10000000000000142,0.0,usgs_daily_values
+2024-strike-king-bassmaster-college-series-at-clarks-hill-reservoir-presented-by-bass-pro-shops-day-2,USGS-02197000,2024-02-02,0.0,17300.0,109.76,0.0,2.976190476190476,usgs_daily_values
+2024-bassmaster-high-school-series-at-clarks-hill-reservoir-day-1,USGS-02197000,2024-02-04,0.0,16800.0,109.48,0.0,6.329113924050633,usgs_daily_values
+2024-bassmaster-junior-series-at-clarks-hill-reservoir-day-1,USGS-02197000,2024-02-04,0.0,16800.0,109.48,0.0,6.329113924050633,usgs_daily_values
 2024-strike-king-bassmaster-college-series-at-douglas-lake-presented-by-bass-pro-shops-day-2,USGS-03467609,2024-03-08,0.0,8620.0,12.87,0.0,13.570487483530963,usgs_daily_values
 2024-bassmaster-high-school-series-at-douglas-lake-day-1,USGS-03467609,2024-03-10,0.0,8300.0,12.69,0.0,31.955484896661368,usgs_daily_values
 2024-bassmaster-junior-series-at-douglas-lake-day-1,USGS-03467609,2024-03-10,0.0,8300.0,12.69,0.0,31.955484896661368,usgs_daily_values
@@ -8,5 +11,6 @@ event_id,site_id,observation_date,water_temp_c,discharge_cfs,gage_height_ft,temp
 2024-strike-king-bassmaster-college-series-at-saginaw-bay-presented-by-bass-pro-shops-day-2,USGS-04157060,2024-06-07,0.0,2920.0,0.0,0.0,-0.6802721088435374,usgs_daily_values
 2024-bassmaster-high-school-series-at-saginaw-bay-day-1,USGS-04157060,2024-06-09,0.0,2160.0,0.0,0.0,-45.17766497461929,usgs_daily_values
 2024-bassmaster-junior-series-at-saginaw-bay-day-1,USGS-04157060,2024-06-09,0.0,2160.0,0.0,0.0,-45.17766497461929,usgs_daily_values
+2024-b-a-s-s-nation-northeast-qualifier-at-lake-champlain-day-3,USGS-04294413,2024-07-26,23.0,0.0,0.0,1.8000000000000007,0.0,usgs_daily_values
 2024-b-a-s-s-nation-championship-day-1,USGS-07185000,2024-11-06,0.0,5950.0,0.0,0.0,-37.17001055966209,usgs_daily_values
 2025-bassmaster-college-series-at-lake-okeechobee-day-1,USGS-02292010,2025-01-29,0.0,1570.0,10.85,0.0,-20.304568527918782,usgs_daily_values

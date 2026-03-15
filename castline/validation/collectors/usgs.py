@@ -320,9 +320,11 @@ def evaluate_usgs_mapping_candidates(
     ranked['coverage_statuses'] = ranked['coverage_statuses'].fillna('not_evaluated')
     ranked['matched_observation_dates'] = ranked['matched_observation_dates'].fillna('')
 
-    best_idx = ranked.groupby('tournament_slug')['coverage_score'].idxmax()
     ranked['recommended_by_coverage'] = False
-    ranked.loc[best_idx, 'recommended_by_coverage'] = True
+    usable_ranked = ranked.loc[ranked['usable_event_count'] > 0].copy()
+    if not usable_ranked.empty:
+        best_idx = usable_ranked.groupby('tournament_slug')['coverage_score'].idxmax()
+        ranked.loc[best_idx, 'recommended_by_coverage'] = True
     ranked['selected_usgs_site_id'] = ranked['selected_usgs_site_id'].astype(str).str.replace('USGS-', '', regex=False).str.strip()
     ranked['recommended_usgs_site_id'] = ranked.apply(
         lambda row: row['suggested_usgs_site_id'] if row['recommended_by_coverage'] else '',

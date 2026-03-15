@@ -226,14 +226,14 @@ def fetch_iem_network_stations(
     return pd.DataFrame(rows)
 
 
-def pick_iem_station_for_event(
+def rank_iem_stations_for_event(
     event: WeatherEvent,
     *,
     session: requests.Session | None = None,
     station_cache: dict[str, pd.DataFrame] | None = None,
-) -> str:
+) -> list[str]:
     if event.iem_station:
-        return event.iem_station
+        return [event.iem_station]
     if not event.state:
         raise ValueError(f'could not infer state for event {event.event_id} from location {event.location!r}')
 
@@ -259,7 +259,16 @@ def pick_iem_station_for_event(
         axis=1,
     )
     scored = scored.sort_values(['match_score', 'station'], ascending=[False, True]).reset_index(drop=True)
-    return str(scored.iloc[0]['station'])
+    return [str(station).upper() for station in scored['station'].dropna().tolist() if str(station).strip()]
+
+
+def pick_iem_station_for_event(
+    event: WeatherEvent,
+    *,
+    session: requests.Session | None = None,
+    station_cache: dict[str, pd.DataFrame] | None = None,
+) -> str:
+    return rank_iem_stations_for_event(event, session=session, station_cache=station_cache)[0]
 
 
 def _sky_cover_pct(row: pd.Series) -> float:
@@ -363,15 +372,25 @@ def collect_weather_history(
         history_cache: dict[tuple[str, str, str], pd.DataFrame] = {}
         rows: list[dict[str, Any]] = []
         for event in _load_outcome_events(outcomes_path):
-            station = pick_iem_station_for_event(event, session=session, station_cache=station_cache)
+            candidate_stations = rank_iem_stations_for_event(event, session=session, station_cache=station_cache)
             start_date = (event.event_date - pd.Timedelta(days=1)).strftime('%Y-%m-%d')
             end_date = (event.event_date + pd.Timedelta(days=1)).strftime('%Y-%m-%d')
-            cache_key = (station, start_date, end_date)
-            history = history_cache.get(cache_key)
-            if history is None:
-                history = fetch_iem_asos_history(station, start_date, end_date, session=session)
-                history_cache[cache_key] = history
-            rows.append(_summarize_event_weather(event, station, history))
+            last_error: ValueError | None = None
+            for station in candidate_stations[:5]:
+                cache_key = (station, start_date, end_date)
+                history = history_cache.get(cache_key)
+                if history is None:
+                    history = fetch_iem_asos_history(station, start_date, end_date, session=session)
+                    history_cache[cache_key] = history
+                try:
+                    rows.append(_summarize_event_weather(event, station, history))
+                    last_error = None
+                    break
+                except ValueError as exc:
+                    last_error = exc
+                    continue
+            if last_error is not None:
+                raise last_error
         df = pd.DataFrame(rows)
         source_mode = 'iem_asos_api'
     elif source_path is not None:

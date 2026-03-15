@@ -243,6 +243,13 @@
 - Still-blocked waters from the current refreshed evidence remain blocked plainly: **Lake Champlain, Clarks Hill Reservoir, Lake Eufaula, Sam Rayburn Reservoir, Kentucky Lake, Harris Chain, and Chickamauga Lake** all continue to show `no_daily_values` in the present coverage file, so they were **not** promoted.
 - Next most promising blocker / next step: widen the ranked-candidate search and/or alias set for the still-blocked lakes above, starting with the biggest row-yield clusters already represented by multiple tournaments: **Clarks Hill Reservoir (3 tournaments)** and **Sam Rayburn Reservoir (3 tournaments)**, then **Harris Chain (2 tournaments)** and **Chickamauga Lake (2 tournaments)**. Those clusters are the fastest remaining path to crossing the 16-row Phase 0 threshold once a real daily-value gauge is found.
 
+## 2026-03-15 08:46 America/Edmonton — fallback and coverage-guard follow-on
+- Added a guard to `evaluate_usgs_mapping_candidates()` so `recommended_by_coverage` is only set for rows with `usable_event_count > 0`; tournaments with only dead candidates no longer get a fake "recommended" row.
+- Added ranked IEM-station fallback in `castline/validation/collectors/weather.py`, so weather collection can try multiple plausible ASOS stations instead of failing after the top lexical match returns no rows.
+- Extended validation tests to cover both behaviors.
+- The approved mapping batch has also been expanded substantially in the working tree for the next push, including new attempts for Champlain, Clarks Hill, Hartwell, Sam Rayburn, Kentucky Lake, Harris Chain, and Chickamauga.
+- Active next move remains the same in spirit but sharper in practice: use these guards/fallbacks to attack blocked multi-tournament waters and push the guarded dataset past 16 usable rows.
+
 ## 2026-03-15 08:34 America/Edmonton — threshold-push lane launched
 - Spawned a focused sub-agent lane: `castline-threshold-push`.
 - Scope: promote any additional coverage-backed recommendations into the approved compact mapping batch, rerun the full real-data Phase 0 pipeline, and determine whether the usable-row count can finally clear the 16-row judgment threshold.

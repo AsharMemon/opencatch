@@ -2,7 +2,7 @@
 
 # CASTLINE implementation plan — source of truth
 
-_Last updated: 2026-03-15 08:18 America/Edmonton_
+_Last updated: 2026-03-15 08:46 America/Edmonton_
 
 ## Build posture
 
@@ -230,3 +230,4 @@ These remain important, but only after the thesis is being validated and the fir
 ## Immediate next action
 
 **Promote the new coverage-backed recommendations from `castline/validation/data/raw/bassmaster_usgs_mapping_coverage.csv` into the approved mapping batch, then rerun the full manifest-driven outcomes + USGS + IEM pipeline and record the first non-withheld thesis judgment once the usable-row threshold is met.**
+erun the full manifest-driven outcomes + USGS + IEM pipeline and record the first non-withheld thesis judgment once the usable-row threshold is met.**
