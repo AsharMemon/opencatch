@@ -100,13 +100,31 @@ The Bassmaster adapter also accepts the edited ranked review sheet directly as `
 
 The Bassmaster adapter uses the official Bassmaster WordPress API to discover `/results/` posts, downloads linked standings PDFs, extracts per-day competitor weights, and emits one normalized row per tournament day with median daily weight.
 
-6. Pull matching USGS daily-value history and derive event features:
+6. Before trusting a curated gauge batch, evaluate the ranked mapping suggestions against real USGS daily-value coverage:
+
+```bash
+python scripts/evaluate_usgs_mapping_coverage.py \
+  --outcomes castline/validation/data/raw/historical_outcomes.csv \
+  --suggestions castline/validation/data/raw/bassmaster_usgs_mapping_suggestions.csv \
+  --lookback-days 7
+```
+
+This writes `castline/validation/data/raw/bassmaster_usgs_mapping_coverage.csv`, which keeps the review-sheet metadata and adds real coverage signals per candidate:
+- `usable_event_count`
+- `usable_event_pct`
+- `coverage_statuses`
+- `recommended_by_coverage`
+- `recommended_usgs_site_id`
+
+Use it to replace mappings that looked plausible by name but do not actually return daily values for the tournament dates.
+
+7. Pull matching USGS daily-value history and derive event features:
 
 ```bash
 python scripts/collect_usgs_history.py --outcomes castline/validation/data/raw/historical_outcomes.csv --lookback-days 7
 ```
 
-6. Pull matching historical weather from IEM ASOS directly from the outcomes manifest:
+8. Pull matching historical weather from IEM ASOS directly from the outcomes manifest:
 
 ```bash
 python scripts/collect_weather_history.py --outcomes castline/validation/data/raw/historical_outcomes.csv

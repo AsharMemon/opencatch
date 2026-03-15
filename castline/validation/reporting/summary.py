@@ -44,23 +44,38 @@ def render_markdown_report(comparison: ValidationComparison, source_path: str | 
 def write_validation_summary(summary: ComparisonSummary, output_path: str | Path) -> Path:
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(
-        "\n".join(
+
+    lines = [
+        "# CASTLINE Phase 0 Validation Summary",
+        "",
+        "## Result",
+        f"- Judgment: **{summary.thesis_rating}**",
+        f"- Validation rows in assembled dataset: **{summary.row_count}**",
+        f"- Fully usable comparison rows: **{summary.usable_row_count}**",
+    ]
+    if summary.withheld_reason:
+        lines.extend(
             [
-                "# CASTLINE Phase 0 Validation Summary",
-                "",
-                "## Result",
-                f"- Judgment: **{summary.thesis_rating}**",
+                "- Thesis decision: **withheld pending more data**",
+                f"- Reason: {summary.withheld_reason}",
+            ]
+        )
+    else:
+        lines.extend(
+            [
                 f"- Baseline R²: **{summary.baseline_r2:.4f}**",
                 f"- Full-model R²: **{summary.full_r2:.4f}**",
                 f"- Improvement vs baseline: **{summary.improvement_pct:.2f}%**",
-                "",
-                "## Interpretation rubric",
-                "- <5% improvement => weak",
-                "- 5-15% improvement => viable",
-                "- >15% improvement => strong",
             ]
         )
-        + "\n"
+    lines.extend(
+        [
+            "",
+            "## Interpretation rubric",
+            "- <5% improvement => weak",
+            "- 5-15% improvement => viable",
+            "- >15% improvement => strong",
+        ]
     )
+    output_path.write_text("\n".join(lines) + "\n")
     return output_path

@@ -9,3 +9,6 @@ class ComparisonSummary:
     full_r2: float
     improvement_pct: float
     thesis_rating: str
+    row_count: int
+    usable_row_count: int
+    withheld_reason: str | None = None

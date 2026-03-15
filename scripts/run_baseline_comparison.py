@@ -19,10 +19,16 @@ def main() -> None:
         output_path=paths.artifacts / 'baseline_vs_full_report.json',
     )
     write_validation_summary(summary, paths.artifacts / 'validation_summary.md')
-    print(
-        f'baseline R2={summary.baseline_r2:.4f} full R2={summary.full_r2:.4f} '
-        f'improvement={summary.improvement_pct:.2f}% thesis={summary.thesis_rating}'
-    )
+    if summary.withheld_reason:
+        print(
+            f'thesis={summary.thesis_rating} rows={summary.usable_row_count}/{summary.row_count} '
+            f'reason={summary.withheld_reason}'
+        )
+    else:
+        print(
+            f'baseline R2={summary.baseline_r2:.4f} full R2={summary.full_r2:.4f} '
+            f'improvement={summary.improvement_pct:.2f}% thesis={summary.thesis_rating}'
+        )
 
 
 if __name__ == '__main__':

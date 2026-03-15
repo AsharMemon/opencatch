@@ -10,7 +10,7 @@ from castline.validation.collectors.outcomes import (
     export_curated_bassmaster_mappings,
     suggest_bassmaster_usgs_mappings,
 )
-from castline.validation.collectors.usgs import collect_usgs_history
+from castline.validation.collectors.usgs import collect_usgs_history, evaluate_usgs_mapping_candidates
 from castline.validation.collectors.weather import collect_weather_history
 from castline.validation.models.comparison import compare_models
 
@@ -46,7 +46,10 @@ def test_sample_pipeline(tmp_path):
     assert 'precip_24h_mm' in dataset.columns
     assert 'weather_stability_index' in dataset.columns
     assert report_path.exists()
-    assert summary.thesis_rating in {'weak', 'viable', 'strong'}
+    assert summary.thesis_rating in {'weak', 'viable', 'strong', 'insufficient_data'}
+    if summary.thesis_rating == 'insufficient_data':
+        assert summary.withheld_reason
+        assert summary.usable_row_count <= summary.row_count
 
 
 def test_weather_collection_from_source_manifest(tmp_path):
@@ -150,6 +153,170 @@ def test_real_iem_weather_collection_from_outcomes_manifest(tmp_path):
     assert row['cloud_cover_pct'] == 68.75
     assert row['precip_24h_mm'] == 2.54
     assert row['source_mode'] == 'iem_asos_api'
+
+
+
+def test_evaluate_usgs_mapping_candidates_prefers_sites_with_real_history(tmp_path, monkeypatch):
+    outcomes_source = tmp_path / 'source_outcomes.csv'
+    pd.DataFrame(
+        [
+            {
+                'event_id': 'evt-001',
+                'tournament_slug': 'tour-1',
+                'event_name': 'River Open Day 1',
+                'date': '2024-04-10',
+                'location': 'River Reach',
+                'species': 'smallmouth_bass',
+                'median_weight_lb': 15.2,
+                'baseline_signal': 0.48,
+                'usgs_site_id': '01646500',
+            },
+            {
+                'event_id': 'evt-002',
+                'tournament_slug': 'tour-1',
+                'event_name': 'River Open Day 2',
+                'date': '2024-04-11',
+                'location': 'River Reach',
+                'species': 'smallmouth_bass',
+                'median_weight_lb': 15.8,
+                'baseline_signal': 0.49,
+                'usgs_site_id': '01646500',
+            },
+            {
+                'event_id': 'evt-003',
+                'tournament_slug': 'tour-2',
+                'event_name': 'Lake Open Day 1',
+                'date': '2024-06-09',
+                'location': 'Lake Reach',
+                'species': 'smallmouth_bass',
+                'median_weight_lb': 17.1,
+                'baseline_signal': 0.51,
+                'usgs_site_id': '02600000',
+            },
+        ]
+    ).to_csv(outcomes_source, index=False)
+
+    normalized_outcomes = tmp_path / 'historical_outcomes.csv'
+    suggestions_path = tmp_path / 'mapping_suggestions.csv'
+    coverage_path = tmp_path / 'mapping_coverage.csv'
+    collect_historical_outcomes(normalized_outcomes, source_path=outcomes_source)
+    pd.DataFrame(
+        [
+            {
+                'tournament_slug': 'tour-1',
+                'candidate_rank': 1,
+                'suggested_usgs_site_id': '11111111',
+                'selected_usgs_site_id': '11111111',
+                'review_status': 'suggested',
+            },
+            {
+                'tournament_slug': 'tour-1',
+                'candidate_rank': 2,
+                'suggested_usgs_site_id': '22222222',
+                'selected_usgs_site_id': '',
+                'review_status': 'candidate',
+            },
+            {
+                'tournament_slug': 'tour-2',
+                'candidate_rank': 1,
+                'suggested_usgs_site_id': '33333333',
+                'selected_usgs_site_id': '33333333',
+                'review_status': 'suggested',
+            },
+        ]
+    ).to_csv(suggestions_path, index=False)
+
+    def fake_fetch(site_id: str, start_date: str, end_date: str, *, session=None, timeout: int = 30):
+        if site_id == '11111111':
+            return pd.DataFrame(columns=['date', 'water_temp_c', 'discharge_cfs', 'gage_height_ft', 'site_id'])
+        if site_id == '22222222':
+            return pd.DataFrame(
+                [
+                    {'date': pd.Timestamp('2024-04-09'), 'water_temp_c': 11.0, 'discharge_cfs': 100.0, 'gage_height_ft': 2.2, 'site_id': site_id},
+                    {'date': pd.Timestamp('2024-04-10'), 'water_temp_c': 12.5, 'discharge_cfs': 110.0, 'gage_height_ft': 2.4, 'site_id': site_id},
+                    {'date': pd.Timestamp('2024-04-11'), 'water_temp_c': 13.0, 'discharge_cfs': 120.0, 'gage_height_ft': 2.6, 'site_id': site_id},
+                ]
+            )
+        if site_id == '33333333':
+            return pd.DataFrame(
+                [
+                    {'date': pd.Timestamp('2024-06-08'), 'water_temp_c': 17.0, 'discharge_cfs': 210.0, 'gage_height_ft': 3.2, 'site_id': site_id},
+                    {'date': pd.Timestamp('2024-06-09'), 'water_temp_c': 17.4, 'discharge_cfs': 214.0, 'gage_height_ft': 3.3, 'site_id': site_id},
+                ]
+            )
+        raise AssertionError(f'unexpected site_id {site_id}')
+
+    monkeypatch.setattr('castline.validation.collectors.usgs.fetch_usgs_daily_values', fake_fetch)
+
+    df = evaluate_usgs_mapping_candidates(
+        outcomes_path=normalized_outcomes,
+        suggestions_path=suggestions_path,
+        output_path=coverage_path,
+        lookback_days=7,
+    )
+
+    assert coverage_path.exists()
+    recommended_tour_1 = df.loc[(df['tournament_slug'] == 'tour-1') & (df['recommended_by_coverage'])].iloc[0]
+    assert recommended_tour_1['suggested_usgs_site_id'] == '22222222'
+    assert recommended_tour_1['review_status'] == 'coverage-recommended'
+    assert recommended_tour_1['usable_event_count'] == 2
+
+    recommended_tour_2 = df.loc[(df['tournament_slug'] == 'tour-2') & (df['recommended_by_coverage'])].iloc[0]
+    assert recommended_tour_2['suggested_usgs_site_id'] == '33333333'
+    assert recommended_tour_2['usable_event_count'] == 1
+
+
+
+def test_real_usgs_collection_skips_events_with_no_history(tmp_path, monkeypatch):
+    outcomes_source = tmp_path / 'source_outcomes.csv'
+    pd.DataFrame(
+        [
+            {
+                'event_id': 'evt-001',
+                'event_name': 'River Open Day 1',
+                'date': '2024-04-10',
+                'location': 'River Reach',
+                'species': 'smallmouth_bass',
+                'median_weight_lb': 15.2,
+                'baseline_signal': 0.48,
+                'usgs_site_id': '01646500',
+            },
+            {
+                'event_id': 'evt-002',
+                'event_name': 'River Open Day 2',
+                'date': '2024-04-11',
+                'location': 'River Reach',
+                'species': 'smallmouth_bass',
+                'median_weight_lb': 15.8,
+                'baseline_signal': 0.49,
+                'usgs_site_id': '01646501',
+            },
+        ]
+    ).to_csv(outcomes_source, index=False)
+
+    normalized_outcomes = tmp_path / 'historical_outcomes.csv'
+    usgs_path = tmp_path / 'usgs_history.csv'
+    collect_historical_outcomes(normalized_outcomes, source_path=outcomes_source)
+
+    def fake_fetch(site_id: str, start_date: str, end_date: str, *, session=None, timeout: int = 30):
+        if site_id == '01646500':
+            return pd.DataFrame(
+                [
+                    {'date': pd.Timestamp('2024-04-09'), 'water_temp_c': 11.0, 'discharge_cfs': 100.0, 'gage_height_ft': 2.2, 'site_id': site_id},
+                    {'date': pd.Timestamp('2024-04-10'), 'water_temp_c': 12.5, 'discharge_cfs': 110.0, 'gage_height_ft': 2.4, 'site_id': site_id},
+                ]
+            )
+        return pd.DataFrame(columns=['date', 'water_temp_c', 'discharge_cfs', 'gage_height_ft', 'site_id'])
+
+    monkeypatch.setattr('castline.validation.collectors.usgs.fetch_usgs_daily_values', fake_fetch)
+
+    df = collect_usgs_history(usgs_path, outcomes_path=normalized_outcomes, lookback_days=7)
+
+    assert len(df) == 1
+    row = df.iloc[0]
+    assert row['event_id'] == 'evt-001'
+    assert row['site_id'] == 'USGS-01646500'
+    assert usgs_path.exists()
 
 
 
@@ -468,6 +635,272 @@ def test_export_curated_bassmaster_mappings_from_review_sheet(tmp_path):
             'species': 'black_bass',
         },
     ]
+
+
+
+def test_collect_historical_outcomes_skips_unparseable_bassmaster_pdf(tmp_path, monkeypatch):
+    mapping_path = tmp_path / 'bassmaster_mapping.csv'
+    pd.DataFrame(
+        [
+            {
+                'tournament_slug': '2024-bad-open',
+                'usgs_site_id': '01646500',
+                'species': 'smallmouth_bass',
+            },
+            {
+                'tournament_slug': '2024-good-open',
+                'usgs_site_id': '01646501',
+                'species': 'smallmouth_bass',
+            },
+        ]
+    ).to_csv(mapping_path, index=False)
+
+    tournament_search_payload = [
+        {
+            'id': 123,
+            'url': 'https://www.bassmaster.com/tournament/2024-bad-open/results/',
+            '_links': {
+                'self': [
+                    {'href': 'https://www.bassmaster.com/wp-json/wp/v2/tournament/123'}
+                ]
+            },
+        },
+        {
+            'id': 124,
+            'url': 'https://www.bassmaster.com/tournament/2024-good-open/results/',
+            '_links': {
+                'self': [
+                    {'href': 'https://www.bassmaster.com/wp-json/wp/v2/tournament/124'}
+                ]
+            },
+        },
+    ]
+    tournament_detail_payloads = {
+        'https://www.bassmaster.com/wp-json/wp/v2/tournament/123': {
+            'link': 'https://www.bassmaster.com/tournament/2024-bad-open/results/',
+            'title': {'rendered': 'Results'},
+            'content': {
+                'rendered': '<h2><a href="https://example.com/bad-open-day-1.pdf">LINK: TOURNAMENT RESULTS</a></h2>'
+            },
+            'meta': {},
+        },
+        'https://www.bassmaster.com/wp-json/wp/v2/tournament/124': {
+            'link': 'https://www.bassmaster.com/tournament/2024-good-open/results/',
+            'title': {'rendered': 'Results'},
+            'content': {
+                'rendered': '<h2><a href="https://example.com/good-open-day-2.pdf">LINK: TOURNAMENT RESULTS</a></h2>'
+            },
+            'meta': {},
+        },
+    }
+    tournament_parent_payloads = {
+        '2024-bad-open': [
+            {
+                'link': 'https://www.bassmaster.com/tournament/2024-bad-open/',
+                'title': {'rendered': '2024 Bad Open'},
+                'content': {'rendered': ''},
+                'meta': {
+                    'bassmaster_tournament_start_date': '2024-06-01',
+                    'bassmaster_tournament_body_of_water': 'Bad Lake',
+                    'bassmaster_tournament_city': 'Bad City',
+                    'bassmaster_tournament_state': 'MI',
+                },
+            }
+        ],
+        '2024-good-open': [
+            {
+                'link': 'https://www.bassmaster.com/tournament/2024-good-open/',
+                'title': {'rendered': '2024 Good Open'},
+                'content': {'rendered': ''},
+                'meta': {
+                    'bassmaster_tournament_start_date': '2024-06-06',
+                    'bassmaster_tournament_body_of_water': 'Good Lake',
+                    'bassmaster_tournament_city': 'Good City',
+                    'bassmaster_tournament_state': 'MI',
+                },
+            }
+        ],
+    }
+
+    class FakeResponse:
+        def __init__(self, payload=None, content: bytes = b'', status_code: int = 200):
+            self._payload = payload
+            self.content = content
+            self.status_code = status_code
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return self._payload
+
+    class FakeSession:
+        def get(self, url, params=None, timeout=30, headers=None):
+            if 'wp-json/wp/v2/search' in url:
+                if params and params.get('page') == 1:
+                    return FakeResponse(payload=tournament_search_payload)
+                return FakeResponse(payload=[])
+            if url in tournament_detail_payloads:
+                return FakeResponse(payload=tournament_detail_payloads[url])
+            if 'wp-json/wp/v2/tournament' in url and params and params.get('slug') in tournament_parent_payloads:
+                return FakeResponse(payload=tournament_parent_payloads[params['slug']])
+            if url in {'https://example.com/bad-open-day-1.pdf', 'https://example.com/good-open-day-2.pdf'}:
+                return FakeResponse(content=b'%PDF-1.4 fake bytes')
+            raise AssertionError(f'unexpected URL {url}')
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr('castline.validation.collectors.outcomes.requests.Session', lambda: FakeSession())
+
+    def fake_extract(pdf_bytes: bytes) -> float:
+        if pdf_bytes == b'%PDF-1.4 fake bytes':
+            if not hasattr(fake_extract, 'seen'):
+                fake_extract.seen = 0
+            fake_extract.seen += 1
+            if fake_extract.seen == 1:
+                raise ValueError('could not extract competitor daily weights from results PDF')
+            return 15.75
+        raise AssertionError('unexpected pdf bytes')
+
+    monkeypatch.setattr('castline.validation.collectors.outcomes._extract_median_weight_from_pdf', fake_extract)
+
+    output_path = tmp_path / 'historical_outcomes.csv'
+    df = collect_historical_outcomes(
+        output_path,
+        bassmaster_years=(2024, 2024),
+        mapping_path=mapping_path,
+    )
+
+    assert len(df) == 1
+    assert df.iloc[0]['event_id'] == '2024-good-open-day-2'
+    assert df.iloc[0]['usgs_site_id'] == '01646501'
+    assert output_path.exists()
+
+
+
+def test_collect_historical_outcomes_filters_to_curated_mappings(tmp_path, monkeypatch):
+    mapping_path = tmp_path / 'bassmaster_mapping.csv'
+    pd.DataFrame(
+        [
+            {
+                'tournament_slug': '2024-good-open',
+                'usgs_site_id': '01646501',
+                'species': 'smallmouth_bass',
+            }
+        ]
+    ).to_csv(mapping_path, index=False)
+
+    tournament_search_payload = [
+        {
+            'id': 123,
+            'url': 'https://www.bassmaster.com/tournament/2024-bad-open/results/',
+            '_links': {
+                'self': [
+                    {'href': 'https://www.bassmaster.com/wp-json/wp/v2/tournament/123'}
+                ]
+            },
+        },
+        {
+            'id': 124,
+            'url': 'https://www.bassmaster.com/tournament/2024-good-open/results/',
+            '_links': {
+                'self': [
+                    {'href': 'https://www.bassmaster.com/wp-json/wp/v2/tournament/124'}
+                ]
+            },
+        },
+    ]
+    tournament_detail_payloads = {
+        'https://www.bassmaster.com/wp-json/wp/v2/tournament/123': {
+            'link': 'https://www.bassmaster.com/tournament/2024-bad-open/results/',
+            'title': {'rendered': 'Results'},
+            'content': {
+                'rendered': '<h2><a href="https://example.com/bad-open-day-1.pdf">LINK: TOURNAMENT RESULTS</a></h2>'
+            },
+            'meta': {},
+        },
+        'https://www.bassmaster.com/wp-json/wp/v2/tournament/124': {
+            'link': 'https://www.bassmaster.com/tournament/2024-good-open/results/',
+            'title': {'rendered': 'Results'},
+            'content': {
+                'rendered': '<h2><a href="https://example.com/good-open-day-2.pdf">LINK: TOURNAMENT RESULTS</a></h2>'
+            },
+            'meta': {},
+        },
+    }
+    tournament_parent_payloads = {
+        '2024-bad-open': [
+            {
+                'link': 'https://www.bassmaster.com/tournament/2024-bad-open/',
+                'title': {'rendered': '2024 Bad Open'},
+                'content': {'rendered': ''},
+                'meta': {
+                    'bassmaster_tournament_start_date': '2024-06-01',
+                    'bassmaster_tournament_body_of_water': 'Bad Lake',
+                    'bassmaster_tournament_city': 'Bad City',
+                    'bassmaster_tournament_state': 'MI',
+                },
+            }
+        ],
+        '2024-good-open': [
+            {
+                'link': 'https://www.bassmaster.com/tournament/2024-good-open/',
+                'title': {'rendered': '2024 Good Open'},
+                'content': {'rendered': ''},
+                'meta': {
+                    'bassmaster_tournament_start_date': '2024-06-06',
+                    'bassmaster_tournament_body_of_water': 'Good Lake',
+                    'bassmaster_tournament_city': 'Good City',
+                    'bassmaster_tournament_state': 'MI',
+                },
+            }
+        ],
+    }
+
+    class FakeResponse:
+        def __init__(self, payload=None, content: bytes = b'', status_code: int = 200):
+            self._payload = payload
+            self.content = content
+            self.status_code = status_code
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return self._payload
+
+    class FakeSession:
+        def get(self, url, params=None, timeout=30, headers=None):
+            if 'wp-json/wp/v2/search' in url:
+                if params and params.get('page') == 1:
+                    return FakeResponse(payload=tournament_search_payload)
+                return FakeResponse(payload=[])
+            if url in tournament_detail_payloads:
+                return FakeResponse(payload=tournament_detail_payloads[url])
+            if 'wp-json/wp/v2/tournament' in url and params and params.get('slug') in tournament_parent_payloads:
+                return FakeResponse(payload=tournament_parent_payloads[params['slug']])
+            if url in {'https://example.com/bad-open-day-1.pdf', 'https://example.com/good-open-day-2.pdf'}:
+                return FakeResponse(content=b'%PDF-1.4 fake bytes')
+            raise AssertionError(f'unexpected URL {url}')
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr('castline.validation.collectors.outcomes.requests.Session', lambda: FakeSession())
+    monkeypatch.setattr('castline.validation.collectors.outcomes._extract_median_weight_from_pdf', lambda pdf_bytes: 15.75)
+
+    output_path = tmp_path / 'historical_outcomes.csv'
+    df = collect_historical_outcomes(
+        output_path,
+        bassmaster_years=(2024, 2024),
+        mapping_path=mapping_path,
+    )
+
+    assert len(df) == 1
+    assert df.iloc[0]['event_id'] == '2024-good-open-day-2'
+    assert df.iloc[0]['usgs_site_id'] == '01646501'
+    assert output_path.exists()
 
 
 

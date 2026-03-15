@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import re
+import sys
 from dataclasses import dataclass
 from datetime import timedelta
 from io import BytesIO
@@ -639,7 +640,14 @@ def _collect_bassmaster_outcomes(
         for tournament in tournaments:
             response = session.get(tournament.results_pdf_url, timeout=30, headers=DEFAULT_HEADERS)
             response.raise_for_status()
-            median_weight_lb = _extract_median_weight_from_pdf(response.content)
+            try:
+                median_weight_lb = _extract_median_weight_from_pdf(response.content)
+            except Exception as exc:
+                print(
+                    f"warning: skipping Bassmaster PDF for {tournament.tournament_slug} ({tournament.results_pdf_url}): {exc}",
+                    file=sys.stderr,
+                )
+                continue
             day_number = _extract_day_from_pdf_url(tournament.results_pdf_url)
             event_date = (tournament.start_date + timedelta(days=day_number - 1)).strftime('%Y-%m-%d')
             rows.append(
@@ -667,6 +675,14 @@ def _collect_bassmaster_outcomes(
         outcomes = outcomes.merge(mapping, on='tournament_slug', how='left', suffixes=('', '_mapping'))
         outcomes['species'] = outcomes['species_mapping'].where(outcomes['species_mapping'].notna() & outcomes['species_mapping'].ne(''), outcomes['species'])
         outcomes = outcomes.drop(columns=['species_mapping'])
+        mapped_mask = outcomes['usgs_site_id'].notna() & outcomes['usgs_site_id'].astype(str).str.strip().ne('')
+        skipped = outcomes.loc[~mapped_mask, 'tournament_slug'].dropna().astype(str).unique().tolist()
+        if skipped:
+            print(
+                'warning: skipping unmapped Bassmaster tournaments from curated batch: ' + ', '.join(sorted(skipped)),
+                file=sys.stderr,
+            )
+        outcomes = outcomes.loc[mapped_mask].reset_index(drop=True)
     if 'usgs_site_id' not in outcomes.columns:
         outcomes['usgs_site_id'] = ''
 

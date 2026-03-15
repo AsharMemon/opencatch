@@ -2,7 +2,7 @@
 
 # CASTLINE implementation plan — source of truth
 
-_Last updated: 2026-03-15 06:15 America/Edmonton_
+_Last updated: 2026-03-15 07:42 America/Edmonton_
 
 ## Build posture
 
@@ -110,7 +110,8 @@ Current sub-status:
 - Bassmaster event discovery now uses the WordPress search endpoint plus parent-tournament lookups, restoring the path to live tournament discovery after the results-index query stopped returning rows
 - direct IEM ASOS weather collection now exists from the outcomes manifest, including state-network station selection and per-event weather summaries
 - the ranked mapping review sheet can now be exported into the compact mapping CSV the Bassmaster outcomes collector consumes, and the collector also accepts the edited review sheet directly
-- next gap is curating a first real mapped tournament batch at useful scale, then running the first real-data comparison judgment
+- coverage validation tooling now exists to score ranked USGS candidates against real daily-value availability for the actual tournament dates
+- the first guarded real-data run is still withheld because only Lake Murray currently returns usable USGS history in the curated batch; the immediate job is repairing coverage with the new report, not doing more blind mapping churn
 
 Deliverables:
 - validation-first repository structure
@@ -227,5 +228,4 @@ These remain important, but only after the thesis is being validated and the fir
 
 ## Immediate next action
 
-**Run the manifest-driven USGS + IEM collectors on the first curated Bassmaster→USGS mapping batch and produce the first real-data thesis judgment; expand mapping coverage only if the initial run is too thin or too noisy to trust.**
-n run the manifest-driven USGS + IEM collectors and produce the first real-data thesis judgment.**
+**Use `castline/validation/data/raw/bassmaster_usgs_mapping_coverage.csv` to replace non-working approved gauges with coverage-backed candidates, then rerun the manifest-driven outcomes + USGS + IEM pipeline and record the first non-withheld thesis judgment once the usable-row threshold is met.**
