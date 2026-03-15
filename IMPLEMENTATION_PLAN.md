@@ -2,7 +2,7 @@
 
 # CASTLINE implementation plan — source of truth
 
-_Last updated: 2026-03-15 07:42 America/Edmonton_
+_Last updated: 2026-03-15 08:18 America/Edmonton_
 
 ## Build posture
 
@@ -111,7 +111,8 @@ Current sub-status:
 - direct IEM ASOS weather collection now exists from the outcomes manifest, including state-network station selection and per-event weather summaries
 - the ranked mapping review sheet can now be exported into the compact mapping CSV the Bassmaster outcomes collector consumes, and the collector also accepts the edited review sheet directly
 - coverage validation tooling now exists to score ranked USGS candidates against real daily-value availability for the actual tournament dates
-- the first guarded real-data run is still withheld because only Lake Murray currently returns usable USGS history in the curated batch; the immediate job is repairing coverage with the new report, not doing more blind mapping churn
+- the Bassmaster→USGS suggester now retries USGS-friendly aliases / normalized water-body names, which removed the zero-candidate tournament set in the live 2024-2025 review sheet
+- rerunning the live review + coverage pass increased coverage-backed tournaments from 1 to 4; the remaining job is promoting those recommendations into the approved mapping batch and pushing the guarded end-to-end dataset past the minimum-row threshold
 
 Deliverables:
 - validation-first repository structure
@@ -228,4 +229,4 @@ These remain important, but only after the thesis is being validated and the fir
 
 ## Immediate next action
 
-**Use `castline/validation/data/raw/bassmaster_usgs_mapping_coverage.csv` to replace non-working approved gauges with coverage-backed candidates, then rerun the manifest-driven outcomes + USGS + IEM pipeline and record the first non-withheld thesis judgment once the usable-row threshold is met.**
+**Promote the new coverage-backed recommendations from `castline/validation/data/raw/bassmaster_usgs_mapping_coverage.csv` into the approved mapping batch, then rerun the full manifest-driven outcomes + USGS + IEM pipeline and record the first non-withheld thesis judgment once the usable-row threshold is met.**
