@@ -96,6 +96,21 @@ USGS_SITE_SERVICE_URL = 'https://waterservices.usgs.gov/nwis/site/'
 DEFAULT_HEADERS = {'User-Agent': 'Mozilla/5.0 (CASTLINE validation collector)'}
 DEFAULT_BASSMASTER_SPECIES = 'black_bass'
 DEFAULT_SITE_TYPES = ('LK', 'ST', 'ST-CA', 'ST-DCH', 'ES')
+INTERSTATE_SEARCH_STATE_OVERRIDES: dict[tuple[str, str], tuple[str, ...]] = {
+    ('clarks hill reservoir', 'GA'): ('SC',),
+    ('lake hartwell', 'SC'): ('GA',),
+    ('kentucky lake', 'TN'): ('KY',),
+    ('lake eufaula', 'AL'): ('GA',),
+}
+WATER_BODY_ALIASES: dict[str, tuple[str, ...]] = {
+    'clarks hill reservoir': ('Clarks Hill', 'Strom Thurmond', 'Thurmond Lake', 'Savannah River'),
+    'lake hartwell': ('Hartwell',),
+    'sam rayburn reservoir': ('Sam Rayburn',),
+    'grand lake': ("Lake O' the Cherokees", 'Lake O', 'Neosho River'),
+    'lake eufaula': ('Walter F. George', 'Walter F George Reservoir', 'Chattahoochee River'),
+    'harris chain': ('Lake Harris', 'Lake Eustis', 'Apopka', 'Beauclair'),
+    'kentucky lake': ('Kentucky Dam', 'Barkley', 'Tennessee River'),
+}
 
 
 @dataclass(slots=True)
@@ -313,10 +328,20 @@ def _fetch_bassmaster_results_index(
 
 _ROW_PATTERN = re.compile(r'^(\d+)\s+(\d)(\d+)-\s*(\d+)\s+(\d)(\d+)-\s*(\d+)', re.MULTILINE)
 _INLINE_ROW_PATTERN = re.compile(r'(?:^|\b)(\d{1,3})\s+(\d{2,3}-\s*\d{1,2})\s+(\d{2,4}-\s*\d{1,2})')
+_DENSE_ROW_PATTERN = re.compile(r'(?<=[A-Z]{2}\s)(\d{3,4})-\s*(\d{1,2})\s+(\d{3,5})-\s*(\d{1,2})(?=\s+\d+\s+\d+\s+\d+|\s+\d+[A-Z]|$)')
 
 
 def _weight_to_pounds(pounds: str, ounces: str) -> float:
     return int(pounds) + (int(ounces) / 16.0)
+
+
+def _parse_dense_weight_token(token: str) -> tuple[int, int]:
+    cleaned = str(token).strip()
+    if len(cleaned) == 3:
+        return int(cleaned[0]), int(cleaned[1:])
+    if len(cleaned) == 4:
+        return int(cleaned[:2]), int(cleaned[2:])
+    raise ValueError(f'unexpected dense weight token: {token}')
 
 
 def _extract_weight_candidates(text: str) -> list[float]:
@@ -329,14 +354,22 @@ def _extract_weight_candidates(text: str) -> list[float]:
         return weights
 
     compact_text = re.sub(r'\s+', ' ', text)
-    weights: list[float] = []
+    weights = []
     for match in _INLINE_ROW_PATTERN.finditer(compact_text):
         today_token = match.group(2)
         fish_count = int(today_token[0])
         pounds_part, ounces_part = today_token[1:].split('-', 1)
         if fish_count >= 0:
             weights.append(_weight_to_pounds(pounds_part.strip(), ounces_part.strip()))
-    return weights
+    if weights:
+        return weights
+
+    dense_weights: list[float] = []
+    for match in _DENSE_ROW_PATTERN.finditer(compact_text):
+        fish_count, pounds = _parse_dense_weight_token(match.group(1))
+        if fish_count >= 0:
+            dense_weights.append(_weight_to_pounds(str(pounds), match.group(2)))
+    return dense_weights
 
 
 def _extract_median_weight_from_pdf(pdf_bytes: bytes) -> float:
@@ -387,6 +420,54 @@ def _parse_rdb_table(text: str) -> pd.DataFrame:
     return pd.read_csv(StringIO('\n'.join([lines[0], *lines[2:]])), sep='\t', dtype=str).fillna('')
 
 
+def _build_usgs_site_queries(water_body: str) -> list[str]:
+    normalized = ' '.join(str(water_body or '').split())
+    if not normalized:
+        return []
+
+    candidates = [normalized]
+    lowered = normalized.lower()
+    if lowered.startswith('lake '):
+        candidates.append(normalized[5:])
+    if lowered.endswith(' reservoir'):
+        candidates.append(normalized[:-10])
+    if lowered.endswith(' lake'):
+        candidates.append(normalized[:-5])
+
+    for alias in WATER_BODY_ALIASES.get(lowered, ()): 
+        candidates.append(alias)
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        cleaned = ' '.join(str(candidate or '').split())
+        if not cleaned:
+            continue
+        key = cleaned.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(cleaned)
+    return deduped
+
+
+def _build_usgs_search_states(water_body: str, state: str) -> list[str]:
+    primary = _normalize_state_code(state)
+    if not primary:
+        return []
+    normalized_water_body = ' '.join(str(water_body or '').split()).lower()
+    states = [primary, *INTERSTATE_SEARCH_STATE_OVERRIDES.get((normalized_water_body, primary), ())]
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for code in states:
+        normalized_code = _normalize_state_code(code)
+        if not normalized_code or normalized_code in seen:
+            continue
+        seen.add(normalized_code)
+        deduped.append(normalized_code)
+    return deduped
+
+
 def _score_site_match(*, water_body: str, city: str, station_name: str, site_type: str) -> float:
     water_tokens = _tokenize_location_text(water_body)
     city_tokens = _tokenize_location_text(city)
@@ -400,28 +481,74 @@ def _score_site_match(*, water_body: str, city: str, station_name: str, site_typ
     return score
 
 
-def _fetch_usgs_site_candidates(*, water_body: str, state: str, session: requests.Session, timeout: int = 30) -> pd.DataFrame:
+def _water_body_query_variants(*, water_body: str, city: str = '') -> list[str]:
+    cleaned_water_body = re.sub(r'\s+', ' ', str(water_body or '').strip())
+    if not cleaned_water_body:
+        return []
+
+    variants: list[str] = [cleaned_water_body]
+    lowered = cleaned_water_body.lower()
+
+    alias_values = WATER_BODY_ALIASES.get(lowered, ())
+    variants.extend(alias_values)
+
+    stripped = re.sub(r'\b(Lake|Reservoir)\b', '', cleaned_water_body, flags=re.IGNORECASE)
+    stripped = re.sub(r'\s+', ' ', stripped).strip(' ,')
+    if stripped and stripped.lower() != lowered:
+        variants.append(stripped)
+
+    if city:
+        variants.append(f'{cleaned_water_body} {city}'.strip())
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for value in variants:
+        normalized = re.sub(r'\s+', ' ', str(value or '').strip())
+        key = normalized.lower()
+        if not normalized or key in seen:
+            continue
+        seen.add(key)
+        deduped.append(normalized)
+    return deduped
+
+
+def _fetch_usgs_site_candidates(*, water_body: str, state: str, session: requests.Session, city: str = '', timeout: int = 30) -> pd.DataFrame:
     state_code = _normalize_state_code(state)
     if not water_body or not state_code:
         return pd.DataFrame()
 
-    response = session.get(
-        USGS_SITE_SERVICE_URL,
-        params={
-            'format': 'rdb',
-            'siteStatus': 'all',
-            'stateCd': state_code,
-            'siteType': ','.join(DEFAULT_SITE_TYPES),
-            'siteOutput': 'expanded',
-            'siteName': water_body,
-        },
-        headers=DEFAULT_HEADERS,
-        timeout=timeout,
-    )
-    if response.status_code == 404:
+    frames: list[pd.DataFrame] = []
+    for query in _water_body_query_variants(water_body=water_body, city=city):
+        response = session.get(
+            USGS_SITE_SERVICE_URL,
+            params={
+                'format': 'rdb',
+                'siteStatus': 'all',
+                'stateCd': state_code,
+                'siteType': ','.join(DEFAULT_SITE_TYPES),
+                'siteOutput': 'expanded',
+                'siteName': query,
+            },
+            headers=DEFAULT_HEADERS,
+            timeout=timeout,
+        )
+        if response.status_code == 404:
+            continue
+        response.raise_for_status()
+        parsed = _parse_rdb_table(response.text)
+        if parsed.empty:
+            continue
+        parsed = parsed.copy()
+        parsed['query_site_name'] = query
+        frames.append(parsed)
+        break
+
+    if not frames:
         return pd.DataFrame()
-    response.raise_for_status()
-    return _parse_rdb_table(response.text)
+
+    combined = pd.concat(frames, ignore_index=True)
+    combined = combined.drop_duplicates(subset=['site_no']).reset_index(drop=True)
+    return combined
 
 
 def suggest_bassmaster_usgs_mappings(
@@ -448,6 +575,7 @@ def suggest_bassmaster_usgs_mappings(
                 candidates = _fetch_usgs_site_candidates(
                     water_body=tournament.water_body,
                     state=tournament.state,
+                    city=tournament.city,
                     session=session,
                 )
                 candidate_cache[cache_key] = candidates
@@ -564,14 +692,35 @@ def _extract_mapping_from_review_sheet(mapping: pd.DataFrame) -> pd.DataFrame:
         working['review_status'] = ''
     if 'candidate_rank' not in working.columns:
         working['candidate_rank'] = ''
+    if 'recommended_by_coverage' not in working.columns:
+        working['recommended_by_coverage'] = ''
+    if 'usable_event_count' not in working.columns:
+        working['usable_event_count'] = ''
 
     working['review_status'] = working['review_status'].astype(str).str.strip().str.lower()
     working['selected_usgs_site_id'] = working['selected_usgs_site_id'].astype(str).str.replace('USGS-', '', regex=False).str.strip()
     working['suggested_usgs_site_id'] = working['suggested_usgs_site_id'].astype(str).str.replace('USGS-', '', regex=False).str.strip()
     working['candidate_rank'] = pd.to_numeric(working['candidate_rank'], errors='coerce')
+    working['recommended_by_coverage'] = working['recommended_by_coverage'].astype(str).str.strip().str.lower().isin({'true', '1', 'yes'})
+    working['usable_event_count'] = pd.to_numeric(working['usable_event_count'], errors='coerce').fillna(0).astype(int)
 
-    approved_statuses = {'approved', 'selected', 'confirmed', 'locked'}
+    coverage_rows = working.loc[
+        working['selected_usgs_site_id'].eq('')
+        & working['recommended_by_coverage']
+        & working['usable_event_count'].gt(0)
+        & working['suggested_usgs_site_id'].ne('')
+    ].copy()
+    if not coverage_rows.empty:
+        coverage_rows['selected_usgs_site_id'] = coverage_rows['suggested_usgs_site_id']
+        coverage_rows['review_status'] = coverage_rows['review_status'].where(
+            coverage_rows['review_status'].ne(''),
+            'coverage-recommended',
+        )
+
+    approved_statuses = {'approved', 'selected', 'confirmed', 'locked', 'coverage-recommended'}
     selected_rows = working.loc[working['selected_usgs_site_id'].ne('')].copy()
+    if not coverage_rows.empty:
+        selected_rows = pd.concat([selected_rows, coverage_rows], ignore_index=True)
     approved_rows = working.loc[
         working['selected_usgs_site_id'].eq('')
         & working['review_status'].isin(approved_statuses)

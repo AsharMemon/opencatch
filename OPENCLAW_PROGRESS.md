@@ -198,3 +198,35 @@
 - Current real-data finding: Lake Murray still has the only coverage-backed usable gauge in the approved batch; Douglas Lake, Saginaw Bay, and the current Okeechobee picks all still show `no_daily_values`, so the blocker is now explicit and evidence-backed instead of guesswork.
 - Immediate next step: use the coverage report to swap in working candidates or broaden those tournaments' candidate sets, then rerun the guarded validation pipeline.
 
+## 2026-03-15 08:18 America/Edmonton — alias-backed USGS candidate expansion handoff
+- Started and completed a new validation feature lane: **broaden live Bassmaster→USGS candidate discovery for zero-hit water bodies**.
+- Extended `castline/validation/collectors/outcomes.py` so the USGS site matcher now tries normalized water-body variants plus explicit aliases for problem waters (Hartwell, Sam Rayburn, Clarks Hill, Grand Lake, Lake Eufaula, Harris Chain, Kentucky Lake) instead of giving up after a single raw `siteName` query.
+- Added regression tests for query-variant generation and alias fallback behavior; validation suite now passes with `.venv/bin/python -m pytest castline/validation/tests/test_pipeline.py castline/validation/tests/test_evaluate.py` ✅ (20 passed).
+- Re-ran `scripts/suggest_bassmaster_mappings.py --bassmaster-start-year 2024 --bassmaster-end-year 2025 --top-n 3` and eliminated the live zero-candidate tournament set from **12 down to 0**.
+- Re-ran `collect_historical_outcomes.py` against the updated review sheet and `evaluate_usgs_mapping_coverage.py`; the live coverage report now shows **4 tournaments with coverage-backed usable recommendations** (up from 1): Lake Murray plus Arkansas River, Grand Lake, and Mississippi River.
+- Important execution note: I spawned a side sub-agent for the same research lane, but killed it before completion once it drifted into duplicate/conflicting edits. It did not close, and the landed patch/work above is from the main implementation lane.
+- Immediate next step: promote the new coverage-backed recommendations into the approved mapping batch, then rerun the full guarded outcomes + USGS + IEM comparison pipeline to see whether the usable-row count clears the thesis-judgment threshold.
+
+## 2026-03-15 08:12 America/Edmonton — coverage-guided remap lane launched
+- Spawned a focused sub-agent lane: `castline-coverage-guided-remap`.
+- Scope: use `castline/validation/data/raw/bassmaster_usgs_mapping_coverage.csv` to replace dead approved gauges with coverage-backed candidates, rerun the real-data Phase 0 pipeline, and report whether row counts improve beyond the current 8-row assembled dataset baseline.
+
+## 2026-03-15 08:32 America/Edmonton — coverage-guided remap lane handoff
+- Hardened the approved-mapping workflow in `castline/validation/collectors/outcomes.py`: `export_curated_bassmaster_mappings()` / review-sheet extraction now auto-promotes rows that are both `recommended_by_coverage=true` and `usable_event_count>0`, so future compact mapping exports prefer coverage-backed working gauges over dead approved picks.
+- Fixed a second trust issue in the real-data lane: Bassmaster B.A.S.S. Nation result PDFs were parsable but our weight extractor missed their denser row format. Added a dense-row fallback parser plus regression tests, which unlocked the Arkansas River and Mississippi River outcome rows instead of silently dropping them.
+- Mappings changed in this lane:
+  - **Workflow change only, not a new compact-file edit:** the compact mapping batch already carried the repaired surrogate gauges for **Douglas Lake → 03467609**, **Saginaw Bay → 04157060**, and **Lake Okeechobee → 02292010**; this lane made the export path prefer evidence-backed rows automatically instead of trusting stale review-sheet approvals.
+  - Coverage-backed swaps now supported directly from evaluated review sheets: **Arkansas River → 07194500** and **Mississippi River → 05344500** when exporting from a coverage-evaluated sheet.
+- Previously dead gauges repaired vs still blocked from the evidence in play:
+  - **Repaired in the approved compact batch and validated end-to-end:** Douglas Lake, Saginaw Bay, Lake Okeechobee.
+  - **Newly unlocked by parser + coverage-backed workflow:** Arkansas River, Mississippi River.
+  - **Still blocked in the coverage report / not yet promoted into the approved compact batch:** Lake Champlain still shows only dead evaluated candidates; Grand Lake has a coverage-backed recommendation in the refreshed report but is not yet in the compact approved batch from this lane; Clarks Hill, Lake Eufaula, Sam Rayburn, Harris Chain, Chickamauga, and Kentucky Lake still show no usable daily-value candidate in the current evaluated rows.
+- Reran the guarded real-data pipeline against the compact approved mapping file:
+  - outcomes: **10** rows
+  - USGS: **10** rows
+  - weather: **10** rows
+  - assembled dataset: **10** rows / **10** usable rows
+  - prior assembled baseline was **8** rows, so the lane improved the measured dataset by **+2 rows**.
+- Thesis status: **still withheld**, not yet judgment-ready. Current report remains `insufficient_data` because the lane improved the dataset to 10 rows but the threshold is still 16 fully populated rows.
+- Next blocker / next step: promote the refreshed coverage-backed recommendations from the expanded suggestion+coverage sheets into the compact approved mapping batch without regressing the existing Douglas/Saginaw/Okeechobee surrogate fixes, then keep attacking blocked waters (especially Lake Champlain / Clarks Hill / Sam Rayburn / Kentucky Lake / Harris Chain) until the dataset clears the 16-row minimum.
+

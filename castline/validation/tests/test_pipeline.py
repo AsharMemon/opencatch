@@ -6,6 +6,8 @@ import requests
 from castline.validation.assembly.dataset import assemble_validation_dataset
 from castline.validation.collectors.outcomes import (
     _extract_weight_candidates,
+    _fetch_usgs_site_candidates,
+    _water_body_query_variants,
     collect_historical_outcomes,
     export_curated_bassmaster_mappings,
     suggest_bassmaster_usgs_mappings,
@@ -26,6 +28,21 @@ def test_inline_bassmaster_weight_extraction_handles_compact_pdf_text():
     weights = _extract_weight_candidates(text)
 
     assert weights == [20.625, 21.4375, 19.8125]
+
+
+
+def test_inline_bassmaster_weight_extraction_handles_dense_bass_nation_pdf_text():
+    text = (
+        '2024 Mercury B.A.S.S. Nation Qualifier at Arkansas River presented by Lowrance '
+        'Today\'s ActivityNameCity, State# FishLbs - OzAccumulativeLbs - Oz# Live# FishPTS# Live '
+        '1Chris JohnsonFarmington, AR 513-14 1551- 3 0 5 15 '
+        '2Blake CappsMuskogee, OK 516-13 1549-10 0 5 15 '
+        '3Jeremy NorrisAma, LA 514- 4 1546-15 0 5 15'
+    )
+
+    weights = _extract_weight_candidates(text)
+
+    assert weights == [13.875, 16.8125, 14.25]
 
 
 
@@ -432,7 +449,7 @@ USGS	04156800	BAY COUNTY LAKE MONITOR AT SAGINAW BAY	LK
                 return FakeResponse(payload=tournament_parent_payload)
             if 'waterservices.usgs.gov/nwis/site/' in url:
                 assert params['stateCd'] == 'MI'
-                assert params['siteName'] == 'Saginaw Bay'
+                assert 'Saginaw Bay' in params['siteName']
                 return FakeResponse(text=usgs_rdb)
             raise AssertionError(f'unexpected URL {url}')
 
@@ -555,9 +572,58 @@ def test_bassmaster_results_index_stops_cleanly_on_wordpress_page_overflow(tmp_p
     assert df.iloc[0]['tournament_slug'] == '2024-test-open'
 
 
-def test_usgs_site_candidate_404_returns_empty_dataframe():
-    from castline.validation.collectors.outcomes import _fetch_usgs_site_candidates
+def test_water_body_query_variants_include_aliases_and_normalized_forms():
+    variants = _water_body_query_variants(water_body='Sam Rayburn Reservoir', city='Jasper')
 
+    assert variants[0] == 'Sam Rayburn Reservoir'
+    assert 'Sam Rayburn' in variants
+    assert 'Sam Rayburn Reservoir Jasper' in variants
+    assert len(variants) == len(set(value.lower() for value in variants))
+
+
+
+def test_usgs_site_candidate_fetch_tries_aliases_until_it_finds_matches():
+    class FakeResponse:
+        def __init__(self, text: str = '', status_code: int = 200):
+            self.text = text
+            self.status_code = status_code
+
+        def raise_for_status(self):
+            return None
+
+    calls: list[str] = []
+    usgs_rdb = """# ----------------------------------
+# Data provided for test
+agency_cd\tsite_no\tstation_nm\tsite_tp_cd
+5s\t15s\t50s\t7s
+USGS\t08038490\tSam Rayburn Res nr Zavalla, TX\tLK
+USGS\t08039300\tSam Rayburn Res nr Jasper, TX\tLK
+"""
+
+    class FakeSession:
+        def get(self, url, params=None, timeout=30, headers=None):
+            calls.append(params['siteName'])
+            if params['siteName'] == 'Sam Rayburn Reservoir':
+                return FakeResponse(text='')
+            if params['siteName'] == 'Sam Rayburn':
+                return FakeResponse(text=usgs_rdb)
+            raise AssertionError(f"unexpected siteName {params['siteName']}")
+
+    df = _fetch_usgs_site_candidates(
+        water_body='Sam Rayburn Reservoir',
+        city='Jasper',
+        state='TX',
+        session=FakeSession(),
+    )
+
+    assert calls[:2] == ['Sam Rayburn Reservoir', 'Sam Rayburn']
+    assert len(df) == 2
+    assert df.iloc[0]['query_site_name'] == 'Sam Rayburn'
+    assert set(df['site_no']) == {'08038490', '08039300'}
+
+
+
+def test_usgs_site_candidate_404_returns_empty_dataframe():
     class FakeResponse:
         status_code = 404
         text = ''
@@ -634,6 +700,46 @@ def test_export_curated_bassmaster_mappings_from_review_sheet(tmp_path):
             'usgs_site_id': '02276400',
             'species': 'black_bass',
         },
+    ]
+
+
+
+def test_export_curated_bassmaster_mappings_prefers_coverage_backed_candidate(tmp_path):
+    review_sheet_path = tmp_path / 'mapping_coverage.csv'
+    pd.DataFrame(
+        [
+            {
+                'tournament_slug': '2024-douglas-lake',
+                'candidate_rank': 1,
+                'suggested_usgs_site_id': '03468500',
+                'selected_usgs_site_id': '',
+                'review_status': 'suggested',
+                'recommended_by_coverage': False,
+                'usable_event_count': 0,
+                'species': 'black_bass',
+            },
+            {
+                'tournament_slug': '2024-douglas-lake',
+                'candidate_rank': 2,
+                'suggested_usgs_site_id': '03467609',
+                'selected_usgs_site_id': '',
+                'review_status': 'coverage-recommended',
+                'recommended_by_coverage': True,
+                'usable_event_count': 1,
+                'species': 'black_bass',
+            },
+        ]
+    ).to_csv(review_sheet_path, index=False)
+
+    output_path = tmp_path / 'bassmaster_mapping.csv'
+    df = export_curated_bassmaster_mappings(review_sheet_path=review_sheet_path, output_path=output_path)
+
+    assert df.to_dict(orient='records') == [
+        {
+            'tournament_slug': '2024-douglas-lake',
+            'usgs_site_id': '03467609',
+            'species': 'black_bass',
+        }
     ]
 
 

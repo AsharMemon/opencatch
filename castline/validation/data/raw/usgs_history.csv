@@ -3,6 +3,8 @@ event_id,site_id,observation_date,water_temp_c,discharge_cfs,gage_height_ft,temp
 2024-strike-king-bassmaster-college-series-at-douglas-lake-presented-by-bass-pro-shops-day-2,USGS-03467609,2024-03-08,0.0,8620.0,12.87,0.0,13.570487483530963,usgs_daily_values
 2024-bassmaster-high-school-series-at-douglas-lake-day-1,USGS-03467609,2024-03-10,0.0,8300.0,12.69,0.0,31.955484896661368,usgs_daily_values
 2024-bassmaster-junior-series-at-douglas-lake-day-1,USGS-03467609,2024-03-10,0.0,8300.0,12.69,0.0,31.955484896661368,usgs_daily_values
+2024-b-a-s-s-nation-central-qualifier-at-arkansas-river-day-3,USGS-07194500,2024-04-05,0.0,11500.0,0.0,0.0,-7.258064516129033,usgs_daily_values
+2024-b-a-s-s-nation-northern-qualifier-at-mississippi-river-day-1,USGS-05344500,2024-05-08,0.0,62700.0,0.0,0.0,1.7857142857142856,usgs_daily_values
 2024-strike-king-bassmaster-college-series-at-saginaw-bay-presented-by-bass-pro-shops-day-2,USGS-04157060,2024-06-07,0.0,2920.0,0.0,0.0,-0.6802721088435374,usgs_daily_values
 2024-bassmaster-high-school-series-at-saginaw-bay-day-1,USGS-04157060,2024-06-09,0.0,2160.0,0.0,0.0,-45.17766497461929,usgs_daily_values
 2024-bassmaster-junior-series-at-saginaw-bay-day-1,USGS-04157060,2024-06-09,0.0,2160.0,0.0,0.0,-45.17766497461929,usgs_daily_values
