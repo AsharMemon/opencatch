@@ -1,7 +1,9 @@
-event_id,air_temp_c,pressure_mb,wind_speed_kph,cloud_cover_pct,precip_24h_mm,source_mode
-sample-001,17.0,1007.0,12.0,64.0,4.2,sample
-sample-002,18.0,1005.0,10.0,58.0,2.5,sample
-sample-003,23.0,1011.0,9.0,32.0,0.0,sample
-sample-004,24.0,1009.0,11.0,44.0,1.3,sample
-sample-005,21.0,1004.0,18.0,72.0,8.7,sample
-sample-006,20.0,1006.0,13.0,61.0,3.1,sample
+event_id,air_temp_c,pressure_mb,wind_speed_kph,cloud_cover_pct,precip_24h_mm,iem_station,source_mode
+2024-bassmaster-high-school-series-at-douglas-lake-day-1,6.7465,,19.8503,79.0493,3.81,0A9,iem_asos_api
+2024-bassmaster-high-school-series-at-saginaw-bay-day-1,17.0131,1007.3522,13.9895,64.868,68.58,DET,iem_asos_api
+2024-bassmaster-junior-series-at-douglas-lake-day-1,6.7465,,19.8503,79.0493,3.81,0A9,iem_asos_api
+2024-bassmaster-junior-series-at-saginaw-bay-day-1,17.0131,1007.3522,13.9895,64.868,68.58,DET,iem_asos_api
+2024-strike-king-bassmaster-college-series-at-douglas-lake-presented-by-bass-pro-shops-day-2,13.1389,,9.9288,50.0,0.508,0A9,iem_asos_api
+2024-strike-king-bassmaster-college-series-at-lake-murray-presented-by-bass-pro-shops-day-2,17.8472,1018.1,3.5437,47.2266,29.718,CAE,iem_asos_api
+2024-strike-king-bassmaster-college-series-at-saginaw-bay-presented-by-bass-pro-shops-day-2,19.9074,1004.3208,18.0782,85.9325,0.0,DET,iem_asos_api
+2025-bassmaster-college-series-at-lake-okeechobee-day-1,16.7994,,7.3308,15.625,0.0,2IS,iem_asos_api

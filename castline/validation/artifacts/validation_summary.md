@@ -1,10 +1,11 @@
 # CASTLINE Phase 0 Validation Summary
 
 ## Result
-- Judgment: **viable**
-- Baseline R²: **0.9368**
-- Full-model R²: **1.0000**
-- Improvement vs baseline: **6.75%**
+- Judgment: **insufficient_data**
+- Validation rows in assembled dataset: **8**
+- Fully usable comparison rows: **8**
+- Thesis decision: **withheld pending more data**
+- Reason: Need at least 16 fully populated validation rows for a trustworthy baseline-vs-environment comparison; only found 8.
 
 ## Interpretation rubric
 - <5% improvement => weak

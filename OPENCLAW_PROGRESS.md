@@ -150,3 +150,51 @@
 - Produced the first curated compact mapping batch at `castline/validation/data/raw/bassmaster_usgs_mapping.csv` with initial approved mappings for 13 tournaments.
 - Net effect: Phase 0 no longer needs manual format conversion between mapping review and outcome collection. The active blocker has shifted from mapping-format plumbing to actually running the first real-data validation pass on the curated batch.
 
+## 2026-03-15 07:35 America/Edmonton — guarded first real-data validation pass handoff
+- Started and completed a new validation feature lane: **guard the first real-data thesis judgment against tiny/degenerate datasets**.
+- Ran the curated real-data pipeline end to end on the approved Bassmaster→USGS batch:
+  - `collect_historical_outcomes.py` produced 10 mapped outcome rows
+  - `collect_usgs_history.py` produced only 1 usable USGS row
+  - `collect_weather_history.py` produced 10 weather rows
+  - assembled dataset contained only 1 fully usable comparison row
+- Found and fixed a dangerous reporting bug: `scripts/run_baseline_comparison.py` / `castline.validation.models.comparison` could previously emit `thesis=strong` with `NaN` metrics when the dataset was too small.
+- Added guarded comparison logic in `castline/validation/models/comparison.py`:
+  - require a minimum fully populated row count before judging
+  - withhold the thesis as `insufficient_data` when the dataset is too thin
+  - write row-count + withheld-reason metadata into the JSON artifact
+- Extended `ComparisonSummary`, updated markdown summary generation, and made the CLI print a human-readable withheld reason instead of misleading `NaN` metrics.
+- Updated validation tests; current status: `.venv/bin/python -m pytest castline/validation/tests/test_pipeline.py castline/validation/tests/test_evaluate.py` ✅ (15 passed).
+- Current blocker is now sharply defined: expand/repair the approved gauge mappings so materially more curated tournaments return actual USGS history; only then should the project record a weak/viable/strong thesis judgment.
+
+## 2026-03-15 07:46 America/Edmonton — mapping coverage repair handoff
+- Investigated the first guarded-run failures and re-curated the review sheet around gauges that actually return NWIS daily values in the tournament windows.
+- Updated `castline/validation/data/raw/bassmaster_usgs_mapping_suggestions.csv` with explicit manual selections / blocks:
+  - repaired Douglas Lake from `03468500` to `03467609` (`NOLICHUCKY RIVER NEAR LOWLAND`)
+  - repaired Saginaw Bay from bay/lake gauges to `04157060` (`SAGINAW RIVER AT MIDLAND STREET AT BAY CITY`)
+  - repaired Lake Okeechobee from dead lake gauges to `02292010` (`CALOOSAHATCHEE CANAL DWS OF S-77 AT MOORE HAVEN`)
+  - preemptively repaired Arkansas River from `07165610` to `07194500` and Mississippi River from `05383500` to `05344500` because the original approved picks returned no daily values
+  - explicitly blocked Chickamauga and Lake Champlain for now because the checked ranked candidates still returned no `00010/00060/00065` NWIS daily history in the relevant event windows
+- Re-exported the compact approved mapping file at `castline/validation/data/raw/bassmaster_usgs_mapping.csv`; it now contains only the validated/working selections above (10 tournament mappings, with the blocked rows removed).
+- Re-ran the guarded real-data pipeline on the updated mapping batch:
+  - `collect_historical_outcomes.py` -> 8 mapped Bassmaster outcome rows
+  - `collect_usgs_history.py` -> 8 usable USGS rows
+  - `collect_weather_history.py` -> 8 weather rows
+  - `assemble_validation_dataset.py` -> 8-row assembled dataset
+  - `run_baseline_comparison.py` still withholds the thesis as `insufficient_data`, but now because the dataset is too small for judgment (8 usable rows) rather than because the USGS join collapsed to 1 row
+- Net improvement from this repair lane: USGS-stage usable coverage improved from **1 row to 8 rows** on the current parsable Bassmaster batch.
+- Remaining blocker / next step: widen the outcome batch by fixing the Bassmaster PDF parser for currently skipped B.A.S.S. Nation PDFs and/or finding more tournaments with parsable standings, then continue the same mapping-validation pass for still-blocked waters like Chickamauga and Champlain.
+
+## 2026-03-15 07:47 America/Edmonton — coverage-repair lane launched
+- Spawned a focused sub-agent lane: `castline-usgs-coverage-repair`.
+- Scope: repair/expand the approved Bassmaster→USGS mappings, especially for Douglas Lake, Saginaw Bay, Chickamauga-area nationals, Okeechobee, and any other approved mappings that yielded no USGS daily values in the first guarded run.
+- Success condition for that lane: materially improve the number of usable USGS rows from the curated batch and hand off the revised mapping status back into this main session.
+
+## 2026-03-15 07:55 America/Edmonton — USGS mapping coverage evaluator handoff
+- Started and completed a new validation feature lane: **coverage-backed Bassmaster→USGS mapping repair tooling**.
+- Added `evaluate_usgs_mapping_candidates()` in `castline/validation/collectors/usgs.py` plus `scripts/evaluate_usgs_mapping_coverage.py` to test ranked candidate gauges against real USGS daily-value availability for the actual tournament dates.
+- The generated report preserves the ranked review-sheet metadata and adds coverage signals such as `usable_event_count`, `usable_event_pct`, `coverage_statuses`, `recommended_by_coverage`, and `recommended_usgs_site_id`.
+- Added regression coverage tests; validation suite now passes with `.venv/bin/python -m pytest castline/validation/tests/test_pipeline.py castline/validation/tests/test_evaluate.py` ✅ (16 passed).
+- Ran the tool on the current curated batch and wrote `castline/validation/data/raw/bassmaster_usgs_mapping_coverage.csv`.
+- Current real-data finding: Lake Murray still has the only coverage-backed usable gauge in the approved batch; Douglas Lake, Saginaw Bay, and the current Okeechobee picks all still show `no_daily_values`, so the blocker is now explicit and evidence-backed instead of guesswork.
+- Immediate next step: use the coverage report to swap in working candidates or broaden those tournaments' candidate sets, then rerun the guarded validation pipeline.
+

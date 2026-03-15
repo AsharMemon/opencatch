@@ -1,40 +1,14 @@
 {
-  "baseline": {
-    "r2": 0.9367578543523664,
-    "rmse": 0.41102842382562954,
-    "mae": 0.31236329053732703,
-    "coefficients": {
-      "baseline_signal": 35.848787446505
-    },
-    "intercept": -3.9888730385164077
-  },
-  "full": {
-    "r2": 1.0,
-    "rmse": 7.53644380168212e-15,
-    "mae": 6.5133084111342514e-15,
-    "coefficients": {
-      "baseline_signal": 0.001095705591869258,
-      "air_temp_c": -0.05013348565030613,
-      "pressure_mb": -0.04646999672119056,
-      "wind_speed_kph": -0.020082033967892314,
-      "cloud_cover_pct": -0.1611849567299607,
-      "precip_24h_mm": 0.04191020805272094,
-      "water_temp_c": 0.009449394571535704,
-      "discharge_cfs": 0.012637816571728477,
-      "gage_height_ft": 0.003145699010606665,
-      "temp_delta_24h_c": 0.0508354524626858,
-      "flow_delta_24h_pct": 0.04911077263668271,
-      "env_signal": 0.05538605930234938,
-      "water_temp_x_flow": -0.0006820862757479804,
-      "weather_stability_index": -0.0013344702382668816
-    },
-    "intercept": 67.36553834460996
-  },
-  "improvement_pct": 6.751173246511661,
-  "thesis_rating": "viable",
+  "baseline": null,
+  "full": null,
+  "improvement_pct": null,
+  "thesis_rating": "insufficient_data",
   "decision_rule": {
     "weak_lt": 5,
     "viable_lte": 15,
     "strong_gt": 15
-  }
+  },
+  "row_count": 8,
+  "usable_row_count": 8,
+  "withheld_reason": "Need at least 16 fully populated validation rows for a trustworthy baseline-vs-environment comparison; only found 8."
 }
