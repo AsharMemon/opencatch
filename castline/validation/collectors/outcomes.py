@@ -90,6 +90,7 @@ SAMPLE_OUTCOMES = [
 ]
 
 BASSMASTER_API_URL = 'https://www.bassmaster.com/wp-json/wp/v2/tournament'
+BASSMASTER_SEARCH_API_URL = 'https://www.bassmaster.com/wp-json/wp/v2/search'
 USGS_SITE_SERVICE_URL = 'https://waterservices.usgs.gov/nwis/site/'
 DEFAULT_HEADERS = {'User-Agent': 'Mozilla/5.0 (CASTLINE validation collector)'}
 DEFAULT_BASSMASTER_SPECIES = 'black_bass'
@@ -172,6 +173,28 @@ def _extract_results_pdf_url(rendered_html: str) -> str | None:
     return None
 
 
+def _extract_parent_tournament_slug(results_link: str) -> str:
+    match = re.search(r'/tournament/([^/]+)/results/?$', results_link.strip())
+    return match.group(1) if match else ''
+
+
+def _fetch_bassmaster_tournament_parent(*, session: requests.Session, tournament_slug: str) -> dict[str, Any] | None:
+    if not tournament_slug:
+        return None
+    payload = _fetch_json(
+        BASSMASTER_API_URL,
+        session=session,
+        params={
+            'slug': tournament_slug,
+            'per_page': 1,
+            '_fields': 'id,slug,link,title,content,meta',
+        },
+    )
+    if isinstance(payload, list) and payload:
+        return payload[0]
+    return None
+
+
 def _clean_text(value: Any) -> str:
     return BeautifulSoup(str(value or ''), 'html.parser').get_text(' ', strip=True)
 
@@ -188,26 +211,21 @@ def _build_location(meta: dict[str, Any]) -> str:
     return _get_tournament_place(meta)[-1]
 
 
-def _fetch_bassmaster_results_index(
-    *,
-    session: requests.Session,
-    start_year: int,
-    end_year: int,
-) -> list[BassmasterTournamentResult]:
+def _iter_bassmaster_results_search_entries(*, session: requests.Session) -> list[dict[str, Any]]:
     page = 1
-    tournaments: list[BassmasterTournamentResult] = []
-    seen_links: set[str] = set()
+    entries: list[dict[str, Any]] = []
 
     while True:
         try:
             payload = _fetch_json(
-                BASSMASTER_API_URL,
+                BASSMASTER_SEARCH_API_URL,
                 session=session,
                 params={
+                    'search': 'Results',
+                    'type': 'post',
+                    'subtype': 'tournament',
                     'per_page': 100,
                     'page': page,
-                    'search': 'Results',
-                    '_fields': 'id,slug,link,title,content,meta',
                 },
             )
         except requests.HTTPError as exc:
@@ -217,42 +235,77 @@ def _fetch_bassmaster_results_index(
             raise
         if not payload:
             break
-
-        for item in payload:
-            link = str(item.get('link', ''))
-            if not link.endswith('/results/') or link in seen_links:
-                continue
-            seen_links.add(link)
-
-            meta = item.get('meta', {}) or {}
-            start_date_raw = meta.get('bassmaster_tournament_start_date')
-            if not start_date_raw:
-                continue
-            start_date = pd.to_datetime(start_date_raw, errors='coerce')
-            if pd.isna(start_date):
-                continue
-            if not (start_year <= int(start_date.year) <= end_year):
-                continue
-
-            pdf_url = _extract_results_pdf_url(item.get('content', {}).get('rendered', ''))
-            if not pdf_url:
-                continue
-
-            water_body, city, state, location = _get_tournament_place(meta)
-            tournaments.append(
-                BassmasterTournamentResult(
-                    tournament_slug=link.rstrip('/').split('/')[-2],
-                    event_name=_clean_text(item.get('title', {}).get('rendered', 'Results')).replace(' – Results', '').replace(' - Results', ''),
-                    location=location,
-                    water_body=water_body,
-                    city=city,
-                    state=state,
-                    start_date=start_date,
-                    results_pdf_url=pdf_url,
-                )
-            )
-
+        entries.extend(payload)
         page += 1
+
+    return entries
+
+
+def _infer_year_from_results_link(link: str) -> int | None:
+    match = re.search(r'/tournament/(\d{4})-', link)
+    return int(match.group(1)) if match else None
+
+
+def _fetch_bassmaster_results_index(
+    *,
+    session: requests.Session,
+    start_year: int,
+    end_year: int,
+) -> list[BassmasterTournamentResult]:
+    tournaments: list[BassmasterTournamentResult] = []
+    seen_links: set[str] = set()
+
+    for entry in _iter_bassmaster_results_search_entries(session=session):
+        link = str(entry.get('url', '')).strip()
+        if not link.endswith('/results/') or link in seen_links:
+            continue
+
+        inferred_year = _infer_year_from_results_link(link)
+        if inferred_year is not None and not (start_year <= inferred_year <= end_year):
+            continue
+
+        detail_url = ''
+        links = entry.get('_links', {}) or {}
+        self_links = links.get('self') or []
+        if self_links:
+            detail_url = str((self_links[0] or {}).get('href', '')).strip()
+        if not detail_url:
+            detail_url = f"{BASSMASTER_API_URL}/{entry.get('id')}"
+
+        result_item = _fetch_json(detail_url, session=session)
+        seen_links.add(link)
+
+        pdf_url = _extract_results_pdf_url(result_item.get('content', {}).get('rendered', ''))
+        if not pdf_url:
+            continue
+
+        tournament_slug = _extract_parent_tournament_slug(link)
+        parent_item = _fetch_bassmaster_tournament_parent(session=session, tournament_slug=tournament_slug)
+        item = parent_item or result_item
+
+        meta = item.get('meta', {}) or {}
+        start_date_raw = meta.get('bassmaster_tournament_start_date')
+        if not start_date_raw:
+            continue
+        start_date = pd.to_datetime(start_date_raw, errors='coerce')
+        if pd.isna(start_date):
+            continue
+        if not (start_year <= int(start_date.year) <= end_year):
+            continue
+
+        water_body, city, state, location = _get_tournament_place(meta)
+        tournaments.append(
+            BassmasterTournamentResult(
+                tournament_slug=tournament_slug or link.rstrip('/').split('/')[-2],
+                event_name=_clean_text(item.get('title', {}).get('rendered', 'Results')).replace(' – Results', '').replace(' - Results', ''),
+                location=location,
+                water_body=water_body,
+                city=city,
+                state=state,
+                start_date=start_date,
+                results_pdf_url=pdf_url,
+            )
+        )
 
     return sorted(tournaments, key=lambda item: (item.start_date, item.tournament_slug))
 

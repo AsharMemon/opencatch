@@ -3,12 +3,25 @@
 - Read `/Users/Ashar/Documents/fish/IMPLEMENTATION_PLAN.md`.
 - Read `/Users/Ashar/Documents/fish/OPENCLAW_PROGRESS.md`.
 - Read `/Users/Ashar/Documents/fish/castline-architecture.md`.
-- If the codebase is still missing, start by scaffolding the real project instead of reporting that it is absent.
+- The architecture says to begin with Phase 0 validation. Treat that as the primary lane.
+- If the codebase is still missing, scaffold the validation-oriented project first instead of broad app/product scaffolding.
 - Work from the chosen stack:
   - Expo + React Native + React Navigation
   - Django
   - PostgreSQL
   - built-in Django auth
+- Prioritize:
+  - historical outcome data collection
+  - historical USGS/environmental collection
+  - validation dataset assembly
+  - baseline-vs-full-feature comparison
+- The validation lane must end with an explicit judgment: weak, viable, or strong thesis.
+- Use the architecture's improvement rubric when making that judgment.
+- Research ML methods from primary sources before implementing them.
+- Start with simpler baselines before training heavyweight models like TFT.
+- Do not block Phase 0 on GPU access; only request or use GPU resources when heavier model training is actually justified.
+- If GPU training becomes justified, Vast.ai credentials are available locally at `/Users/Ashar/.openclaw-fish/agents/main/agent/vast.env`.
+- Keep app-shell work secondary unless it directly supports validation or a near-term demo.
 - Use sub-agents aggressively for independent workstreams.
 - Only close a sub-agent when its scoped work is actually complete.
 - Before any agent closes, append a dated handoff to `OPENCLAW_PROGRESS.md`.

@@ -130,3 +130,10 @@
 - Added/updated tests for ranked suggestion output and the pagination-overflow case; validation suite now passes with `.venv/bin/python -m pytest castline/validation/tests/test_pipeline.py castline/validation/tests/test_evaluate.py` ✅ (8 passed).
 - Updated `README.md`, `docs/validation-lane.md`, and `IMPLEMENTATION_PLAN.md` to reflect that mapping curation now starts from a ranked review sheet.
 - Live run result: the script now completes cleanly, but Bassmaster’s current WordPress results search returned zero rows for the attempted 2024-2025 fetch, so the next blocker is discovering/fixing the upstream event-discovery query or adding an alternate event index source.
+
+## 2026-03-15 07:07 America/Edmonton — Bassmaster discovery restoration handoff
+- Started and completed a new validation feature lane: **Bassmaster event-discovery recovery**.
+- Reworked the outcomes collector to use the Bassmaster WordPress search endpoint for `/results/` discovery instead of relying only on the tournament index query that had stopped returning usable rows.
+- Added parent-tournament lookups from the discovered `/results/` pages so metadata like event title, dates, and location can still be recovered cleanly for mapping and historical outcome collection.
+- Updated/extended tests to cover the new search-driven discovery path.
+- Net effect: the main blocker has shifted back from “discovery is broken” to the actual product problem — curating a first real mapped tournament batch and running the real-data validation pipeline.

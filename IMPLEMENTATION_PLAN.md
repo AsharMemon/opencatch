@@ -107,8 +107,9 @@ Current sub-status:
 - manifest-driven USGS collection and weather joins are wired into the dataset path
 - official Bassmaster result-page scraping now exists for building tournament-day outcomes from standings PDFs
 - ranked Bassmaster-to-USGS mapping review-sheet tooling now exists to accelerate gauge curation with multiple candidates per tournament
+- Bassmaster event discovery now uses the WordPress search endpoint plus parent-tournament lookups, restoring the path to live tournament discovery after the results-index query stopped returning rows
 - direct IEM ASOS weather collection now exists from the outcomes manifest, including state-network station selection and per-event weather summaries
-- next gap is turning those mapping suggestions into curated mapped real tournament rows at useful scale, then running the first real-data comparison judgment
+- next gap is curating a first real mapped tournament batch at useful scale, then running the first real-data comparison judgment
 
 Deliverables:
 - validation-first repository structure

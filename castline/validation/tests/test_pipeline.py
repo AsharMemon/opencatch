@@ -180,13 +180,30 @@ def test_real_usgs_collection_from_outcomes_manifest(tmp_path, monkeypatch):
 
 
 def test_bassmaster_mapping_suggestions_from_official_results_pages(tmp_path, monkeypatch):
-    tournament_payload = [
+    tournament_search_payload = [
         {
-            'link': 'https://www.bassmaster.com/tournament/2024-test-open/results/',
-            'title': {'rendered': '2024 Test Open - Results'},
-            'content': {
-                'rendered': '<h2><a href="https://example.com/test-open-day-2.pdf">LINK: TOURNAMENT RESULTS</a></h2>'
+            'id': 123,
+            'url': 'https://www.bassmaster.com/tournament/2024-test-open/results/',
+            '_links': {
+                'self': [
+                    {'href': 'https://www.bassmaster.com/wp-json/wp/v2/tournament/123'}
+                ]
             },
+        }
+    ]
+    tournament_detail_payload = {
+        'link': 'https://www.bassmaster.com/tournament/2024-test-open/results/',
+        'title': {'rendered': 'Results'},
+        'content': {
+            'rendered': '<h2><a href="https://example.com/test-open-day-2.pdf">LINK: TOURNAMENT RESULTS</a></h2>'
+        },
+        'meta': {},
+    }
+    tournament_parent_payload = [
+        {
+            'link': 'https://www.bassmaster.com/tournament/2024-test-open/',
+            'title': {'rendered': '2024 Test Open'},
+            'content': {'rendered': ''},
             'meta': {
                 'bassmaster_tournament_start_date': '2024-06-06',
                 'bassmaster_tournament_body_of_water': 'Saginaw Bay',
@@ -218,10 +235,14 @@ USGS	04156800	BAY COUNTY LAKE MONITOR AT SAGINAW BAY	LK
 
     class FakeSession:
         def get(self, url, params=None, timeout=30, headers=None):
-            if 'wp-json/wp/v2/tournament' in url:
+            if 'wp-json/wp/v2/search' in url:
                 if params and params.get('page') == 1:
-                    return FakeResponse(payload=tournament_payload)
+                    return FakeResponse(payload=tournament_search_payload)
                 return FakeResponse(payload=[])
+            if url == 'https://www.bassmaster.com/wp-json/wp/v2/tournament/123':
+                return FakeResponse(payload=tournament_detail_payload)
+            if 'wp-json/wp/v2/tournament' in url and params and params.get('slug') == '2024-test-open':
+                return FakeResponse(payload=tournament_parent_payload)
             if 'waterservices.usgs.gov/nwis/site/' in url:
                 assert params['stateCd'] == 'MI'
                 assert params['siteName'] == 'Saginaw Bay'
@@ -260,13 +281,30 @@ USGS	04156800	BAY COUNTY LAKE MONITOR AT SAGINAW BAY	LK
 
 
 def test_bassmaster_results_index_stops_cleanly_on_wordpress_page_overflow(tmp_path, monkeypatch):
-    tournament_payload = [
+    tournament_search_payload = [
         {
-            'link': 'https://www.bassmaster.com/tournament/2024-test-open/results/',
-            'title': {'rendered': '2024 Test Open - Results'},
-            'content': {
-                'rendered': '<h2><a href="https://example.com/test-open-day-2.pdf">LINK: TOURNAMENT RESULTS</a></h2>'
+            'id': 123,
+            'url': 'https://www.bassmaster.com/tournament/2024-test-open/results/',
+            '_links': {
+                'self': [
+                    {'href': 'https://www.bassmaster.com/wp-json/wp/v2/tournament/123'}
+                ]
             },
+        }
+    ]
+    tournament_detail_payload = {
+        'link': 'https://www.bassmaster.com/tournament/2024-test-open/results/',
+        'title': {'rendered': 'Results'},
+        'content': {
+            'rendered': '<h2><a href="https://example.com/test-open-day-2.pdf">LINK: TOURNAMENT RESULTS</a></h2>'
+        },
+        'meta': {},
+    }
+    tournament_parent_payload = [
+        {
+            'link': 'https://www.bassmaster.com/tournament/2024-test-open/',
+            'title': {'rendered': '2024 Test Open'},
+            'content': {'rendered': ''},
             'meta': {
                 'bassmaster_tournament_start_date': '2024-06-06',
                 'bassmaster_tournament_body_of_water': 'Saginaw Bay',
@@ -291,11 +329,15 @@ def test_bassmaster_results_index_stops_cleanly_on_wordpress_page_overflow(tmp_p
 
     class FakeSession:
         def get(self, url, params=None, timeout=30, headers=None):
-            if 'wp-json/wp/v2/tournament' not in url:
-                raise AssertionError(f'unexpected URL {url}')
-            if params and params.get('page') == 1:
-                return FakeResponse(payload=tournament_payload)
-            return FakeResponse(payload=None, status_code=400)
+            if 'wp-json/wp/v2/search' in url:
+                if params and params.get('page') == 1:
+                    return FakeResponse(payload=tournament_search_payload)
+                return FakeResponse(payload=None, status_code=400)
+            if url == 'https://www.bassmaster.com/wp-json/wp/v2/tournament/123':
+                return FakeResponse(payload=tournament_detail_payload)
+            if 'wp-json/wp/v2/tournament' in url and params and params.get('slug') == '2024-test-open':
+                return FakeResponse(payload=tournament_parent_payload)
+            raise AssertionError(f'unexpected URL {url}')
 
         def close(self):
             return None
@@ -338,13 +380,30 @@ def test_bassmaster_collection_from_official_results_pages(tmp_path, monkeypatch
         ]
     ).to_csv(mapping_path, index=False)
 
-    tournament_payload = [
+    tournament_search_payload = [
         {
-            'link': 'https://www.bassmaster.com/tournament/2024-test-open/results/',
-            'title': {'rendered': '2024 Test Open - Results'},
-            'content': {
-                'rendered': '<h2><a href="https://example.com/test-open-day-2.pdf">LINK: TOURNAMENT RESULTS</a></h2>'
+            'id': 123,
+            'url': 'https://www.bassmaster.com/tournament/2024-test-open/results/',
+            '_links': {
+                'self': [
+                    {'href': 'https://www.bassmaster.com/wp-json/wp/v2/tournament/123'}
+                ]
             },
+        }
+    ]
+    tournament_detail_payload = {
+        'link': 'https://www.bassmaster.com/tournament/2024-test-open/results/',
+        'title': {'rendered': 'Results'},
+        'content': {
+            'rendered': '<h2><a href="https://example.com/test-open-day-2.pdf">LINK: TOURNAMENT RESULTS</a></h2>'
+        },
+        'meta': {},
+    }
+    tournament_parent_payload = [
+        {
+            'link': 'https://www.bassmaster.com/tournament/2024-test-open/',
+            'title': {'rendered': '2024 Test Open'},
+            'content': {'rendered': ''},
             'meta': {
                 'bassmaster_tournament_start_date': '2024-06-06',
                 'bassmaster_tournament_body_of_water': 'Saginaw Bay',
@@ -375,10 +434,14 @@ def test_bassmaster_collection_from_official_results_pages(tmp_path, monkeypatch
 
     class FakeSession:
         def get(self, url, params=None, timeout=30, headers=None):
-            if 'wp-json/wp/v2/tournament' in url:
+            if 'wp-json/wp/v2/search' in url:
                 if params and params.get('page') == 1:
-                    return FakeResponse(payload=tournament_payload)
+                    return FakeResponse(payload=tournament_search_payload)
                 return FakeResponse(payload=[])
+            if url == 'https://www.bassmaster.com/wp-json/wp/v2/tournament/123':
+                return FakeResponse(payload=tournament_detail_payload)
+            if 'wp-json/wp/v2/tournament' in url and params and params.get('slug') == '2024-test-open':
+                return FakeResponse(payload=tournament_parent_payload)
             if url == 'https://example.com/test-open-day-2.pdf':
                 return FakeResponse(content=b'%PDF-1.3 fake')
             raise AssertionError(f'unexpected URL {url}')
