@@ -1,0 +1,21 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Django / local DB
+/db.sqlite3
+*.sqlite3
+
+# Node / Expo
+mobile/node_modules/
+
+# OS / editor
+.DS_Store
+
+# Local OpenClaw state noise
+.openclaw/
+
+# Validation runtime outputs (keep curated tracked examples if desired)
+castline/validation/artifacts/*.tmp
