@@ -230,3 +230,20 @@
 - Thesis status: **still withheld**, not yet judgment-ready. Current report remains `insufficient_data` because the lane improved the dataset to 10 rows but the threshold is still 16 fully populated rows.
 - Next blocker / next step: promote the refreshed coverage-backed recommendations from the expanded suggestion+coverage sheets into the compact approved mapping batch without regressing the existing Douglas/Saginaw/Okeechobee surrogate fixes, then keep attacking blocked waters (especially Lake Champlain / Clarks Hill / Sam Rayburn / Kentucky Lake / Harris Chain) until the dataset clears the 16-row minimum.
 
+## 2026-03-15 08:33 America/Edmonton — threshold-push lane handoff
+- Promoted the last refreshed **coverage-backed** tournament that was not yet in the compact approved batch: **Grand Lake / 2024 B.A.S.S. Nation Championship → `07185000`** (`Neosho River near Commerce, OK`). This came directly from `castline/validation/data/raw/bassmaster_usgs_mapping_coverage.csv`, where it is the only additional row beyond Lake Murray / Arkansas / Mississippi with `usable_event_count > 0`.
+- Preserved the already-working approved surrogate fixes and did **not** regress the compact batch for Douglas Lake (`03467609`), Saginaw Bay (`04157060`), Lake Okeechobee (`02292010`), Arkansas River (`07194500`), or Mississippi River (`05344500`).
+- Re-ran the full real-data pipeline end to end on the updated compact mapping batch:
+  - `collect_historical_outcomes.py` → **11** outcome rows
+  - `collect_usgs_history.py` → **11** USGS rows
+  - `collect_weather_history.py` → **11** weather rows
+  - `assemble_validation_dataset.py` → **11** assembled rows / **11** fully usable rows
+  - `run_baseline_comparison.py` → thesis still withheld as `insufficient_data`
+- Net effect: Phase 0 improved from **10 usable rows to 11 usable rows**, but it still does **not** clear the **16-row** minimum required for the first weak/viable/strong judgment. There is still **no non-withheld thesis judgment** yet.
+- Still-blocked waters from the current refreshed evidence remain blocked plainly: **Lake Champlain, Clarks Hill Reservoir, Lake Eufaula, Sam Rayburn Reservoir, Kentucky Lake, Harris Chain, and Chickamauga Lake** all continue to show `no_daily_values` in the present coverage file, so they were **not** promoted.
+- Next most promising blocker / next step: widen the ranked-candidate search and/or alias set for the still-blocked lakes above, starting with the biggest row-yield clusters already represented by multiple tournaments: **Clarks Hill Reservoir (3 tournaments)** and **Sam Rayburn Reservoir (3 tournaments)**, then **Harris Chain (2 tournaments)** and **Chickamauga Lake (2 tournaments)**. Those clusters are the fastest remaining path to crossing the 16-row Phase 0 threshold once a real daily-value gauge is found.
+
+## 2026-03-15 08:34 America/Edmonton — threshold-push lane launched
+- Spawned a focused sub-agent lane: `castline-threshold-push`.
+- Scope: promote any additional coverage-backed recommendations into the approved compact mapping batch, rerun the full real-data Phase 0 pipeline, and determine whether the usable-row count can finally clear the 16-row judgment threshold.
+

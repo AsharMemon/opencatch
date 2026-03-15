@@ -8,7 +8,7 @@
     "viable_lte": 15,
     "strong_gt": 15
   },
-  "row_count": 10,
-  "usable_row_count": 10,
-  "withheld_reason": "Need at least 16 fully populated validation rows for a trustworthy baseline-vs-environment comparison; only found 10."
+  "row_count": 11,
+  "usable_row_count": 11,
+  "withheld_reason": "Need at least 16 fully populated validation rows for a trustworthy baseline-vs-environment comparison; only found 11."
 }

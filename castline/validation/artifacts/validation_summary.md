@@ -2,10 +2,10 @@
 
 ## Result
 - Judgment: **insufficient_data**
-- Validation rows in assembled dataset: **10**
-- Fully usable comparison rows: **10**
+- Validation rows in assembled dataset: **11**
+- Fully usable comparison rows: **11**
 - Thesis decision: **withheld pending more data**
-- Reason: Need at least 16 fully populated validation rows for a trustworthy baseline-vs-environment comparison; only found 10.
+- Reason: Need at least 16 fully populated validation rows for a trustworthy baseline-vs-environment comparison; only found 11.
 
 ## Interpretation rubric
 - <5% improvement => weak

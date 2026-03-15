@@ -8,4 +8,5 @@ event_id,site_id,observation_date,water_temp_c,discharge_cfs,gage_height_ft,temp
 2024-strike-king-bassmaster-college-series-at-saginaw-bay-presented-by-bass-pro-shops-day-2,USGS-04157060,2024-06-07,0.0,2920.0,0.0,0.0,-0.6802721088435374,usgs_daily_values
 2024-bassmaster-high-school-series-at-saginaw-bay-day-1,USGS-04157060,2024-06-09,0.0,2160.0,0.0,0.0,-45.17766497461929,usgs_daily_values
 2024-bassmaster-junior-series-at-saginaw-bay-day-1,USGS-04157060,2024-06-09,0.0,2160.0,0.0,0.0,-45.17766497461929,usgs_daily_values
+2024-b-a-s-s-nation-championship-day-1,USGS-07185000,2024-11-06,0.0,5950.0,0.0,0.0,-37.17001055966209,usgs_daily_values
 2025-bassmaster-college-series-at-lake-okeechobee-day-1,USGS-02292010,2025-01-29,0.0,1570.0,10.85,0.0,-20.304568527918782,usgs_daily_values

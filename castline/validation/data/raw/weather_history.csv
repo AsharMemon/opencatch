@@ -1,5 +1,6 @@
 event_id,air_temp_c,pressure_mb,wind_speed_kph,cloud_cover_pct,precip_24h_mm,iem_station,source_mode
 2024-b-a-s-s-nation-central-qualifier-at-arkansas-river-day-3,13.912,1016.8583,8.797,0.0,0.0,MKO,iem_asos_api
+2024-b-a-s-s-nation-championship-day-1,11.5139,,4.9901,24.6528,0.0,GMJ,iem_asos_api
 2024-b-a-s-s-nation-northern-qualifier-at-mississippi-river-day-1,17.4711,1002.9174,5.8301,14.5683,0.0,LSE,iem_asos_api
 2024-bassmaster-high-school-series-at-douglas-lake-day-1,6.7465,,19.8503,79.0493,3.81,0A9,iem_asos_api
 2024-bassmaster-high-school-series-at-saginaw-bay-day-1,17.0131,1007.3522,13.9895,64.868,68.58,DET,iem_asos_api
