@@ -1,0 +1,71 @@
+# Validation lane
+
+Phase 0 only.
+
+## Commands
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python scripts/collect_historical_outcomes.py --sample
+python scripts/collect_usgs_history.py --sample
+python scripts/assemble_validation_dataset.py
+python scripts/run_baseline_comparison.py
+pytest
+```
+
+## Real-data path added
+
+The validation lane is no longer limited to bundled samples.
+
+### 1. Prepare a normalized outcomes CSV
+
+Required columns:
+
+- `event_id`
+- `event_name`
+- `date` (`YYYY-MM-DD`)
+- `location`
+- `species`
+- `median_weight_lb`
+- `baseline_signal`
+- `usgs_site_id`
+
+### 2. Normalize outcomes into the working raw-data location
+
+```bash
+python scripts/collect_historical_outcomes.py --source path/to/outcomes.csv
+```
+
+### 3. Pull USGS daily values keyed off those rows
+
+```bash
+python scripts/collect_usgs_history.py --outcomes castline/validation/data/raw/historical_outcomes.csv --lookback-days 7
+```
+
+This currently uses the USGS daily-values API and derives per-event:
+
+- `water_temp_c`
+- `discharge_cfs`
+- `gage_height_ft`
+- `temp_delta_24h_c`
+- `flow_delta_24h_pct`
+
+## Scope currently implemented
+
+- Django scaffold with a validation app and `ValidationRun` model
+- Sample-backed historical outcomes collector scaffold
+- Sample-backed USGS history collector scaffold
+- Manifest-driven outcomes normalization for real historical rows
+- Event-to-USGS daily-value collection and per-event feature extraction
+- Dataset assembler
+- Baseline-vs-full-feature comparison report generator
+
+## Intended next extension points
+
+- Real tournament/creel source ingestion adapters for building the outcomes manifest itself
+- Event-to-gauge mapping automation instead of manual `usgs_site_id`
+- Weather/IEM join stage
+- Out-of-sample temporal evaluation instead of same-sample scaffold scoring

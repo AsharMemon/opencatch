@@ -47,3 +47,36 @@
   - `castline-validation-lane` — validation-first repo/backend scaffold, data collection scaffolds, dataset assembly scaffold, baseline-vs-full-feature comparison scaffold.
   - `castline-ios-shell-lane` — thin Expo/React Native iPhone shell with navigation, home screen, spot detail placeholder, and backend service interface.
 - Main session is now waiting for push-based completion events from those lanes instead of polling.
+
+## 2026-03-15 04:50 America/Edmonton — wake assessment
+- The thin iPhone shell handoff is now present in `OPENCLAW_PROGRESS.md`, and `mobile/` exists with Expo/React Native scaffold files.
+- The validation lane has also materially advanced the repo: `castline/validation/`, `scripts/`, `requirements.txt`, `pyproject.toml`, `manage.py`, and docs now exist in the workspace.
+- Practical meaning: the workspace has moved from planning-only into a real codebase.
+- New primary next step: feed the validation harness real historical outcome rows plus USGS/environmental rows so Phase 0 can produce an actual weak/viable/strong judgment.
+- Secondary next step: once backend condition endpoints exist, connect the mobile shell's service layer to real normalized spot conditions.
+
+## 2026-03-15 04:55 America/Edmonton — next feature lane declared
+- Confirmed the validation skeleton now includes collectors, assembly modules, comparison models, reporting helpers, and tests under `castline/validation/`.
+- Confirmed the thin iPhone shell includes navigation, themed screens, typed spot models, and a mock-backed conditions service under `mobile/src/`.
+- The active build focus is now explicitly shifting from scaffold creation to **real historical data ingestion for Phase 0 validation**.
+- Immediate deliverables for that lane:
+  - source historical tournament/outcome rows
+  - pull matching USGS history
+  - assemble a first real comparison dataset
+  - run the baseline-vs-environment workflow and record the thesis judgment
+- Product wiring remains secondary until the validation lane produces real evidence.
+
+## 2026-03-15 05:04 America/Edmonton — validation ingestion feature handoff
+- Upgraded the Phase 0 collectors from sample-only scaffolds to a first real-data path.
+- `scripts/collect_historical_outcomes.py` now accepts `--source` for a normalized outcomes CSV and writes a normalized `historical_outcomes.csv` into the validation raw-data area.
+- `castline/validation/collectors/outcomes.py` now validates required columns, preserves `usgs_site_id` strings, normalizes dates, and tags source mode.
+- `scripts/collect_usgs_history.py` now accepts `--outcomes` and `--lookback-days`; `castline/validation/collectors/usgs.py` now pulls real USGS daily values from `waterservices.usgs.gov` for each event/site pair and derives per-event `water_temp_c`, `discharge_cfs`, `gage_height_ft`, `temp_delta_24h_c`, and `flow_delta_24h_pct`.
+- Added a manifest-driven integration test that mocks USGS fetches and verifies event-to-feature extraction, plus refreshed docs in `README.md` and `docs/validation-lane.md`.
+- Validation test status after this change: `pytest castline/validation/tests/test_pipeline.py castline/validation/tests/test_evaluate.py` ✅ (3 passed).
+- New immediate next step: obtain a first real batch of tournament/creel outcomes with `usgs_site_id` mappings so this collector path can produce a real Phase 0 dataset.
+
+## 2026-03-15 05:02 America/Edmonton — new active lane
+- Scaffolding is no longer the bottleneck; real input data is.
+- The active feature lane is now **first mapped outcomes dataset acquisition** for Phase 0.
+- Concrete target: land a normalized tournament/creel CSV with event date, waterbody metadata, target variable, and `usgs_site_id` mappings so the new collector scripts can assemble a real comparison dataset.
+- Follow-on target after that dataset lands: add weather/IEM joins and run the first baseline-vs-environment comparison to produce a weak/viable/strong thesis judgment.

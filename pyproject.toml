@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "castline"
+version = "0.1.0"
+description = "CASTLINE Phase 0 validation-first scaffold"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "Django>=5.1,<5.2",
+  "requests>=2.32,<3",
+  "pandas>=2.2,<3",
+  "scikit-learn>=1.5,<2",
+  "numpy>=2.0,<3",
+  "python-dotenv>=1.0,<2",
+  "psycopg[binary]>=3.2,<4",
+  "dataretrieval>=1.0,<2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9",
+  "ruff>=0.11,<0.12",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["castline*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["castline/validation/tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

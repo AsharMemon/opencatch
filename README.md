@@ -44,10 +44,37 @@ Artifacts land under:
 - `castline/validation/data/processed/`
 - `castline/validation/artifacts/`
 
+## Real-data collection path
+
+The validation lane now supports a first non-sample ingestion route.
+
+1. Build or scrape a normalized outcomes CSV with these columns:
+   - `event_id`
+   - `event_name`
+   - `date`
+   - `location`
+   - `species`
+   - `median_weight_lb`
+   - `baseline_signal`
+   - `usgs_site_id`
+2. Normalize it into the working raw-data location:
+
+```bash
+python scripts/collect_historical_outcomes.py --source path/to/outcomes.csv
+```
+
+3. Pull matching USGS daily-value history and derive event features:
+
+```bash
+python scripts/collect_usgs_history.py --outcomes castline/validation/data/raw/historical_outcomes.csv --lookback-days 7
+```
+
+This produces per-event historical environmental features keyed to the outcome rows, which can then flow into dataset assembly and the baseline-vs-full-feature comparison.
+
 ## Notes
 
-- The collector scripts support `--sample` mode so the lane is runnable immediately.
-- Real-source connectors are scaffolded for tournament outcomes and USGS history, but production-scale scraping/normalization still needs source-specific implementation.
+- The collector scripts still support `--sample` mode so the lane is runnable immediately.
+- Real-source connectors for tournament/creel scraping still need source-specific implementation, but the pipeline can now ingest a real normalized outcomes manifest and fetch real USGS features from it.
 - Decision rubric from the plan:
   - `<5%` improvement => weak thesis
   - `5-15%` improvement => viable thesis
