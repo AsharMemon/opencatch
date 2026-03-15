@@ -96,7 +96,24 @@ The Bassmaster adapter uses the official Bassmaster WordPress API to discover `/
 python scripts/collect_usgs_history.py --outcomes castline/validation/data/raw/historical_outcomes.csv --lookback-days 7
 ```
 
-6. Normalize weather/IEM-style event history keyed by the same `event_id` values:
+6. Pull matching historical weather from IEM ASOS directly from the outcomes manifest:
+
+```bash
+python scripts/collect_weather_history.py --outcomes castline/validation/data/raw/historical_outcomes.csv
+```
+
+The collector will:
+- reuse `iem_station` / `weather_station` if your outcomes manifest already has one
+- otherwise infer the state from event metadata and search the corresponding `STATE_ASOS` IEM network
+- pick the best-matching station using city/location token overlap
+- summarize event-day weather into:
+  - `air_temp_c`
+  - `pressure_mb`
+  - `wind_speed_kph`
+  - `cloud_cover_pct`
+  - `precip_24h_mm`
+
+7. Or, if you already have a normalized weather CSV, you can still load it directly:
 
 ```bash
 python scripts/collect_weather_history.py --source path/to/weather_history.csv
@@ -115,7 +132,7 @@ This adds baseline weather features into dataset assembly so the comparison work
 ## Notes
 
 - The collector scripts still support `--sample` mode so the lane is runnable immediately.
-- Real-source connectors for tournament/creel scraping still need source-specific implementation, but the pipeline can now ingest a real normalized outcomes manifest and fetch real USGS features from it.
+- Real-source connectors for tournament/creel scraping still need source-specific implementation, but the pipeline can now ingest a real normalized outcomes manifest and fetch real USGS and IEM weather features from it.
 - Decision rubric from the plan:
   - `<5%` improvement => weak thesis
   - `5-15%` improvement => viable thesis

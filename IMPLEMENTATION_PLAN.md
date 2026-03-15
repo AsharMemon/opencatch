@@ -2,7 +2,7 @@
 
 # CASTLINE implementation plan — source of truth
 
-_Last updated: 2026-03-15 05:15 America/Edmonton_
+_Last updated: 2026-03-15 06:15 America/Edmonton_
 
 ## Build posture
 
@@ -107,7 +107,8 @@ Current sub-status:
 - manifest-driven USGS collection and weather joins are wired into the dataset path
 - official Bassmaster result-page scraping now exists for building tournament-day outcomes from standings PDFs
 - first-pass Bassmaster-to-USGS mapping suggestion tooling now exists to accelerate gauge curation
-- next gap is turning those suggestions into curated mapped real tournament rows plus matched weather/environment coverage at useful scale
+- direct IEM ASOS weather collection now exists from the outcomes manifest, including state-network station selection and per-event weather summaries
+- next gap is turning those mapping suggestions into curated mapped real tournament rows at useful scale, then running the first real-data comparison judgment
 
 Deliverables:
 - validation-first repository structure
@@ -224,4 +225,4 @@ These remain important, but only after the thesis is being validated and the fir
 
 ## Immediate next action
 
-**Feed the manifest-driven validation pipeline a first real batch of historical tournament/creel outcomes with `usgs_site_id` mappings and matching weather rows so the baseline-vs-environment comparison can produce a real judgment.**
+**Feed the manifest-driven validation pipeline a first real batch of historical tournament/creel outcomes with curated `usgs_site_id` mappings; the weather lane can now be fetched directly from IEM once those mapped rows exist.**

@@ -112,3 +112,12 @@
 - Added a new unit test covering the suggestion flow with mocked Bassmaster + USGS responses; validation suite now passes with `.venv/bin/python -m pytest castline/validation/tests/test_pipeline.py castline/validation/tests/test_evaluate.py` ✅ (6 passed).
 - Updated `README.md`, `docs/validation-lane.md`, and `IMPLEMENTATION_PLAN.md` to reflect that mapping suggestion tooling now exists.
 - Net effect: the blocker has narrowed again — we no longer start mapping from zero, but we still need a curated mapping CSV plus matched weather rows to produce the first trustworthy real-data Phase 0 judgment.
+
+## 2026-03-15 06:15 America/Edmonton — IEM direct weather ingestion handoff
+- Started and completed a new validation feature lane: **direct IEM ASOS weather collection from the outcomes manifest**.
+- Extended `castline/validation/collectors/weather.py` so Phase 0 can now fetch historical weather directly from Iowa Mesonet instead of requiring a hand-built weather CSV for every run.
+- Added state-network station discovery via IEM GeoJSON, event-to-station auto-selection using city/location token overlap, optional `iem_station` / `weather_station` overrides, and event-day summaries for `air_temp_c`, `pressure_mb`, `wind_speed_kph`, `cloud_cover_pct`, and `precip_24h_mm`.
+- Extended `scripts/collect_weather_history.py` with `--outcomes` so the weather path is runnable directly from `historical_outcomes.csv`.
+- Added a mocked integration test for the live IEM station + ASOS flow; validation suite now passes with `.venv/bin/python -m pytest castline/validation/tests/test_pipeline.py castline/validation/tests/test_evaluate.py` ✅ (7 passed).
+- Updated `README.md`, `docs/validation-lane.md`, and `IMPLEMENTATION_PLAN.md` to reflect that weather collection no longer needs a manual CSV handoff when event metadata is present.
+- Net effect: the main blocker has tightened to one thing — curate a solid `tournament_slug -> usgs_site_id` mapping batch, then run the real-data validation comparison using direct USGS + IEM pulls.

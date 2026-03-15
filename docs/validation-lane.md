@@ -81,6 +81,22 @@ This currently uses the USGS daily-values API and derives per-event:
 - `temp_delta_24h_c`
 - `flow_delta_24h_pct`
 
+### 5. Pull IEM ASOS weather directly from the same outcomes manifest
+
+```bash
+python scripts/collect_weather_history.py --outcomes castline/validation/data/raw/historical_outcomes.csv
+```
+
+This fetches station metadata from the appropriate `STATE_ASOS` network, selects a best-fit station from event metadata, then summarizes event-day weather into:
+
+- `air_temp_c`
+- `pressure_mb`
+- `wind_speed_kph`
+- `cloud_cover_pct`
+- `precip_24h_mm`
+
+If you already know the correct station, include `iem_station` or `weather_station` in the outcomes manifest to bypass auto-selection.
+
 ## Scope currently implemented
 
 - Django scaffold with a validation app and `ValidationRun` model
@@ -91,6 +107,7 @@ This currently uses the USGS daily-values API and derives per-event:
 - Official Bassmaster result-page adapter that turns standings PDFs into per-day median outcome rows
 - First-pass Bassmaster-to-USGS mapping suggester built from USGS site-service candidate search
 - Event-to-USGS daily-value collection and per-event feature extraction
+- Direct IEM ASOS weather collection keyed from the outcomes manifest, with station auto-selection and optional station overrides
 - Manifest-driven weather/IEM-style join keyed by `event_id`
 - Dataset assembler with weather-aware feature engineering
 - Baseline-vs-full-feature comparison report generator
@@ -99,5 +116,5 @@ This currently uses the USGS daily-values API and derives per-event:
 
 - Real tournament/creel source ingestion adapters for building the outcomes manifest itself
 - Better event-to-gauge mapping automation than the current first-pass suggestion scoring
-- Direct IEM/ASOS fetch adapters instead of normalized weather CSV handoff
+- Better event-to-IEM station selection than the current token-overlap heuristic
 - Out-of-sample temporal evaluation instead of same-sample scaffold scoring
