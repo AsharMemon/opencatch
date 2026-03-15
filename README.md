@@ -69,10 +69,11 @@ python scripts/collect_historical_outcomes.py --source path/to/outcomes.csv
 ```bash
 python scripts/suggest_bassmaster_mappings.py \
   --bassmaster-start-year 2024 \
-  --bassmaster-end-year 2024
+  --bassmaster-end-year 2024 \
+  --top-n 3
 ```
 
-This writes `castline/validation/data/raw/bassmaster_usgs_mapping_suggestions.csv` with one suggested gauge per tournament plus station metadata and match scores.
+This writes `castline/validation/data/raw/bassmaster_usgs_mapping_suggestions.csv` as a review sheet with the top ranked USGS candidates per tournament plus station metadata, match scores, `review_status`, `selected_usgs_site_id`, and `review_notes` columns so curation can happen in-place instead of starting from a blank mapping file.
 
 4. Build the outcomes manifest directly from official Bassmaster result pages plus a small gauge mapping file:
 

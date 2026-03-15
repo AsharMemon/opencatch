@@ -23,6 +23,12 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help='Optional output CSV path. Defaults to castline/validation/data/raw/bassmaster_usgs_mapping_suggestions.csv',
     )
+    parser.add_argument(
+        '--top-n',
+        type=int,
+        default=3,
+        help='How many ranked USGS candidates to emit per tournament for manual review.',
+    )
     return parser.parse_args()
 
 
@@ -35,6 +41,7 @@ def main() -> None:
         start_year=args.bassmaster_start_year,
         end_year=args.bassmaster_end_year,
         output_path=output_path,
+        top_n=args.top_n,
     )
     print(f'wrote {len(df)} mapping suggestions to {output_path}')
 

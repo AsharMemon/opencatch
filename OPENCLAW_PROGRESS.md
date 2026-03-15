@@ -121,3 +121,12 @@
 - Added a mocked integration test for the live IEM station + ASOS flow; validation suite now passes with `.venv/bin/python -m pytest castline/validation/tests/test_pipeline.py castline/validation/tests/test_evaluate.py` ✅ (7 passed).
 - Updated `README.md`, `docs/validation-lane.md`, and `IMPLEMENTATION_PLAN.md` to reflect that weather collection no longer needs a manual CSV handoff when event metadata is present.
 - Net effect: the main blocker has tightened to one thing — curate a solid `tournament_slug -> usgs_site_id` mapping batch, then run the real-data validation comparison using direct USGS + IEM pulls.
+
+## 2026-03-15 06:35 America/Edmonton — ranked mapping review-sheet hardening handoff
+- Started and completed a new validation feature lane: **ranked Bassmaster→USGS mapping review sheets**.
+- Extended `suggest_bassmaster_usgs_mappings()` and `scripts/suggest_bassmaster_mappings.py` with `--top-n`, so the tool now emits multiple ranked gauge candidates per tournament instead of one opaque guess.
+- The suggestions CSV is now review-friendly in-place: `candidate_rank`, `review_status`, `selected_usgs_site_id`, and `review_notes` are included so manual curation can happen directly in the generated sheet.
+- Hardened the Bassmaster WordPress pagination path so page-overflow `400/404` responses stop cleanly instead of crashing the whole mapping run.
+- Added/updated tests for ranked suggestion output and the pagination-overflow case; validation suite now passes with `.venv/bin/python -m pytest castline/validation/tests/test_pipeline.py castline/validation/tests/test_evaluate.py` ✅ (8 passed).
+- Updated `README.md`, `docs/validation-lane.md`, and `IMPLEMENTATION_PLAN.md` to reflect that mapping curation now starts from a ranked review sheet.
+- Live run result: the script now completes cleanly, but Bassmaster’s current WordPress results search returned zero rows for the attempted 2024-2025 fetch, so the next blocker is discovering/fixing the upstream event-discovery query or adding an alternate event index source.

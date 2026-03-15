@@ -199,16 +199,22 @@ def _fetch_bassmaster_results_index(
     seen_links: set[str] = set()
 
     while True:
-        payload = _fetch_json(
-            BASSMASTER_API_URL,
-            session=session,
-            params={
-                'per_page': 100,
-                'page': page,
-                'search': 'Results',
-                '_fields': 'id,slug,link,title,content,meta',
-            },
-        )
+        try:
+            payload = _fetch_json(
+                BASSMASTER_API_URL,
+                session=session,
+                params={
+                    'per_page': 100,
+                    'page': page,
+                    'search': 'Results',
+                    '_fields': 'id,slug,link,title,content,meta',
+                },
+            )
+        except requests.HTTPError as exc:
+            response = getattr(exc, 'response', None)
+            if response is not None and response.status_code in {400, 404} and page > 1:
+                break
+            raise
         if not payload:
             break
 
@@ -351,9 +357,11 @@ def suggest_bassmaster_usgs_mappings(
     end_year: int,
     output_path: Path,
     session: requests.Session | None = None,
+    top_n: int = 3,
 ) -> pd.DataFrame:
     owned_session = session is None
     session = session or requests.Session()
+    top_n = max(1, int(top_n))
 
     try:
         tournaments = _fetch_bassmaster_results_index(session=session, start_year=start_year, end_year=end_year)
@@ -380,12 +388,16 @@ def suggest_bassmaster_usgs_mappings(
                         'city': tournament.city,
                         'state': tournament.state,
                         'location': tournament.location,
+                        'candidate_rank': 1,
+                        'candidate_count': 0,
                         'suggested_usgs_site_id': '',
                         'suggested_station_name': '',
                         'suggested_site_type': '',
                         'match_score': 0.0,
-                        'candidate_count': 0,
+                        'review_status': 'needs-research',
+                        'selected_usgs_site_id': '',
                         'species': DEFAULT_BASSMASTER_SPECIES,
+                        'review_notes': '',
                     }
                 )
                 continue
@@ -401,28 +413,56 @@ def suggest_bassmaster_usgs_mappings(
                 axis=1,
             )
             scored = scored.sort_values(['match_score', 'site_no'], ascending=[False, True]).reset_index(drop=True)
-            best = scored.iloc[0]
-            rows.append(
-                {
-                    'tournament_slug': tournament.tournament_slug,
-                    'event_name': tournament.event_name,
-                    'water_body': tournament.water_body,
-                    'city': tournament.city,
-                    'state': tournament.state,
-                    'location': tournament.location,
-                    'suggested_usgs_site_id': str(best.get('site_no', '')).replace('USGS-', ''),
-                    'suggested_station_name': str(best.get('station_nm', '')),
-                    'suggested_site_type': str(best.get('site_tp_cd', '')),
-                    'match_score': float(best.get('match_score', 0.0) or 0.0),
-                    'candidate_count': int(len(scored)),
-                    'species': DEFAULT_BASSMASTER_SPECIES,
-                }
-            )
+            top_candidates = scored.head(top_n).reset_index(drop=True)
+            for candidate_rank, (_, candidate) in enumerate(top_candidates.iterrows(), start=1):
+                rows.append(
+                    {
+                        'tournament_slug': tournament.tournament_slug,
+                        'event_name': tournament.event_name,
+                        'water_body': tournament.water_body,
+                        'city': tournament.city,
+                        'state': tournament.state,
+                        'location': tournament.location,
+                        'candidate_rank': candidate_rank,
+                        'candidate_count': int(len(scored)),
+                        'suggested_usgs_site_id': str(candidate.get('site_no', '')).replace('USGS-', ''),
+                        'suggested_station_name': str(candidate.get('station_nm', '')),
+                        'suggested_site_type': str(candidate.get('site_tp_cd', '')),
+                        'match_score': float(candidate.get('match_score', 0.0) or 0.0),
+                        'review_status': 'suggested' if candidate_rank == 1 else 'candidate',
+                        'selected_usgs_site_id': str(candidate.get('site_no', '')).replace('USGS-', '') if candidate_rank == 1 else '',
+                        'species': DEFAULT_BASSMASTER_SPECIES,
+                        'review_notes': '',
+                    }
+                )
     finally:
         if owned_session:
             session.close()
 
-    suggestions = pd.DataFrame(rows).sort_values(['state', 'water_body', 'tournament_slug']).reset_index(drop=True)
+    suggestions = pd.DataFrame(rows)
+    if suggestions.empty:
+        suggestions = pd.DataFrame(
+            columns=[
+                'tournament_slug',
+                'event_name',
+                'water_body',
+                'city',
+                'state',
+                'location',
+                'candidate_rank',
+                'candidate_count',
+                'suggested_usgs_site_id',
+                'suggested_station_name',
+                'suggested_site_type',
+                'match_score',
+                'review_status',
+                'selected_usgs_site_id',
+                'species',
+                'review_notes',
+            ]
+        )
+    else:
+        suggestions = suggestions.sort_values(['state', 'water_body', 'tournament_slug', 'candidate_rank']).reset_index(drop=True)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     suggestions.to_csv(output_path, index=False)
     return suggestions

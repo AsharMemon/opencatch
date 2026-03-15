@@ -39,10 +39,11 @@ Required columns:
 ```bash
 python scripts/suggest_bassmaster_mappings.py \
   --bassmaster-start-year 2024 \
-  --bassmaster-end-year 2024
+  --bassmaster-end-year 2024 \
+  --top-n 3
 ```
 
-This emits `castline/validation/data/raw/bassmaster_usgs_mapping_suggestions.csv` with one suggested gauge per tournament, including station name, site type, candidate count, and a lightweight token-overlap score.
+This emits `castline/validation/data/raw/bassmaster_usgs_mapping_suggestions.csv` as a ranked review sheet instead of a single opaque guess. Each tournament gets the top candidate rows with station name, site type, candidate count, lightweight token-overlap score, plus `review_status`, `selected_usgs_site_id`, and `review_notes` columns for manual curation.
 
 ### 3. Normalize outcomes into the working raw-data location
 

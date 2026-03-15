@@ -106,7 +106,7 @@ Current sub-status:
 - baseline-vs-environment comparison harness now exists in `castline/validation/`
 - manifest-driven USGS collection and weather joins are wired into the dataset path
 - official Bassmaster result-page scraping now exists for building tournament-day outcomes from standings PDFs
-- first-pass Bassmaster-to-USGS mapping suggestion tooling now exists to accelerate gauge curation
+- ranked Bassmaster-to-USGS mapping review-sheet tooling now exists to accelerate gauge curation with multiple candidates per tournament
 - direct IEM ASOS weather collection now exists from the outcomes manifest, including state-network station selection and per-event weather summaries
 - next gap is turning those mapping suggestions into curated mapped real tournament rows at useful scale, then running the first real-data comparison judgment
 
@@ -225,4 +225,4 @@ These remain important, but only after the thesis is being validated and the fir
 
 ## Immediate next action
 
-**Feed the manifest-driven validation pipeline a first real batch of historical tournament/creel outcomes with curated `usgs_site_id` mappings; the weather lane can now be fetched directly from IEM once those mapped rows exist.**
+**Fix or augment the upstream Bassmaster event-discovery path so the ranked mapping review sheet can populate with real tournaments again, then curate the first mapped batch and run the manifest-driven USGS + IEM collectors for the first real-data thesis judgment.**
