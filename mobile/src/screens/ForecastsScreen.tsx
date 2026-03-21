@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
+  Animated,
   ScrollView,
   View,
   Text,
@@ -811,6 +812,77 @@ function DayOutlookCard({
   );
 }
 
+// ── Skeleton Grid (loading placeholder matching the hourly grid) ──────────────
+
+const SKELETON_HOURS = 12;
+const SKELETON_ROWS = ['time', 'fish', 'cond', 'cloud', 'vis', 'temp', 'pres', 'prec'] as const;
+
+function SkeletonGridRow({ height = ROW_HEIGHT }: { height?: number }) {
+  return (
+    <View style={{ flexDirection: 'row', height }}>
+      {Array.from({ length: SKELETON_HOURS }).map((_, i) => (
+        <View key={i} style={{ width: DATA_COL_WIDTH, height, justifyContent: 'center', alignItems: 'center' }}>
+          <SkeletonLoader width={DATA_COL_WIDTH - 12} height={height - 12} borderRadius={4} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function ForecastSkeletonGrid() {
+  return (
+    <View style={s.screen}>
+      {/* Header skeleton */}
+      <View style={[s.header, { paddingTop: 56 }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16 }}>
+          <SkeletonLoader width={22} height={22} borderRadius={11} />
+          <View style={{ flex: 1, gap: 6 }}>
+            <SkeletonLoader width="60%" height={18} borderRadius={4} />
+            <SkeletonLoader width="35%" height={12} borderRadius={3} />
+          </View>
+          <SkeletonLoader width={22} height={22} borderRadius={11} />
+        </View>
+        {/* Toggle skeleton */}
+        <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+          <SkeletonLoader width="100%" height={36} borderRadius={10} />
+        </View>
+        {/* Day pills skeleton */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingTop: 8 }}>
+          {Array.from({ length: 7 }).map((_, i) => (
+            <SkeletonLoader key={i} width={52} height={64} borderRadius={12} />
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Grid skeleton */}
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        <View style={{ flexDirection: 'row' }}>
+          {/* Label column skeleton */}
+          <View style={{ width: LABEL_COL_WIDTH, backgroundColor: palette.background }}>
+            {SKELETON_ROWS.map((key, i) => {
+              const h = key === 'fish' || key === 'pres' ? 48 : key === 'time' ? 32 : ROW_HEIGHT;
+              return (
+                <View key={i} style={{ height: h, justifyContent: 'center', paddingLeft: 12 }}>
+                  <SkeletonLoader width={LABEL_COL_WIDTH - 24} height={14} borderRadius={3} />
+                </View>
+              );
+            })}
+          </View>
+          {/* Data columns skeleton */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+            <View>
+              {SKELETON_ROWS.map((key, i) => {
+                const h = key === 'fish' || key === 'pres' ? 48 : key === 'time' ? 32 : ROW_HEIGHT;
+                return <SkeletonGridRow key={i} height={h} />;
+              })}
+            </View>
+          </ScrollView>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
 // ── Main Screen ──────────────────────────────────────────────────────────────
 
 export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
@@ -824,6 +896,10 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
   const [locationName, setLocationName] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  // Fade-in animation when data first arrives
+  const dataFadeAnim = useRef(new Animated.Value(0)).current;
+  const hasAnimatedIn = useRef(false);
 
   // Inline insight state
   const [biteForecast, setBiteForecast] = useState<BiteFC | null>(null);
@@ -929,6 +1005,18 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
     })();
   }, [fetchForecast]);
 
+  // Fade in data smoothly when it first arrives
+  useEffect(() => {
+    if (weekForecast.length > 0 && !hasAnimatedIn.current) {
+      hasAnimatedIn.current = true;
+      Animated.timing(dataFadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [weekForecast.length, dataFadeAnim]);
+
   const selectedDay = weekForecast[selectedDayIdx];
   const hourly = selectedDay?.hourly ?? [];
 
@@ -940,28 +1028,9 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
     }
   };
 
-  // Loading state — skeleton placeholders
+  // Loading state — skeleton grid matching the real hourly layout
   if (loading && weekForecast.length === 0) {
-    return (
-      <ScrollView style={s.screen} contentContainerStyle={{ padding: 20, gap: 16 }}>
-        {/* Header skeleton */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <SkeletonLoader width={22} height={22} borderRadius={11} />
-          <View style={{ flex: 1, gap: 6 }}>
-            <SkeletonLoader width="60%" height={18} borderRadius={4} />
-            <SkeletonLoader width="35%" height={12} borderRadius={3} />
-          </View>
-          <SkeletonLoader width={22} height={22} borderRadius={11} />
-        </View>
-        {/* Toggle skeleton */}
-        <SkeletonLoader width="100%" height={40} borderRadius={10} />
-        {/* Day cards skeleton */}
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonCard />
-      </ScrollView>
-    );
+    return <ForecastSkeletonGrid />;
   }
 
   // Error state with no cached data
@@ -981,7 +1050,7 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
   }
 
   return (
-    <View style={s.screen}>
+    <Animated.View style={[s.screen, { opacity: dataFadeAnim }]}>
       {/* Header */}
       <View style={s.header}>
         <View style={s.headerTop}>

@@ -4570,7 +4570,30 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         />
       </Pressable>
 
-      {/* Annotation and contour settings accessible via layer picker */}
+      {/* Annotation mode toggle button */}
+      <Pressable
+        style={[styles.annotateButton, annotationMode && styles.annotateButtonActive]}
+        onPress={() => {
+          setAnnotationMode((prev) => !prev);
+          if (measureMode) { setMeasureMode(false); setMeasurePoints([]); }
+        }}
+        accessibilityLabel={annotationMode ? 'Exit annotation mode' : 'Annotate map'}
+      >
+        <Ionicons
+          name="create-outline"
+          size={20}
+          color={annotationMode ? '#FFFFFF' : palette.textSecondary}
+        />
+      </Pressable>
+
+      {/* Depth contour settings button */}
+      <Pressable
+        style={styles.contourButton}
+        onPress={() => setShowContourModal(true)}
+        accessibilityLabel="Depth contour settings"
+      >
+        <Ionicons name="analytics-outline" size={20} color={palette.textSecondary} />
+      </Pressable>
 
       {/* Compass heading widget */}
       <CompassWidget heading={compassHeading} mode={compassMode} onToggleMode={handleToggleCompassMode} />
@@ -6340,7 +6363,10 @@ const styles = StyleSheet.create({
     top: -4,
     right: -4,
   },
-  windButton: { position: 'absolute', top: Platform.OS === 'ios' ? 305 : 265, zIndex: 5, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  annotateButton: { position: 'absolute', top: Platform.OS === 'ios' ? 305 : 265, zIndex: 5, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  annotateButtonActive: { backgroundColor: palette.accent },
+  contourButton: { position: 'absolute', top: Platform.OS === 'ios' ? 355 : 315, zIndex: 5, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  windButton: { position: 'absolute', top: Platform.OS === 'ios' ? 405 : 365, zIndex: 5, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
   windButtonActive: { backgroundColor: palette.accent },
   windSpinner: { position: 'absolute', top: -4, right: -4 },
   windBanner: { position: 'absolute', top: Platform.OS === 'ios' ? 60 : 40, right: 70, flexDirection: 'row', alignItems: 'center', backgroundColor: palette.surface, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
@@ -6422,7 +6448,7 @@ const styles = StyleSheet.create({
   // ── Access points styles ────────────────────────────────────────────
   accessButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 355 : 315,
+    top: Platform.OS === 'ios' ? 455 : 415,
     right: 16,
     width: 40,
     height: 40,
