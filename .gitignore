@@ -19,3 +19,5 @@ mobile/node_modules/
 
 # Validation runtime outputs (keep curated tracked examples if desired)
 castline/validation/artifacts/*.tmp
+catboost_info/
+lightning_logs/
