@@ -15,7 +15,7 @@ import Svg, {
 } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { SkeletonLoader, SkeletonCard } from '../components/ui/SkeletonLoader';
+import { SkeletonLoader } from '../components/ui/SkeletonLoader';
 import { palette, getConditionBand, conditionConfig, scoreColor } from '../theme/palette';
 import { fonts, type as typeStyles } from '../theme/typography';
 import { getDailyBiteForecast, getWeeklyBiteForecast, formatHour, computeWeatherPenalty, type DailyBiteForecast as BiteFC, type TimeWindow } from '../services/bestTimeWindows';
@@ -1308,7 +1308,7 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
           <View style={{ height: 100 }} />
         </ScrollView>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
