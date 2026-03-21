@@ -11,10 +11,11 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/palette';
 import { fonts } from '../theme/typography';
-import { getDailyBiteForecast, formatHour, type WeatherWarning } from '../services/bestTimeWindows';
-import { getCurrentPressure, type PressureReading } from '../services/fishingPressure';
-import { getWaterInsights, type WaterInsightsDashboard } from '../services/waterInsights';
-import { getSpeciesLikelihood, type SpeciesLikelihood } from '../services/speciesDistribution';
+import { type WeatherWarning } from '../services/bestTimeWindows';
+import { type PressureReading } from '../services/fishingPressure';
+import { type WaterInsightsDashboard } from '../services/waterInsights';
+import { type SpeciesLikelihood } from '../services/speciesDistribution';
+import { getLocationData, getCachedLocationData } from '../services/locationDataCache';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -79,7 +80,7 @@ export const SpotInsightsCard = memo(function SpotInsightsCard({
   useEffect(() => {
     let cancelled = false;
 
-    // Check cache first
+    // Check local component cache first
     const key = getCacheKey(lat, lon);
     const cached = insightsCache.get(key);
     if (cached && Date.now() - cached.timestamp < INSIGHTS_CACHE_TTL) {
@@ -88,32 +89,49 @@ export const SpotInsightsCard = memo(function SpotInsightsCard({
       return;
     }
 
+    // Check the shared location data cache (may have been populated by another component)
+    const sharedCached = getCachedLocationData(lat, lon);
+    if (sharedCached) {
+      const isDiscovered = locationId?.startsWith('osm-') || locationId?.startsWith('water-tap-');
+      const bestWin = sharedCached.bite.bestWindow;
+      const result: InsightsData = {
+        biteRating: sharedCached.bite.overallRating,
+        biteLabel: sharedCached.bite.ratingLabel,
+        biteColor: ratingColor(sharedCached.bite.overallRating),
+        bestWindow: bestWin ? bestWin.label : null,
+        pressure: sharedCached.pressure,
+        water: sharedCached.water,
+        topSpecies: isDiscovered ? [] : sharedCached.species.slice(0, 3),
+        weatherWarnings: sharedCached.bite.weatherWarnings ?? [],
+      };
+      setData(result);
+      insightsCache.set(key, { data: result, timestamp: Date.now() });
+      setLoading(false);
+      return;
+    }
+
     async function loadInsights() {
       try {
-        // Run all data fetches in parallel
-        const [biteResult, waterResult] = await Promise.all([
-          Promise.resolve(getDailyBiteForecast(lat, lon)),
-          getWaterInsights(lat, lon, { locationName }).catch(() => null),
-        ]);
-
-        // Synchronous computations
-        const pressure = getCurrentPressure({ lat, lon });
-        // Don't show species for OSM-discovered / unverified spots
         const isDiscovered = locationId?.startsWith('osm-') || locationId?.startsWith('water-tap-');
-        const species = isDiscovered ? [] : getSpeciesLikelihood(lat, lon);
+
+        // Use the batched location data cache — fetches all data in one call
+        const locData = await getLocationData(lat, lon, {
+          locationName,
+          skipSpecies: isDiscovered,
+        });
 
         if (cancelled) return;
 
-        const bestWin = biteResult.bestWindow;
+        const bestWin = locData.bite.bestWindow;
         const result: InsightsData = {
-          biteRating: biteResult.overallRating,
-          biteLabel: biteResult.ratingLabel,
-          biteColor: ratingColor(biteResult.overallRating),
+          biteRating: locData.bite.overallRating,
+          biteLabel: locData.bite.ratingLabel,
+          biteColor: ratingColor(locData.bite.overallRating),
           bestWindow: bestWin ? bestWin.label : null,
-          pressure,
-          water: waterResult,
-          topSpecies: species.slice(0, 3),
-          weatherWarnings: biteResult.weatherWarnings ?? [],
+          pressure: locData.pressure,
+          water: locData.water,
+          topSpecies: isDiscovered ? [] : locData.species.slice(0, 3),
+          weatherWarnings: locData.bite.weatherWarnings ?? [],
         };
         setData(result);
         insightsCache.set(key, { data: result, timestamp: Date.now() });
@@ -126,7 +144,7 @@ export const SpotInsightsCard = memo(function SpotInsightsCard({
 
     loadInsights();
     return () => { cancelled = true; };
-  }, [lat, lon, locationName]);
+  }, [lat, lon, locationName, locationId]);
 
   if (loading) {
     return (

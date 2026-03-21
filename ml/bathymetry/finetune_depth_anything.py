@@ -44,7 +44,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.cuda.amp import GradScaler, autocast
+from torch.amp import GradScaler, autocast
 from torch.utils.data import DataLoader, Dataset, random_split
 
 logging.basicConfig(
@@ -400,7 +400,7 @@ def train(args: argparse.Namespace) -> None:
     scheduler_head = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer_head, T_max=args.frozen_epochs,
     )
-    scaler = GradScaler(enabled=(device == "cuda"))
+    scaler = GradScaler("cuda", enabled=(device == "cuda"))
 
     best_val_rmse = float("inf")
     history = []
@@ -443,7 +443,7 @@ def train(args: argparse.Namespace) -> None:
             scheduler_head = torch.optim.lr_scheduler.CosineAnnealingLR(
                 optimizer_head, T_max=args.finetune_epochs,
             )
-            scaler = GradScaler(enabled=(device == "cuda"))
+            scaler = GradScaler("cuda", enabled=(device == "cuda"))
 
         # Train
         model.train()
@@ -456,7 +456,7 @@ def train(args: argparse.Namespace) -> None:
             depth = batch["depth"].to(device)
             label_mask = batch["label_mask"].to(device)
 
-            with autocast(enabled=(device == "cuda")):
+            with autocast(device_type="cuda", enabled=(device == "cuda")):
                 pred = model(pixel_values)
 
                 # Resize pred to match depth if needed
@@ -508,7 +508,7 @@ def train(args: argparse.Namespace) -> None:
                 depth = batch["depth"].to(device)
                 label_mask = batch["label_mask"].to(device)
 
-                with autocast(enabled=(device == "cuda")):
+                with autocast(device_type="cuda", enabled=(device == "cuda")):
                     pred = model(pixel_values)
                     if pred.shape[2:] != depth.shape[2:]:
                         pred = F.interpolate(

@@ -22,6 +22,14 @@ import { api } from '../services/api';
 import { getAllCatches } from '../services/catchEnhancements';
 import { trackRecorder } from '../services/trackRecorder';
 import { useUnits } from '../hooks/useUnits';
+import {
+  getNotificationPrefs,
+  updateNotificationPrefs,
+  scheduleMorningBrief,
+  cancelMorningBrief,
+  cancelAllNotifications,
+  type NotificationPrefs,
+} from '../services/dailyNotifications';
 import type { UserSettings, UnitSystem, MapStyle } from '../types/models';
 
 const MAP_STYLE_LABELS: Record<MapStyle, string> = {
@@ -34,12 +42,40 @@ export function SettingsScreen() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [cacheSize, setCacheSize] = useState<string>('Calculating...');
   const [loading, setLoading] = useState(true);
+  const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs | null>(null);
   const { units, toggle: toggleUnitsHook } = useUnits();
 
   useEffect(() => {
     loadSettings();
     estimateCacheSize();
+    loadNotifPrefs();
   }, []);
+
+  const loadNotifPrefs = async () => {
+    const prefs = await getNotificationPrefs();
+    setNotifPrefs(prefs);
+  };
+
+  const toggleMorningBrief = async (val: boolean) => {
+    if (val) {
+      // Use stored location or default
+      const prefs = notifPrefs ?? await getNotificationPrefs();
+      await scheduleMorningBrief(prefs.morningBriefLat || 44.95, prefs.morningBriefLon || -93.27);
+    } else {
+      await cancelMorningBrief();
+    }
+    loadNotifPrefs();
+  };
+
+  const toggleTripReminders = async (val: boolean) => {
+    await updateNotificationPrefs({ tripReminders: val });
+    loadNotifPrefs();
+  };
+
+  const toggleConditionAlerts = async (val: boolean) => {
+    await updateNotificationPrefs({ conditionAlerts: val });
+    loadNotifPrefs();
+  };
 
   // Keep local settings state in sync with the units hook
   useEffect(() => {
@@ -260,6 +296,28 @@ export function SettingsScreen() {
         </View>
       </View>
 
+      {/* Trip & Condition Notifications */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Trip Notifications</Text>
+        <View style={styles.sectionCard}>
+          <SettingsToggle
+            label="Morning Brief (6 AM)"
+            value={notifPrefs?.morningBrief ?? false}
+            onValueChange={toggleMorningBrief}
+          />
+          <SettingsToggle
+            label="Trip Reminders"
+            value={notifPrefs?.tripReminders ?? true}
+            onValueChange={toggleTripReminders}
+          />
+          <SettingsToggle
+            label="Condition Alerts"
+            value={notifPrefs?.conditionAlerts ?? false}
+            onValueChange={toggleConditionAlerts}
+          />
+        </View>
+      </View>
+
       {/* Data & Storage */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Data & Storage</Text>
@@ -324,7 +382,6 @@ export function SettingsScreen() {
       {/* Branding */}
       <View style={styles.brandSection}>
         <Text style={styles.brandTitle}>OpenCatch</Text>
-        <Text style={styles.brandSubtitle}>Your fishing companion.</Text>
       </View>
 
       <View style={{ height: 40 }} />

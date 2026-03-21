@@ -758,54 +758,50 @@ export const api = {
     date: string,
     usgsSiteId?: string,
   ): Promise<PredictV2Response> {
-    const mockFallback = (() => {
-      const loc = mockLocations.find(
-        (l) => l.name === location || l.id === location,
-      ) ?? mockLocations[0];
-      const score = loc.score;
-      return {
-        fishing_score: score,
-        confidence: 0.72,
-        model_version: 'v2-ensemble',
-        breakdown: {
-          fishing_score: score,
-          layers: {
-            hydrology: {
-              label: 'Water Conditions',
-              description: 'Flow rate, water level, and temperature signals',
-              contribution: Math.round(score * 0.4),
-              data_quality: 'estimated' as const,
-            },
-            weather: {
-              label: 'Weather',
-              description: 'Air temp, pressure, wind, precipitation outlook',
-              contribution: Math.round(score * 0.3),
-              data_quality: 'estimated' as const,
-            },
-            biology: {
-              label: 'Biological Activity',
-              description: 'Seasonal patterns, spawn timing, forage availability',
-              contribution: Math.round(score * 0.2),
-              data_quality: 'modeled' as const,
-            },
-            history: {
-              label: 'Historical Performance',
-              description: 'Past tournament and creel survey data for this location',
-              contribution: Math.round(score * 0.1),
-              data_quality: 'historical' as const,
-            },
+    // Fallback returns score 0 so the UI shows a loading/unavailable state
+    // instead of a misleadingly specific hardcoded number
+    const mockFallback: PredictV2Response = {
+      fishing_score: 0,
+      confidence: 0,
+      model_version: 'v2-ensemble',
+      breakdown: {
+        fishing_score: 0,
+        layers: {
+          hydrology: {
+            label: 'Water Conditions',
+            description: 'Flow rate, water level, and temperature signals',
+            contribution: 0,
+            data_quality: 'estimated' as const,
           },
-          predicted_weight_lb: 3.2,
+          weather: {
+            label: 'Weather',
+            description: 'Air temp, pressure, wind, precipitation outlook',
+            contribution: 0,
+            data_quality: 'estimated' as const,
+          },
+          biology: {
+            label: 'Biological Activity',
+            description: 'Seasonal patterns, spawn timing, forage availability',
+            contribution: 0,
+            data_quality: 'modeled' as const,
+          },
+          history: {
+            label: 'Historical Performance',
+            description: 'Past tournament and creel survey data for this location',
+            contribution: 0,
+            data_quality: 'historical' as const,
+          },
         },
-        conditions: {
-          location,
-          date,
-          predicted_weight_lb: 3.2,
-          historical_avg_lb: 3.0,
-        },
-        explanation: loc.explanation,
-      };
-    })();
+        predicted_weight_lb: 0,
+      },
+      conditions: {
+        location,
+        date,
+        predicted_weight_lb: 0,
+        historical_avg_lb: 0,
+      },
+      explanation: 'Score unavailable — connect to the server for real-time predictions.',
+    };
 
     return requestWithFallback('/api/v1/predict', mockFallback, {
       method: 'POST',

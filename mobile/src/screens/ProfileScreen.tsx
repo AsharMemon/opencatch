@@ -380,7 +380,6 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
         {/* Branding */}
         <View style={styles.brandSection}>
           <Text style={styles.brandTitle}>OpenCatch</Text>
-          <Text style={styles.brandSubtitle}>Your fishing companion.</Text>
           <Text style={styles.brandVersion}>v0.1.0 MVP</Text>
         </View>
 

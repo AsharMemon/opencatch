@@ -241,6 +241,10 @@ const RAW_SPOTS: StaticSpot[] = [
   { id: 'top-256', name: 'Wabamun Lake', lat: 53.55, lon: -114.45, type: 'lake', state: 'AB', country: 'CA' },
   { id: 'top-257', name: 'Chain Lakes Reservoir', lat: 50.25, lon: -114.15, type: 'reservoir', state: 'AB', country: 'CA' },
   { id: 'top-258', name: 'Bearspaw Reservoir', lat: 51.10, lon: -114.30, type: 'reservoir', state: 'AB', country: 'CA' },
+  { id: 'top-259', name: 'Chestermere Lake', lat: 50.9811, lon: -113.8230, type: 'lake', state: 'AB', country: 'CA' },
+  { id: 'top-260', name: 'Eagle Lake', lat: 51.05, lon: -113.78, type: 'lake', state: 'AB', country: 'CA' },
+  { id: 'top-261', name: 'Sikome Lake', lat: 50.91, lon: -114.03, type: 'lake', state: 'AB', country: 'CA' },
+  { id: 'top-262', name: 'Lake Midnapore', lat: 50.93, lon: -114.08, type: 'lake', state: 'AB', country: 'CA' },
 
   // ── Canada — British Columbia ──
   { id: 'top-179', name: 'Shuswap Lake', lat: 50.9, lon: -119.25, type: 'lake', state: 'BC', country: 'CA' },

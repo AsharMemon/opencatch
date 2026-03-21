@@ -33,6 +33,7 @@ import {
   type SpeciesHints,
 } from '../services/fishSpeciesAI';
 import type { CatchReport, CatchReportV2Create } from '../types/models';
+import { shareCatchToSocial, generateCatchPreview } from '../services/socialSharing';
 import type { RootStackProps } from '../types/navigation';
 
 type Props = RootStackProps<'CatchReport'>;
@@ -258,13 +259,36 @@ export function CatchReportScreen({ route, navigation }: Props) {
         if (pb) {
           Alert.alert(
             'New Personal Best!',
-            `${weightLb} lb ${species} is your new record!`,
-            [{ text: 'OK', onPress: () => navigation.goBack() }],
+            `${weightLb} lb ${species} is your new record!\n\nShare to social media?`,
+            [
+              { text: 'Skip', onPress: () => navigation.goBack() },
+              {
+                text: 'Share',
+                onPress: async () => {
+                  await shareCatchToSocial(saved);
+                  navigation.goBack();
+                },
+              },
+            ],
           );
           setSubmitting(false);
           return;
         }
       }
+
+      // Offer to share the catch
+      const preview = generateCatchPreview(saved);
+      Alert.alert(
+        'Catch Logged!',
+        `${preview}\n\nShare to social media?`,
+        [
+          { text: 'Skip', onPress: () => {} },
+          {
+            text: 'Share',
+            onPress: () => shareCatchToSocial(saved),
+          },
+        ],
+      );
     } catch (localErr) {
       console.warn('[CatchReport] Failed to save locally:', localErr);
       // Continue to submit to server even if local save fails

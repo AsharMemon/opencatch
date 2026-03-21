@@ -22,6 +22,7 @@ import { palette } from '../theme/palette';
 import { fonts } from '../theme/typography';
 import { getAllCatches, type EnhancedCatch } from '../services/catchEnhancements';
 import { trackRecorder, type FishingTrack } from '../services/trackRecorder';
+import { shareCatchToSocial } from '../services/socialSharing';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -137,9 +138,17 @@ function CatchDetailModal({
               </View>
             ))}
           </ScrollView>
-          <Pressable style={modalStyles.closeBtn} onPress={onClose}>
-            <Text style={modalStyles.closeBtnText}>Close</Text>
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Pressable
+              style={[modalStyles.closeBtn, { flex: 1, backgroundColor: palette.accentDim }]}
+              onPress={() => shareCatchToSocial(catchData)}
+            >
+              <Text style={[modalStyles.closeBtnText, { color: palette.accent }]}>Share</Text>
+            </Pressable>
+            <Pressable style={[modalStyles.closeBtn, { flex: 1 }]} onPress={onClose}>
+              <Text style={modalStyles.closeBtnText}>Close</Text>
+            </Pressable>
+          </View>
         </Pressable>
       </Pressable>
     </Modal>

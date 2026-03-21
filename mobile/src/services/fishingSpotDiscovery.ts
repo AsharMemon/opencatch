@@ -45,7 +45,7 @@ const MAX_BBOX_AREA_DEG2 = 100; // Don't query more than ~10x10 degree area at o
 const GRID_CELL_SIZE_DEFAULT = 2; // degrees — divide world into 2x2 degree cells for caching
 const GRID_CELL_SIZE_ZOOMED = 1; // degrees — smaller cells at high zoom to reduce boundary misses
 const ZOOM_SMALL_GRID = 10; // zoom threshold for switching to smaller grid cells
-const REQUEST_TIMEOUT_MS = 12_000;
+const REQUEST_TIMEOUT_MS = 8_000;
 const ADJACENT_PREFETCH_DELAY_MS = 3_000; // delay before prefetching adjacent cells
 
 // Zoom thresholds for water body size filtering
@@ -160,7 +160,35 @@ interface CacheEntry {
   zoomTier: 'major' | 'medium' | 'all';
 }
 
+const MAX_CACHE_SIZE = 50;
 const gridCache = new Map<string, CacheEntry>();
+
+/** Set of grid cell keys currently being fetched — prevents duplicate in-flight requests */
+const inFlightCells = new Set<string>();
+
+/**
+ * LRU eviction: when cache exceeds MAX_CACHE_SIZE, remove oldest entries.
+ * Map insertion order is used as a proxy for recency.
+ */
+function evictIfNeeded(): void {
+  if (gridCache.size <= MAX_CACHE_SIZE) return;
+  const toRemove = gridCache.size - MAX_CACHE_SIZE;
+  let removed = 0;
+  for (const key of gridCache.keys()) {
+    if (removed >= toRemove) break;
+    gridCache.delete(key);
+    removed++;
+  }
+}
+
+/** Touch a cache entry to move it to the end (most-recently-used). */
+function touchCache(key: string): void {
+  const entry = gridCache.get(key);
+  if (entry) {
+    gridCache.delete(key);
+    gridCache.set(key, entry);
+  }
+}
 
 function gridKey(cellLat: number, cellLon: number, tier: string): string {
   return `${cellLat},${cellLon},${tier}`;
@@ -185,6 +213,7 @@ function getCached(key: string): DiscoveredSpot[] | null {
     gridCache.delete(key);
     return null;
   }
+  touchCache(key);
   return entry.spots;
 }
 
@@ -214,10 +243,12 @@ function buildOverpassQuery(bbox: BoundingBox, tier: 'major' | 'medium' | 'all')
     // At country zoom, only query named lakes/reservoirs with way geometry
     // (these tend to be larger, significant water bodies)
     return `
-[out:json][timeout:12][bbox:${bb}];
+[out:json][timeout:8][bbox:${bb}];
 (
   relation["natural"="water"]["water"~"lake|reservoir"]["name"];
   way["natural"="water"]["water"~"lake|reservoir"]["name"];
+  relation["natural"="water"]["name"];
+  way["natural"="water"]["name"];
   relation["water"="lake"]["name"];
   relation["water"="reservoir"]["name"];
   relation["landuse"="reservoir"]["name"];
@@ -229,7 +260,7 @@ out center tags 300;
 
   if (tier === 'medium') {
     return `
-[out:json][timeout:12][bbox:${bb}];
+[out:json][timeout:8][bbox:${bb}];
 (
   relation["natural"="water"]["name"];
   way["natural"="water"]["name"];
@@ -253,7 +284,7 @@ out center tags 500;
   // - natural=wetland catches fishable marshes (filtered by area later)
   // - multipolygon relations are caught by the relation queries
   return `
-[out:json][timeout:12][bbox:${bb}];
+[out:json][timeout:8][bbox:${bb}];
 (
   way["natural"="water"];
   relation["natural"="water"];
@@ -452,14 +483,22 @@ export async function discoverFishingSpots(
     }
   }
 
+  // Filter out cells that are already being fetched (request deduplication)
+  const deduplicatedCells = cellsToFetch.filter((c) => !inFlightCells.has(c.key));
+
   // Fetch uncached cells
-  if (cellsToFetch.length > 0) {
+  if (deduplicatedCells.length > 0) {
     cancelPendingDiscovery();
     activeController = new AbortController();
     const signal = activeController.signal;
 
+    // Mark cells as in-flight
+    for (const cell of deduplicatedCells) {
+      inFlightCells.add(cell.key);
+    }
+
     // Fetch cells sequentially to avoid overwhelming Overpass
-    for (const cell of cellsToFetch) {
+    for (const cell of deduplicatedCells) {
       if (signal.aborted) break;
 
       const cellBbox: BoundingBox = {
@@ -476,13 +515,22 @@ export async function discoverFishingSpots(
           timestamp: Date.now(),
           zoomTier: tier,
         });
+        evictIfNeeded();
         allSpots.push(...spots);
       } catch (err: any) {
         if (err.name === 'AbortError') break;
         console.warn('[FishingSpotDiscovery] Overpass query failed for cell:', cell.key, err);
         // Cache empty result to avoid hammering on failure
         gridCache.set(cell.key, { spots: [], timestamp: Date.now(), zoomTier: tier });
+        evictIfNeeded();
+      } finally {
+        inFlightCells.delete(cell.key);
       }
+    }
+
+    // Clean up any remaining in-flight markers (e.g. on abort)
+    for (const cell of deduplicatedCells) {
+      inFlightCells.delete(cell.key);
     }
 
     activeController = null;
@@ -639,6 +687,8 @@ export function prefetchAdjacentCells(bbox: BoundingBox, zoom: number): void {
 
     for (let i = 0; i < Math.min(cellsToFetch.length, maxPrefetch); i++) {
       const cell = cellsToFetch[i];
+      // Skip if already in-flight
+      if (inFlightCells.has(cell.key)) continue;
       const cellBbox: BoundingBox = {
         south: cell.cellLat,
         west: cell.cellLon,
@@ -646,11 +696,15 @@ export function prefetchAdjacentCells(bbox: BoundingBox, zoom: number): void {
         east: cell.cellLon + cs,
       };
       try {
+        inFlightCells.add(cell.key);
         const spots = await fetchOverpassSpots(cellBbox, tier, controller.signal);
         gridCache.set(cell.key, { spots, timestamp: Date.now(), zoomTier: tier });
+        evictIfNeeded();
       } catch {
         // Prefetch failure is non-critical — silently ignore
         break;
+      } finally {
+        inFlightCells.delete(cell.key);
       }
     }
   }, ADJACENT_PREFETCH_DELAY_MS);
@@ -665,12 +719,30 @@ async function fetchOverpassSpots(
 ): Promise<DiscoveredSpot[]> {
   const query = buildOverpassQuery(bbox, tier);
 
-  const res = await fetch(OVERPASS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `data=${encodeURIComponent(query)}`,
-    signal,
-  });
+  // Create a combined signal that aborts on either caller abort or timeout
+  const timeoutController = new AbortController();
+  const timeout = setTimeout(() => timeoutController.abort(), REQUEST_TIMEOUT_MS);
+
+  // If caller signal already aborted, abort immediately
+  if (signal.aborted) {
+    clearTimeout(timeout);
+    throw new DOMException('Aborted', 'AbortError');
+  }
+  const onCallerAbort = () => timeoutController.abort();
+  signal.addEventListener('abort', onCallerAbort);
+
+  let res: Response;
+  try {
+    res = await fetch(OVERPASS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `data=${encodeURIComponent(query)}`,
+      signal: timeoutController.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+    signal.removeEventListener('abort', onCallerAbort);
+  }
 
   if (!res.ok) {
     throw new Error(`Overpass ${res.status}: ${res.statusText}`);

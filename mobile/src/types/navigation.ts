@@ -38,6 +38,7 @@ export type RootStackParamList = {
   Settings: undefined;
   Annotations: undefined;
   ActivityLog: undefined;
+  TripPlanner: undefined;
 };
 
 // Screen prop helpers

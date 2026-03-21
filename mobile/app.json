@@ -1,13 +1,13 @@
 {
   "expo": {
     "name": "OpenCatch",
-    "slug": "opencatch",
+    "slug": "castline-mobile",
     "scheme": "opencatch",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "splash": {
-      "image": "./assets/logo.png",
+      "image": "./assets/vector-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#FAF8F5"
     },
@@ -22,7 +22,8 @@
       "expo-font",
       "@maplibre/maplibre-react-native",
       "expo-location",
-      "expo-haptics"
+      "expo-image-picker",
+      "expo-splash-screen"
     ],
     "infoPlist": {
       "NSLocationWhenInUseUsageDescription": "OpenCatch uses your location to find nearby fishing spots and provide local conditions.",
@@ -34,6 +35,7 @@
       "eas": {
         "projectId": "0ab7193d-926e-44e6-9d23-4bd4c8aef6d9"
       }
-    }
+    },
+    "owner": "asharmmn26"
   }
 }

@@ -37,7 +37,7 @@ declare module 'expo-notifications' {
   export function cancelScheduledNotificationAsync(identifier: string): Promise<void>;
   export function scheduleNotificationAsync(options: {
     content: NotificationContent;
-    trigger: { type?: SchedulableTriggerInputTypes; date?: Date; seconds?: number } | null;
+    trigger: { type?: SchedulableTriggerInputTypes; date?: Date; seconds?: number; hour?: number; minute?: number } | null;
   }): Promise<string>;
   export function cancelAllScheduledNotificationsAsync(): Promise<void>;
   export function setNotificationHandler(handler: {

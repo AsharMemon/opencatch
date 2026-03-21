@@ -1,21 +1,41 @@
-import React, { useCallback, useRef } from 'react';
-import { Animated, Image, StyleSheet, Platform, View } from 'react-native';
+import React, { Suspense, useCallback, useRef, lazy, ComponentType } from 'react';
+import { ActivityIndicator, Animated, Image, StyleSheet, Platform, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { hapticLight } from '../utils/haptics';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const logoImage = require('../../assets/logo.png');
+const logoImage = require('../../assets/vector-logo.png');
 
 function HeaderLogo() {
   return (
     <Image
       source={logoImage}
-      style={{ height: 38, width: 140 }}
+      style={{ height: 32, width: 150 }}
       resizeMode="contain"
     />
   );
+}
+
+/** Skeleton fallback for lazy-loaded screens */
+function ScreenSkeleton() {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FAFAF8' }}>
+      <ActivityIndicator size="large" color="#0A6EBD" />
+    </View>
+  );
+}
+
+/** Wrap a lazy import in Suspense with skeleton fallback */
+function withSuspense<P extends object>(LazyComponent: React.LazyExoticComponent<ComponentType<P>>): ComponentType<P> {
+  return function SuspenseWrapped(props: P) {
+    return (
+      <Suspense fallback={<ScreenSkeleton />}>
+        <LazyComponent {...props} />
+      </Suspense>
+    );
+  };
 }
 
 // MapLibre GL doesn't work on web — use a placeholder
@@ -31,31 +51,38 @@ const MapScreen = Platform.OS === 'web'
       );
     }
   : require('../screens/MapScreen').MapScreen;
-import { CatchReportScreen } from '../screens/CatchReportScreen';
-import { CollectionScreen } from '../screens/CollectionScreen';
-import { ToolsScreen } from '../screens/ToolsScreen';
-import { ForecastsScreen } from '../screens/ForecastsScreen';
-import { ProfileScreen } from '../screens/ProfileScreen';
-import { LocationDetailScreen } from '../screens/LocationDetailScreen';
-import { StatsScreen } from '../screens/StatsScreen';
-import { SpeciesGuideScreen } from '../screens/SpeciesGuideScreen';
-import { OfflineMapsScreen } from '../screens/OfflineMapsScreen';
-import { TideChartScreen } from '../screens/TideChartScreen';
-import { BaitGuideScreen } from '../screens/BaitGuideScreen';
-import { RegulationsScreen } from '../screens/RegulationsScreen';
-import { AlertsScreen } from '../screens/AlertsScreen';
-import { SafetyScreen } from '../screens/SafetyScreen';
-import { TrackRecordingScreen } from '../screens/TrackRecordingScreen';
-import { TrackHistoryScreen } from '../screens/TrackHistoryScreen';
-import { WeatherBuoysScreen } from '../screens/WeatherBuoysScreen';
-import { SunMoonScreen } from '../screens/SunMoonScreen';
-import { FishingPressureScreen } from '../screens/FishingPressureScreen';
-import { BestTimesScreen } from '../screens/BestTimesScreen';
-import { WaterInsightsScreen } from '../screens/WaterInsightsScreen';
-import { SpeciesMapScreen } from '../screens/SpeciesMapScreen';
-import { SettingsScreen } from '../screens/SettingsScreen';
-import { AnnotationScreen } from '../screens/AnnotationScreen';
-import { ActivityLogScreen } from '../screens/ActivityLogScreen';
+
+// ── Lazy-loaded screens (deferred until navigated to) ───────────────────────
+// MapScreen is NOT lazy — it's the primary screen and must load immediately.
+// Tab screens (Forecasts, Tools, Profile) are lazy since they're secondary.
+
+const CatchReportScreen = withSuspense(lazy(() => import('../screens/CatchReportScreen').then(m => ({ default: m.CatchReportScreen }))));
+const CollectionScreen = withSuspense(lazy(() => import('../screens/CollectionScreen').then(m => ({ default: m.CollectionScreen }))));
+const ToolsScreen = withSuspense(lazy(() => import('../screens/ToolsScreen').then(m => ({ default: m.ToolsScreen }))));
+const ForecastsScreen = withSuspense(lazy(() => import('../screens/ForecastsScreen').then(m => ({ default: m.ForecastsScreen }))));
+const ProfileScreen = withSuspense(lazy(() => import('../screens/ProfileScreen').then(m => ({ default: m.ProfileScreen as ComponentType<any> }))));
+const LocationDetailScreen = withSuspense(lazy(() => import('../screens/LocationDetailScreen').then(m => ({ default: m.LocationDetailScreen }))));
+const StatsScreen = withSuspense(lazy(() => import('../screens/StatsScreen').then(m => ({ default: m.StatsScreen }))));
+const SpeciesGuideScreen = withSuspense(lazy(() => import('../screens/SpeciesGuideScreen').then(m => ({ default: m.SpeciesGuideScreen }))));
+const OfflineMapsScreen = withSuspense(lazy(() => import('../screens/OfflineMapsScreen').then(m => ({ default: m.OfflineMapsScreen }))));
+const TideChartScreen = withSuspense(lazy(() => import('../screens/TideChartScreen').then(m => ({ default: m.TideChartScreen }))));
+const BaitGuideScreen = withSuspense(lazy(() => import('../screens/BaitGuideScreen').then(m => ({ default: m.BaitGuideScreen }))));
+const RegulationsScreen = withSuspense(lazy(() => import('../screens/RegulationsScreen').then(m => ({ default: m.RegulationsScreen }))));
+const AlertsScreen = withSuspense(lazy(() => import('../screens/AlertsScreen').then(m => ({ default: m.AlertsScreen }))));
+const SafetyScreen = withSuspense(lazy(() => import('../screens/SafetyScreen').then(m => ({ default: m.SafetyScreen }))));
+const TrackRecordingScreen = withSuspense(lazy(() => import('../screens/TrackRecordingScreen').then(m => ({ default: m.TrackRecordingScreen }))));
+const TrackHistoryScreen = withSuspense(lazy(() => import('../screens/TrackHistoryScreen').then(m => ({ default: m.TrackHistoryScreen }))));
+const WeatherBuoysScreen = withSuspense(lazy(() => import('../screens/WeatherBuoysScreen').then(m => ({ default: m.WeatherBuoysScreen }))));
+const SunMoonScreen = withSuspense(lazy(() => import('../screens/SunMoonScreen').then(m => ({ default: m.SunMoonScreen }))));
+const FishingPressureScreen = withSuspense(lazy(() => import('../screens/FishingPressureScreen').then(m => ({ default: m.FishingPressureScreen }))));
+const BestTimesScreen = withSuspense(lazy(() => import('../screens/BestTimesScreen').then(m => ({ default: m.BestTimesScreen }))));
+const WaterInsightsScreen = withSuspense(lazy(() => import('../screens/WaterInsightsScreen').then(m => ({ default: m.WaterInsightsScreen }))));
+const SpeciesMapScreen = withSuspense(lazy(() => import('../screens/SpeciesMapScreen').then(m => ({ default: m.SpeciesMapScreen }))));
+const SettingsScreen = withSuspense(lazy(() => import('../screens/SettingsScreen').then(m => ({ default: m.SettingsScreen }))));
+const AnnotationScreen = withSuspense(lazy(() => import('../screens/AnnotationScreen').then(m => ({ default: m.AnnotationScreen }))));
+const ActivityLogScreen = withSuspense(lazy(() => import('../screens/ActivityLogScreen').then(m => ({ default: m.ActivityLogScreen }))));
+const TripPlannerScreen = withSuspense(lazy(() => import('../screens/TripPlannerScreen').then(m => ({ default: m.TripPlannerScreen }))));
+
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
 import type { RootStackParamList, TabParamList } from '../types/navigation';
@@ -307,6 +334,11 @@ export function OpenCatchNavigator({ user, onLogout }: NavProps) {
         name="ActivityLog"
         component={ActivityLogScreen}
         options={{ title: 'Activity Log' }}
+      />
+      <Stack.Screen
+        name="TripPlanner"
+        component={TripPlannerScreen}
+        options={{ title: 'Trip Planner' }}
       />
     </Stack.Navigator>
   );

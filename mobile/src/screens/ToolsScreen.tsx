@@ -49,6 +49,7 @@ const TOOL_CATEGORIES: ToolCategory[] = [
       { label: 'Bait Guide', description: 'Match the hatch', ionicon: 'bug', color: '#DAA520', screen: 'BaitGuide', params: {} },
       { label: 'Safety', description: 'Float plan & alerts', ionicon: 'shield-checkmark', color: '#2E7D32', screen: 'Safety' },
       { label: 'Alerts', description: 'Weather warnings', ionicon: 'warning', color: '#E53935', screen: 'Alerts' },
+      { label: 'Trip Planner', description: 'Plan fishing trips', ionicon: 'calendar', color: '#7C3AED', screen: 'TripPlanner' },
     ],
   },
   {

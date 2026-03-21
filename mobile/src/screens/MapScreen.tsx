@@ -111,6 +111,7 @@ import {
 } from '../services/fishingSpotDiscovery';
 import { getTopFishingSpots, isStaticSpot } from '../data/topFishingSpots';
 import { cacheLocationDetail, prefetchLocationDetails } from '../services/locationDetailCache';
+import { clearLocationDataCache } from '../services/locationDataCache';
 import {
   getTipsForWaterbody,
   inferWaterbodyType,
@@ -2633,6 +2634,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       if (windDebounceRef.current) clearTimeout(windDebounceRef.current);
       if (accessFetchTimer.current) clearTimeout(accessFetchTimer.current);
       if (mapStateSaveTimer.current) clearTimeout(mapStateSaveTimer.current);
+      if (discoveryTimer.current) clearTimeout(discoveryTimer.current);
+      if (alertRefreshRef.current) { clearInterval(alertRefreshRef.current); alertRefreshRef.current = null; }
+      cancelPendingDiscovery();
     };
   }, []);
 
@@ -2659,6 +2663,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         if (accessFetchTimer.current) { clearTimeout(accessFetchTimer.current); accessFetchTimer.current = null; }
         if (discoveryTimer.current) { clearTimeout(discoveryTimer.current); discoveryTimer.current = null; }
         if (mapStateSaveTimer.current) { clearTimeout(mapStateSaveTimer.current); mapStateSaveTimer.current = null; }
+        // Release cached location data to free memory while backgrounded
+        clearLocationDataCache();
       } else if (nextState === 'active' && appStateRef.current.match(/inactive|background/)) {
         // App returning to foreground — restart alert polling
         if (userLocation) {
@@ -2702,8 +2708,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       const lonDiff = Math.abs(prev.west - bbox.west) + Math.abs(prev.east - bbox.east);
       const zoomTierChanged =
         (zoom <= 5) !== (prevZoom <= 5) || (zoom <= 8) !== (prevZoom <= 8);
-      // Increased threshold from 0.3 to 0.5 to reduce unnecessary refetches
-      if (latDiff < 0.5 && lonDiff < 0.5 && !zoomTierChanged) return;
+      // Reduced threshold from 0.5 to 0.3 for better city-level panning responsiveness
+      if (latDiff < 0.3 && lonDiff < 0.3 && !zoomTierChanged) return;
     }
     lastDiscoveryBbox.current = bbox;
     lastDiscoveryZoom.current = zoom;
@@ -3084,12 +3090,19 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
   // Ref to debounce map state persistence
   const mapStateSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Frame-skip counter — only process heavy work every 3rd region-change event */
+  const regionChangeCounter = useRef(0);
 
   const handleRegionChange = useCallback((feature: any) => {
+    // Always update zoom/bearing (lightweight state, needed for UI)
     const zoom = feature?.properties?.zoomLevel;
     if (zoom !== undefined) setCurrentZoom(zoom);
     const bearing = feature?.properties?.heading ?? feature?.properties?.bearing;
     if (bearing !== undefined) setCompassHeading(bearing);
+
+    // Frame-skip: only run heavy work (network fetches, persistence) every 3rd call
+    regionChangeCounter.current += 1;
+    if (regionChangeCounter.current % 3 !== 0) return;
 
     // Persist map center/zoom to AsyncStorage (debounced)
     if (feature?.geometry?.coordinates && zoom !== undefined) {
@@ -3135,7 +3148,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     if (feature?.properties?.visibleBounds || feature?.geometry?.coordinates) {
       if (discoveryTimer.current) clearTimeout(discoveryTimer.current);
       const msSinceMountVal = Date.now() - mountTimeRef.current;
-      const discoveryDelay = msSinceMountVal < 3000 ? 3000 - msSinceMountVal + 500 : 1200;
+      const discoveryDelay = msSinceMountVal < 3000 ? 3000 - msSinceMountVal + 500 : 600;
       discoveryTimer.current = setTimeout(async () => {
         const z = feature?.properties?.zoomLevel ?? currentZoom;
         // Try to get visible bounds from the map ref
@@ -3625,8 +3638,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         }
         logoEnabled={false}
         attributionEnabled={false}
-        compassEnabled
-        compassViewMargins={{ x: 16, y: Platform.OS === 'ios' ? 60 : 20 }}
+        compassEnabled={false}
         onPress={handleMapPress}
         onLongPress={handleMapLongPress}
         onRegionDidChange={handleRegionChange}
@@ -6363,10 +6375,10 @@ const styles = StyleSheet.create({
     top: -4,
     right: -4,
   },
-  annotateButton: { position: 'absolute', top: Platform.OS === 'ios' ? 305 : 265, zIndex: 5, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  annotateButton: { position: 'absolute', top: Platform.OS === 'ios' ? 405 : 365, zIndex: 5, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
   annotateButtonActive: { backgroundColor: palette.accent },
-  contourButton: { position: 'absolute', top: Platform.OS === 'ios' ? 355 : 315, zIndex: 5, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
-  windButton: { position: 'absolute', top: Platform.OS === 'ios' ? 405 : 365, zIndex: 5, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  contourButton: { position: 'absolute', top: Platform.OS === 'ios' ? 455 : 415, zIndex: 5, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  windButton: { position: 'absolute', top: Platform.OS === 'ios' ? 305 : 265, zIndex: 5, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
   windButtonActive: { backgroundColor: palette.accent },
   windSpinner: { position: 'absolute', top: -4, right: -4 },
   windBanner: { position: 'absolute', top: Platform.OS === 'ios' ? 60 : 40, right: 70, flexDirection: 'row', alignItems: 'center', backgroundColor: palette.surface, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
@@ -6448,7 +6460,7 @@ const styles = StyleSheet.create({
   // ── Access points styles ────────────────────────────────────────────
   accessButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 455 : 415,
+    top: Platform.OS === 'ios' ? 355 : 315,
     right: 16,
     width: 40,
     height: 40,
