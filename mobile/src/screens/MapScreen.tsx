@@ -111,6 +111,7 @@ import type { TabProps } from '../types/navigation';
 import { SpeedCourseHUD } from '../components/SpeedCourseHUD';
 import { NoWakeZoneOverlay } from '../components/NoWakeZoneOverlay';
 import { NavigationAidsOverlay } from '../components/NavigationAidsOverlay';
+import { ArtificialReefOverlay } from '../components/ArtificialReefOverlay';
 import {
   trackRecorder,
   buildSpeedColoredGeoJSON,
@@ -293,6 +294,7 @@ const OVERLAY_LAYERS: OverlayLayer[] = [
   { key: 'depth-contours', label: 'Depth Contours', ionicon: 'resize-outline', description: 'GEBCO bathymetry lines' },
   { key: 'no-wake-zones', label: 'No-Wake Zones', ionicon: 'speedometer-outline', description: 'Speed-restricted areas on water' },
   { key: 'nav-aids', label: 'Nav Aids', ionicon: 'radio-outline', description: 'Buoys, lights, channel markers' },
+  { key: 'artificial-reefs', label: 'Artificial Reefs', ionicon: 'flag-outline', description: 'State artificial reef GPS locations' },
   { key: 'radar', label: 'Precip Radar', ionicon: 'rainy-outline', description: 'Real-time precipitation radar' },
   { key: 'satellite-imagery', label: 'Satellite Imagery', ionicon: 'planet-outline', description: 'ESRI high-res satellite tiles' },
 ];
@@ -3913,6 +3915,17 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         {/* Navigation aids overlay (buoys, lights) */}
         {activeOverlays.has('nav-aids') && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
           <NavigationAidsOverlay
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            ShapeSource={ShapeSource}
+            CircleLayer={CircleLayer}
+            SymbolLayer={SymbolLayer}
+          />
+        )}
+
+        {/* Artificial reef markers */}
+        {activeOverlays.has('artificial-reefs') && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+          <ArtificialReefOverlay
             lat={userLocation.lat}
             lon={userLocation.lon}
             ShapeSource={ShapeSource}

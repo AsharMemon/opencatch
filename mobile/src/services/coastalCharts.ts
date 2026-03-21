@@ -262,7 +262,7 @@ export async function getNoWakeZones(bbox: CoastalBBox): Promise<SpeedZone[]> {
     `&outFields=*&f=json&resultRecordCount=200`;
 
   try {
-    const data = await fetchJSON<ArcGISFeatureResponse & {
+    const data = await fetchJSON<{
       features?: Array<{
         attributes: Record<string, any>;
         geometry?: { rings?: number[][][] };
