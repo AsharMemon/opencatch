@@ -9,7 +9,8 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Sharing from 'expo-sharing';
+// Lazy-loaded to avoid crash if native module not linked
+const getSharing = async () => { try { return require('expo-sharing'); } catch { return null; } };
 import * as FileSystem from 'expo-file-system';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -259,9 +260,9 @@ export async function exportAsPDF(
     await FileSystem.moveAsync({ from: uri, to: destUri });
 
     // Share via native sheet
-    const canShare = await Sharing.isAvailableAsync();
+    const canShare = await (await getSharing())?.isAvailableAsync();
     if (canShare) {
-      await Sharing.shareAsync(destUri, {
+      await (await getSharing())?.shareAsync(destUri, {
         mimeType: 'application/pdf',
         dialogTitle: 'Export Fishing Report',
         UTI: 'com.adobe.pdf',
@@ -522,9 +523,9 @@ export async function exportCatches(options: ExportOptions): Promise<ExportResul
 
     await FileSystem.writeAsStringAsync(fileUri, content);
 
-    const canShare = await Sharing.isAvailableAsync();
+    const canShare = await (await getSharing())?.isAvailableAsync();
     if (canShare) {
-      await Sharing.shareAsync(fileUri, {
+      await (await getSharing())?.shareAsync(fileUri, {
         mimeType: options.format === 'csv' ? 'text/csv' : 'text/plain',
         dialogTitle: 'Export Catch Log',
         UTI: options.format === 'csv' ? 'public.comma-separated-values-text' : 'public.plain-text',

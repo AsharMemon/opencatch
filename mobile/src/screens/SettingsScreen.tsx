@@ -12,7 +12,8 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
+// Lazy-loaded to avoid crash if native module not linked
+const getSharing = async () => { try { return require('expo-sharing'); } catch { return null; } };
 import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
@@ -151,9 +152,9 @@ export function SettingsScreen() {
       const file = new (FileSystem as any).File((FileSystem as any).Paths.cache, filename);
       (file as any).text = json;
 
-      const canShare = await Sharing.isAvailableAsync();
-      if (canShare) {
-        await Sharing.shareAsync(file.uri, {
+      const SharingModule = await getSharing();
+      if (SharingModule && await SharingModule.isAvailableAsync()) {
+        await SharingModule.shareAsync(file.uri, {
           mimeType: 'application/json',
           dialogTitle: 'Export OpenCatch Data',
           UTI: 'public.json',
