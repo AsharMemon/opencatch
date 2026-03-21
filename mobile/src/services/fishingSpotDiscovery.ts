@@ -64,6 +64,9 @@ const MIN_AREA_NAMED_KM2 = 0.001;
 /** Borderline range upper bound: 2 hectares = 0.02 km² */
 const BORDERLINE_UPPER_KM2 = 0.02;
 
+/** Minimum area in km² for wetlands (5 hectares = 0.05 km²) — only large marshes are fishable */
+const MIN_AREA_WETLAND_KM2 = 0.05;
+
 /** Name substrings indicating non-fishable infrastructure (case-insensitive) */
 const SKIP_NAME_PATTERNS = [
   'storm', 'retention', 'treatment', 'sewage',
@@ -110,8 +113,17 @@ function shouldKeepWaterBody(tags: Record<string, string>, areaKm2: number | und
   // 1. Type filtering: always skip wastewater / sewage / basin types
   const waterTag = (tags.water ?? '').toLowerCase();
   const landuseTag = (tags.landuse ?? '').toLowerCase();
+  const naturalTag = (tags.natural ?? '').toLowerCase();
   if (SKIP_WATER_TYPES.has(waterTag)) return false;
-  if (SKIP_LANDUSE_TYPES.has(landuseTag)) return false;
+  // Don't skip landuse=reservoir — those are fishable water bodies
+  if (SKIP_LANDUSE_TYPES.has(landuseTag) && landuseTag !== 'reservoir') return false;
+
+  // 1b. Wetland filtering: only keep marshes >= 5 hectares (smaller wetlands are not fishable)
+  if (naturalTag === 'wetland') {
+    if (areaKm2 !== undefined && areaKm2 < MIN_AREA_WETLAND_KM2) return false;
+    // Unnamed wetlands without area data — skip (can't verify size)
+    if (areaKm2 === undefined && !name) return false;
+  }
 
   // 2. Fishing relevance boost: always keep if explicit fishing tags
   if (hasFishingTags(tags)) return true;
@@ -121,6 +133,7 @@ function shouldKeepWaterBody(tags: Record<string, string>, areaKm2: number | und
 
   // 4. Named reservoirs are always kept (e.g. Glenmore Reservoir, Bearspaw Reservoir)
   if (waterTag === 'reservoir' && name) return true;
+  if (landuseTag === 'reservoir' && name) return true;
   if (tags.reservoir && name) return true;
 
   // 5. Name-based filtering: skip infrastructure names
@@ -207,6 +220,8 @@ function buildOverpassQuery(bbox: BoundingBox, tier: 'major' | 'medium' | 'all')
   way["natural"="water"]["water"~"lake|reservoir"]["name"];
   relation["water"="lake"]["name"];
   relation["water"="reservoir"]["name"];
+  relation["landuse"="reservoir"]["name"];
+  way["landuse"="reservoir"]["name"];
 );
 out center tags 300;
 `;
@@ -220,6 +235,10 @@ out center tags 300;
   way["natural"="water"]["name"];
   way["water"~"lake|river|pond|reservoir|oxbow|canal"]["name"];
   relation["water"~"lake|river|pond|reservoir|oxbow|canal"]["name"];
+  relation["landuse"="reservoir"]["name"];
+  way["landuse"="reservoir"]["name"];
+  way["waterway"="riverbank"]["name"];
+  relation["waterway"="riverbank"]["name"];
   node["leisure"="fishing"]["name"];
   way["leisure"="fishing"]["name"];
 );
@@ -228,6 +247,11 @@ out center tags 500;
   }
 
   // All — county level, include unnamed ponds etc.
+  // At high zoom (>= 10), we also query broader tag sets:
+  // - landuse=reservoir catches water bodies tagged differently from natural=water
+  // - waterway=riverbank catches large river area polygons
+  // - natural=wetland catches fishable marshes (filtered by area later)
+  // - multipolygon relations are caught by the relation queries
   return `
 [out:json][timeout:12][bbox:${bb}];
 (
@@ -235,6 +259,12 @@ out center tags 500;
   relation["natural"="water"];
   way["water"~"lake|river|pond|reservoir|stream|oxbow|canal|moat"];
   relation["water"~"lake|river|pond|reservoir|stream|oxbow|canal|moat"];
+  way["landuse"="reservoir"];
+  relation["landuse"="reservoir"];
+  way["waterway"="riverbank"];
+  relation["waterway"="riverbank"];
+  way["natural"="wetland"]["wetland"="marsh"];
+  relation["natural"="wetland"]["wetland"="marsh"];
   node["leisure"="fishing"];
   node["sport"="fishing"];
   way["leisure"="fishing"];
@@ -249,11 +279,13 @@ out center tags 800;
 function classifyWaterBody(tags: Record<string, string>): DiscoveredSpot['waterBodyType'] {
   const water = tags.water ?? '';
   const natural = tags.natural ?? '';
+  const landuse = tags.landuse ?? '';
   const leisure = tags.leisure ?? '';
+  const waterway = tags.waterway ?? '';
 
-  if (water === 'reservoir' || tags.reservoir) return 'reservoir';
-  if (water === 'river' || tags.waterway === 'river') return 'river';
-  if (water === 'stream' || tags.waterway === 'stream') return 'stream';
+  if (water === 'reservoir' || tags.reservoir || landuse === 'reservoir') return 'reservoir';
+  if (water === 'river' || waterway === 'river' || waterway === 'riverbank') return 'river';
+  if (water === 'stream' || waterway === 'stream') return 'stream';
   if (water === 'pond') return 'pond';
   if (water === 'lake' || natural === 'water') return 'lake';
   if (water === 'wetland' || natural === 'wetland') return 'wetland';

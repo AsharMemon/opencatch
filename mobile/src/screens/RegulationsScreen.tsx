@@ -31,6 +31,7 @@ const SPECIES_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   crappie: 'fish',
   pike: 'fish',
   muskie: 'fish',
+  salmon: 'fish',
 };
 
 const SPECIES_LABEL: Record<string, string> = {
@@ -41,6 +42,7 @@ const SPECIES_LABEL: Record<string, string> = {
   crappie: 'Crappie',
   pike: 'Northern Pike',
   muskie: 'Muskellunge',
+  salmon: 'Salmon',
 };
 
 function formatCurrency(amount: number, country: 'US' | 'CA'): string {
