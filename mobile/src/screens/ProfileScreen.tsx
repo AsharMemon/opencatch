@@ -23,6 +23,7 @@ import { api } from '../services/api';
 import { getAllCatches, type EnhancedCatch } from '../services/catchEnhancements';
 import { trackRecorder, type FishingTrack } from '../services/trackRecorder';
 import type { UnitSystem, UserSettings } from '../types/models';
+import { SkeletonLoader, SkeletonCard } from '../components/ui/SkeletonLoader';
 import type { UserProfile } from '../services/auth';
 
 // ── Real stats from AsyncStorage ─────────────────────────────────
@@ -98,7 +99,23 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
     }
   };
 
-  if (!settings) return <View style={styles.screen} />;
+  if (!settings) {
+    return (
+      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        {/* Profile skeleton */}
+        <View style={{ alignItems: 'center', gap: 14, paddingVertical: 28 }}>
+          <SkeletonLoader width={84} height={84} borderRadius={42} />
+          <SkeletonLoader width="50%" height={22} borderRadius={6} />
+          <SkeletonLoader width="35%" height={14} borderRadius={4} />
+        </View>
+        {/* Stats skeleton */}
+        <SkeletonLoader width="100%" height={90} borderRadius={14} />
+        {/* Section skeletons */}
+        <SkeletonCard />
+        <SkeletonCard />
+      </ScrollView>
+    );
+  }
 
   const displayName = user?.display_name || settings.displayName;
 

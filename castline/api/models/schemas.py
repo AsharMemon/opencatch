@@ -166,6 +166,35 @@ class BestFishingResponse(BaseModel):
 
 # ── Location Embeddings ───────────────────────────────────────
 
+# ── Reviews ────────────────────────────────────────────────────
+
+class Review(BaseModel):
+    id: str
+    location_id: str
+    user_id: str
+    rating: int = Field(..., ge=1, le=5)
+    text: str
+    created_at: datetime
+
+
+class ReviewCreate(BaseModel):
+    location_id: str
+    user_id: str
+    rating: int = Field(..., ge=1, le=5)
+    text: str
+
+
+class ReviewResponse(BaseModel):
+    id: str
+    location_id: str
+    user_id: str
+    rating: int
+    text: str
+    created_at: datetime
+
+
+# ── Location Embeddings ───────────────────────────────────────
+
 class LocationEmbeddingResponse(BaseModel):
     name: str
     lat: float

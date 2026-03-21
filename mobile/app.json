@@ -7,7 +7,9 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "splash": {
-      "backgroundColor": "#07111A"
+      "image": "./assets/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAF8F5"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -18,8 +20,16 @@
     },
     "plugins": [
       "expo-font",
-      "@maplibre/maplibre-react-native"
+      "@maplibre/maplibre-react-native",
+      "expo-location",
+      "expo-haptics"
     ],
+    "infoPlist": {
+      "NSLocationWhenInUseUsageDescription": "OpenCatch uses your location to find nearby fishing spots and provide local conditions.",
+      "NSLocationAlwaysAndWhenInUseUsageDescription": "OpenCatch uses your location to track fishing trips and find nearby spots.",
+      "NSCameraUsageDescription": "OpenCatch uses the camera to photograph your catches.",
+      "NSPhotoLibraryUsageDescription": "OpenCatch accesses your photos to attach catch images."
+    },
     "extra": {
       "eas": {
         "projectId": "0ab7193d-926e-44e6-9d23-4bd4c8aef6d9"

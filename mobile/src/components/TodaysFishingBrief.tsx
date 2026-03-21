@@ -27,10 +27,18 @@ import { getFishingAlerts, type FishingWeatherAlert } from '../services/weatherA
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+interface CurrentWeather {
+  tempC: number;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  isBad: boolean;
+}
+
 interface BriefData {
   bite: DailyBiteForecast;
   pressure: PressureReading;
   alerts: FishingWeatherAlert[];
+  weather: CurrentWeather | null;
 }
 
 function ratingColor(rating: number): string {
@@ -39,6 +47,21 @@ function ratingColor(rating: number): string {
   if (rating >= 40) return '#FFA726';
   if (rating >= 25) return '#EF5350';
   return '#B71C1C';
+}
+
+// ── Weather code to info mapper (WMO codes) ──────────────────────────────────
+
+function weatherCodeToInfo(code: number): { desc: string; icon: keyof typeof Ionicons.glyphMap; isBad: boolean } {
+  if (code === 0) return { desc: 'Clear', icon: 'sunny-outline', isBad: false };
+  if (code <= 3) return { desc: 'Cloudy', icon: 'cloudy-outline', isBad: false };
+  if (code <= 49) return { desc: 'Fog', icon: 'cloud-outline', isBad: false };
+  if (code <= 59) return { desc: 'Drizzle', icon: 'rainy-outline', isBad: false };
+  if (code <= 69) return { desc: 'Rain', icon: 'rainy-outline', isBad: true };
+  if (code <= 79) return { desc: 'Snow', icon: 'snow-outline', isBad: true };
+  if (code <= 84) return { desc: 'Rain showers', icon: 'rainy-outline', isBad: true };
+  if (code <= 86) return { desc: 'Snow showers', icon: 'snow-outline', isBad: true };
+  if (code <= 99) return { desc: 'Thunderstorm', icon: 'thunderstorm-outline', isBad: true };
+  return { desc: 'Unknown', icon: 'cloud-outline', isBad: false };
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -68,14 +91,34 @@ export const TodaysFishingBrief = memo(function TodaysFishingBrief() {
         const bite = getDailyBiteForecast(lat, lon);
         const pressure = getCurrentPressure({ lat, lon });
         let alerts: FishingWeatherAlert[] = [];
+        let weather: CurrentWeather | null = null;
         try {
           alerts = await getFishingAlerts(lat, lon);
         } catch {
           // Alerts are optional
         }
 
+        // Fetch current weather from Open-Meteo
+        try {
+          const weatherRes = await fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`
+          );
+          if (weatherRes.ok) {
+            const weatherData = await weatherRes.json();
+            const current = weatherData?.current;
+            if (current) {
+              const tempC = current.temperature_2m ?? 0;
+              const code = current.weather_code ?? 0;
+              const { desc, icon, isBad } = weatherCodeToInfo(code);
+              weather = { tempC: Math.round(tempC), description: desc, icon, isBad };
+            }
+          }
+        } catch {
+          // Weather is optional
+        }
+
         if (!cancelled) {
-          setData({ bite, pressure, alerts });
+          setData({ bite, pressure, alerts, weather });
         }
       } catch {
         if (!cancelled) setError(true);
@@ -114,8 +157,32 @@ export const TodaysFishingBrief = memo(function TodaysFishingBrief() {
         <Text style={s.headerTitle}>Today's Fishing Brief</Text>
       </View>
 
+      {/* Weather warning if conditions are bad */}
+      {data.weather?.isBad && (
+        <View style={s.alertRow}>
+          <Ionicons name="warning" size={14} color="#E53935" />
+          <Text style={s.alertText}>
+            Not recommended — {data.weather.description.toLowerCase()}
+          </Text>
+        </View>
+      )}
+
       {/* Compact badge grid */}
       <View style={s.badgeGrid}>
+        {/* Current Weather — first badge (most immediately relevant) */}
+        {data.weather && (
+          <View style={[s.badge, { backgroundColor: data.weather.isBad ? '#FFEBEE' : '#E3F2FD' }]}>
+            <Ionicons
+              name={data.weather.icon as any}
+              size={14}
+              color={data.weather.isBad ? '#C62828' : '#1565C0'}
+            />
+            <Text style={[s.badgeLabel, { color: data.weather.isBad ? '#C62828' : '#1565C0' }]}>
+              {data.weather.description} {data.weather.tempC}°C
+            </Text>
+          </View>
+        )}
+
         {/* Bite Rating */}
         <View style={[s.badge, { backgroundColor: color + '15' }]}>
           <Ionicons name="fish" size={14} color={color} />

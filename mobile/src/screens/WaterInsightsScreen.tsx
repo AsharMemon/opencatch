@@ -27,6 +27,7 @@ import {
   type WaterInsightsDashboard,
   type WaterInsight,
   type TrendDirection,
+  type WeatherAdvisory,
 } from '../services/waterInsights';
 
 // ── Trend Arrow ──────────────────────────────────────────────────────────────
@@ -171,10 +172,27 @@ export function WaterInsightsScreen({ route }: any) {
           <View style={[styles.condBadge, { backgroundColor: condColor + '15' }]}>
             <View style={[styles.condDot, { backgroundColor: condColor }]} />
             <Text style={[styles.condLabel, { color: condColor }]}>
-              {dashboard.overallCondition.charAt(0).toUpperCase() + dashboard.overallCondition.slice(1)} Conditions
+              {!dashboard.hasRealGaugeData
+                ? 'No water data available nearby'
+                : `${dashboard.overallCondition.charAt(0).toUpperCase() + dashboard.overallCondition.slice(1)} Water Conditions`}
             </Text>
           </View>
         </View>
+
+        {/* Weather advisory */}
+        {dashboard.weatherAdvisory && (
+          <View style={[styles.weatherAdvisory, {
+            backgroundColor: dashboard.weatherAdvisory.severity === 'danger' ? '#FFEBEE'
+              : dashboard.weatherAdvisory.severity === 'warning' ? '#FFF3E0' : '#E3F2FD',
+          }]}>
+            <Text style={[styles.weatherAdvisoryText, {
+              color: dashboard.weatherAdvisory.severity === 'danger' ? '#C62828'
+                : dashboard.weatherAdvisory.severity === 'warning' ? '#E65100' : '#1565C0',
+            }]}>
+              {dashboard.weatherAdvisory.message}
+            </Text>
+          </View>
+        )}
 
         <Text style={styles.heroImpact}>{dashboard.fishingImpact}</Text>
       </View>
@@ -302,6 +320,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: palette.textSecondary,
     lineHeight: 20,
+  },
+  weatherAdvisory: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  weatherAdvisoryText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
 
   section: { gap: 10 },

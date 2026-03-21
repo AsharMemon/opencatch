@@ -28,6 +28,11 @@ export interface WaterInsight {
   detail?: string;
 }
 
+export interface WeatherAdvisory {
+  message: string;
+  severity: 'info' | 'warning' | 'danger';
+}
+
 export interface WaterInsightsDashboard {
   locationName: string;
   lat: number;
@@ -37,6 +42,8 @@ export interface WaterInsightsDashboard {
   summary: string;
   fishingImpact: string;
   overallCondition: 'excellent' | 'good' | 'fair' | 'poor';
+  hasRealGaugeData: boolean;
+  weatherAdvisory?: WeatherAdvisory;
 }
 
 export interface USGSGaugeReading {
@@ -213,6 +220,8 @@ export async function getWaterInsights(
     airTempF?: number;
     recentRainInches?: number;
     isRiver?: boolean;
+    weatherDescription?: string;
+    weatherTempC?: number;
   },
 ): Promise<WaterInsightsDashboard> {
   const insights: WaterInsight[] = [];
@@ -325,15 +334,40 @@ export async function getWaterInsights(
 
   const assessment = assessFishingImpact(insights);
 
+  // Determine if we got any real USGS gauge data (not just estimates)
+  const hasRealGaugeData = usgsData.length > 0;
+
+  // Build weather advisory if weather conditions are bad
+  let weatherAdvisory: WeatherAdvisory | undefined;
+  if (options?.weatherDescription) {
+    const desc = options.weatherDescription.toLowerCase();
+    const tempC = options.weatherTempC;
+    if (desc.includes('snow') || desc.includes('blizzard')) {
+      const tempLabel = tempC != null ? `, ${Math.round(tempC)}°C` : '';
+      weatherAdvisory = { message: `Weather advisory: snowing${tempLabel}`, severity: 'warning' };
+    } else if (desc.includes('storm') || desc.includes('thunder')) {
+      weatherAdvisory = { message: `Weather advisory: ${desc}`, severity: 'danger' };
+    } else if (tempC != null && tempC <= -10) {
+      weatherAdvisory = { message: `Weather advisory: extreme cold, ${Math.round(tempC)}°C`, severity: 'warning' };
+    }
+  }
+
+  // Build a descriptive location name
+  const locName = options?.locationName && options.locationName !== 'Current Location'
+    ? `Water Conditions near ${options.locationName}`
+    : `Water Conditions at ${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+
   return {
-    locationName: options?.locationName ?? 'Current Location',
+    locationName: locName,
     lat,
     lon,
     timestamp: new Date(),
     insights,
     summary: assessment.summary,
     fishingImpact: assessment.impact,
-    overallCondition: assessment.condition,
+    overallCondition: hasRealGaugeData ? assessment.condition : 'fair',
+    hasRealGaugeData,
+    weatherAdvisory,
   };
 }
 

@@ -21,6 +21,7 @@ import { getSpeciesLikelihood, type SpeciesLikelihood } from '../services/specie
 interface SpotInsightsCardProps {
   lat: number;
   lon: number;
+  locationId?: string;
   locationName?: string;
   compact?: boolean; // true = minimal for focused card; false = full for expanded sheet
 }
@@ -68,6 +69,7 @@ function getCacheKey(lat: number, lon: number): string {
 export const SpotInsightsCard = memo(function SpotInsightsCard({
   lat,
   lon,
+  locationId,
   locationName,
   compact = false,
 }: SpotInsightsCardProps) {
@@ -96,7 +98,9 @@ export const SpotInsightsCard = memo(function SpotInsightsCard({
 
         // Synchronous computations
         const pressure = getCurrentPressure({ lat, lon });
-        const species = getSpeciesLikelihood(lat, lon);
+        // Don't show species for OSM-discovered / unverified spots
+        const isDiscovered = locationId?.startsWith('osm-') || locationId?.startsWith('water-tap-');
+        const species = isDiscovered ? [] : getSpeciesLikelihood(lat, lon);
 
         if (cancelled) return;
 

@@ -894,8 +894,8 @@ export function LocationDetailScreen({ route, navigation }: Props) {
         <WaterConditionsCard data={location.waterLevel} />
       )}
 
-      {/* Species Activity */}
-      {location.speciesActivity && location.speciesActivity.length > 0 && (
+      {/* Species Activity — only for verified (non-OSM) locations */}
+      {!location.id.startsWith('osm-') && !location.id.startsWith('water-tap-') && location.speciesActivity && location.speciesActivity.length > 0 && (
         <SpeciesActivityCard data={location.speciesActivity} />
       )}
 
@@ -951,6 +951,11 @@ export function LocationDetailScreen({ route, navigation }: Props) {
           <Ionicons name="create-outline" size={14} color={palette.accent} />
           <Text style={styles.reviewCTAText}>Write a Review</Text>
         </Pressable>
+        <View style={{ marginTop: 10, paddingHorizontal: 4 }}>
+          <Text style={{ color: palette.textDim, fontSize: 11, textAlign: 'center', fontStyle: 'italic' }}>
+            Reviews are stored locally. They will sync when online features are available.
+          </Text>
+        </View>
       </View>
 
       {/* Log a Catch CTA */}

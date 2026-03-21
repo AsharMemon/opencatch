@@ -14,6 +14,7 @@ import Svg, {
 } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import { SkeletonLoader, SkeletonCard } from '../components/ui/SkeletonLoader';
 import { palette, getConditionBand, conditionConfig, scoreColor } from '../theme/palette';
 import { fonts, type as typeStyles } from '../theme/typography';
 import { getDailyBiteForecast, getWeeklyBiteForecast, formatHour, computeWeatherPenalty, type DailyBiteForecast as BiteFC, type TimeWindow } from '../services/bestTimeWindows';
@@ -939,13 +940,27 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
     }
   };
 
-  // Loading state
+  // Loading state — skeleton placeholders
   if (loading && weekForecast.length === 0) {
     return (
-      <View style={[s.screen, s.centerContent]}>
-        <ActivityIndicator size="large" color={palette.accent} />
-        <Text style={s.loadingText}>Loading forecast...</Text>
-      </View>
+      <ScrollView style={s.screen} contentContainerStyle={{ padding: 20, gap: 16 }}>
+        {/* Header skeleton */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <SkeletonLoader width={22} height={22} borderRadius={11} />
+          <View style={{ flex: 1, gap: 6 }}>
+            <SkeletonLoader width="60%" height={18} borderRadius={4} />
+            <SkeletonLoader width="35%" height={12} borderRadius={3} />
+          </View>
+          <SkeletonLoader width={22} height={22} borderRadius={11} />
+        </View>
+        {/* Toggle skeleton */}
+        <SkeletonLoader width="100%" height={40} borderRadius={10} />
+        {/* Day cards skeleton */}
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
+      </ScrollView>
     );
   }
 

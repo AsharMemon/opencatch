@@ -3,6 +3,7 @@ import Svg, { Circle, Line, Text as SvgText, G, Polygon } from 'react-native-svg
 import {
   ActivityIndicator,
   Animated,
+  AppState,
   Dimensions,
   FlatList,
   Keyboard,
@@ -19,6 +20,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import type { AppStateStatus } from 'react-native';
 // MapLibre native modules only work on iOS/Android
 let MLMapView: any = null;
 let Camera: any = null;
@@ -125,7 +127,6 @@ import {
   arrowAnnotationsGeoJSON,
   circleAnnotationsGeoJSON,
   ANNOTATION_COLORS,
-  ANNOTATION_ICONS,
   type MapAnnotation,
   type AnnotationType,
   type AnnotationCoordinate,
@@ -141,8 +142,6 @@ import {
   COLOR_SCHEMES,
   DEFAULT_CONTOUR_SETTINGS,
   type DepthContourSettings,
-  type ContourInterval,
-  type ContourColorScheme,
 } from '../services/depthContourSettings';
 import { QuickActionFAB } from '../components/QuickActionFAB';
 
@@ -186,8 +185,8 @@ const SEVERITY_BANNER_COLORS: Record<AlertSeverity, string> = {
   Unknown: '#1976D2',
 };
 
-/** Auto-refresh interval for weather alerts (10 minutes). */
-const ALERT_REFRESH_MS = 10 * 60 * 1000;
+/** Auto-refresh interval for weather alerts (30 minutes — reduced from 10 to save battery). */
+const ALERT_REFRESH_MS = 30 * 60 * 1000;
 
 // ── Map style identifiers ────────────────────────────────────────
 
@@ -2034,9 +2033,9 @@ const ContextualTipCard = React.memo(function ContextualTipCard({ tips, waterbod
   useEffect(() => {
     if (tips.length <= 1) return;
     const interval = setInterval(() => {
-      Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+      Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
         setCurrentIdx((prev) => (prev + 1) % tips.length);
-        Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+        Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
       });
     }, TIP_ROTATE_INTERVAL);
     return () => clearInterval(interval);
@@ -2252,8 +2251,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const focusedCardTranslateY = useRef(new Animated.Value(120)).current;
   const focusedCardOpacity = useRef(new Animated.Value(0)).current;
 
-  // Water body highlight pulse
-  const [waterHighlightOpacity, setWaterHighlightOpacity] = useState(0.3);
+  // Water body highlight opacity (static — rAF pulse removed to avoid 60fps re-renders)
 
   // Contextual tips (Feature 1)
   const [contextualTips, setContextualTips] = useState<ContextualTip[]>([]);
@@ -2469,23 +2467,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     [focusedCardTranslateX, focusedCardOpacity],
   );
 
-  // Water body highlight pulse animation (oscillate opacity 0.3 → 0.7)
-  useEffect(() => {
-    if (!focusedLocation) return;
-    let frame: ReturnType<typeof requestAnimationFrame>;
-    let start: number | null = null;
-    const animate = (time: number) => {
-      if (start === null) start = time;
-      const elapsed = time - start;
-      // 2-second cycle: 0→0.7→0.3 smoothly
-      const t = (elapsed % 2000) / 2000;
-      const val = 0.3 + 0.4 * Math.sin(t * Math.PI);
-      setWaterHighlightOpacity(val);
-      frame = requestAnimationFrame(animate);
-    };
-    frame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frame);
-  }, [focusedLocation]);
+  // Water body highlight — static opacity (was rAF+setState pulse causing 60fps re-renders)
+  const waterHighlightOpacity = focusedLocation ? 0.5 : 0.3;
 
   // Recording indicator pulse animation
   useEffect(() => {
@@ -2645,7 +2628,11 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
     return () => {
       cancelled = true;
+      // Clean up ALL debounce/polling timers on unmount
       if (marinaFetchTimer.current) clearTimeout(marinaFetchTimer.current);
+      if (windDebounceRef.current) clearTimeout(windDebounceRef.current);
+      if (accessFetchTimer.current) clearTimeout(accessFetchTimer.current);
+      if (mapStateSaveTimer.current) clearTimeout(mapStateSaveTimer.current);
     };
   }, []);
 
@@ -2659,6 +2646,32 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       console.warn('[MapScreen] Failed to fetch weather alerts:', err);
     }
   }, []);
+
+  // ── Pause all timers when app goes to background (saves battery) ──
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      if (appStateRef.current.match(/active/) && nextState.match(/inactive|background/)) {
+        // App going to background — clear polling timers
+        if (alertRefreshRef.current) { clearInterval(alertRefreshRef.current); alertRefreshRef.current = null; }
+        if (marinaFetchTimer.current) { clearTimeout(marinaFetchTimer.current); marinaFetchTimer.current = null; }
+        if (windDebounceRef.current) { clearTimeout(windDebounceRef.current); windDebounceRef.current = null; }
+        if (accessFetchTimer.current) { clearTimeout(accessFetchTimer.current); accessFetchTimer.current = null; }
+        if (discoveryTimer.current) { clearTimeout(discoveryTimer.current); discoveryTimer.current = null; }
+        if (mapStateSaveTimer.current) { clearTimeout(mapStateSaveTimer.current); mapStateSaveTimer.current = null; }
+      } else if (nextState === 'active' && appStateRef.current.match(/inactive|background/)) {
+        // App returning to foreground — restart alert polling
+        if (userLocation) {
+          fetchWeatherAlerts(userLocation.lat, userLocation.lon);
+          alertRefreshRef.current = setInterval(() => {
+            fetchWeatherAlerts(userLocation.lat, userLocation.lon);
+          }, ALERT_REFRESH_MS);
+        }
+      }
+      appStateRef.current = nextState;
+    });
+    return () => sub.remove();
+  }, [userLocation, fetchWeatherAlerts]);
 
   useEffect(() => {
     if (!userLocation) return;
@@ -3895,15 +3908,28 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                 textSize: 12,
               }}
             />
+            {/* Backend / verified location pins — solid fill */}
             <CircleLayer
               id="location-unclustered-layer"
-              filter={['!', ['has', 'point_count']] as any}
+              filter={['all', ['!', ['has', 'point_count']], ['!=', ['get', 'isDiscovered'], 1]] as any}
               style={{
                 circleColor: ['get', 'displayColor'] as any,
                 circleRadius: 6,
                 circleStrokeColor: '#FFFFFF',
                 circleStrokeWidth: 1.2,
                 circleOpacity: 0.96,
+              }}
+            />
+            {/* OSM / unseen / discovered pins — hollow circle (border only, no fill) */}
+            <CircleLayer
+              id="location-discovered-layer"
+              filter={['all', ['!', ['has', 'point_count']], ['==', ['get', 'isDiscovered'], 1]] as any}
+              style={{
+                circleColor: 'rgba(255,255,255,0)',
+                circleRadius: 6,
+                circleStrokeColor: ['get', 'displayColor'] as any,
+                circleStrokeWidth: 2,
+                circleOpacity: 1,
               }}
             />
           </ShapeSource>
@@ -4544,32 +4570,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         />
       </Pressable>
 
-      {/* Annotation mode toggle button */}
-      <Pressable
-        style={[styles.rulerButton, { top: Platform.OS === 'ios' ? 355 : 315 }, annotationMode && styles.rulerButtonActive]}
-        onPress={() => {
-          setAnnotationMode((prev) => {
-            if (prev) setArrowStart(null);
-            return !prev;
-          });
-        }}
-        accessibilityLabel={annotationMode ? 'Exit annotation mode' : 'Annotate map'}
-      >
-        <Ionicons
-          name="create-outline"
-          size={20}
-          color={annotationMode ? '#FFFFFF' : palette.textSecondary}
-        />
-      </Pressable>
-
-      {/* Contour settings button */}
-      <Pressable
-        style={[styles.rulerButton, { top: Platform.OS === 'ios' ? 405 : 365 }]}
-        onPress={() => setShowContourModal(true)}
-        accessibilityLabel="Depth contour settings"
-      >
-        <Ionicons name="color-palette-outline" size={20} color={palette.textSecondary} />
-      </Pressable>
+      {/* Annotation and contour settings accessible via layer picker */}
 
       {/* Compass heading widget */}
       <CompassWidget heading={compassHeading} mode={compassMode} onToggleMode={handleToggleCompassMode} />
@@ -4607,23 +4608,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         accessibilityLabel={accessEnabled ? 'Hide access points' : 'Show access points'}
       />
 
-      {/* Catch photos toggle button */}
-      <MapToggleButton
-        style={styles.photosButton}
-        activeStyle={styles.photosButtonActive}
-        isActive={photosEnabled}
-        isLoading={catchPhotosLoading}
-        icon="camera-outline"
-        onPress={() => setPhotosEnabled((prev) => !prev)}
-        accessibilityLabel={photosEnabled ? 'Hide catch photos' : 'Show catch photos on map'}
-        badge={
-          photosInView > 0 && photosEnabled ? (
-            <View style={styles.photosBadge}>
-              <Text style={styles.photosBadgeText}>{photosInView > 99 ? '99+' : photosInView}</Text>
-            </View>
-          ) : undefined
-        }
-      />
+      {/* Catch photos toggle available via layer picker */}
 
       {/* Fishing time banner — shows when conditions are good */}
       {userLocation && (
@@ -5034,6 +5019,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           <SpotInsightsCard
             lat={focusedLocation.lat}
             lon={focusedLocation.lon}
+            locationId={focusedLocation.id}
             locationName={focusedLocation.name}
             compact
           />
@@ -5717,9 +5703,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Platform.OS === 'ios' ? 155 : 115,
     right: 16,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: palette.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -6045,9 +6031,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Platform.OS === 'ios' ? 205 : 165,
     right: 16,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: palette.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -6333,9 +6319,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Platform.OS === 'ios' ? 255 : 215,
     right: 16,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: palette.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -6354,7 +6340,7 @@ const styles = StyleSheet.create({
     top: -4,
     right: -4,
   },
-  windButton: { position: 'absolute', top: Platform.OS === 'ios' ? 305 : 265, zIndex: 5, right: 16, width: 44, height: 44, borderRadius: 22, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  windButton: { position: 'absolute', top: Platform.OS === 'ios' ? 305 : 265, zIndex: 5, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
   windButtonActive: { backgroundColor: palette.accent },
   windSpinner: { position: 'absolute', top: -4, right: -4 },
   windBanner: { position: 'absolute', top: Platform.OS === 'ios' ? 60 : 40, right: 70, flexDirection: 'row', alignItems: 'center', backgroundColor: palette.surface, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
@@ -6436,11 +6422,11 @@ const styles = StyleSheet.create({
   // ── Access points styles ────────────────────────────────────────────
   accessButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 455 : 415,
+    top: Platform.OS === 'ios' ? 355 : 315,
     right: 16,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: palette.surface,
     alignItems: 'center',
     justifyContent: 'center',

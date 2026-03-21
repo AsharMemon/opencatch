@@ -10,7 +10,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Request, HTTPException, Query
 
-from castline.api.models.schemas import CatchReportCreate, CatchReportResponse
+from castline.api.models.schemas import CatchReportCreate, CatchReportResponse, ReviewCreate, ReviewResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -186,3 +186,72 @@ async def signal_dashboard(
             "note": "Accuracy metrics require prediction-report pairing (coming soon)",
         },
     }
+
+
+# ── Reviews ──────────────────────────────────────────────────────────────
+
+
+def _next_review_id() -> str:
+    """Generate a unique review ID."""
+    import uuid
+    return str(uuid.uuid4())[:12]
+
+
+@router.post("/reviews", response_model=ReviewResponse)
+async def submit_review(review: ReviewCreate):
+    """Submit a location review.
+
+    Persists to JSONL storage. Will migrate to PostgreSQL with user auth.
+    """
+    review_id = _next_review_id()
+    now = datetime.now(timezone.utc)
+    entry = review.model_dump()
+    entry["id"] = review_id
+    entry["created_at"] = now.isoformat()
+
+    reviews_path = _DATA_DIR / "reviews.jsonl"
+    with open(reviews_path, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+    logger.info("Review %s saved for location %s", review_id, review.location_id)
+
+    return ReviewResponse(
+        id=review_id,
+        location_id=review.location_id,
+        user_id=review.user_id,
+        rating=review.rating,
+        text=review.text,
+        created_at=now,
+    )
+
+
+@router.get("/reviews")
+async def list_reviews(
+    location_id: str = Query("", description="Filter by location ID"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+):
+    """List reviews, optionally filtered by location."""
+    reviews_path = _DATA_DIR / "reviews.jsonl"
+    if not reviews_path.exists():
+        return {"reviews": [], "total": 0}
+
+    reviews = []
+    with open(reviews_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                review = json.loads(line)
+                if location_id and review.get("location_id") != location_id:
+                    continue
+                reviews.append(review)
+            except json.JSONDecodeError:
+                continue
+
+    total = len(reviews)
+    reviews.reverse()  # Most recent first
+    reviews = reviews[offset : offset + limit]
+
+    return {"reviews": reviews, "total": total, "limit": limit, "offset": offset}

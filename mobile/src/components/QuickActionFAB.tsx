@@ -63,7 +63,14 @@ export function QuickActionFAB({ actions }: QuickActionFABProps) {
         <Pressable style={styles.backdrop} onPress={toggleMenu} />
       )}
 
-      {/* Action items (rendered bottom-up, positioned to the LEFT of the FAB) */}
+      {/* Main FAB (rendered first so action items are on top with higher zIndex) */}
+      <Pressable onPress={toggleMenu} style={[styles.mainButton, { zIndex: 1 }]}>
+        <Animated.View style={[styles.mainButtonInner, { transform: [{ rotate: rotation }] }]}>
+          <Ionicons name="add" size={28} color="#FFFFFF" />
+        </Animated.View>
+      </Pressable>
+
+      {/* Action items — expand UPWARD from the FAB, labels to the LEFT of icons */}
       {actions.map((action, index) => {
         const reverseIndex = actions.length - index;
         const translateY = animation.interpolate({
@@ -87,6 +94,7 @@ export function QuickActionFAB({ actions }: QuickActionFABProps) {
               {
                 transform: [{ translateY }, { scale }],
                 opacity,
+                zIndex: 10,
               },
             ]}
             pointerEvents={expanded ? 'auto' : 'none'}
@@ -106,13 +114,6 @@ export function QuickActionFAB({ actions }: QuickActionFABProps) {
           </Animated.View>
         );
       })}
-
-      {/* Main FAB */}
-      <Pressable onPress={toggleMenu} style={styles.mainButton}>
-        <Animated.View style={[styles.mainButtonInner, { transform: [{ rotate: rotation }] }]}>
-          <Ionicons name="add" size={28} color="#FFFFFF" />
-        </Animated.View>
-      </Pressable>
     </View>
   );
 }
@@ -124,6 +125,8 @@ const styles = StyleSheet.create({
     right: 16,
     alignItems: 'flex-end',
     zIndex: 50,
+    // Ensure enough width for labels + icon without clipping
+    width: 200,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,

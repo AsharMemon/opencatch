@@ -81,7 +81,7 @@ function TabNavigator({ user, onLogout }: NavProps) {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        animation: 'shift' as const,
+        animation: 'fade' as const,
         headerStyle: {
           backgroundColor: palette.background,
         },
@@ -144,7 +144,7 @@ function TabNavigator({ user, onLogout }: NavProps) {
       <Tab.Screen
         name="LogTab"
         component={LogTabPlaceholder}
-        options={{ title: 'Log', headerTitle: () => <HeaderLogo /> }}
+        options={{ title: 'Log' }}
         listeners={({ navigation }: any) => ({
           tabPress: (e: any) => {
             e.preventDefault();
@@ -156,18 +156,18 @@ function TabNavigator({ user, onLogout }: NavProps) {
       <Tab.Screen
         name="ForecastsTab"
         component={ForecastsScreen}
-        options={{ title: 'Forecasts', headerTitle: () => <HeaderLogo /> }}
+        options={{ title: 'Forecasts' }}
         listeners={{ tabPress: () => hapticLight() }}
       />
       <Tab.Screen
         name="ToolsTab"
         component={ToolsScreen}
-        options={{ title: 'Tools', headerTitle: () => <HeaderLogo /> }}
+        options={{ title: 'Tools' }}
         listeners={{ tabPress: () => hapticLight() }}
       />
       <Tab.Screen
         name="ProfileTab"
-        options={{ title: 'Profile', headerTitle: () => <HeaderLogo /> }}
+        options={{ title: 'Profile' }}
         listeners={{ tabPress: () => hapticLight() }}
       >
         {(props: any) => <ProfileScreen {...props} user={user} onLogout={onLogout} />}
