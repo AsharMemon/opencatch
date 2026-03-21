@@ -1,6 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useRef } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SpotCardModel } from '../types/spots';
 import { palette } from '../theme/palette';
+import { hapticLight } from '../utils/haptics';
 
 interface SpotCardProps {
   spot: SpotCardModel;
@@ -8,18 +10,49 @@ interface SpotCardProps {
 }
 
 export function SpotCard({ spot, onPress }: SpotCardProps) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = useCallback(() => {
+    Animated.spring(scale, {
+      toValue: 0.98,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  }, [scale]);
+
+  const handlePressOut = useCallback(() => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 40,
+      bounciness: 6,
+    }).start();
+  }, [scale]);
+
+  const handlePress = useCallback(() => {
+    hapticLight();
+    onPress();
+  }, [onPress]);
+
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
-      <View style={styles.row}>
-        <View style={styles.badge} />
-        <Text style={styles.title}>{spot.name}</Text>
-      </View>
-      <Text style={styles.subtitle}>{spot.subtitle}</Text>
-      <View style={styles.metricRow}>
-        <Text style={styles.metricLabel}>{spot.conditionLabel}</Text>
-        <Text style={styles.metricValue}>{spot.conditionValue}</Text>
-      </View>
-      <Text style={styles.note}>{spot.note}</Text>
+    <Pressable
+      onPress={handlePress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+    >
+      <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
+        <View style={styles.row}>
+          <View style={styles.badge} />
+          <Text style={styles.title}>{spot.name}</Text>
+        </View>
+        <Text style={styles.subtitle}>{spot.subtitle}</Text>
+        <View style={styles.metricRow}>
+          <Text style={styles.metricLabel}>{spot.conditionLabel}</Text>
+          <Text style={styles.metricValue}>{spot.conditionValue}</Text>
+        </View>
+        <Text style={styles.note}>{spot.note}</Text>
+      </Animated.View>
     </Pressable>
   );
 }
@@ -27,14 +60,14 @@ export function SpotCard({ spot, onPress }: SpotCardProps) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     gap: 8,
-    borderWidth: 1,
-    borderColor: palette.border,
-  },
-  cardPressed: {
-    opacity: 0.9,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   row: {
     flexDirection: 'row',
@@ -48,13 +81,16 @@ const styles = StyleSheet.create({
     backgroundColor: palette.accent,
   },
   title: {
+    fontFamily: 'PlayfairDisplay-Bold',
     color: palette.text,
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '400',
+    letterSpacing: -0.2,
   },
   subtitle: {
     color: palette.textMuted,
-    fontSize: 14,
+    fontSize: 13,
+    lineHeight: 18,
   },
   metricRow: {
     flexDirection: 'row',
@@ -68,11 +104,12 @@ const styles = StyleSheet.create({
   metricValue: {
     color: palette.success,
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
   note: {
     color: palette.text,
     fontSize: 15,
-    lineHeight: 21,
+    lineHeight: 22,
   },
 });

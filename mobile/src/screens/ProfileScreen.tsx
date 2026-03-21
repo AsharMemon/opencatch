@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   ScrollView,
   View,
   Text,
@@ -9,13 +10,43 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/palette';
 import { fonts, type as typeStyles } from '../theme/typography';
 import { SettingsToggle, SettingsButton } from '../components/SettingsRow';
+import { TodaysFishingBrief } from '../components/TodaysFishingBrief';
+import { ActivityHeatmap } from '../components/ActivityHeatmap';
+import { AnimatedNumber } from '../components/ui/AnimatedNumber';
+import { hapticLight, hapticSelection } from '../utils/haptics';
 import { api } from '../services/api';
 import type { UnitSystem, UserSettings } from '../types/models';
 import type { UserProfile } from '../services/auth';
+
+// ── Mock recent activity data ───────────────────────────────────
+
+interface RecentActivity {
+  id: string;
+  date: string;
+  location: string;
+  fishCount: number;
+  ionicon: string;
+}
+
+const RECENT_ACTIVITY: RecentActivity[] = [
+  { id: '1', date: 'Mar 16', location: 'Lake Fork, TX', fishCount: 7, ionicon: 'fish-outline' },
+  { id: '2', date: 'Mar 14', location: 'Grand Lake, OK', fishCount: 4, ionicon: 'fish-outline' },
+  { id: '3', date: 'Mar 10', location: 'Sam Rayburn, TX', fishCount: 11, ionicon: 'fish-outline' },
+  { id: '4', date: 'Mar 7', location: 'Table Rock Lake, MO', fishCount: 3, ionicon: 'fish-outline' },
+];
+
+// ── Mock stats ─────────────────────────────────────────────────
+
+const STATS = [
+  { label: 'Total Catches', value: 25, icon: 'fish-outline' },
+  { label: 'Trips', value: 12, icon: 'navigate-outline' },
+  { label: 'Species', value: 8, icon: 'leaf-outline' },
+];
 
 interface ProfileScreenProps {
   user: UserProfile | null;
@@ -28,8 +59,28 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
 
+  // Staggered entrance animations
+  const headerOpacity = useRef(new Animated.Value(0)).current;
+  const headerTranslateY = useRef(new Animated.Value(20)).current;
+  const statsOpacity = useRef(new Animated.Value(0)).current;
+  const statsTranslateY = useRef(new Animated.Value(20)).current;
+  const contentOpacity = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     api.getSettings().then(setSettings);
+
+    // Staggered entrance
+    Animated.stagger(150, [
+      Animated.parallel([
+        Animated.timing(headerOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.spring(headerTranslateY, { toValue: 0, damping: 20, stiffness: 200, useNativeDriver: true }),
+      ]),
+      Animated.parallel([
+        Animated.timing(statsOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.spring(statsTranslateY, { toValue: 0, damping: 20, stiffness: 200, useNativeDriver: true }),
+      ]),
+      Animated.timing(contentOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+    ]).start();
   }, []);
 
   if (!settings) return <View style={styles.screen} />;
@@ -42,6 +93,7 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
   };
 
   const toggleUnit = () => {
+    hapticSelection();
     const next: UnitSystem = settings.units === 'imperial' ? 'metric' : 'imperial';
     updateSetting({ units: next });
   };
@@ -54,6 +106,7 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
   };
 
   const handleLogout = () => {
+    hapticLight();
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -66,12 +119,37 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      {/* Profile header */}
-      <View style={styles.profileCard}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {displayName.charAt(0).toUpperCase()}
-          </Text>
+      {/* Settings gear icon */}
+      <Pressable
+        style={styles.settingsGear}
+        onPress={() => { hapticLight(); navigation.navigate('Settings'); }}
+        hitSlop={12}
+      >
+        <Ionicons name="settings-outline" size={24} color={palette.textMuted} />
+      </Pressable>
+
+      {/* Today's Fishing Brief — top-level intelligence card */}
+      <TodaysFishingBrief />
+
+      {/* Profile header with gradient background */}
+      <Animated.View style={[styles.profileCard, { opacity: headerOpacity, transform: [{ translateY: headerTranslateY }] }]}>
+        <LinearGradient
+          colors={['rgba(10, 110, 189, 0.12)', 'rgba(10, 110, 189, 0.03)', 'transparent']}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.profileGradient}
+        />
+        <View style={styles.avatarOuter}>
+          <LinearGradient
+            colors={[palette.accent, palette.accentDeep]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.avatar}
+          >
+            <Text style={styles.avatarText}>
+              {displayName.charAt(0).toUpperCase()}
+            </Text>
+          </LinearGradient>
         </View>
         {editingName ? (
           <View style={styles.nameEditRow}>
@@ -90,6 +168,7 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
         ) : (
           <Pressable
             onPress={() => {
+              hapticLight();
               setNameInput(displayName);
               setEditingName(true);
             }}
@@ -101,147 +180,145 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
         {user?.email && (
           <Text style={styles.emailText}>{user.email}</Text>
         )}
-      </View>
+      </Animated.View>
 
-      {/* Fishing Tools */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Fishing Tools</Text>
-        <View style={styles.toolsGrid}>
-          <Pressable style={styles.toolCard} onPress={() => navigation.navigate('Stats')}>
-            <Ionicons name="stats-chart" size={24} color={palette.accent} />
-            <Text style={styles.toolLabel}>My Stats</Text>
-          </Pressable>
-          <Pressable style={styles.toolCard} onPress={() => navigation.navigate('SpeciesGuide')}>
-            <Ionicons name="fish" size={24} color="#4682B4" />
-            <Text style={styles.toolLabel}>Species Guide</Text>
-          </Pressable>
-          <Pressable style={styles.toolCard} onPress={() => navigation.navigate('Regulations', {})}>
-            <Ionicons name="document-text" size={24} color="#8B4513" />
-            <Text style={styles.toolLabel}>Regulations</Text>
-          </Pressable>
-          <Pressable style={styles.toolCard} onPress={() => navigation.navigate('BaitGuide', {})}>
-            <Ionicons name="bug" size={24} color="#DAA520" />
-            <Text style={styles.toolLabel}>Bait Guide</Text>
-          </Pressable>
-          <Pressable style={styles.toolCard} onPress={() => navigation.navigate('TideChart', { stationId: '', stationName: 'Find Station' })}>
-            <Ionicons name="water" size={24} color="#1E88E5" />
-            <Text style={styles.toolLabel}>Tides</Text>
-          </Pressable>
-          <Pressable style={styles.toolCard} onPress={() => navigation.navigate('OfflineMaps')}>
-            <Ionicons name="cloud-offline" size={24} color="#607D8B" />
-            <Text style={styles.toolLabel}>Offline Maps</Text>
-          </Pressable>
-          <Pressable style={styles.toolCard} onPress={() => navigation.navigate('Alerts')}>
-            <Ionicons name="warning" size={24} color="#E53935" />
-            <Text style={styles.toolLabel}>Alerts</Text>
-          </Pressable>
-          <Pressable style={styles.toolCard} onPress={() => navigation.navigate('Safety')}>
-            <Ionicons name="shield-checkmark" size={24} color="#2E7D32" />
-            <Text style={styles.toolLabel}>Safety</Text>
-          </Pressable>
-          <Pressable style={styles.toolCard} onPress={() => navigation.navigate('TrackRecording')}>
-            <Ionicons name="navigate" size={24} color="#E65100" />
-            <Text style={styles.toolLabel}>Track Trip</Text>
-          </Pressable>
-          <Pressable style={styles.toolCard} onPress={() => navigation.navigate('WeatherBuoys', {})}>
-            <Ionicons name="radio" size={24} color="#0288D1" />
-            <Text style={styles.toolLabel}>Buoys</Text>
-          </Pressable>
-          <Pressable style={styles.toolCard} onPress={() => navigation.navigate('SunMoon')}>
-            <Ionicons name="moon" size={24} color="#5C6BC0" />
-            <Text style={styles.toolLabel}>Sun & Moon</Text>
-          </Pressable>
+      {/* Stats row with animated numbers */}
+      <Animated.View style={[styles.statsRow, { opacity: statsOpacity, transform: [{ translateY: statsTranslateY }] }]}>
+        {STATS.map((stat, idx) => (
+          <View key={stat.label} style={[styles.statCard, idx < STATS.length - 1 && styles.statCardBorder]}>
+            <View style={styles.statIconCircle}>
+              <Ionicons name={stat.icon as any} size={16} color={palette.accent} />
+            </View>
+            <AnimatedNumber
+              value={stat.value}
+              duration={800 + idx * 200}
+              style={styles.statValue}
+            />
+            <Text style={styles.statLabel}>{stat.label}</Text>
+          </View>
+        ))}
+      </Animated.View>
+
+      <Animated.View style={{ opacity: contentOpacity, gap: 24 }}>
+        {/* Activity Heatmap */}
+        <ActivityHeatmap />
+
+        {/* Recent Activity */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <View style={styles.sectionCard}>
+            {RECENT_ACTIVITY.map((activity, idx) => (
+              <Pressable
+                key={activity.id}
+                style={[
+                  styles.activityRow,
+                  idx < RECENT_ACTIVITY.length - 1 && styles.activityRowBorder,
+                ]}
+              >
+                <View style={styles.activityIcon}>
+                  <Ionicons name={activity.ionicon as any} size={18} color={palette.accent} />
+                </View>
+                <View style={styles.activityInfo}>
+                  <Text style={styles.activityLocation} numberOfLines={1}>
+                    {activity.location}
+                  </Text>
+                  <Text style={styles.activityDate}>{activity.date}</Text>
+                </View>
+                <Text style={styles.activityCount}>{activity.fishCount} fish</Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
-      </View>
 
-      {/* Units */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Preferences</Text>
-        <View style={styles.sectionCard}>
-          <SettingsButton
-            label="Units"
-            value={settings.units === 'imperial' ? 'Imperial (\u00B0F, mph)' : 'Metric (\u00B0C, km/h)'}
-            onPress={toggleUnit}
-          />
+        {/* Units */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Preferences</Text>
+          <View style={styles.sectionCard}>
+            <SettingsButton
+              label="Units"
+              value={settings.units === 'imperial' ? 'Imperial (\u00B0F, mph)' : 'Metric (\u00B0C, km/h)'}
+              onPress={toggleUnit}
+            />
+          </View>
         </View>
-      </View>
 
-      {/* Notifications */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Notifications</Text>
-        <View style={styles.sectionCard}>
-          <SettingsToggle
-            label="Daily Forecast"
-            value={settings.notifications.dailyForecast}
-            onValueChange={(val) =>
-              updateSetting({
-                notifications: { ...settings.notifications, dailyForecast: val },
-              })
-            }
-          />
-          <SettingsToggle
-            label="Score Alerts"
-            value={settings.notifications.scoreAlerts}
-            onValueChange={(val) =>
-              updateSetting({
-                notifications: { ...settings.notifications, scoreAlerts: val },
-              })
-            }
-          />
-          <SettingsToggle
-            label="Weekly Digest"
-            value={settings.notifications.weeklyDigest}
-            onValueChange={(val) =>
-              updateSetting({
-                notifications: { ...settings.notifications, weeklyDigest: val },
-              })
-            }
-          />
+        {/* Notifications */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notifications</Text>
+          <View style={styles.sectionCard}>
+            <SettingsToggle
+              label="Daily Forecast"
+              value={settings.notifications.dailyForecast}
+              onValueChange={(val) =>
+                updateSetting({
+                  notifications: { ...settings.notifications, dailyForecast: val },
+                })
+              }
+            />
+            <SettingsToggle
+              label="Score Alerts"
+              value={settings.notifications.scoreAlerts}
+              onValueChange={(val) =>
+                updateSetting({
+                  notifications: { ...settings.notifications, scoreAlerts: val },
+                })
+              }
+            />
+            <SettingsToggle
+              label="Weekly Digest"
+              value={settings.notifications.weeklyDigest}
+              onValueChange={(val) =>
+                updateSetting({
+                  notifications: { ...settings.notifications, weeklyDigest: val },
+                })
+              }
+            />
+          </View>
         </View>
-      </View>
 
-      {/* Account */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Account</Text>
-        <View style={styles.sectionCard}>
-          <SettingsButton
-            label="Log Out"
-            value=""
-            onPress={handleLogout}
-          />
+        {/* Account */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <View style={styles.sectionCard}>
+            <SettingsButton
+              label="Log Out"
+              value=""
+              onPress={handleLogout}
+            />
+          </View>
         </View>
-      </View>
 
-      {/* About */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>About</Text>
-        <View style={styles.sectionCard}>
-          <SettingsButton
-            label="Version"
-            value="0.1.0 (MVP)"
-            onPress={() => {}}
-          />
-          <SettingsButton
-            label="Privacy Policy"
-            value=""
-            onPress={() => Alert.alert('Coming Soon', 'Privacy policy will be available at launch.')}
-          />
-          <SettingsButton
-            label="Terms of Service"
-            value=""
-            onPress={() => Alert.alert('Coming Soon', 'Terms of service will be available at launch.')}
-          />
+        {/* About */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>About</Text>
+          <View style={styles.sectionCard}>
+            <SettingsButton
+              label="Version"
+              value="0.1.0 (MVP)"
+              onPress={() => {}}
+            />
+            <SettingsButton
+              label="Privacy Policy"
+              value=""
+              onPress={() => Alert.alert('Coming Soon', 'Privacy policy will be available at launch.')}
+            />
+            <SettingsButton
+              label="Terms of Service"
+              value=""
+              onPress={() => Alert.alert('Coming Soon', 'Terms of service will be available at launch.')}
+            />
+          </View>
         </View>
-      </View>
 
-      {/* Branding */}
-      <View style={styles.brandSection}>
-        <Text style={styles.brandTitle}>OpenCatch</Text>
-        <Text style={styles.brandSubtitle}>AI-Powered Fishing Predictions</Text>
-        <Text style={styles.brandVersion}>v0.1.0 MVP</Text>
-      </View>
+        {/* Branding */}
+        <View style={styles.brandSection}>
+          <Text style={styles.brandTitle}>OpenCatch</Text>
+          <Text style={styles.brandSubtitle}>AI-Powered Fishing Predictions</Text>
+          <Text style={styles.brandVersion}>v0.1.0 MVP</Text>
+        </View>
 
-      <View style={{ height: 40 }} />
+        <View style={{ height: 40 }} />
+      </Animated.View>
     </ScrollView>
   );
 }
@@ -251,22 +328,47 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: palette.background,
   },
+  settingsGear: {
+    alignSelf: 'flex-end',
+    marginBottom: -8,
+  },
   content: {
     padding: 20,
     gap: 24,
   },
+
+  // ── Profile header with gradient ──────────────────────────────
   profileCard: {
     alignItems: 'center',
     gap: 14,
-    paddingVertical: 20,
+    paddingVertical: 28,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: palette.surface,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  profileGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  avatarOuter: {
+    shadowColor: palette.accent,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: palette.accent,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: 'rgba(255, 255, 255, 0.9)',
   },
   avatarText: {
     color: '#fff',
@@ -274,7 +376,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   displayName: {
-    ...typeStyles.screenTitle,
+    fontFamily: 'PlayfairDisplay-Bold',
+    fontSize: 24,
+    fontWeight: '400',
+    letterSpacing: -0.3,
     color: palette.text,
     textAlign: 'center',
   },
@@ -294,8 +399,8 @@ const styles = StyleSheet.create({
   },
   nameInput: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 10,
+    borderWidth: 1.5,
     borderColor: palette.accent,
     padding: 12,
     color: palette.text,
@@ -303,52 +408,123 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
   },
+
+  // ── Stats row ─────────────────────────────────────────────────
+  statsRow: {
+    flexDirection: 'row',
+    backgroundColor: palette.surface,
+    borderRadius: 14,
+    paddingVertical: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  statCard: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+  },
+  statCardBorder: {
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: palette.borderLight,
+  },
+  statIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: palette.accentDim,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: palette.text,
+    fontVariant: ['tabular-nums'],
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: palette.textMuted,
+    letterSpacing: 0.2,
+  },
+
+  // ── Sections ──────────────────────────────────────────────────
   section: {
     gap: 10,
   },
   sectionTitle: {
-    color: palette.textMuted,
-    fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'PlayfairDisplay-Regular',
+    color: palette.textSecondary,
+    fontSize: 14,
+    fontWeight: '400',
     paddingLeft: 4,
+    letterSpacing: -0.1,
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: palette.border,
-  },
-  toolsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  toolCard: {
-    width: '31%',
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 16,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+
+  // ── Activity rows ─────────────────────────────────────────────
+  activityRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: palette.border,
+    paddingVertical: 14,
+    gap: 12,
   },
-  toolLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+  activityRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: palette.borderLight,
+  },
+  activityIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: palette.accentDim,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activityInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  activityLocation: {
     color: palette.text,
-    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '600',
   },
+  activityDate: {
+    color: palette.textMuted,
+    fontSize: 13,
+  },
+  activityCount: {
+    color: palette.accent,
+    fontSize: 13,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+
+  // ── Branding ──────────────────────────────────────────────────
   brandSection: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 24,
     gap: 4,
   },
   brandTitle: {
-    ...typeStyles.brand,
-    color: palette.accent,
+    fontFamily: 'PlayfairDisplay-Bold',
     fontSize: 20,
+    fontWeight: '400',
+    color: palette.accent,
+    letterSpacing: -0.5,
   },
   brandSubtitle: {
     color: palette.textMuted,

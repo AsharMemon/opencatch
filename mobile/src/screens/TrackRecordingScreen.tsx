@@ -1,11 +1,14 @@
 /**
  * OpenCatch — Track Recording Screen
  *
- * Full-screen trip recording UI with:
- * - Live GPS track stats (distance, duration, speed)
- * - Pause / resume / stop controls
- * - Track history with GPX export
- * - Track detail view with mini map preview
+ * Navionics-inspired trip recording UI with:
+ * - Mini-map showing live GPS track colored by speed
+ * - Live stats: distance, duration, avg speed, max speed, current speed
+ * - Mark Waypoint button to drop pins during recording
+ * - Catch logging shortcut at current GPS position
+ * - Big prominent elapsed timer
+ * - Pause/resume with visual state changes
+ * - Speed-colored track line (green=slow, red=fast)
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -13,10 +16,9 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  FlatList,
+  Platform,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -24,12 +26,35 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/palette';
-import { type as typeStyles } from '../theme/typography';
+import { type as typeStyles, fonts } from '../theme/typography';
 import {
   trackRecorder,
+  buildSpeedColoredGeoJSON,
+  speedToColor,
   type FishingTrack,
   type TrackStats,
+  type TrackWaypoint,
 } from '../services/trackRecorder';
+
+// MapLibre — optional (only works on native)
+let MLMapView: any = null;
+let Camera: any = null;
+let ShapeSource: any = null;
+let LineLayer: any = null;
+let PointAnnotation: any = null;
+let UserLocation: any = null;
+
+try {
+  const maplibre = require('@maplibre/maplibre-react-native');
+  MLMapView = maplibre.MapView;
+  Camera = maplibre.Camera;
+  ShapeSource = maplibre.ShapeSource;
+  LineLayer = maplibre.LineLayer;
+  PointAnnotation = maplibre.PointAnnotation;
+  UserLocation = maplibre.UserLocation;
+} catch {
+  // Web fallback — no map
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -41,29 +66,25 @@ function formatDuration(minutes: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+function formatDurationLarge(startTime: number): string {
+  const elapsed = Math.max(0, Date.now() - startTime);
+  const totalSec = Math.floor(elapsed / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) {
+    return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
 function formatDistance(miles: number): string {
   if (miles < 0.1) return `${Math.round(miles * 5280)} ft`;
   return `${miles.toFixed(2)} mi`;
 }
 
 function formatSpeed(mph: number): string {
-  return `${mph.toFixed(1)} mph`;
-}
-
-function formatDate(timestamp: number): string {
-  const d = new Date(timestamp);
-  return d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-function formatTime(timestamp: number): string {
-  return new Date(timestamp).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
+  return `${mph.toFixed(1)}`;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -74,14 +95,24 @@ export function TrackRecordingScreen({ navigation }: any) {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [activeTrack, setActiveTrack] = useState<FishingTrack | null>(null);
-  const [savedTracks, setSavedTracks] = useState<FishingTrack[]>([]);
   const [stats, setStats] = useState<TrackStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showHistory, setShowHistory] = useState(false);
   const [trackName, setTrackName] = useState('');
+  const [timerDisplay, setTimerDisplay] = useState('00:00');
 
   // Pulse animation for recording indicator
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const cameraRef = useRef<any>(null);
+
+  // Live timer update
+  useEffect(() => {
+    if (isRecording && !isPaused && activeTrack) {
+      const interval = setInterval(() => {
+        setTimerDisplay(formatDurationLarge(activeTrack.startTime));
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [isRecording, isPaused, activeTrack?.startTime]);
 
   useEffect(() => {
     if (isRecording && !isPaused) {
@@ -98,7 +129,7 @@ export function TrackRecordingScreen({ navigation }: any) {
     }
   }, [isRecording, isPaused]);
 
-  // Load saved tracks on mount
+  // Load data on mount
   useEffect(() => {
     loadData();
   }, []);
@@ -107,15 +138,25 @@ export function TrackRecordingScreen({ navigation }: any) {
   useEffect(() => {
     const unsub = recorder.subscribe((track: FishingTrack | null) => {
       setActiveTrack(track ? { ...track } : null);
+      if (track) {
+        setIsRecording(true);
+        setIsPaused(recorder.getIsPaused());
+      }
     });
+    // Check if already recording
+    const existing = recorder.getActiveTrack();
+    if (existing) {
+      setActiveTrack({ ...existing });
+      setIsRecording(true);
+      setIsPaused(recorder.getIsPaused());
+      setTimerDisplay(formatDurationLarge(existing.startTime));
+    }
     return unsub;
   }, []);
 
   const loadData = async () => {
     setLoading(true);
-    const tracks = await recorder.getSavedTracks();
     const s = await recorder.getStats();
-    setSavedTracks(tracks);
     setStats(s);
     setLoading(false);
   };
@@ -161,7 +202,6 @@ export function TrackRecordingScreen({ navigation }: any) {
             setIsPaused(false);
             setActiveTrack(null);
             if (track) {
-              setSavedTracks((prev) => [track, ...prev]);
               const s = await recorder.getStats();
               setStats(s);
             }
@@ -171,35 +211,125 @@ export function TrackRecordingScreen({ navigation }: any) {
     );
   };
 
-  const handleExportGPX = async (track: FishingTrack) => {
-    try {
-      const gpx = recorder.exportGPX(track);
-      await Share.share({
-        message: gpx,
-        title: `${track.name}.gpx`,
-      });
-    } catch {
-      Alert.alert('Export Failed', 'Could not export track as GPX.');
+  const handleMarkWaypoint = () => {
+    const wp = recorder.addWaypoint();
+    if (wp) {
+      Alert.alert('Waypoint Marked', `Dropped pin at your current location.`);
+    } else {
+      Alert.alert('No GPS', 'Waiting for GPS signal to mark waypoint.');
     }
   };
 
-  const handleDeleteTrack = (track: FishingTrack) => {
-    Alert.alert(
-      'Delete Track',
-      `Delete "${track.name}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            await recorder.deleteTrack(track.id);
-            setSavedTracks((prev) => prev.filter((t) => t.id !== track.id));
-            const s = await recorder.getStats();
-            setStats(s);
-          },
-        },
-      ],
+  const handleLogCatch = () => {
+    Alert.prompt
+      ? Alert.prompt(
+          'Log Catch',
+          'Species (optional):',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Log',
+              onPress: (species?: string) => {
+                const wp = recorder.addCatchWaypoint(species);
+                if (!wp) {
+                  Alert.alert('No GPS', 'Waiting for GPS signal.');
+                }
+              },
+            },
+          ],
+          'plain-text',
+          '',
+        )
+      : (() => {
+          const wp = recorder.addCatchWaypoint();
+          if (!wp) {
+            Alert.alert('No GPS', 'Waiting for GPS signal.');
+          }
+        })();
+  };
+
+  // ── Mini-map for active recording ────────────────────────────────────────
+
+  const renderMiniMap = () => {
+    if (!activeTrack || activeTrack.points.length === 0 || !MLMapView) return null;
+
+    const lastPt = activeTrack.points[activeTrack.points.length - 1];
+    const trackGeoJSON = buildSpeedColoredGeoJSON(activeTrack.points);
+
+    // Simple solid line fallback for the full track
+    const fullLineGeoJSON: GeoJSON.Feature = {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: activeTrack.points.map((p) => [p.lon, p.lat]),
+      },
+      properties: {},
+    };
+
+    return (
+      <View style={styles.miniMapContainer}>
+        <MLMapView
+          style={styles.miniMap}
+          logoEnabled={false}
+          attributionEnabled={false}
+          scrollEnabled={false}
+          pitchEnabled={false}
+          rotateEnabled={false}
+          zoomEnabled={false}
+          compassEnabled={false}
+        >
+          <Camera
+            ref={cameraRef}
+            centerCoordinate={[lastPt.lon, lastPt.lat]}
+            zoomLevel={14}
+            animationDuration={500}
+          />
+          {UserLocation && <UserLocation visible />}
+
+          {/* Speed-colored track segments */}
+          {activeTrack.points.length >= 2 && ShapeSource && LineLayer && (
+            <ShapeSource id="track-speed-source" shape={trackGeoJSON}>
+              <LineLayer
+                id="track-speed-layer"
+                style={{
+                  lineColor: ['get', 'color'],
+                  lineWidth: 4,
+                  lineCap: 'round',
+                  lineJoin: 'round',
+                }}
+              />
+            </ShapeSource>
+          )}
+
+          {/* Waypoint markers */}
+          {PointAnnotation && (activeTrack.waypoints ?? []).map((wp) => (
+            <PointAnnotation
+              key={wp.id}
+              id={wp.id}
+              coordinate={[wp.lon, wp.lat]}
+            >
+              <View style={[
+                styles.miniMapWaypoint,
+                wp.type === 'catch' ? styles.miniMapCatchPin : styles.miniMapWaypointPin,
+              ]}>
+                <Ionicons
+                  name={wp.type === 'catch' ? 'fish' : 'flag'}
+                  size={12}
+                  color="#FFFFFF"
+                />
+              </View>
+            </PointAnnotation>
+          ))}
+        </MLMapView>
+
+        {/* Waypoint/catch count overlay */}
+        {(activeTrack.waypoints?.length ?? 0) > 0 && (
+          <View style={styles.miniMapBadge}>
+            <Ionicons name="flag" size={10} color="#FFFFFF" />
+            <Text style={styles.miniMapBadgeText}>{activeTrack.waypoints?.length ?? 0}</Text>
+          </View>
+        )}
+      </View>
     );
   };
 
@@ -208,47 +338,108 @@ export function TrackRecordingScreen({ navigation }: any) {
   const renderRecordingView = () => {
     const track = activeTrack;
     const distance = track?.distanceMiles ?? 0;
-    const duration = track?.durationMinutes ?? 0;
     const maxSpeed = track?.maxSpeedMph ?? 0;
+    const avgSpeed = track?.avgSpeedMph ?? 0;
     const points = track?.points?.length ?? 0;
     const currentSpeed = track?.points?.length
-      ? (track.points[track.points.length - 1].speed ?? 0) * 2.237 // m/s → mph
+      ? (track.points[track.points.length - 1].speed ?? 0) * 2.237
       : 0;
+    const waypointCount = track?.waypoints?.length ?? 0;
 
     return (
-      <View style={styles.recordingView}>
-        {/* Recording indicator */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.recordingScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Recording indicator header */}
         <View style={styles.recordingHeader}>
           <Animated.View style={[styles.recordingDot, { transform: [{ scale: pulseAnim }] }]}>
             <View style={[styles.recordingDotInner, isPaused && styles.recordingDotPaused]} />
           </Animated.View>
-          <Text style={styles.recordingLabel}>
+          <Text style={[styles.recordingLabel, isPaused && styles.recordingLabelPaused]}>
             {isPaused ? 'PAUSED' : 'RECORDING'}
           </Text>
           <Text style={styles.recordingPoints}>{points} pts</Text>
         </View>
 
-        {/* Main stat — duration */}
-        <Text style={styles.bigDuration}>{formatDuration(duration)}</Text>
+        {/* Big timer */}
+        <Text style={styles.bigTimer}>{timerDisplay}</Text>
 
-        {/* Stat grid */}
+        {/* Mini-map */}
+        {renderMiniMap()}
+
+        {/* Stats grid — 2x2 + current speed hero */}
+        <View style={styles.currentSpeedRow}>
+          <Ionicons name="speedometer" size={24} color={speedToColor(currentSpeed)} />
+          <Text style={[styles.currentSpeedValue, { color: speedToColor(currentSpeed) }]}>
+            {formatSpeed(currentSpeed)}
+          </Text>
+          <Text style={styles.currentSpeedUnit}>mph</Text>
+        </View>
+
         <View style={styles.statGrid}>
           <View style={styles.statCell}>
-            <Ionicons name="navigate-outline" size={20} color={palette.accent} />
+            <Ionicons name="navigate-outline" size={18} color={palette.accent} />
             <Text style={styles.statValue}>{formatDistance(distance)}</Text>
             <Text style={styles.statLabel}>Distance</Text>
           </View>
           <View style={styles.statCell}>
-            <Ionicons name="speedometer-outline" size={20} color={palette.accent} />
-            <Text style={styles.statValue}>{formatSpeed(currentSpeed)}</Text>
-            <Text style={styles.statLabel}>Current Speed</Text>
+            <Ionicons name="trending-up-outline" size={18} color={palette.success} />
+            <Text style={styles.statValue}>{formatSpeed(avgSpeed)} mph</Text>
+            <Text style={styles.statLabel}>Avg Speed</Text>
           </View>
           <View style={styles.statCell}>
-            <Ionicons name="flash-outline" size={20} color={palette.warning} />
-            <Text style={styles.statValue}>{formatSpeed(maxSpeed)}</Text>
+            <Ionicons name="flash-outline" size={18} color={palette.warning} />
+            <Text style={styles.statValue}>{formatSpeed(maxSpeed)} mph</Text>
             <Text style={styles.statLabel}>Max Speed</Text>
           </View>
+          <View style={styles.statCell}>
+            <Ionicons name="flag-outline" size={18} color={palette.accent} />
+            <Text style={styles.statValue}>{waypointCount}</Text>
+            <Text style={styles.statLabel}>Waypoints</Text>
+          </View>
         </View>
+
+        {/* Quick action buttons: Mark Waypoint + Log Catch */}
+        <View style={styles.quickActionsRow}>
+          <Pressable style={styles.quickActionBtn} onPress={handleMarkWaypoint}>
+            <View style={[styles.quickActionIcon, { backgroundColor: palette.accent }]}>
+              <Ionicons name="flag" size={18} color="#FFFFFF" />
+            </View>
+            <Text style={styles.quickActionLabel}>Mark Waypoint</Text>
+          </Pressable>
+          <Pressable style={styles.quickActionBtn} onPress={handleLogCatch}>
+            <View style={[styles.quickActionIcon, { backgroundColor: palette.success }]}>
+              <Ionicons name="fish" size={18} color="#FFFFFF" />
+            </View>
+            <Text style={styles.quickActionLabel}>Log Catch</Text>
+          </Pressable>
+        </View>
+
+        {/* Waypoint list (if any) */}
+        {waypointCount > 0 && (
+          <View style={styles.waypointList}>
+            <Text style={styles.waypointListTitle}>Markers</Text>
+            {(track?.waypoints ?? []).map((wp, idx) => (
+              <View key={wp.id} style={styles.waypointItem}>
+                <View style={[
+                  styles.waypointDot,
+                  { backgroundColor: wp.type === 'catch' ? palette.success : palette.accent },
+                ]} />
+                <Ionicons
+                  name={wp.type === 'catch' ? 'fish' : 'flag'}
+                  size={14}
+                  color={wp.type === 'catch' ? palette.success : palette.accent}
+                />
+                <Text style={styles.waypointLabel}>{wp.label}</Text>
+                <Text style={styles.waypointTime}>
+                  {new Date(wp.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Controls */}
         <View style={styles.controlRow}>
@@ -268,7 +459,7 @@ export function TrackRecordingScreen({ navigation }: any) {
             <Text style={styles.controlBtnText}>End Trip</Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     );
   };
 
@@ -297,6 +488,16 @@ export function TrackRecordingScreen({ navigation }: any) {
         </View>
       </Pressable>
 
+      {/* View track history */}
+      <Pressable
+        style={styles.historyButton}
+        onPress={() => navigation.navigate('TrackHistory')}
+      >
+        <Ionicons name="time-outline" size={18} color={palette.accent} />
+        <Text style={styles.historyButtonText}>View Track History</Text>
+        <Ionicons name="chevron-forward" size={16} color={palette.textMuted} />
+      </Pressable>
+
       {/* Lifetime stats */}
       {stats && stats.totalTracks > 0 && (
         <View style={styles.lifetimeStats}>
@@ -321,51 +522,25 @@ export function TrackRecordingScreen({ navigation }: any) {
           </View>
         </View>
       )}
-    </View>
-  );
 
-  // ── Track History ──────────────────────────────────────────────────────────
-
-  const renderTrackItem = ({ item }: { item: FishingTrack }) => (
-    <View style={styles.trackCard}>
-      <View style={styles.trackCardHeader}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.trackName}>{item.name}</Text>
-          <Text style={styles.trackDate}>
-            {formatDate(item.startTime)} • {formatTime(item.startTime)}
-            {item.endTime ? ` – ${formatTime(item.endTime)}` : ''}
-          </Text>
-        </View>
-        <View style={styles.trackActions}>
-          <Pressable onPress={() => handleExportGPX(item)} style={styles.trackActionBtn}>
-            <Ionicons name="share-outline" size={18} color={palette.accent} />
-          </Pressable>
-          <Pressable onPress={() => handleDeleteTrack(item)} style={styles.trackActionBtn}>
-            <Ionicons name="trash-outline" size={18} color={palette.error} />
-          </Pressable>
+      {/* Speed legend */}
+      <View style={styles.speedLegend}>
+        <Text style={styles.speedLegendTitle}>Track Colors</Text>
+        <View style={styles.speedLegendRow}>
+          <View style={styles.speedLegendItem}>
+            <View style={[styles.speedLegendDot, { backgroundColor: speedToColor(0) }]} />
+            <Text style={styles.speedLegendLabel}>Slow</Text>
+          </View>
+          <View style={styles.speedLegendItem}>
+            <View style={[styles.speedLegendDot, { backgroundColor: speedToColor(15) }]} />
+            <Text style={styles.speedLegendLabel}>Medium</Text>
+          </View>
+          <View style={styles.speedLegendItem}>
+            <View style={[styles.speedLegendDot, { backgroundColor: speedToColor(30) }]} />
+            <Text style={styles.speedLegendLabel}>Fast</Text>
+          </View>
         </View>
       </View>
-      <View style={styles.trackStats}>
-        <View style={styles.trackStatItem}>
-          <Ionicons name="navigate-outline" size={14} color={palette.textMuted} />
-          <Text style={styles.trackStatText}>{formatDistance(item.distanceMiles)}</Text>
-        </View>
-        <View style={styles.trackStatItem}>
-          <Ionicons name="time-outline" size={14} color={palette.textMuted} />
-          <Text style={styles.trackStatText}>{formatDuration(item.durationMinutes)}</Text>
-        </View>
-        <View style={styles.trackStatItem}>
-          <Ionicons name="speedometer-outline" size={14} color={palette.textMuted} />
-          <Text style={styles.trackStatText}>{formatSpeed(item.maxSpeedMph)} max</Text>
-        </View>
-        <View style={styles.trackStatItem}>
-          <Ionicons name="location-outline" size={14} color={palette.textMuted} />
-          <Text style={styles.trackStatText}>{item.points.length} pts</Text>
-        </View>
-      </View>
-      {item.notes ? (
-        <Text style={styles.trackNotes} numberOfLines={2}>{item.notes}</Text>
-      ) : null}
     </View>
   );
 
@@ -381,51 +556,7 @@ export function TrackRecordingScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      {/* Tab toggle: Record / History */}
-      <View style={styles.tabRow}>
-        <Pressable
-          style={[styles.tab, !showHistory && styles.tabActive]}
-          onPress={() => setShowHistory(false)}
-        >
-          <Ionicons
-            name="navigate-outline"
-            size={18}
-            color={!showHistory ? palette.accent : palette.textMuted}
-          />
-          <Text style={[styles.tabText, !showHistory && styles.tabTextActive]}>Record</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.tab, showHistory && styles.tabActive]}
-          onPress={() => setShowHistory(true)}
-        >
-          <Ionicons
-            name="list-outline"
-            size={18}
-            color={showHistory ? palette.accent : palette.textMuted}
-          />
-          <Text style={[styles.tabText, showHistory && styles.tabTextActive]}>
-            History ({savedTracks.length})
-          </Text>
-        </Pressable>
-      </View>
-
-      {showHistory ? (
-        savedTracks.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="trail-sign-outline" size={48} color={palette.textDim} />
-            <Text style={styles.emptyTitle}>No Tracks Yet</Text>
-            <Text style={styles.emptySubtitle}>Start recording a trip to see it here</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={savedTracks}
-            keyExtractor={(item) => item.id}
-            renderItem={renderTrackItem}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-          />
-        )
-      ) : isRecording ? (
+      {isRecording ? (
         renderRecordingView()
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -453,39 +584,9 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
-  listContent: {
-    padding: 16,
+  recordingScrollContent: {
+    padding: 20,
     paddingBottom: 40,
-  },
-
-  // Tab toggle
-  tabRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
-    gap: 8,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: palette.surfaceRaised,
-    gap: 6,
-  },
-  tabActive: {
-    backgroundColor: palette.accentLight,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: palette.textMuted,
-  },
-  tabTextActive: {
-    color: palette.accent,
   },
 
   // Start view
@@ -522,7 +623,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 20,
     elevation: 12,
-    marginBottom: 32,
+    marginBottom: 24,
   },
   startButtonInner: {
     alignItems: 'center',
@@ -539,6 +640,27 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
   },
 
+  // History button
+  historyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 10,
+    width: '100%',
+    marginBottom: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.border,
+  },
+  historyButtonText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: palette.accent,
+  },
+
   // Lifetime stats
   lifetimeStats: {
     width: '100%',
@@ -547,6 +669,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: palette.border,
+    marginBottom: 16,
   },
   lifetimeSectionTitle: {
     ...typeStyles.sectionHeader,
@@ -572,17 +695,48 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // Recording view
-  recordingView: {
-    flex: 1,
-    padding: 20,
-    alignItems: 'center',
+  // Speed legend
+  speedLegend: {
+    width: '100%',
+    backgroundColor: palette.surface,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.border,
   },
+  speedLegendTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: palette.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  speedLegendRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  speedLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  speedLegendDot: {
+    width: 16,
+    height: 4,
+    borderRadius: 2,
+  },
+  speedLegendLabel: {
+    fontSize: 12,
+    color: palette.textSecondary,
+  },
+
+  // Recording view
   recordingHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   recordingDot: {
     width: 16,
@@ -601,41 +755,116 @@ const styles = StyleSheet.create({
     backgroundColor: palette.warning,
   },
   recordingLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: palette.error,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
+  },
+  recordingLabelPaused: {
+    color: palette.warning,
   },
   recordingPoints: {
     fontSize: 12,
     color: palette.textMuted,
     marginLeft: 'auto',
   },
-  bigDuration: {
-    fontSize: 64,
+
+  // Big timer
+  bigTimer: {
+    fontSize: 72,
     fontWeight: '200',
     color: palette.text,
     letterSpacing: -2,
-    marginBottom: 24,
+    textAlign: 'center',
+    marginBottom: 12,
+    fontVariant: ['tabular-nums'],
   },
+
+  // Mini-map
+  miniMapContainer: {
+    width: '100%',
+    height: 200,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.border,
+  },
+  miniMap: {
+    flex: 1,
+  },
+  miniMapWaypoint: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  miniMapWaypointPin: {
+    backgroundColor: palette.accent,
+  },
+  miniMapCatchPin: {
+    backgroundColor: palette.success,
+  },
+  miniMapBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    gap: 4,
+  },
+  miniMapBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  // Current speed hero
+  currentSpeedRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  currentSpeedValue: {
+    fontSize: 36,
+    fontWeight: '700',
+    letterSpacing: -1,
+  },
+  currentSpeedUnit: {
+    fontSize: 16,
+    color: palette.textMuted,
+    fontWeight: '500',
+  },
+
+  // Stat grid — 2x2
   statGrid: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 32,
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 20,
   },
   statCell: {
-    flex: 1,
+    width: '47%',
     backgroundColor: palette.surface,
     borderRadius: 14,
-    padding: 16,
+    padding: 14,
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: palette.border,
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: palette.text,
   },
@@ -645,10 +874,82 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+
+  // Quick actions
+  quickActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  quickActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderRadius: 14,
+    padding: 14,
+    gap: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.border,
+  },
+  quickActionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: palette.text,
+    flexShrink: 1,
+  },
+
+  // Waypoint list
+  waypointList: {
+    width: '100%',
+    backgroundColor: palette.surface,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.border,
+  },
+  waypointListTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: palette.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  waypointItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 6,
+  },
+  waypointDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  waypointLabel: {
+    flex: 1,
+    fontSize: 14,
+    color: palette.text,
+  },
+  waypointTime: {
+    fontSize: 12,
+    color: palette.textMuted,
+  },
+
+  // Controls
   controlRow: {
     flexDirection: 'row',
     gap: 16,
-    marginTop: 'auto',
+    marginTop: 8,
     paddingBottom: 20,
   },
   controlBtn: {
@@ -673,77 +974,5 @@ const styles = StyleSheet.create({
   },
   stopBtn: {
     backgroundColor: palette.error,
-  },
-
-  // Track history cards
-  trackCard: {
-    backgroundColor: palette.surface,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: palette.border,
-  },
-  trackCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  trackName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: palette.text,
-  },
-  trackDate: {
-    fontSize: 12,
-    color: palette.textMuted,
-    marginTop: 2,
-  },
-  trackActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  trackActionBtn: {
-    padding: 6,
-  },
-  trackStats: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  trackStatItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  trackStatText: {
-    fontSize: 13,
-    color: palette.textSecondary,
-  },
-  trackNotes: {
-    fontSize: 13,
-    color: palette.textMuted,
-    fontStyle: 'italic',
-    marginTop: 8,
-  },
-
-  // Empty state
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-    gap: 8,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: palette.text,
-    marginTop: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: palette.textMuted,
-    textAlign: 'center',
   },
 });

@@ -10,7 +10,7 @@
  */
 import { mockLocations, mockBestLocations, defaultSettings, mockWaypoints } from '../data/mockData';
 import { auth as authService } from './auth';
-import { API_BASE_URL, TILE_BASE_URL } from '../config/network';
+import { API_BASE_URL, TILE_BASE_URL, TILE_SERVER_DEPLOYED } from '../config/network';
 import type {
   FishingLocation,
   PredictionResponse,
@@ -36,9 +36,23 @@ const BASE_URL = API_BASE_URL;
 
 // Martin tile server base URL (for map overlays)
 export const TILE_SERVER_URL = TILE_BASE_URL;
+export { TILE_SERVER_DEPLOYED } from '../config/network';
+
+/**
+ * Build a TileJSON URL for a Martin layer.
+ * Returns `null` when the tile server is not deployed (prod without
+ * EXPO_PUBLIC_TILE_SERVER_URL) so callers can skip the fetch entirely.
+ */
+export function buildTileSourceUrl(layer: string): string | null {
+  if (!TILE_SERVER_DEPLOYED) return null;
+  return `${TILE_BASE_URL}/${layer}`;
+}
+
+/** @deprecated – use buildTileSourceUrl (points at Martin directly) */
 export function buildApiTileTemplate(layer: string): string {
   return `${BASE_URL}${API_PREFIX}/tiles/${layer}/{z}/{x}/{y}.pbf`;
 }
+/** @deprecated – use buildTileSourceUrl (points at Martin directly) */
 export function buildApiTileSourceUrl(layer: string): string {
   return `${BASE_URL}${API_PREFIX}/tiles/${layer}`;
 }

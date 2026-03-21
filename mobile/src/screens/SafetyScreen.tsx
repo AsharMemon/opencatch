@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   ScrollView,
   View,
@@ -10,10 +10,18 @@ import {
   Alert,
   Share,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
+import {
+  getBoatProfiles,
+  getDefaultBoat,
+  BOAT_TYPE_LABELS,
+  formatBoatDescription,
+  type BoatProfile,
+} from '../services/boatProfile';
 import type { RootStackProps } from '../types/navigation';
 
 // ---------------------------------------------------------------------------
@@ -254,6 +262,53 @@ export function SafetyScreen({ navigation }: RootStackProps<'Safety'>) {
   // -- Saved plans (in-memory for now) --
   const [savedPlans, setSavedPlans] = useState<FloatPlan[]>([]);
 
+  // -- Boat profiles --
+  const [boatProfiles, setBoatProfiles] = useState<BoatProfile[]>([]);
+  const [selectedBoatId, setSelectedBoatId] = useState<string | null>(null);
+  const [loadingBoats, setLoadingBoats] = useState(true);
+
+  // Load boat profiles on mount and auto-fill default boat
+  useEffect(() => {
+    (async () => {
+      try {
+        const profiles = await getBoatProfiles();
+        setBoatProfiles(profiles);
+        if (profiles.length > 0) {
+          const defaultBoat = await getDefaultBoat();
+          if (defaultBoat) {
+            applyBoatProfile(defaultBoat);
+            setSelectedBoatId(defaultBoat.id);
+          }
+        }
+      } catch {
+        // Silent fail — user can fill manually
+      } finally {
+        setLoadingBoats(false);
+      }
+    })();
+  }, []);
+
+  const applyBoatProfile = (boat: BoatProfile) => {
+    const typeLabel = BOAT_TYPE_LABELS[boat.type] || '';
+    const desc = [typeLabel, boat.make, boat.model, boat.length ? `${boat.length}ft` : null]
+      .filter(Boolean)
+      .join(' ');
+    setBoatType(desc || typeLabel);
+    setBoatColor(boat.color || '');
+    setRegistration(boat.registrationNumber || '');
+    if (boat.maxCapacity) {
+      setPeopleAboard(String(boat.maxCapacity));
+    }
+  };
+
+  const handleSelectBoat = (boatId: string) => {
+    const boat = boatProfiles.find((b) => b.id === boatId);
+    if (boat) {
+      applyBoatProfile(boat);
+      setSelectedBoatId(boatId);
+    }
+  };
+
   // ── Location ───────────────────────────────────────────────────────────
   const fetchLocation = useCallback(async () => {
     setLoadingLocation(true);
@@ -444,8 +499,42 @@ export function SafetyScreen({ navigation }: RootStackProps<'Safety'>) {
         <InputField label="Expected Return" value={returnTime} onChangeText={setReturnTime} placeholder="e.g. 3:00 PM, March 20" />
         <InputField label="People Aboard" value={peopleAboard} onChangeText={setPeopleAboard} placeholder="2" keyboardType="numeric" />
 
-        {/* Boat description */}
+        {/* Boat profile selector */}
         <Text style={[styles.fieldLabel, { marginTop: 16, marginBottom: 4, fontWeight: '600' }]}>Boat Description</Text>
+        {loadingBoats ? (
+          <View style={styles.boatLoadingRow}>
+            <ActivityIndicator size="small" color={palette.accent} />
+            <Text style={styles.boatLoadingText}>Loading saved boats...</Text>
+          </View>
+        ) : boatProfiles.length > 0 ? (
+          <View style={styles.boatPickerContainer}>
+            <Text style={[styles.fieldLabel, { marginBottom: 6 }]}>Select Boat</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.boatPickerRow}>
+              {boatProfiles.map((boat) => {
+                const isSelected = selectedBoatId === boat.id;
+                return (
+                  <Pressable
+                    key={boat.id}
+                    style={[styles.boatPickerChip, isSelected && styles.boatPickerChipActive]}
+                    onPress={() => handleSelectBoat(boat.id)}
+                  >
+                    <Ionicons name="boat-outline" size={14} color={isSelected ? palette.accent : palette.textMuted} />
+                    <Text style={[styles.boatPickerText, isSelected && styles.boatPickerTextActive]}>
+                      {boat.name}
+                    </Text>
+                    {boat.isDefault && (
+                      <View style={styles.boatDefaultBadge}>
+                        <Text style={styles.boatDefaultText}>Default</Text>
+                      </View>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ) : (
+          <Text style={styles.noBoatsText}>No saved boats. Fill in details below or add a boat in Settings.</Text>
+        )}
         <InputField label="Type" value={boatType} onChangeText={setBoatType} placeholder="e.g. 18ft Bass Boat" />
         <InputField label="Color" value={boatColor} onChangeText={setBoatColor} placeholder="e.g. White / Blue" />
         <InputField label="Registration #" value={registration} onChangeText={setRegistration} placeholder="e.g. MN 1234 AB" />
@@ -749,6 +838,64 @@ const styles = StyleSheet.create({
     color: palette.accent,
     fontSize: 15,
     fontWeight: '600',
+  },
+
+  // Boat picker
+  boatLoadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  boatLoadingText: {
+    fontSize: 13,
+    color: palette.textMuted,
+  },
+  boatPickerContainer: {
+    marginBottom: 12,
+  },
+  boatPickerRow: {
+    gap: 8,
+  },
+  boatPickerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: palette.borderLight,
+    backgroundColor: palette.surfaceRaised,
+  },
+  boatPickerChipActive: {
+    borderColor: palette.accent,
+    backgroundColor: palette.accentLight,
+  },
+  boatPickerText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: palette.textSecondary,
+  },
+  boatPickerTextActive: {
+    color: palette.accent,
+  },
+  boatDefaultBadge: {
+    backgroundColor: palette.accent,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  boatDefaultText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  noBoatsText: {
+    fontSize: 12,
+    color: palette.textMuted,
+    fontStyle: 'italic',
+    marginBottom: 8,
   },
 
   // Saved plans

@@ -368,12 +368,17 @@ export interface WaterLevel {
 // ── User Settings ────────────────────────────────────────────────
 export type UnitSystem = 'imperial' | 'metric';
 
+export type MapStyle = 'standard' | 'satellite' | 'terrain';
+
 export interface UserSettings {
   displayName: string;
   units: UnitSystem;
+  mapStyle: MapStyle;
   notifications: {
     dailyForecast: boolean;
     scoreAlerts: boolean;
     weeklyDigest: boolean;
+    bestTimeAlerts: boolean;
+    weatherAlerts: boolean;
   };
 }

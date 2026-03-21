@@ -6,12 +6,16 @@
  * - Distance and duration calculation
  * - Track persistence via AsyncStorage
  * - GPX export support
+ * - Waypoint marking during recording
+ * - Speed-based track coloring data
+ * - Auto-save on app backgrounding
  *
  * Uses expo-location for background location updates.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
+import { AppState, type AppStateStatus } from 'react-native';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,15 +29,27 @@ export interface TrackPoint {
   timestamp: number;    // Unix ms
 }
 
+export interface TrackWaypoint {
+  id: string;
+  lat: number;
+  lon: number;
+  timestamp: number;
+  label?: string;
+  type: 'waypoint' | 'catch';
+  species?: string;     // For catch waypoints
+}
+
 export interface FishingTrack {
   id: string;
   name: string;
   startTime: number;
   endTime?: number;
   points: TrackPoint[];
+  waypoints: TrackWaypoint[];
   distanceMiles: number;
   durationMinutes: number;
   maxSpeedMph: number;
+  avgSpeedMph: number;
   photos?: string[];     // Photo URIs attached to track
   notes?: string;
   locationName?: string;
@@ -44,6 +60,52 @@ export interface TrackStats {
   totalDistanceMiles: number;
   totalDurationHours: number;
   longestTrackMiles: number;
+}
+
+/**
+ * Speed-to-color mapping for track rendering.
+ * Returns a hex color from green (slow) through yellow to red (fast).
+ */
+export function speedToColor(speedMph: number): string {
+  // Clamp to 0-30 mph range for color mapping
+  const t = Math.min(Math.max(speedMph / 30, 0), 1);
+  if (t < 0.5) {
+    // Green → Yellow
+    const r = Math.round(255 * (t * 2));
+    return `rgb(${r}, 200, 60)`;
+  }
+  // Yellow → Red
+  const g = Math.round(200 * (1 - (t - 0.5) * 2));
+  return `rgb(255, ${g}, 60)`;
+}
+
+/**
+ * Build a GeoJSON FeatureCollection of LineString segments colored by speed.
+ * Each segment connects two consecutive track points and carries the speed
+ * of the starting point so the map layer can interpolate color.
+ */
+export function buildSpeedColoredGeoJSON(points: TrackPoint[]): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = [];
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
+    const curr = points[i];
+    const speedMph = ((prev.speed ?? 0) + (curr.speed ?? 0)) / 2 * 2.237;
+    features.push({
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [prev.lon, prev.lat],
+          [curr.lon, curr.lat],
+        ],
+      },
+      properties: {
+        speedMph,
+        color: speedToColor(speedMph),
+      },
+    });
+  }
+  return { type: 'FeatureCollection', features };
 }
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -80,6 +142,31 @@ class TrackRecorderService {
   private activeTrack: FishingTrack | null = null;
   private locationSubscription: Location.LocationSubscription | null = null;
   private listeners: Set<(track: FishingTrack | null) => void> = new Set();
+  private appStateSubscription: any = null;
+  private isPaused = false;
+
+  constructor() {
+    // Auto-save when app goes to background
+    this.appStateSubscription = AppState.addEventListener(
+      'change',
+      this._handleAppStateChange,
+    );
+  }
+
+  private _handleAppStateChange = (nextState: AppStateStatus) => {
+    if (nextState === 'background' || nextState === 'inactive') {
+      if (this.activeTrack) {
+        this._saveActiveTrack();
+      }
+    }
+  };
+
+  /**
+   * Whether recording is currently paused.
+   */
+  getIsPaused(): boolean {
+    return this.isPaused;
+  }
 
   /**
    * Start recording a new track.
@@ -104,12 +191,15 @@ class TrackRecorderService {
       name: name ?? `Trip ${new Date(now).toLocaleDateString()}`,
       startTime: now,
       points: [],
+      waypoints: [],
       distanceMiles: 0,
       durationMinutes: 0,
       maxSpeedMph: 0,
+      avgSpeedMph: 0,
     };
 
     this.activeTrack = track;
+    this.isPaused = false;
     await this._saveActiveTrack();
 
     // Start location updates
@@ -143,6 +233,7 @@ class TrackRecorderService {
       (this.activeTrack.endTime - this.activeTrack.startTime) / 60000,
     );
     this.activeTrack.distanceMiles = totalDistance(this.activeTrack.points);
+    this._updateAvgSpeed();
 
     // Save to persistent storage
     const tracks = await this._loadTracks();
@@ -151,6 +242,7 @@ class TrackRecorderService {
 
     const saved = this.activeTrack;
     this.activeTrack = null;
+    this.isPaused = false;
     await AsyncStorage.removeItem(ACTIVE_TRACK_KEY);
     this._notify();
 
@@ -165,6 +257,8 @@ class TrackRecorderService {
       this.locationSubscription.remove();
       this.locationSubscription = null;
     }
+    this.isPaused = true;
+    this._notify();
   }
 
   /**
@@ -173,6 +267,7 @@ class TrackRecorderService {
   async resumeRecording(): Promise<void> {
     if (!this.activeTrack) return;
 
+    this.isPaused = false;
     this.locationSubscription = await Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.High,
@@ -181,6 +276,7 @@ class TrackRecorderService {
       },
       (location) => this._onLocationUpdate(location),
     );
+    this._notify();
   }
 
   /**
@@ -192,8 +288,56 @@ class TrackRecorderService {
       this.locationSubscription = null;
     }
     this.activeTrack = null;
+    this.isPaused = false;
     await AsyncStorage.removeItem(ACTIVE_TRACK_KEY);
     this._notify();
+  }
+
+  /**
+   * Mark a waypoint at the current GPS position during recording.
+   */
+  addWaypoint(label?: string): TrackWaypoint | null {
+    if (!this.activeTrack || this.activeTrack.points.length === 0) return null;
+
+    const lastPt = this.activeTrack.points[this.activeTrack.points.length - 1];
+    const wp: TrackWaypoint = {
+      id: `wp-${Date.now()}`,
+      lat: lastPt.lat,
+      lon: lastPt.lon,
+      timestamp: Date.now(),
+      label: label || `Waypoint ${(this.activeTrack.waypoints?.length ?? 0) + 1}`,
+      type: 'waypoint',
+    };
+
+    if (!this.activeTrack.waypoints) this.activeTrack.waypoints = [];
+    this.activeTrack.waypoints.push(wp);
+    this._saveActiveTrack();
+    this._notify();
+    return wp;
+  }
+
+  /**
+   * Log a catch at the current GPS position during recording.
+   */
+  addCatchWaypoint(species?: string): TrackWaypoint | null {
+    if (!this.activeTrack || this.activeTrack.points.length === 0) return null;
+
+    const lastPt = this.activeTrack.points[this.activeTrack.points.length - 1];
+    const wp: TrackWaypoint = {
+      id: `catch-${Date.now()}`,
+      lat: lastPt.lat,
+      lon: lastPt.lon,
+      timestamp: Date.now(),
+      label: species || 'Catch',
+      type: 'catch',
+      species,
+    };
+
+    if (!this.activeTrack.waypoints) this.activeTrack.waypoints = [];
+    this.activeTrack.waypoints.push(wp);
+    this._saveActiveTrack();
+    this._notify();
+    return wp;
   }
 
   /**
@@ -240,17 +384,29 @@ class TrackRecorderService {
   }
 
   /**
-   * Export a track as GPX XML string.
+   * Export a track as GPX XML string (includes waypoints).
    */
   exportGPX(track: FishingTrack): string {
     const pts = track.points.map((p) => {
       const time = new Date(p.timestamp).toISOString();
       let ele = '';
       if (p.altitude !== undefined) ele = `<ele>${p.altitude.toFixed(1)}</ele>`;
+      let spd = '';
+      if (p.speed !== undefined) spd = `<speed>${p.speed.toFixed(2)}</speed>`;
       return `      <trkpt lat="${p.lat}" lon="${p.lon}">
         ${ele}
+        ${spd}
         <time>${time}</time>
       </trkpt>`;
+    }).join('\n');
+
+    const wpts = (track.waypoints ?? []).map((wp) => {
+      const time = new Date(wp.timestamp).toISOString();
+      return `  <wpt lat="${wp.lat}" lon="${wp.lon}">
+    <name>${this._escapeXml(wp.label ?? wp.type)}</name>
+    <time>${time}</time>
+    <type>${wp.type}</type>
+  </wpt>`;
     }).join('\n');
 
     return `<?xml version="1.0" encoding="UTF-8"?>
@@ -262,6 +418,7 @@ class TrackRecorderService {
     <name>${this._escapeXml(track.name)}</name>
     <time>${new Date(track.startTime).toISOString()}</time>
   </metadata>
+${wpts}
   <trk>
     <name>${this._escapeXml(track.name)}</name>
     <trkseg>
@@ -312,9 +469,11 @@ ${pts}
         startTime: points[0].timestamp,
         endTime: points[points.length - 1].timestamp,
         points,
+        waypoints: [],
         distanceMiles: totalDistance(points),
         durationMinutes: Math.round((points[points.length - 1].timestamp - points[0].timestamp) / 60000),
         maxSpeedMph: 0,
+        avgSpeedMph: 0,
       };
     } catch {
       return null;
@@ -357,9 +516,19 @@ ${pts}
     this.activeTrack.durationMinutes = Math.round(
       (Date.now() - this.activeTrack.startTime) / 60000,
     );
+    this._updateAvgSpeed();
 
     this._saveActiveTrack();
     this._notify();
+  }
+
+  private _updateAvgSpeed(): void {
+    if (!this.activeTrack) return;
+    const durationHours = this.activeTrack.durationMinutes / 60;
+    if (durationHours > 0) {
+      this.activeTrack.avgSpeedMph =
+        Math.round((this.activeTrack.distanceMiles / durationHours) * 10) / 10;
+    }
   }
 
   private async _saveActiveTrack(): Promise<void> {

@@ -68,7 +68,7 @@ export function WeatherCard({ conditions, units = 'imperial' }: Props) {
         <MetricCell label="Moon" value={conditions.moonPhase} />
         <MetricCell
           label="Solunar"
-          value={conditions.solunarRating}
+          value={conditions.solunarRating.charAt(0).toUpperCase() + conditions.solunarRating.slice(1)}
           highlight={conditions.solunarRating === 'excellent'}
         />
       </View>

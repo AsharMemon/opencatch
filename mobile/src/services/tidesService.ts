@@ -1,12 +1,14 @@
 /**
- * NOAA CO-OPS Tides & Currents Service
+ * Tides & Water Levels Service (US + Canada)
  *
- * Integrates with the NOAA Center for Operational Oceanographic Products
- * and Services (CO-OPS) API for tide predictions, water levels, and
- * current data. Free, no API key required.
+ * US:     NOAA CO-OPS API — tide predictions, water levels, currents.
+ * Canada: Canadian Hydrographic Service (CHS) IWLS API — tides and water levels.
  *
- * API docs: https://api.tidesandcurrents.noaa.gov/api/prod/
- * Station metadata: https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/
+ * Auto-detects country based on coordinates and routes to the correct
+ * service transparently. Both sources return unified types.
+ *
+ * NOAA API docs: https://api.tidesandcurrents.noaa.gov/api/prod/
+ * CHS IWLS API:  https://api-iwls.dfo-mpo.gc.ca/api/v1
  */
 
 // ── Types ────────────────────────────────────────────────────────
@@ -600,28 +602,393 @@ export function getNextTide(
   return null;
 }
 
+// ── Canadian Hydrographic Service (CHS) integration ──────────────
+
+const CHS_BASE_URL = 'https://api-iwls.dfo-mpo.gc.ca/api/v1';
+const CHS_TIMEOUT_MS = 10_000;
+
+/** Cached CHS station list. */
+let _chsStationsCache: CHSStationEntry[] | null = null;
+let _chsStationsCacheTime = 0;
+const CHS_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+interface CHSStationEntry {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  region: string;
+}
+
+/**
+ * Fetch JSON from the CHS IWLS API with timeout.
+ * @internal
+ */
+async function fetchCHS<T>(path: string, params?: Record<string, string>): Promise<T> {
+  const url = new URL(`${CHS_BASE_URL}${path}`);
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), CHS_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url.toString(), {
+      signal: controller.signal,
+      headers: { Accept: 'application/json' },
+    });
+    clearTimeout(timeoutId);
+    if (!res.ok) throw new TidesServiceError(`CHS API ${res.status}: ${path}`, res.status);
+    return res.json();
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err instanceof TidesServiceError) throw err;
+    if (err.name === 'AbortError') {
+      throw new TidesServiceError(`CHS API timed out after ${CHS_TIMEOUT_MS}ms`, 408);
+    }
+    throw new TidesServiceError(`CHS API error: ${err.message ?? 'unknown'}`, 0);
+  }
+}
+
+/**
+ * Fetch the CHS station list. Cached for 24 hours.
+ * @internal
+ */
+async function fetchCHSStationList(): Promise<CHSStationEntry[]> {
+  if (_chsStationsCache && Date.now() - _chsStationsCacheTime < CHS_CACHE_TTL) {
+    return _chsStationsCache;
+  }
+
+  try {
+    const data = await fetchCHS<any[]>('/stations', {
+      chs_client_id: 'OpenCatch',
+    });
+
+    _chsStationsCache = (data || []).map((s: any) => ({
+      id: s.id,
+      name: s.officialName ?? s.name ?? '',
+      lat: s.latitude ?? 0,
+      lon: s.longitude ?? 0,
+      region: s.regionId ?? '',
+    }));
+    _chsStationsCacheTime = Date.now();
+    return _chsStationsCache;
+  } catch (err) {
+    console.warn('[OpenCatch] Failed to fetch CHS station list:', err);
+    return _chsStationsCache ?? [];
+  }
+}
+
+/**
+ * Find the nearest CHS tide station to given coordinates.
+ *
+ * @param lat - Latitude in decimal degrees.
+ * @param lon - Longitude in decimal degrees.
+ * @returns The closest CHS station as a TideStation, or null if none found.
+ */
+export async function getNearestCHSTideStation(
+  lat: number,
+  lon: number,
+): Promise<TideStation | null> {
+  const stations = await fetchCHSStationList();
+  if (stations.length === 0) return null;
+
+  let best: CHSStationEntry | null = null;
+  let bestDist = Infinity;
+
+  for (const s of stations) {
+    if (Math.abs(s.lat - lat) > 5 || Math.abs(s.lon - lon) > 5) continue;
+    const dist = haversineKm(lat, lon, s.lat, s.lon);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = s;
+    }
+  }
+
+  if (!best) {
+    for (const s of stations) {
+      const dist = haversineKm(lat, lon, s.lat, s.lon);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = s;
+      }
+    }
+  }
+
+  if (!best) return null;
+
+  return {
+    id: best.id,
+    name: best.name,
+    lat: best.lat,
+    lon: best.lon,
+    distanceKm: Math.round(bestDist * 10) / 10,
+    state: best.region,
+  };
+}
+
+/**
+ * Get CHS tide predictions and convert to our TidePrediction type.
+ *
+ * @param stationId - CHS station ID.
+ * @param days - Number of days of predictions (default 3).
+ * @returns Array of TidePrediction sorted chronologically.
+ */
+export async function getCHSTidePredictions(
+  stationId: string,
+  days: number = 3,
+): Promise<TidePrediction[]> {
+  const clampedDays = Math.max(1, Math.min(days, 10));
+  const now = new Date();
+  const end = new Date(now.getTime() + clampedDays * 24 * 60 * 60 * 1000);
+
+  try {
+    const data = await fetchCHS<any[]>(`/stations/${stationId}/data`, {
+      'time-series-code': 'wlp',
+      from: now.toISOString(),
+      to: end.toISOString(),
+    });
+
+    if (!data || data.length === 0) return [];
+
+    // Convert to TidePrediction and detect H/L from local extrema
+    const points: TidePrediction[] = data.map((d: any) => {
+      const heightM = d.value ?? 0;
+      return {
+        time: d.eventDate ?? d.timeStamp ?? '',
+        heightFt: Math.round(heightM * 3.28084 * 100) / 100,
+        type: 'H' as 'H' | 'L', // placeholder
+        label: 'High',
+      };
+    });
+
+    // Tag local extrema as H/L, filter to just those
+    const hiloPoints: TidePrediction[] = [];
+    for (let i = 1; i < points.length - 1; i++) {
+      const prev = points[i - 1].heightFt;
+      const curr = points[i].heightFt;
+      const next = points[i + 1].heightFt;
+      if (curr > prev && curr > next) {
+        hiloPoints.push({ ...points[i], type: 'H', label: 'High' });
+      } else if (curr < prev && curr < next) {
+        hiloPoints.push({ ...points[i], type: 'L', label: 'Low' });
+      }
+    }
+
+    return hiloPoints;
+  } catch (err) {
+    console.warn('[OpenCatch] Failed to fetch CHS tide predictions:', err);
+    return [];
+  }
+}
+
+/**
+ * Get hourly CHS tide predictions for chart display.
+ *
+ * @param stationId - CHS station ID.
+ * @returns Array of TideHourly (24 hours).
+ */
+export async function getCHSTideHourly(stationId: string): Promise<TideHourly[]> {
+  const now = new Date();
+  const end = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+  try {
+    const data = await fetchCHS<any[]>(`/stations/${stationId}/data`, {
+      'time-series-code': 'wlp',
+      from: now.toISOString(),
+      to: end.toISOString(),
+    });
+
+    if (!data || data.length === 0) return [];
+
+    return data.map((d: any) => ({
+      time: d.eventDate ?? d.timeStamp ?? '',
+      heightFt: Math.round((d.value ?? 0) * 3.28084 * 100) / 100,
+    }));
+  } catch (err) {
+    console.warn('[OpenCatch] Failed to fetch CHS hourly tides:', err);
+    return [];
+  }
+}
+
+/**
+ * Get observed CHS water levels and convert to WaterLevelReading type.
+ *
+ * @param stationId - CHS station ID.
+ * @returns Array of WaterLevelReading (last 24 hours).
+ */
+export async function getCHSWaterLevel(stationId: string): Promise<WaterLevelReading[]> {
+  const now = new Date();
+  const from = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  try {
+    const data = await fetchCHS<any[]>(`/stations/${stationId}/data`, {
+      'time-series-code': 'wlo',
+      from: from.toISOString(),
+      to: now.toISOString(),
+    });
+
+    if (!data || data.length === 0) return [];
+
+    return data.map((d: any) => ({
+      time: d.eventDate ?? d.timeStamp ?? '',
+      heightFt: Math.round((d.value ?? 0) * 3.28084 * 100) / 100,
+      quality: 'p', // CHS doesn't use the same quality flags
+    }));
+  } catch (err) {
+    console.warn('[OpenCatch] Failed to fetch CHS water levels:', err);
+    return [];
+  }
+}
+
+// ── Country auto-detection ───────────────────────────────────────
+
+/**
+ * Determine if coordinates are likely in Canada.
+ * @internal
+ */
+function isLikelyCanadian(lat: number, lon: number): boolean {
+  // West of Ontario: 49th parallel
+  if (lon <= -95 && lat >= 49) return true;
+  // Ontario/Great Lakes: border dips to ~42N
+  if (lon > -95 && lon <= -74 && lat >= 44) return true;
+  // Quebec/Maritimes
+  if (lon > -74 && lon <= -52 && lat >= 46) return true;
+  return false;
+}
+
+/**
+ * Find the nearest tide station, auto-detecting US vs Canada.
+ *
+ * For Canadian coordinates, queries the CHS IWLS API. For US coordinates,
+ * queries NOAA CO-OPS. Returns whichever station is closest.
+ *
+ * @param lat - Latitude in decimal degrees.
+ * @param lon - Longitude in decimal degrees.
+ * @returns The closest tide station from either country.
+ *
+ * @example
+ * ```ts
+ * // Works for both countries:
+ * const station = await getUnifiedNearestTideStation(44.65, -63.57); // Halifax
+ * const station2 = await getUnifiedNearestTideStation(28.6, -80.6);  // Florida
+ * ```
+ */
+export async function getUnifiedNearestTideStation(
+  lat: number,
+  lon: number,
+): Promise<TideStation> {
+  if (isLikelyCanadian(lat, lon)) {
+    const chsStation = await getNearestCHSTideStation(lat, lon);
+    if (chsStation) return chsStation;
+    // Fallback to NOAA (e.g. Great Lakes border areas)
+    return getNearestTideStation(lat, lon);
+  }
+
+  // US location — try NOAA first, fall back to CHS for border areas
+  try {
+    return await getNearestTideStation(lat, lon);
+  } catch {
+    const chsStation = await getNearestCHSTideStation(lat, lon);
+    if (chsStation) return chsStation;
+    throw new TidesServiceError('No tide stations found for this location', 404);
+  }
+}
+
+/**
+ * Get tide predictions from either NOAA or CHS, based on station ID format.
+ *
+ * CHS station IDs are UUIDs (contain hyphens and letters beyond 'a-f'),
+ * while NOAA IDs are numeric strings. This function auto-routes.
+ *
+ * @param stationId - NOAA or CHS station ID.
+ * @param days - Number of days (default 3).
+ * @returns Tide predictions in unified format.
+ */
+export async function getUnifiedTidePredictions(
+  stationId: string,
+  days: number = 3,
+): Promise<TidePrediction[]> {
+  if (isCHSStationId(stationId)) {
+    return getCHSTidePredictions(stationId, days);
+  }
+  return getTidePredictions(stationId, days);
+}
+
+/**
+ * Get hourly tides from either NOAA or CHS, based on station ID format.
+ *
+ * @param stationId - NOAA or CHS station ID.
+ * @returns Hourly tide levels for chart display.
+ */
+export async function getUnifiedTideHourly(stationId: string): Promise<TideHourly[]> {
+  if (isCHSStationId(stationId)) {
+    return getCHSTideHourly(stationId);
+  }
+  return getTideHourly(stationId);
+}
+
+/**
+ * Get observed water levels from either NOAA or CHS, based on station ID.
+ *
+ * @param stationId - NOAA or CHS station ID.
+ * @returns Observed water level readings.
+ */
+export async function getUnifiedWaterLevel(
+  stationId: string,
+): Promise<WaterLevelReading[]> {
+  if (isCHSStationId(stationId)) {
+    return getCHSWaterLevel(stationId);
+  }
+  return getWaterLevel(stationId);
+}
+
+/**
+ * Detect whether a station ID belongs to CHS (UUID format) vs NOAA (numeric).
+ * @internal
+ */
+function isCHSStationId(stationId: string): boolean {
+  // CHS uses MongoDB ObjectIDs (24-char hex) or UUIDs
+  // NOAA uses 7-digit numeric IDs
+  return /[a-f]/i.test(stationId) && stationId.length > 7;
+}
+
 // ── Bundled service object ───────────────────────────────────────
 
 /**
- * NOAA CO-OPS tides and currents service.
+ * Unified tides and water levels service for North America.
  *
  * All methods are available both as named exports and as properties
- * on this default service object.
+ * on this default service object. The `unified*` methods auto-detect
+ * US vs Canada and route to the appropriate data source.
  *
  * @example
  * ```ts
  * import { tidesService } from '../services/tidesService';
  *
- * const station = await tidesService.getNearestTideStation(28.6, -80.6);
- * const tides = await tidesService.getTidePredictions(station.id, 3);
+ * // Auto-detects country:
+ * const station = await tidesService.getUnifiedNearestTideStation(44.65, -63.57);
+ * const tides = await tidesService.getUnifiedTidePredictions(station.id, 3);
  * const next = tidesService.getNextTide(tides);
  * ```
  */
 export const tidesService = {
+  // Original NOAA methods
   getNearestTideStation,
   getTidePredictions,
   getTideHourly,
   getCurrents,
   getWaterLevel,
   getNextTide,
+  // CHS methods
+  getNearestCHSTideStation,
+  getCHSTidePredictions,
+  getCHSTideHourly,
+  getCHSWaterLevel,
+  // Unified auto-detect methods
+  getUnifiedNearestTideStation,
+  getUnifiedTidePredictions,
+  getUnifiedTideHourly,
+  getUnifiedWaterLevel,
 } as const;

@@ -1,11 +1,15 @@
 /**
- * National Weather Service (NWS) Alert Integration for OpenCatch.
+ * Weather Alert Integration for OpenCatch (US + Canada).
  *
- * Fetches real-time weather alerts from the free NWS API and classifies
- * them by fishing relevance so the app can surface actionable safety info.
+ * US:     National Weather Service (NWS) API — free, no key required.
+ * Canada: Environment Canada CAP alerts via Geomet OGC-API — free, no key required.
+ *
+ * Auto-detects country based on latitude and routes to the correct source.
+ * Both sources are merged into a unified WeatherAlert type.
  *
  * NWS API docs: https://www.weather.gov/documentation/services-web-api
- * No API key required — just a descriptive User-Agent header.
+ * EC CAP alerts: https://dd.weather.gc.ca/alerts/cap/
+ * EC Geomet:     https://api.weather.gc.ca
  */
 
 // ── Types ────────────────────────────────────────────────────────
@@ -57,6 +61,7 @@ export interface FishingWeatherAlert extends WeatherAlert {
 // ── Constants ────────────────────────────────────────────────────
 
 const NWS_BASE_URL = 'https://api.weather.gov';
+const EC_GEOMET_BASE = 'https://api.weather.gc.ca';
 
 const NWS_HEADERS: Record<string, string> = {
   'User-Agent': 'OpenCatch/1.0 (contact@opencatch.app)',
@@ -548,4 +553,265 @@ function buildAdvisoryDetail(event: string): string {
     return 'Wind can concentrate baitfish on windblown banks — try fishing the windward side.';
 
   return 'Conditions are manageable with proper preparation.';
+}
+
+// ── Country detection ────────────────────────────────────────────
+
+/**
+ * Determine if coordinates are in Canada (rough bounding box).
+ * Canada spans roughly 41.7N-84N latitude, -141 to -52 longitude.
+ * @internal
+ */
+function isCanadianLocation(lat: number, lon: number): boolean {
+  return lat >= 41.7 && lat <= 84 && lon >= -141 && lon <= -52;
+}
+
+/**
+ * More precise check: is the point north of the US-Canada border?
+ * Uses the 49th parallel for western provinces, and approximate
+ * boundaries for eastern provinces and Great Lakes region.
+ * @internal
+ */
+function isLikelyCanada(lat: number, lon: number): boolean {
+  // West of Ontario: 49th parallel is the border
+  if (lon <= -95 && lat >= 49) return true;
+  // Ontario/Great Lakes region: border dips to ~42N
+  if (lon > -95 && lon <= -74 && lat >= 42) return true;
+  // Quebec/Maritimes: border is roughly at ~45-47N
+  if (lon > -74 && lon <= -52 && lat >= 45) return true;
+  return false;
+}
+
+// ── Environment Canada (EC) Alert Fetching ───────────────────────
+
+/**
+ * Fetch JSON from the EC Geomet OGC-API with timeout.
+ * @internal
+ */
+async function ecFetch<T>(path: string, params?: Record<string, string>): Promise<T> {
+  const url = new URL(`${EC_GEOMET_BASE}${path}`);
+  url.searchParams.set('f', 'json');
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url.toString(), { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`EC Geomet API ${response.status}: ${path}`);
+    }
+    return response.json() as Promise<T>;
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      throw new Error(`EC Geomet API timed out after ${REQUEST_TIMEOUT_MS}ms: ${path}`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Map EC alert_type to our AlertSeverity.
+ *
+ * EC Geomet uses "alert_type" with values: "warning", "watch", "advisory",
+ * "statement", "ended". We map these to CAP severity levels.
+ * @internal
+ */
+const EC_TYPE_TO_SEVERITY: Record<string, AlertSeverity> = {
+  warning: 'Severe',
+  watch: 'Moderate',
+  advisory: 'Moderate',
+  statement: 'Minor',
+  ended: 'Minor',
+};
+
+/**
+ * Parse an Environment Canada alert feature into our WeatherAlert type.
+ *
+ * EC Geomet weather-alerts collection uses these property names:
+ *   id, alert_code, alert_type, alert_name_en, alert_short_name_en,
+ *   publication_datetime, expiration_datetime, validity_datetime,
+ *   event_end_datetime, alert_text_en, feature_name_en, province,
+ *   status_en, feature_id.
+ *
+ * @internal
+ */
+function parseECAlert(feature: any): WeatherAlert {
+  const p = feature.properties || {};
+
+  const alertType = (p.alert_type ?? '').toLowerCase();
+  const severity = EC_TYPE_TO_SEVERITY[alertType] ?? 'Unknown';
+
+  // Build a headline from the alert name and area
+  const alertName = p.alert_name_en ?? p.alert_short_name_en ?? 'Weather Alert';
+  const areaName = p.feature_name_en ?? '';
+  const headline = areaName ? `${alertName} for ${areaName}` : alertName;
+
+  return {
+    id: p.id ?? feature.id ?? '',
+    event: alertName,
+    severity,
+    certainty: 'Unknown',  // EC Geomet does not provide CAP certainty
+    urgency: alertType === 'warning' ? 'Immediate' : alertType === 'watch' ? 'Expected' : 'Unknown',
+    headline,
+    description: p.alert_text_en ?? '',
+    instruction: null,  // EC Geomet does not separate instructions from description
+    onset: p.publication_datetime ?? p.validity_datetime ?? new Date().toISOString(),
+    expires: p.expiration_datetime ?? p.event_end_datetime ?? new Date().toISOString(),
+    senderName: 'Environment Canada',
+    areaDesc: areaName,
+    affectedZones: p.province ? [p.province] : [],
+  };
+}
+
+/**
+ * Get active Environment Canada weather alerts near a location.
+ *
+ * Uses the Geomet OGC-API to fetch CAP alerts within a bounding box
+ * around the given coordinates. Results are cached for 5 minutes.
+ *
+ * @param lat - Latitude in decimal degrees.
+ * @param lon - Longitude in decimal degrees.
+ * @returns Array of active alerts, sorted by severity (most severe first).
+ *
+ * @example
+ * ```ts
+ * const alerts = await getCanadianAlerts(43.65, -79.38);
+ * console.log(alerts.length, 'active alerts near Toronto');
+ * ```
+ */
+export async function getCanadianAlerts(lat: number, lon: number): Promise<WeatherAlert[]> {
+  const cacheKey = `ca-alerts:${lat.toFixed(4)},${lon.toFixed(4)}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  try {
+    // Build a ~50 km bounding box
+    const dLat = 50 / 111;
+    const dLon = 50 / (111 * Math.cos((lat * Math.PI) / 180));
+    const bbox = [lon - dLon, lat - dLat, lon + dLon, lat + dLat].join(',');
+
+    const data = await ecFetch<any>('/collections/weather-alerts/items', {
+      bbox,
+      limit: '50',
+    });
+
+    const alerts: WeatherAlert[] = (data.features ?? []).map(parseECAlert);
+    const sorted = sortBySeverity(alerts);
+    setCache(cacheKey, sorted);
+    return sorted;
+  } catch (err) {
+    console.warn('[OpenCatch] Failed to fetch Environment Canada alerts:', err);
+    return [];
+  }
+}
+
+// ── Unified alert API (auto-detect country) ──────────────────────
+
+/**
+ * Get weather alerts for any North American location, auto-detecting country.
+ *
+ * Routes to Environment Canada (EC) for Canadian coordinates and to the
+ * National Weather Service (NWS) for US coordinates. Results are merged
+ * into the same WeatherAlert type.
+ *
+ * For locations near the border, alerts from both sources are fetched
+ * and merged to ensure nothing is missed.
+ *
+ * @param lat - Latitude in decimal degrees.
+ * @param lon - Longitude in decimal degrees.
+ * @returns Merged array of active alerts, sorted by severity.
+ *
+ * @example
+ * ```ts
+ * // Works for both countries:
+ * const alerts = await getUnifiedAlerts(43.65, -79.38); // Toronto
+ * const alerts2 = await getUnifiedAlerts(35.22, -97.44); // Oklahoma
+ * ```
+ */
+export async function getUnifiedAlerts(lat: number, lon: number): Promise<WeatherAlert[]> {
+  const canada = isLikelyCanada(lat, lon);
+  const nearBorder = isNearBorder(lat, lon);
+
+  if (nearBorder) {
+    // Fetch from both sources and merge
+    const [usAlerts, caAlerts] = await Promise.all([
+      getActiveAlerts(lat, lon).catch(() => [] as WeatherAlert[]),
+      getCanadianAlerts(lat, lon).catch(() => [] as WeatherAlert[]),
+    ]);
+    return sortBySeverity(deduplicateAlerts([...usAlerts, ...caAlerts]));
+  }
+
+  if (canada) {
+    return getCanadianAlerts(lat, lon);
+  }
+
+  return getActiveAlerts(lat, lon);
+}
+
+/**
+ * Get fishing-classified alerts for any North American location.
+ *
+ * Auto-detects country, fetches alerts, and enriches each with
+ * fishing-specific relevance and summary text.
+ *
+ * @param lat - Latitude in decimal degrees.
+ * @param lon - Longitude in decimal degrees.
+ * @returns Array of fishing-enriched alerts, sorted by relevance.
+ */
+export async function getUnifiedFishingAlerts(
+  lat: number,
+  lon: number,
+): Promise<FishingWeatherAlert[]> {
+  const alerts = await getUnifiedAlerts(lat, lon);
+  const enriched = alerts.map(formatAlertForFishing);
+
+  const relevanceOrder: Record<FishingRelevance, number> = {
+    dangerous: 0,
+    caution: 1,
+    advisory: 2,
+    info: 3,
+  };
+
+  return enriched.sort(
+    (a, b) => relevanceOrder[a.fishingRelevance] - relevanceOrder[b.fishingRelevance],
+  );
+}
+
+/**
+ * Check if coordinates are near the US-Canada border (within ~50 km).
+ * @internal
+ */
+function isNearBorder(lat: number, lon: number): boolean {
+  // Western provinces: 49th parallel
+  if (lon <= -95 && Math.abs(lat - 49) < 0.5) return true;
+  // Great Lakes: border roughly at ~42-49N depending on location
+  if (lon > -95 && lon <= -74 && lat >= 41.5 && lat <= 49.5) {
+    // Only flag as near-border if within a narrow band
+    if (Math.abs(lat - 42) < 0.5 || Math.abs(lat - 49) < 0.5) return true;
+    // Niagara/St. Lawrence region
+    if (lon > -80 && lon <= -74 && Math.abs(lat - 44) < 1) return true;
+  }
+  // Maritimes: border around 45-47N
+  if (lon > -74 && lon <= -52 && Math.abs(lat - 46) < 1) return true;
+  return false;
+}
+
+/**
+ * Remove duplicate alerts when merging US and Canadian sources.
+ * Uses alert headline and onset time for deduplication.
+ * @internal
+ */
+function deduplicateAlerts(alerts: WeatherAlert[]): WeatherAlert[] {
+  const seen = new Set<string>();
+  return alerts.filter((alert) => {
+    const key = `${alert.headline}|${alert.onset}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }

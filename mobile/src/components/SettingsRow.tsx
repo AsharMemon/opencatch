@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Switch, Pressable, StyleSheet } from 'react-native';
 import { palette } from '../theme/palette';
+import { hapticSelection, hapticLight } from '../utils/haptics';
 
 interface ToggleProps {
   label: string;
@@ -14,7 +15,7 @@ export function SettingsToggle({ label, value, onValueChange }: ToggleProps) {
       <Text style={styles.label}>{label}</Text>
       <Switch
         value={value}
-        onValueChange={onValueChange}
+        onValueChange={(val) => { hapticSelection(); onValueChange(val); }}
         trackColor={{ false: palette.border, true: palette.accent }}
         thumbColor={value ? '#FFFFFF' : palette.surfaceRaised}
       />
@@ -31,7 +32,7 @@ interface ButtonProps {
 export function SettingsButton({ label, value, onPress }: ButtonProps) {
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => { hapticLight(); onPress(); }}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
       <Text style={styles.label}>{label}</Text>

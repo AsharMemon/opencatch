@@ -8,7 +8,7 @@
  * - Expandable detail cards
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -22,8 +22,14 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
+import {
+  getNearbyBuoys,
+  fetchBuoyObservation,
+  type NearbyBuoy,
+  type BuoyObservation,
+} from '../services/weatherBuoys';
 
-// ── Types (inline until weatherBuoys service is wired) ───────────────────────
+// ── Types ────────────────────────────────────────────────────────────────────
 
 interface BuoyData {
   id: string;
@@ -42,61 +48,6 @@ interface BuoyData {
   visibility?: number;   // nm
   timestamp?: string;
 }
-
-// ── Mock data (will be replaced with weatherBuoys service) ───────────────────
-
-const MOCK_BUOYS: BuoyData[] = [
-  {
-    id: '45007',
-    name: 'Michigan City, IN',
-    distanceMiles: 12.3,
-    lat: 42.674,
-    lon: -87.026,
-    waterTemp: 48,
-    airTemp: 52,
-    waveHeight: 2.3,
-    wavePeriod: 5.4,
-    windSpeed: 12,
-    windDirection: 225,
-    gustSpeed: 18,
-    pressure: 1015.2,
-    visibility: 10,
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: '45002',
-    name: 'North Michigan',
-    distanceMiles: 45.8,
-    lat: 45.344,
-    lon: -86.411,
-    waterTemp: 44,
-    airTemp: 48,
-    waveHeight: 4.1,
-    wavePeriod: 7.2,
-    windSpeed: 18,
-    windDirection: 270,
-    gustSpeed: 25,
-    pressure: 1012.5,
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: 'MKGM4',
-    name: 'Muskegon, MI',
-    distanceMiles: 28.1,
-    lat: 43.228,
-    lon: -86.339,
-    waterTemp: 46,
-    airTemp: 50,
-    waveHeight: 1.8,
-    wavePeriod: 4.8,
-    windSpeed: 8,
-    windDirection: 180,
-    gustSpeed: 12,
-    pressure: 1016.8,
-    visibility: 15,
-    timestamp: new Date().toISOString(),
-  },
-];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -130,6 +81,27 @@ function tempColor(f: number): string {
   return '#C62828';
 }
 
+/** Map a NearbyBuoy + observation to the screen's BuoyData shape */
+function mapToBuoyData(buoy: NearbyBuoy, obs: BuoyObservation | null): BuoyData {
+  return {
+    id: buoy.id,
+    name: buoy.name,
+    distanceMiles: buoy.distanceMiles,
+    lat: buoy.lat,
+    lon: buoy.lon,
+    waterTemp: obs?.waterTemp ?? undefined,
+    airTemp: obs?.airTemp ?? undefined,
+    waveHeight: obs?.waveHeight ?? undefined,
+    wavePeriod: obs?.wavePeriod ?? undefined,
+    windSpeed: obs?.windSpeed ?? undefined,
+    windDirection: obs?.windDirection ?? undefined,
+    gustSpeed: obs?.gustSpeed ?? undefined,
+    pressure: obs?.pressure ?? undefined,
+    visibility: obs?.visibility ?? undefined,
+    timestamp: obs?.timestamp ?? undefined,
+  };
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function WeatherBuoysScreen({ route }: any) {
@@ -137,18 +109,81 @@ export function WeatherBuoysScreen({ route }: any) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchBuoys = useCallback(async (isRetry = false) => {
+    if (!isRetry) {
+      setLoading(true);
+    }
+    setError(null);
+
+    try {
+      // Get user location
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setError('Location permission required to find nearby buoys.');
+        setLoading(false);
+        return;
+      }
+
+      const loc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const lat = loc.coords.latitude;
+      const lon = loc.coords.longitude;
+
+      // Fetch nearby stations (100 mile radius for better coverage)
+      const nearbyStations = await getNearbyBuoys(lat, lon, 100);
+
+      if (nearbyStations.length === 0) {
+        setBuoys([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch observations for up to 15 closest stations in parallel
+      const stationsToFetch = nearbyStations.slice(0, 15);
+      const obsResults = await Promise.allSettled(
+        stationsToFetch.map((station) => fetchBuoyObservation(station.id)),
+      );
+
+      const buoyDataList: BuoyData[] = stationsToFetch
+        .map((station, idx) => {
+          const obsResult = obsResults[idx];
+          const obs = obsResult.status === 'fulfilled' ? obsResult.value : null;
+          return mapToBuoyData(station, obs);
+        })
+        // Filter out stations with no useful data
+        .filter(
+          (b) =>
+            b.waterTemp != null ||
+            b.waveHeight != null ||
+            b.windSpeed != null ||
+            b.airTemp != null,
+        );
+
+      setBuoys(buoyDataList);
+    } catch (err: any) {
+      const msg =
+        err?.name === 'AbortError'
+          ? 'Request timed out. Check your connection.'
+          : 'Unable to load buoy data. Pull to refresh.';
+      setError(msg);
+
+      // Auto-retry once
+      if (!isRetry) {
+        setTimeout(() => fetchBuoys(true), 3000);
+        return;
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchBuoys();
-  }, []);
-
-  const fetchBuoys = async () => {
-    setLoading(true);
-    // TODO: Replace with real weatherBuoys.getNearbyBuoys() when service is ready
-    await new Promise((r) => setTimeout(r, 800));
-    setBuoys(MOCK_BUOYS);
-    setLoading(false);
-  };
+  }, [fetchBuoys]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -296,25 +331,46 @@ export function WeatherBuoysScreen({ route }: any) {
         </Text>
       </View>
 
-      <FlatList
-        data={buoys}
-        keyExtractor={(item) => item.id}
-        renderItem={renderBuoyCard}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="radio-outline" size={48} color={palette.textDim} />
-            <Text style={styles.emptyTitle}>No Buoys Nearby</Text>
-            <Text style={styles.emptySubtitle}>
-              Weather buoys are primarily located in coastal and Great Lakes waters
-            </Text>
-          </View>
-        }
-      />
+      {/* Error banner */}
+      {error && buoys.length > 0 && (
+        <View style={styles.errorBanner}>
+          <Ionicons name="warning-outline" size={14} color={palette.warning} />
+          <Text style={styles.errorBannerText}>{error}</Text>
+        </View>
+      )}
+
+      {/* Error state (no data at all) */}
+      {error && buoys.length === 0 && (
+        <View style={styles.errorContainer}>
+          <Ionicons name="cloud-offline-outline" size={48} color={palette.textDim} />
+          <Text style={styles.errorTitle}>{error}</Text>
+          <Pressable style={styles.retryButton} onPress={() => fetchBuoys()}>
+            <Text style={styles.retryText}>Retry</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {!error || buoys.length > 0 ? (
+        <FlatList
+          data={buoys}
+          keyExtractor={(item) => item.id}
+          renderItem={renderBuoyCard}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent} />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="radio-outline" size={48} color={palette.textDim} />
+              <Text style={styles.emptyTitle}>No Buoys Nearby</Text>
+              <Text style={styles.emptySubtitle}>
+                Weather buoys are primarily located in coastal and Great Lakes waters
+              </Text>
+            </View>
+          }
+        />
+      ) : null}
     </View>
   );
 }
@@ -340,6 +396,46 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 16,
     paddingBottom: 40,
+  },
+
+  // Error states
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#FFF3E0',
+  },
+  errorBannerText: {
+    color: palette.textSecondary,
+    fontSize: 12,
+    flex: 1,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    gap: 12,
+  },
+  errorTitle: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    backgroundColor: palette.accent,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   // Info banner

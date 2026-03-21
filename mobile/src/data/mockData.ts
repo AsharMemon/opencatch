@@ -927,9 +927,12 @@ export const mockWaypoints: Waypoint[] = [
 export const defaultSettings: UserSettings = {
   displayName: 'Angler',
   units: 'imperial',
+  mapStyle: 'standard',
   notifications: {
     dailyForecast: true,
     scoreAlerts: true,
     weeklyDigest: false,
+    bestTimeAlerts: true,
+    weatherAlerts: true,
   },
 };

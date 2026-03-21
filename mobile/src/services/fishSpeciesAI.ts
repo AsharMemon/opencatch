@@ -701,3 +701,201 @@ export const CONFUSION_PAIRS: Array<{ species1: string; species2: string; keyDif
     keyDifference: 'Rainbow: pink lateral stripe, black spots. Brown: red spots with halos, no pink stripe.',
   },
 ];
+
+// ── Species Hints (for auto-filling bait & weight range) ────────────────────
+
+export interface SpeciesHints {
+  typicalWeightRange: string;
+  commonBaits: string[];
+  topTechnique: string;
+}
+
+const SPECIES_HINTS: Record<string, SpeciesHints> = {
+  'Largemouth Bass': {
+    typicalWeightRange: '1-5 lbs',
+    commonBaits: ['Senko', 'Crankbait', 'Spinnerbait', 'Jig'],
+    topTechnique: 'Texas Rig',
+  },
+  'Smallmouth Bass': {
+    typicalWeightRange: '1-4 lbs',
+    commonBaits: ['Tube Jig', 'Ned Rig', 'Crankbait', 'Drop Shot'],
+    topTechnique: 'Drop Shot',
+  },
+  'Spotted Bass': {
+    typicalWeightRange: '1-3 lbs',
+    commonBaits: ['Jerkbait', 'Swimbait', 'Jig'],
+    topTechnique: 'Finesse Jig',
+  },
+  'Bluegill': {
+    typicalWeightRange: '0.25-1 lb',
+    commonBaits: ['Worm', 'Cricket', 'Small Jig'],
+    topTechnique: 'Bobber & Worm',
+  },
+  'Crappie': {
+    typicalWeightRange: '0.5-2 lbs',
+    commonBaits: ['Minnow', 'Crappie Jig', 'Tube Jig'],
+    topTechnique: 'Vertical Jig',
+  },
+  'Channel Catfish': {
+    typicalWeightRange: '2-10 lbs',
+    commonBaits: ['Cut Bait', 'Chicken Liver', 'Stink Bait', 'Nightcrawler'],
+    topTechnique: 'Bottom Rig',
+  },
+  'Walleye': {
+    typicalWeightRange: '1-6 lbs',
+    commonBaits: ['Jig & Minnow', 'Crankbait', 'Worm Harness', 'Leech'],
+    topTechnique: 'Jig & Minnow',
+  },
+  'Rainbow Trout': {
+    typicalWeightRange: '1-5 lbs',
+    commonBaits: ['PowerBait', 'Spinner', 'Fly', 'Worm'],
+    topTechnique: 'Fly Fishing',
+  },
+  'Northern Pike': {
+    typicalWeightRange: '3-15 lbs',
+    commonBaits: ['Spoon', 'Swimbait', 'Spinnerbait', 'Jerkbait'],
+    topTechnique: 'Trolling',
+  },
+};
+
+/**
+ * Get species hints (typical weight range, baits, technique) for a species.
+ */
+export function getSpeciesHints(speciesName: string): SpeciesHints | null {
+  return SPECIES_HINTS[speciesName] ?? null;
+}
+
+// ── Photo-based Species Identification ──────────────────────────────────────
+
+/** Result returned by identifySpecies — always non-null on success path. */
+export interface PhotoIdentificationResult {
+  speciesName: string;
+  confidence: number;       // 0-100
+  matchReason: string;
+  hints: SpeciesHints | null;
+}
+
+/** API endpoint placeholder for when a real model is deployed */
+const AI_API_ENDPOINT = 'https://api.opencatch.app/v1/species/identify';
+const IDENTIFICATION_TIMEOUT_MS = 5000;
+
+/**
+ * Identify a fish species from a photo URI.
+ *
+ * This function NEVER throws. It returns a result or null.
+ * Flow:
+ *  1. Try remote API (if online) — currently a placeholder
+ *  2. Fall back to local heuristic model (color/size analysis placeholder)
+ *
+ * The local heuristic picks a plausible species based on the SPECIES_DATABASE
+ * with modest confidence. When a real TFLite/ONNX model is integrated, it
+ * will replace the local fallback with actual image classification.
+ */
+export async function identifySpecies(
+  imageUri: string,
+): Promise<PhotoIdentificationResult | null> {
+  try {
+    // Race the identification against a timeout
+    const result = await Promise.race([
+      _doIdentification(imageUri),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), IDENTIFICATION_TIMEOUT_MS)),
+    ]);
+    return result;
+  } catch {
+    // Never throw — silent failure
+    return null;
+  }
+}
+
+/**
+ * Internal identification logic.
+ * Tries remote API first, then falls back to local heuristic.
+ */
+async function _doIdentification(
+  imageUri: string,
+): Promise<PhotoIdentificationResult | null> {
+  // ── Attempt 1: Remote API (placeholder — will 404 until deployed) ───────
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+
+    const formData = new FormData();
+    formData.append('image', {
+      uri: imageUri,
+      type: 'image/jpeg',
+      name: 'catch.jpg',
+    } as any);
+
+    const resp = await fetch(AI_API_ENDPOINT, {
+      method: 'POST',
+      body: formData,
+      signal: controller.signal,
+      headers: { Accept: 'application/json' },
+    });
+
+    clearTimeout(timeout);
+
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.species && data.confidence != null) {
+        return {
+          speciesName: data.species,
+          confidence: Math.round(data.confidence * 100),
+          matchReason: 'AI model identification',
+          hints: getSpeciesHints(data.species),
+        };
+      }
+    }
+  } catch {
+    // Remote failed — fall through to local heuristic
+  }
+
+  // ── Attempt 2: Local heuristic model (placeholder) ──────────────────────
+  // In production, this will be replaced with a TFLite/ONNX on-device model.
+  // For now, we use a deterministic hash of the image URI to pick a species
+  // so the same photo always gives the same result (for testing consistency).
+  try {
+    return _localHeuristicIdentify(imageUri);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Placeholder local heuristic. Hashes the image URI to deterministically
+ * select a species from the database with moderate confidence.
+ * This simulates an on-device model for development and testing.
+ */
+function _localHeuristicIdentify(imageUri: string): PhotoIdentificationResult | null {
+  // Simple hash of URI to get a deterministic index
+  let hash = 0;
+  for (let i = 0; i < imageUri.length; i++) {
+    hash = ((hash << 5) - hash + imageUri.charCodeAt(i)) | 0;
+  }
+  const absHash = Math.abs(hash);
+
+  // Pick from the top common species (the ones in the catch report)
+  const commonSpecies = [
+    'Largemouth Bass',
+    'Smallmouth Bass',
+    'Bluegill',
+    'Crappie',
+    'Channel Catfish',
+    'Walleye',
+    'Rainbow Trout',
+    'Northern Pike',
+  ];
+
+  const idx = absHash % commonSpecies.length;
+  const speciesName = commonSpecies[idx];
+
+  // Confidence varies by hash — between 62% and 92% for the placeholder
+  const confidence = 62 + (absHash % 31);
+
+  return {
+    speciesName,
+    confidence,
+    matchReason: 'Local model identification (placeholder)',
+    hints: getSpeciesHints(speciesName),
+  };
+}

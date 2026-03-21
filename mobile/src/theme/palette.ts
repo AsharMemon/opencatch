@@ -4,6 +4,7 @@ export const palette = {
   surface: '#FFFFFF',
   surfaceRaised: '#F5F5F0',
   surfaceHighlight: '#E6F2FB',
+  surfaceAlt: '#F0F0F0',
 
   // Borders
   border: '#E5E5E0',
@@ -45,6 +46,11 @@ export const palette = {
   tabInactive: '#B5B5B0',
   overlay: 'rgba(26, 26, 24, 0.5)',
   shadow: 'rgba(0, 0, 0, 0.06)',
+
+  // Gradient presets (start, end)
+  gradientAccent: ['#0A6EBD', '#064A80'] as readonly [string, string],
+  gradientHeader: ['rgba(10, 110, 189, 0.10)', 'rgba(250, 250, 247, 0)'] as readonly [string, string],
+  gradientWarm: ['rgba(229, 57, 53, 0.08)', 'rgba(250, 250, 247, 0)'] as readonly [string, string],
 };
 
 // ---------------------------------------------------------------------------

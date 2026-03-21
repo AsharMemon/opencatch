@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   ScrollView,
   View,
@@ -6,27 +6,26 @@ import {
   StyleSheet,
   Pressable,
   Dimensions,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
+  ActivityIndicator,
 } from 'react-native';
 import Svg, {
   Circle,
   Path,
-  G,
-  Defs,
-  LinearGradient,
-  Stop,
 } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { palette, getConditionBand, conditionConfig, scoreColor } from '../theme/palette';
 import { fonts, type as typeStyles } from '../theme/typography';
+import { getDailyBiteForecast, getWeeklyBiteForecast, formatHour, type DailyBiteForecast as BiteFC, type TimeWindow } from '../services/bestTimeWindows';
+import { getCurrentPressure, type PressureReading } from '../services/fishingPressure';
+import { getWaterInsights, type WaterInsightsDashboard } from '../services/waterInsights';
 import type { TabProps } from '../types/navigation';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type ViewMode = 'Daily' | 'Monthly';
+type ViewMode = 'Daily' | 'Extended';
 
 interface HourlyData {
   hour: string;       // "07", "08", "Now", etc.
@@ -43,6 +42,8 @@ interface HourlyData {
   snowAccum: number;   // cm
   humidity: number;    // %
   uvIndex: number;
+  windSpeed?: number;  // km/h
+  windDirection?: number; // degrees
 }
 
 interface DayForecast {
@@ -52,67 +53,189 @@ interface DayForecast {
   hourly: HourlyData[];
 }
 
-// ── Mock Data — matches FishAngler screenshot style ─────────────────────────
+// ── Open-Meteo API ───────────────────────────────────────────────────────────
 
-const now = new Date();
+const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast';
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
-function generateHourlyData(): HourlyData[] {
-  const hours: HourlyData[] = [];
-  const currentHour = now.getHours();
-
-  for (let h = 0; h < 24; h++) {
-    const isNow = h === currentHour;
-    const hourLabel = isNow ? 'Now' : String(h).padStart(2, '0');
-
-    // Simulate realistic patterns
-    const tempBase = 18 + Math.sin((h - 6) * Math.PI / 12) * 10;
-    const temp = Math.round(Math.max(10, Math.min(35, tempBase + (Math.random() - 0.5) * 3)));
-    const fishBase = h >= 5 && h <= 9 ? 50 + Math.random() * 30 : (h >= 17 && h <= 20 ? 40 + Math.random() * 25 : 10 + Math.random() * 20);
-    const fishScore = Math.round(fishBase);
-    const cloud = Math.round(Math.max(0, Math.min(100, 5 + Math.random() * 15)));
-    const uv = h >= 6 && h <= 18 ? Math.round(Math.sin((h - 6) * Math.PI / 12) * 10) : 0;
-
-    hours.push({
-      hour: hourLabel,
-      isNow,
-      fishScore,
-      condition: cloud < 20 ? 'Clear/Sunny' : cloud < 50 ? 'Partly Cloudy' : 'Cloudy',
-      conditionIcon: cloud < 20 ? 'sunny-outline' : cloud < 50 ? 'partly-sunny-outline' : 'cloudy-outline',
-      cloudCover: cloud,
-      visibility: 16,
-      airTemp: temp,
-      pressure: 101700 + Math.round((Math.random() - 0.5) * 200),
-      precipitation: Math.round(Math.random() * 5),
-      precAccum: 0,
-      snowAccum: 0,
-      humidity: Math.round(20 + Math.random() * 15),
-      uvIndex: Math.max(0, uv),
-    });
-  }
-  return hours;
+interface ForecastCache {
+  data: DayForecast[];
+  lat: number;
+  lon: number;
+  timestamp: number;
 }
 
-function generateWeekForecast(): DayForecast[] {
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const forecasts: DayForecast[] = [];
+let forecastCache: ForecastCache | null = null;
 
-  for (let d = 0; d < 7; d++) {
-    const date = new Date(now);
-    date.setDate(date.getDate() + d);
-    const dayOfWeek = days[date.getDay()];
-    const icons = ['sunny-outline', 'partly-sunny-outline', 'cloudy-outline', 'sunny-outline', 'sunny-outline', 'partly-sunny-outline', 'sunny-outline'];
-
-    forecasts.push({
-      dayLabel: dayOfWeek,
-      date: date.getDate(),
-      weatherIcon: icons[d],
-      hourly: generateHourlyData(),
-    });
-  }
-  return forecasts;
+function isCacheValid(lat: number, lon: number): boolean {
+  if (!forecastCache) return false;
+  if (Date.now() - forecastCache.timestamp > CACHE_TTL_MS) return false;
+  // Check if location is roughly the same (within ~1km)
+  const dlat = Math.abs(forecastCache.lat - lat);
+  const dlon = Math.abs(forecastCache.lon - lon);
+  return dlat < 0.01 && dlon < 0.01;
 }
 
-const WEEK_FORECAST = generateWeekForecast();
+function conditionFromCloud(cloud: number): { label: string; icon: string } {
+  if (cloud < 20) return { label: 'Clear/Sunny', icon: 'sunny-outline' };
+  if (cloud < 50) return { label: 'Partly Cloudy', icon: 'partly-sunny-outline' };
+  if (cloud < 80) return { label: 'Mostly Cloudy', icon: 'cloudy-outline' };
+  return { label: 'Overcast', icon: 'cloudy-outline' };
+}
+
+/**
+ * Compute a simple fish activity score from weather conditions.
+ * Higher during dawn/dusk, stable pressure, moderate temps.
+ */
+function computeFishScore(hour: number, temp: number, pressure: number, cloudCover: number, windSpeed: number): number {
+  let score = 20;
+  // Dawn/dusk bonus
+  if ((hour >= 5 && hour <= 9) || (hour >= 17 && hour <= 20)) score += 25;
+  else if (hour >= 10 && hour <= 16) score += 10;
+  // Cloud cover bonus (overcast is good)
+  if (cloudCover >= 40 && cloudCover <= 80) score += 10;
+  // Temperature sweet spot (15-25°C)
+  if (temp >= 15 && temp <= 25) score += 15;
+  else if (temp >= 10 && temp <= 30) score += 5;
+  // Moderate wind is good
+  if (windSpeed >= 5 && windSpeed <= 20) score += 10;
+  // Pressure around 1013-1020 is good
+  if (pressure >= 1008 && pressure <= 1025) score += 10;
+  // Add some variation
+  score += Math.round(Math.sin(hour * 0.7 + pressure * 0.01) * 5);
+  return Math.max(5, Math.min(95, score));
+}
+
+async function fetchOpenMeteoForecast(lat: number, lon: number): Promise<DayForecast[]> {
+  if (isCacheValid(lat, lon) && forecastCache) {
+    return forecastCache.data;
+  }
+
+  const params = new URLSearchParams({
+    latitude: lat.toFixed(4),
+    longitude: lon.toFixed(4),
+    hourly: [
+      'temperature_2m',
+      'relative_humidity_2m',
+      'pressure_msl',
+      'cloud_cover',
+      'precipitation',
+      'snowfall',
+      'visibility',
+      'uv_index',
+      'wind_speed_10m',
+      'wind_direction_10m',
+    ].join(','),
+    forecast_days: '16',
+    timezone: 'auto',
+  });
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const resp = await fetch(`${OPEN_METEO_URL}?${params}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!resp.ok) {
+      throw new Error(`Open-Meteo returned ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    const hourlyData = data.hourly;
+    if (!hourlyData || !hourlyData.time) {
+      throw new Error('Invalid Open-Meteo response');
+    }
+
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const now = new Date();
+    const currentHour = now.getHours();
+    const todayStr = now.toISOString().slice(0, 10);
+
+    // Group hourly data by day
+    const dayMap = new Map<string, HourlyData[]>();
+
+    for (let i = 0; i < hourlyData.time.length; i++) {
+      const timeStr: string = hourlyData.time[i];
+      const dateStr = timeStr.slice(0, 10);
+      const hour = parseInt(timeStr.slice(11, 13), 10);
+
+      const temp = hourlyData.temperature_2m?.[i] ?? 0;
+      const humidity = hourlyData.relative_humidity_2m?.[i] ?? 0;
+      const pressureHpa = hourlyData.pressure_msl?.[i] ?? 1013;
+      const cloud = hourlyData.cloud_cover?.[i] ?? 0;
+      const precip = hourlyData.precipitation?.[i] ?? 0;
+      const snow = hourlyData.snowfall?.[i] ?? 0;
+      const visibilityM = hourlyData.visibility?.[i] ?? 16000;
+      const uv = hourlyData.uv_index?.[i] ?? 0;
+      const windSpeed = hourlyData.wind_speed_10m?.[i] ?? 0;
+      const windDir = hourlyData.wind_direction_10m?.[i] ?? 0;
+
+      const isToday = dateStr === todayStr;
+      const isNow = isToday && hour === currentHour;
+      const hourLabel = isNow ? 'Now' : String(hour).padStart(2, '0');
+
+      const cond = conditionFromCloud(cloud);
+      const fishScore = computeFishScore(hour, temp, pressureHpa, cloud, windSpeed);
+
+      const entry: HourlyData = {
+        hour: hourLabel,
+        isNow,
+        fishScore,
+        condition: cond.label,
+        conditionIcon: cond.icon,
+        cloudCover: Math.round(cloud),
+        visibility: Math.round(visibilityM / 1000),
+        airTemp: Math.round(temp),
+        pressure: Math.round(pressureHpa * 100), // hPa to Pa
+        precipitation: Math.round(precip * 10) / 10 > 0 ? Math.round(precip * 100) / 100 : 0,
+        precAccum: Math.round(precip * 10) / 10,
+        snowAccum: Math.round(snow * 10) / 10,
+        humidity: Math.round(humidity),
+        uvIndex: Math.round(uv),
+        windSpeed: Math.round(windSpeed),
+        windDirection: Math.round(windDir),
+      };
+
+      if (!dayMap.has(dateStr)) dayMap.set(dateStr, []);
+      dayMap.get(dateStr)!.push(entry);
+    }
+
+    // Convert to DayForecast array
+    const forecasts: DayForecast[] = [];
+    for (const [dateStr, hours] of dayMap) {
+      const d = new Date(dateStr + 'T12:00:00');
+      const dayLabel = days[d.getDay()];
+      // Pick most common condition icon for the day
+      const iconCounts = new Map<string, number>();
+      for (const h of hours) {
+        iconCounts.set(h.conditionIcon, (iconCounts.get(h.conditionIcon) || 0) + 1);
+      }
+      const weatherIcon = [...iconCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'sunny-outline';
+
+      forecasts.push({
+        dayLabel,
+        date: d.getDate(),
+        weatherIcon,
+        hourly: hours,
+      });
+    }
+
+    // Update cache
+    forecastCache = { data: forecasts, lat, lon, timestamp: Date.now() };
+
+    return forecasts;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    // Return cached data if available, even if stale
+    if (forecastCache?.data) {
+      return forecastCache.data;
+    }
+    throw err;
+  }
+}
 
 // ── Row definitions — matches FishAngler layout ─────────────────────────────
 
@@ -178,7 +301,7 @@ const ROWS: RowConfig[] = [
   {
     key: 'timezone',
     icon: 'time-outline',
-    label: 'PDT • 1 Hour',
+    label: 'Time · 1 Hour',
     getValue: (h) => h.hour,
     height: 32,
   },
@@ -234,7 +357,7 @@ const ROWS: RowConfig[] = [
   {
     key: 'precipitation',
     icon: 'rainy-outline',
-    label: 'Precipitation (%)',
+    label: 'Precipitation (mm)',
     getValue: (h) => h.precipitation > 0 ? `${h.precipitation}` : '-',
   },
   {
@@ -433,15 +556,222 @@ function HourHeaderRow({ hourly }: { hourly: HourlyData[] }) {
   );
 }
 
+// ── Helpers for Extended Outlook ──────────────────────────────────────────
+
+const DAYS_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function windDirectionLabel(deg: number): string {
+  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+function moonPhaseIcon(phase: string): string {
+  if (phase.includes('New')) return 'moon-outline';
+  if (phase.includes('Full')) return 'moon';
+  if (phase.includes('Waxing Crescent') || phase.includes('Waning Crescent')) return 'moon-outline';
+  return 'moon';
+}
+
+function dayQualityColor(score: number): string {
+  if (score >= 55) return '#2E7D32';  // green — great
+  if (score >= 35) return '#C4841D';  // amber — fair
+  return '#C44B4B';                   // red — poor
+}
+
+function dayQualityBg(score: number): string {
+  if (score >= 55) return 'rgba(46,125,50,0.06)';
+  if (score >= 35) return 'rgba(196,132,29,0.06)';
+  return 'rgba(196,75,75,0.06)';
+}
+
+// Compute summary stats for a day from its hourly data
+function computeDaySummary(day: DayForecast) {
+  const temps = day.hourly.map((h) => h.airTemp);
+  const hi = Math.max(...temps);
+  const lo = Math.min(...temps);
+  const windSpeeds = day.hourly.filter((h) => h.windSpeed != null).map((h) => h.windSpeed!);
+  const avgWind = windSpeeds.length > 0 ? Math.round(windSpeeds.reduce((a, b) => a + b, 0) / windSpeeds.length) : 0;
+  const windDirs = day.hourly.filter((h) => h.windDirection != null).map((h) => h.windDirection!);
+  const avgWindDir = windDirs.length > 0 ? Math.round(windDirs.reduce((a, b) => a + b, 0) / windDirs.length) : 0;
+  const maxPrecipChance = Math.max(...day.hourly.map((h) => h.precipitation));
+  const avgScore = Math.round(day.hourly.reduce((a, h) => a + h.fishScore, 0) / day.hourly.length);
+  return { hi, lo, avgWind, avgWindDir, maxPrecipChance, avgScore };
+}
+
+function DayOutlookCard({
+  day,
+  dayIndex,
+  bite,
+}: {
+  day: DayForecast;
+  dayIndex: number;
+  bite: BiteFC | null;
+}) {
+  const today = new Date();
+  const cardDate = new Date();
+  cardDate.setDate(today.getDate() + dayIndex);
+
+  const dayName = dayIndex === 0 ? 'Today' : dayIndex === 1 ? 'Tomorrow' : DAYS_FULL[cardDate.getDay()];
+  const dateStr = `${MONTHS_SHORT[cardDate.getMonth()]} ${cardDate.getDate()}`;
+
+  const { hi, lo, avgWind, avgWindDir, maxPrecipChance, avgScore } = computeDaySummary(day);
+  const overallScore = bite?.overallRating ?? avgScore;
+  const qColor = dayQualityColor(overallScore);
+  const qBg = dayQualityBg(overallScore);
+
+  const bestWindowStr = bite?.bestWindow?.label ?? null;
+  const moonLabel = bite?.moonPhase ?? '';
+  const sunriseStr = bite ? formatHour(Math.round(bite.sunrise)) : '';
+  const sunsetStr = bite ? formatHour(Math.round(bite.sunset)) : '';
+
+  return (
+    <View style={[os.card, { backgroundColor: qBg, borderLeftColor: qColor }]}>
+      {/* Top row: day + date + score */}
+      <View style={os.cardHeader}>
+        <View style={{ flex: 1 }}>
+          <Text style={os.dayName}>{dayName}</Text>
+          <Text style={os.dateStr}>{dateStr}</Text>
+        </View>
+        <View style={[os.scoreBadge, { backgroundColor: qColor }]}>
+          <Ionicons name="fish-outline" size={14} color="#FFF" />
+          <Text style={os.scoreText}>{overallScore}%</Text>
+        </View>
+      </View>
+
+      {/* Middle row: weather icon + temps + wind + precip */}
+      <View style={os.metricsRow}>
+        <View style={os.metric}>
+          <Ionicons name={day.weatherIcon as any} size={22} color="#FB8C00" />
+          <Text style={os.metricValue}>{hi}° / {lo}°</Text>
+          <Text style={os.metricLabel}>Hi / Lo</Text>
+        </View>
+
+        <View style={os.metric}>
+          <Ionicons name="flag-outline" size={18} color={palette.textSecondary} />
+          <Text style={os.metricValue}>{avgWind} km/h {windDirectionLabel(avgWindDir)}</Text>
+          <Text style={os.metricLabel}>Wind</Text>
+        </View>
+
+        <View style={os.metric}>
+          <Ionicons name="rainy-outline" size={18} color={palette.textSecondary} />
+          <Text style={os.metricValue}>{maxPrecipChance > 0 ? `${maxPrecipChance.toFixed(1)} mm` : 'None'}</Text>
+          <Text style={os.metricLabel}>Precip</Text>
+        </View>
+      </View>
+
+      {/* Bottom row: best window + moon + sunrise/sunset */}
+      <View style={os.bottomRow}>
+        {bestWindowStr && (
+          <View style={os.chip}>
+            <Ionicons name="time-outline" size={12} color={qColor} />
+            <Text style={[os.chipText, { color: qColor }]}>{bestWindowStr}</Text>
+          </View>
+        )}
+
+        {moonLabel !== '' && (
+          <View style={os.chip}>
+            <Ionicons name={moonPhaseIcon(moonLabel) as any} size={12} color={palette.textMuted} />
+            <Text style={os.chipText}>{moonLabel}</Text>
+          </View>
+        )}
+
+        {sunriseStr !== '' && (
+          <View style={os.chip}>
+            <Ionicons name="sunny-outline" size={12} color="#FB8C00" />
+            <Text style={os.chipText}>{sunriseStr} / {sunsetStr}</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
 // ── Main Screen ──────────────────────────────────────────────────────────────
 
 export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('Daily');
+  const [weekForecast, setWeekForecast] = useState<DayForecast[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [userLat, setUserLat] = useState<number | null>(null);
+  const [userLon, setUserLon] = useState<number | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
-  const selectedDay = WEEK_FORECAST[selectedDayIdx];
-  const hourly = selectedDay.hourly;
+  // Inline insight state
+  const [biteForecast, setBiteForecast] = useState<BiteFC | null>(null);
+  const [weeklyBite, setWeeklyBite] = useState<BiteFC[]>([]);
+  const [pressureInfo, setPressureInfo] = useState<PressureReading | null>(null);
+  const [waterData, setWaterData] = useState<WaterInsightsDashboard | null>(null);
+
+  // Load inline insights when location is known
+  useEffect(() => {
+    if (userLat == null || userLon == null) return;
+    let cancelled = false;
+
+    const bite = getDailyBiteForecast(userLat, userLon);
+    const weekly = getWeeklyBiteForecast(userLat, userLon);
+    const pressure = getCurrentPressure({ lat: userLat, lon: userLon });
+    if (!cancelled) {
+      setBiteForecast(bite);
+      setWeeklyBite(weekly);
+      setPressureInfo(pressure);
+    }
+
+    getWaterInsights(userLat, userLon).then((w) => {
+      if (!cancelled) setWaterData(w);
+    }).catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [userLat, userLon]);
+
+  const fetchForecast = useCallback(async (lat: number, lon: number, isRetry = false) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchOpenMeteoForecast(lat, lon);
+      setWeekForecast(data);
+    } catch (err: any) {
+      const msg = err?.name === 'AbortError'
+        ? 'Request timed out. Check your connection.'
+        : 'Unable to load forecast. Pull down to retry.';
+      setError(msg);
+
+      // Auto-retry once on network failure
+      if (!isRetry) {
+        setTimeout(() => fetchForecast(lat, lon, true), 3000);
+        return;
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setError('Location permission needed for forecast.');
+          setLoading(false);
+          return;
+        }
+        const loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        setUserLat(loc.coords.latitude);
+        setUserLon(loc.coords.longitude);
+        await fetchForecast(loc.coords.latitude, loc.coords.longitude);
+      } catch {
+        setError('Unable to get your location. Please enable GPS.');
+        setLoading(false);
+      }
+    })();
+  }, [fetchForecast]);
+
+  const selectedDay = weekForecast[selectedDayIdx];
+  const hourly = selectedDay?.hourly ?? [];
 
   // Scroll to "Now" column on mount
   const handleScrollLayout = () => {
@@ -450,6 +780,32 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
       scrollRef.current.scrollTo({ x: Math.max(0, (nowIdx - 1) * DATA_COL_WIDTH), animated: false });
     }
   };
+
+  // Loading state
+  if (loading && weekForecast.length === 0) {
+    return (
+      <View style={[s.screen, s.centerContent]}>
+        <ActivityIndicator size="large" color={palette.accent} />
+        <Text style={s.loadingText}>Loading forecast...</Text>
+      </View>
+    );
+  }
+
+  // Error state with no cached data
+  if (error && weekForecast.length === 0) {
+    return (
+      <View style={[s.screen, s.centerContent]}>
+        <Ionicons name="cloud-offline-outline" size={48} color={palette.textDim} />
+        <Text style={s.errorTitle}>{error}</Text>
+        <Pressable
+          style={s.retryButton}
+          onPress={() => userLat != null && userLon != null && fetchForecast(userLat, userLon)}
+        >
+          <Text style={s.retryText}>Retry</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <View style={s.screen}>
@@ -460,66 +816,250 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
           <View style={s.headerCenter}>
             <Text style={s.headerTitle}>Map Location</Text>
             <Text style={s.headerCoords}>
-              {(34.9001).toFixed(6)}, {(-118.5206).toFixed(6)}
+              {userLat != null && userLon != null
+                ? `${userLat.toFixed(6)}, ${userLon.toFixed(6)}`
+                : 'Locating...'}
             </Text>
           </View>
-          <Ionicons name="navigate-outline" size={22} color={palette.text} />
+          <Pressable onPress={() => userLat != null && userLon != null && fetchForecast(userLat, userLon)}>
+            <Ionicons name="refresh-outline" size={22} color={palette.text} />
+          </Pressable>
         </View>
 
-        {/* Daily / Monthly toggle */}
+        {/* Daily / Extended toggle */}
         <View style={s.modeToggle}>
-          {(['Daily', 'Monthly'] as ViewMode[]).map((mode) => (
+          {([['Daily', 'Hourly'], ['Extended', '14-Day Extended']] as [ViewMode, string][]).map(([mode, label]) => (
             <Pressable
               key={mode}
               style={[s.modeToggleBtn, viewMode === mode && s.modeToggleBtnActive]}
               onPress={() => setViewMode(mode)}
             >
               <Text style={[s.modeToggleText, viewMode === mode && s.modeToggleTextActive]}>
-                {mode}
+                {label}
               </Text>
             </Pressable>
           ))}
         </View>
 
-        {/* Day selector */}
-        <DaySelector
-          days={WEEK_FORECAST}
-          selectedIdx={selectedDayIdx}
-          onSelect={setSelectedDayIdx}
-        />
+        {/* Day selector — only in hourly mode */}
+        {viewMode === 'Daily' && weekForecast.length > 0 && (
+          <DaySelector
+            days={weekForecast}
+            selectedIdx={selectedDayIdx}
+            onSelect={setSelectedDayIdx}
+          />
+        )}
       </View>
 
-      {/* Scrollable forecast grid */}
-      <ScrollView
-        style={s.verticalScroll}
-        showsVerticalScrollIndicator={false}
-      >
+      {/* Error banner (shown over cached data) */}
+      {error && weekForecast.length > 0 && (
+        <View style={s.errorBanner}>
+          <Ionicons name="warning-outline" size={14} color={palette.warning} />
+          <Text style={s.errorBannerText}>Showing cached data. {error}</Text>
+        </View>
+      )}
+
+      {/* ── Extended 14-Day Outlook View ─────────────────────────────── */}
+      {viewMode === 'Extended' && weekForecast.length > 0 && (
         <ScrollView
-          ref={scrollRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          onLayout={handleScrollLayout}
-          contentContainerStyle={{ width: LABEL_COL_WIDTH + hourly.length * DATA_COL_WIDTH }}
+          style={s.verticalScroll}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 12, paddingBottom: 100, gap: 10 }}
         >
-          <View>
-            {/* Hour header */}
-            <HourHeaderRow hourly={hourly} />
-
-            {/* Data rows */}
-            {ROWS.map((row) => (
-              <React.Fragment key={row.key}>
-                <DataRow row={row} hourly={hourly} />
-                {/* Insert pressure sparkline after the pressure row */}
-                {row.key === 'pressure' && (
-                  <PressureSparkline hourly={hourly} />
-                )}
-              </React.Fragment>
-            ))}
-
-            <View style={{ height: 100 }} />
-          </View>
+          <Text style={os.sectionTitle}>14-Day Extended Forecast</Text>
+          {weekForecast.map((day, i) => (
+            <DayOutlookCard
+              key={i}
+              day={day}
+              dayIndex={i}
+              bite={weeklyBite[i] ?? null}
+            />
+          ))}
         </ScrollView>
-      </ScrollView>
+      )}
+
+      {/* ── Hourly Grid View (existing) ─────────────────────────────── */}
+      {viewMode === 'Daily' && hourly.length > 0 && (
+        <ScrollView
+          style={s.verticalScroll}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={{ flexDirection: 'row' }}>
+            {/* Fixed left label column */}
+            <View style={{ width: LABEL_COL_WIDTH, zIndex: 2, backgroundColor: palette.background }}>
+              <View style={[s.labelCell, { height: 28 }]}>
+                <Text style={s.hourHeaderLabel}>Hour</Text>
+              </View>
+              {ROWS.map((row) => (
+                <React.Fragment key={row.key}>
+                  <View style={[s.labelCell, { height: row.height || ROW_HEIGHT }]}>
+                    <Ionicons name={row.icon as any} size={14} color={palette.textSecondary} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.labelText} numberOfLines={1}>{row.label}</Text>
+                      {row.sublabel ? <Text style={s.sublabelText}>{row.sublabel}</Text> : null}
+                    </View>
+                  </View>
+                  {row.key === 'pressure' && <View style={[s.sparklineRow, { height: 24 }]} />}
+                </React.Fragment>
+              ))}
+              <View style={{ height: 16 }} />
+            </View>
+
+            {/* Scrollable right data columns */}
+            <ScrollView
+              ref={scrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              onLayout={handleScrollLayout}
+              style={{ flex: 1 }}
+              contentContainerStyle={{ width: hourly.length * DATA_COL_WIDTH }}
+            >
+              <View>
+                {/* Hour header (data only, no label) */}
+                <View style={[s.dataRow, { height: 28 }]}>
+                  {hourly.map((h, i) => (
+                    <View key={i} style={[s.hourHeaderCell, h.isNow ? s.nowColumnHeader : null]}>
+                      {h.isNow ? (
+                        <>
+                          <Text style={s.nowLabel}>Now</Text>
+                          <Ionicons name="caret-down" size={8} color={palette.accent} />
+                        </>
+                      ) : (
+                        <Text style={s.hourLabel}>{h.hour}</Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+
+                {/* Data rows (data cells only, no labels) */}
+                {ROWS.map((row) => {
+                  const height = row.height || ROW_HEIGHT;
+                  return (
+                    <React.Fragment key={row.key}>
+                      <View style={[s.dataRow, { height }]}>
+                        {hourly.map((h, i) => {
+                          const bgColor = row.getBgColor?.(h);
+                          const textColor = row.getColor?.(h) || palette.text;
+                          const value = row.getValue(h);
+                          return (
+                            <View
+                              key={i}
+                              style={[s.dataCell, { width: DATA_COL_WIDTH, height }, bgColor ? { backgroundColor: bgColor } : null, h.isNow ? s.nowColumnHighlight : null]}
+                            >
+                              {row.renderCustom ? row.renderCustom(h) : (
+                                <Text style={[s.dataCellText, { color: textColor }]} numberOfLines={1}>{value}</Text>
+                              )}
+                            </View>
+                          );
+                        })}
+                      </View>
+                      {row.key === 'pressure' && <PressureSparkline hourly={hourly} />}
+                    </React.Fragment>
+                  );
+                })}
+
+                <View style={{ height: 16 }} />
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* ── Inline Insight Sections ─────────────────────────────────── */}
+
+          {/* Best Fishing Windows Today */}
+          {biteForecast && biteForecast.windows.length > 0 && (
+            <View style={s.insightCard}>
+              <Text style={s.insightTitle}>Best Fishing Windows Today</Text>
+              {/* Hour timeline bar */}
+              <View style={s.timelineBar}>
+                {biteForecast.hourlyScores.map((score, h) => (
+                  <View
+                    key={h}
+                    style={[
+                      s.timelineSegment,
+                      {
+                        backgroundColor:
+                          score >= 60 ? '#2E7D32'
+                          : score >= 45 ? '#66BB6A'
+                          : score >= 30 ? '#FFA726'
+                          : 'rgba(0,0,0,0.06)',
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+              <View style={s.timelineLabels}>
+                <Text style={s.timelineLabel}>12A</Text>
+                <Text style={s.timelineLabel}>6A</Text>
+                <Text style={s.timelineLabel}>12P</Text>
+                <Text style={s.timelineLabel}>6P</Text>
+                <Text style={s.timelineLabel}>12A</Text>
+              </View>
+              {/* Window pills */}
+              <View style={s.windowPills}>
+                {biteForecast.windows.slice(0, 3).map((w, i) => {
+                  const qualityColor = w.quality === 'prime' ? '#2E7D32' : w.quality === 'good' ? '#66BB6A' : '#FFA726';
+                  return (
+                    <View key={i} style={[s.windowPill, { borderColor: qualityColor + '40' }]}>
+                      <View style={[s.windowDot, { backgroundColor: qualityColor }]} />
+                      <Text style={s.windowLabel}>{w.label}</Text>
+                      <Text style={[s.windowQuality, { color: qualityColor }]}>
+                        {w.quality.charAt(0).toUpperCase() + w.quality.slice(1)}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+              {biteForecast.windows[0]?.reasons?.length > 0 && (
+                <Text style={s.insightDetail}>
+                  {biteForecast.windows[0].reasons.join(' \u00B7 ')}
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Fishing Pressure */}
+          {pressureInfo && (
+            <View style={s.insightCard}>
+              <Text style={s.insightTitle}>Fishing Pressure</Text>
+              <View style={s.pressureRow}>
+                <Ionicons name={pressureInfo.icon as any} size={20} color={pressureInfo.color} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.pressureLevel, { color: pressureInfo.color }]}>
+                    {pressureInfo.label}
+                  </Text>
+                  <Text style={s.pressureDesc}>{pressureInfo.description}</Text>
+                </View>
+              </View>
+              {pressureInfo.peakHours.length > 0 && (
+                <Text style={s.insightDetail}>
+                  Peak hours: {pressureInfo.peakHours.join(', ')}
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Water Conditions */}
+          {waterData && waterData.insights.length > 0 && (
+            <View style={s.insightCard}>
+              <Text style={s.insightTitle}>Water Conditions</Text>
+              <View style={s.waterGrid}>
+                {waterData.insights.slice(0, 4).map((insight) => (
+                  <View key={insight.label} style={s.waterItem}>
+                    <Ionicons name={insight.icon as any} size={16} color={insight.color} />
+                    <Text style={s.waterItemLabel}>{insight.label}</Text>
+                    <Text style={[s.waterItemValue, { color: insight.color }]}>
+                      {insight.value}{insight.unit}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              <Text style={s.insightDetail}>{waterData.fishingImpact}</Text>
+            </View>
+          )}
+
+          <View style={{ height: 100 }} />
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -530,6 +1070,49 @@ const s = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: palette.background,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+    padding: 24,
+  },
+  loadingText: {
+    color: palette.textMuted,
+    fontSize: 14,
+    marginTop: 8,
+  },
+  errorTitle: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  retryButton: {
+    marginTop: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    backgroundColor: palette.accent,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#FFF3E0',
+  },
+  errorBannerText: {
+    color: palette.textSecondary,
+    fontSize: 12,
+    flex: 1,
   },
 
   // Header
@@ -722,5 +1305,217 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     height: 28,
     backgroundColor: '#FFF8E1',
+  },
+
+  // ── Inline Insight Cards ──────────────────────────────────────────
+  insightCard: {
+    backgroundColor: palette.surface,
+    marginHorizontal: 12,
+    marginTop: 12,
+    borderRadius: 12,
+    padding: 16,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  insightTitle: {
+    fontFamily: fonts.serif,
+    fontSize: 15,
+    color: palette.text,
+    fontWeight: '400',
+  },
+  insightDetail: {
+    fontSize: 12,
+    color: palette.textMuted,
+    lineHeight: 16,
+  },
+
+  // Timeline bar
+  timelineBar: {
+    flexDirection: 'row',
+    height: 14,
+    borderRadius: 7,
+    overflow: 'hidden',
+    gap: 1,
+  },
+  timelineSegment: {
+    flex: 1,
+    borderRadius: 2,
+  },
+  timelineLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 2,
+  },
+  timelineLabel: {
+    fontSize: 9,
+    color: palette.textDim,
+    fontWeight: '600',
+  },
+
+  // Window pills
+  windowPills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  windowPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    backgroundColor: palette.surfaceRaised,
+  },
+  windowDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  windowLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: palette.text,
+  },
+  windowQuality: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  // Pressure inline
+  pressureRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  pressureLevel: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  pressureDesc: {
+    fontSize: 12,
+    color: palette.textSecondary,
+    marginTop: 2,
+    lineHeight: 16,
+  },
+
+  // Water conditions grid
+  waterGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  waterItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: palette.surfaceRaised,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  waterItemLabel: {
+    fontSize: 11,
+    color: palette.textMuted,
+    fontWeight: '500',
+  },
+  waterItemValue: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+});
+
+// ── Extended Outlook styles ───────────────────────────────────────────────
+
+const os = StyleSheet.create({
+  sectionTitle: {
+    fontFamily: fonts.serifBold,
+    fontSize: 20,
+    color: palette.text,
+    marginBottom: 4,
+    letterSpacing: -0.3,
+  },
+  card: {
+    backgroundColor: palette.surface,
+    borderRadius: 14,
+    padding: 14,
+    gap: 10,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dayName: {
+    fontFamily: fonts.serif,
+    fontSize: 16,
+    color: palette.text,
+  },
+  dateStr: {
+    fontSize: 12,
+    color: palette.textMuted,
+    marginTop: 1,
+  },
+  scoreBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  scoreText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  metricsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  metric: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 3,
+  },
+  metricValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: palette.text,
+    textAlign: 'center',
+  },
+  metricLabel: {
+    fontSize: 10,
+    color: palette.textMuted,
+    fontWeight: '500',
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: palette.surfaceRaised,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  chipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: palette.textSecondary,
   },
 });

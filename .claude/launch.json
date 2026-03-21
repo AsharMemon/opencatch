@@ -2,28 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "Django Backend",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["manage.py", "runserver"],
-      "port": 8000
-    },
-    {
-      "name": "Expo Mobile",
-      "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "export HOME=/Users/Ashar && cd /Users/Ashar/Documents/fish/mobile && npx expo start --port 8081"],
-      "port": 8081
-    },
-    {
-      "name": "Expo iOS",
-      "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "cd mobile && npx expo start --ios"],
-      "port": 8081
-    },
-    {
-      "name": "Expo Android",
-      "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "cd mobile && npx expo start --android"],
-      "port": 8081
+      "name": "expo",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["expo", "export:web"],
+      "port": 8082,
+      "autoPort": true,
+      "cwd": "mobile"
     }
   ]
 }

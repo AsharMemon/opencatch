@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   ScrollView,
   View,
@@ -6,6 +6,8 @@ import {
   StyleSheet,
   Dimensions,
   Pressable,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import Svg, {
   Circle,
@@ -20,6 +22,7 @@ import Svg, {
 import { Ionicons } from '@expo/vector-icons';
 import { palette, scoreColor } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
+import { getAllCatches, getPersonalBests, type EnhancedCatch, type PersonalBest } from '../services/catchEnhancements';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -54,22 +57,37 @@ interface MonthlyStats {
 
 type TimeRange = 'all' | 'year' | '90days' | '30days';
 
-// ── Mock Data ────────────────────────────────────────────────────────────────
+// ── Adapters ─────────────────────────────────────────────────────────────────
 
-const MOCK_CATCHES: CatchRecord[] = [
-  { id: 'c1', date: '2026-03-15', species: 'Largemouth Bass', weightLb: 4.2, lengthIn: 19, location: 'Lake Fork, TX', bait: 'Senko', weather: 'Partly Cloudy', waterTemp: 58 },
-  { id: 'c2', date: '2026-03-12', species: 'Largemouth Bass', weightLb: 2.8, lengthIn: 16, location: 'Lake Fork, TX', bait: 'Crankbait', weather: 'Overcast', waterTemp: 56 },
-  { id: 'c3', date: '2026-03-08', species: 'Crappie', weightLb: 1.1, lengthIn: 11, location: 'Grand Lake, OK', bait: 'Jig & Minnow', weather: 'Sunny', waterTemp: 52 },
-  { id: 'c4', date: '2026-03-08', species: 'Crappie', weightLb: 0.9, location: 'Grand Lake, OK', bait: 'Bobby Garland', weather: 'Sunny', waterTemp: 52 },
-  { id: 'c5', date: '2026-02-22', species: 'Channel Catfish', weightLb: 5.5, lengthIn: 22, location: 'Sam Rayburn, TX', bait: 'Cut Shad', weather: 'Cloudy', waterTemp: 48 },
-  { id: 'c6', date: '2026-02-15', species: 'Largemouth Bass', weightLb: 6.1, lengthIn: 22, location: 'Lake Fork, TX', bait: 'Jerkbait', weather: 'Cloudy', waterTemp: 50 },
-  { id: 'c7', date: '2026-02-10', species: 'Walleye', weightLb: 3.2, lengthIn: 18, location: 'Lake Texoma, TX/OK', bait: 'Jig & Minnow', weather: 'Partly Cloudy', waterTemp: 44 },
-  { id: 'c8', date: '2026-01-28', species: 'Largemouth Bass', weightLb: 3.5, lengthIn: 17, location: 'Sam Rayburn, TX', bait: 'Blade Bait', weather: 'Clear', waterTemp: 42 },
-  { id: 'c9', date: '2026-01-15', species: 'Rainbow Trout', weightLb: 2.1, lengthIn: 15, location: 'Beaver Lake, AR', bait: 'PowerBait', weather: 'Clear', waterTemp: 40 },
-  { id: 'c10', date: '2025-12-20', species: 'Largemouth Bass', weightLb: 2.4, location: 'Lake Fork, TX', bait: 'Ned Rig', weather: 'Overcast', waterTemp: 46 },
-  { id: 'c11', date: '2025-11-10', species: 'Crappie', weightLb: 1.3, lengthIn: 12, location: 'Grand Lake, OK', bait: 'Jig', weather: 'Cloudy', waterTemp: 55 },
-  { id: 'c12', date: '2025-10-05', species: 'Largemouth Bass', weightLb: 5.0, lengthIn: 20, location: 'Lake Fork, TX', bait: 'Squarebill', weather: 'Partly Cloudy', waterTemp: 68 },
-];
+/**
+ * Convert EnhancedCatch records from AsyncStorage to the CatchRecord shape
+ * used by this screen's statistics/charts.
+ */
+function adaptCatches(enhanced: EnhancedCatch[]): CatchRecord[] {
+  return enhanced.map((c) => ({
+    id: c.id,
+    date: new Date(c.timestamp).toISOString().slice(0, 10),
+    species: c.species,
+    weightLb: c.weight ?? 0,
+    lengthIn: c.length,
+    location: c.locationName ?? `${c.lat.toFixed(2)}, ${c.lon.toFixed(2)}`,
+    bait: c.bait ?? 'Unknown',
+    weather: c.cloudCover ?? 'Unknown',
+    waterTemp: c.waterTemp,
+  }));
+}
+
+function filterByTimeRange(catches: CatchRecord[], range: TimeRange): CatchRecord[] {
+  if (range === 'all') return catches;
+  const now = Date.now();
+  const msMap: Record<string, number> = {
+    year: 365 * 24 * 60 * 60 * 1000,
+    '90days': 90 * 24 * 60 * 60 * 1000,
+    '30days': 30 * 24 * 60 * 60 * 1000,
+  };
+  const cutoff = now - (msMap[range] ?? 0);
+  return catches.filter((c) => new Date(c.date).getTime() >= cutoff);
+}
 
 // ── Computation ──────────────────────────────────────────────────────────────
 
@@ -82,15 +100,18 @@ function computeSpeciesStats(catches: CatchRecord[]): SpeciesStats[] {
 
   return Array.from(map.entries())
     .map(([species, records]) => {
-      const totalWeight = records.reduce((s, r) => s + r.weightLb, 0);
-      const best = records.reduce((b, r) => r.weightLb > b.weightLb ? r : b, records[0]);
+      const withWeight = records.filter((r) => r.weightLb > 0);
+      const totalWeight = withWeight.reduce((s, r) => s + r.weightLb, 0);
+      const best = withWeight.length > 0
+        ? withWeight.reduce((b, r) => r.weightLb > b.weightLb ? r : b, withWeight[0])
+        : records[0];
       return {
         species,
         count: records.length,
         totalWeight,
-        avgWeight: totalWeight / records.length,
-        bestWeight: best.weightLb,
-        bestDate: best.date,
+        avgWeight: withWeight.length > 0 ? totalWeight / withWeight.length : 0,
+        bestWeight: best?.weightLb ?? 0,
+        bestDate: best?.date ?? '',
       };
     })
     .sort((a, b) => b.count - a.count);
@@ -108,11 +129,12 @@ function computeMonthlyStats(catches: CatchRecord[]): MonthlyStats[] {
 
   return months.map((label, i) => {
     const records = map.get(i) || [];
-    const totalWeight = records.reduce((s, r) => s + r.weightLb, 0);
+    const withWeight = records.filter((r) => r.weightLb > 0);
+    const totalWeight = withWeight.reduce((s, r) => s + r.weightLb, 0);
     return {
       month: label,
       catches: records.length,
-      avgWeight: records.length > 0 ? totalWeight / records.length : 0,
+      avgWeight: withWeight.length > 0 ? totalWeight / withWeight.length : 0,
     };
   });
 }
@@ -226,37 +248,137 @@ function StatCard({ icon, value, label, color }: { icon: string; value: string; 
   );
 }
 
+// ── Empty State ──────────────────────────────────────────────────────────────
+
+function EmptyState() {
+  return (
+    <View style={s.emptyContainer}>
+      <Ionicons name="fish-outline" size={64} color={palette.textDim} />
+      <Text style={s.emptyTitle}>No Catches Yet</Text>
+      <Text style={s.emptySubtitle}>
+        Log your first catch using the Catch Report screen and your stats will appear here.
+      </Text>
+    </View>
+  );
+}
+
 // ── Main Screen ──────────────────────────────────────────────────────────────
 
 export function StatsScreen() {
   const [timeRange, setTimeRange] = useState<TimeRange>('all');
-  const catches = MOCK_CATCHES; // Will be replaced with real data from trackRecorder/catchReports
+  const [allCatches, setAllCatches] = useState<CatchRecord[]>([]);
+  const [personalBests, setPersonalBests] = useState<PersonalBest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    setError(null);
+    try {
+      const [enhancedCatches, bests] = await Promise.all([
+        getAllCatches(),
+        getPersonalBests(),
+      ]);
+      setAllCatches(adaptCatches(enhancedCatches));
+      setPersonalBests(bests);
+    } catch (err) {
+      setError('Unable to load catch history.');
+      console.warn('[StatsScreen] Failed to load catches:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
+
+  const catches = filterByTimeRange(allCatches, timeRange);
+
+  // Loading state
+  if (loading) {
+    return (
+      <View style={[s.screen, s.centerContent]}>
+        <ActivityIndicator size="large" color={palette.accent} />
+        <Text style={s.loadingText}>Loading your stats...</Text>
+      </View>
+    );
+  }
+
+  // Empty state
+  if (allCatches.length === 0 && !error) {
+    return (
+      <View style={s.screen}>
+        <ScrollView
+          contentContainerStyle={s.content}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent} />
+          }
+        >
+          <View style={s.header}>
+            <Text style={s.title}>My Stats</Text>
+            <Text style={s.subtitle}>Your fishing analytics & patterns</Text>
+          </View>
+          <EmptyState />
+        </ScrollView>
+      </View>
+    );
+  }
 
   const speciesStats = computeSpeciesStats(catches);
   const monthlyStats = computeMonthlyStats(catches);
 
   const totalCatches = catches.length;
-  const totalWeight = catches.reduce((s, c) => s + c.weightLb, 0);
-  const avgWeight = totalCatches > 0 ? totalWeight / totalCatches : 0;
-  const bestCatch = catches.reduce((b, c) => c.weightLb > b.weightLb ? c : b, catches[0]);
+  const catchesWithWeight = catches.filter((c) => c.weightLb > 0);
+  const totalWeight = catchesWithWeight.reduce((s, c) => s + c.weightLb, 0);
+  const avgWeight = catchesWithWeight.length > 0 ? totalWeight / catchesWithWeight.length : 0;
+  const bestCatch = catchesWithWeight.length > 0
+    ? catchesWithWeight.reduce((b, c) => c.weightLb > b.weightLb ? c : b, catchesWithWeight[0])
+    : null;
   const uniqueLocations = new Set(catches.map((c) => c.location)).size;
   const uniqueSpecies = new Set(catches.map((c) => c.species)).size;
 
   // Top bait analysis
   const baitCounts = new Map<string, number>();
   for (const c of catches) {
-    baitCounts.set(c.bait, (baitCounts.get(c.bait) || 0) + 1);
+    if (c.bait && c.bait !== 'Unknown') {
+      baitCounts.set(c.bait, (baitCounts.get(c.bait) || 0) + 1);
+    }
   }
-  const topBait = Array.from(baitCounts.entries()).sort((a, b) => b[1] - a[1])[0];
+  const topBait = baitCounts.size > 0
+    ? Array.from(baitCounts.entries()).sort((a, b) => b[1] - a[1])[0]
+    : null;
 
   return (
     <View style={s.screen}>
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView
+        contentContainerStyle={s.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent} />
+        }
+      >
         {/* Header */}
         <View style={s.header}>
           <Text style={s.title}>My Stats</Text>
           <Text style={s.subtitle}>Your fishing analytics & patterns</Text>
         </View>
+
+        {/* Error banner */}
+        {error && (
+          <View style={s.errorBanner}>
+            <Ionicons name="warning-outline" size={14} color={palette.warning} />
+            <Text style={s.errorBannerText}>{error}</Text>
+            <Pressable onPress={loadData}>
+              <Text style={s.errorRetryText}>Retry</Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* Time range filter */}
         <View style={s.filterRow}>
@@ -277,71 +399,112 @@ export function StatsScreen() {
           })}
         </View>
 
-        {/* Summary stats */}
-        <View style={s.statsGrid}>
-          <StatCard icon="fish-outline" value={`${totalCatches}`} label="Total Catches" />
-          <StatCard icon="trophy-outline" value={`${bestCatch.weightLb} lb`} label="Personal Best" color={palette.pinHot} />
-          <StatCard icon="scale-outline" value={`${avgWeight.toFixed(1)} lb`} label="Avg Weight" />
-          <StatCard icon="location-outline" value={`${uniqueLocations}`} label="Locations" />
-          <StatCard icon="layers-outline" value={`${uniqueSpecies}`} label="Species" />
-          <StatCard icon="color-wand-outline" value={topBait ? topBait[0] : '-'} label="Top Bait" color={palette.success} />
-        </View>
-
-        {/* Species breakdown */}
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Species Breakdown</Text>
-          <View style={s.card}>
-            <SpeciesPieChart stats={speciesStats} />
+        {/* Filtered empty state */}
+        {catches.length === 0 && allCatches.length > 0 && (
+          <View style={s.filteredEmpty}>
+            <Ionicons name="calendar-outline" size={32} color={palette.textDim} />
+            <Text style={s.filteredEmptyText}>No catches in this time period.</Text>
           </View>
-        </View>
+        )}
 
-        {/* Monthly catches */}
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Monthly Catches</Text>
-          <View style={s.card}>
-            <MonthlyCatchChart data={monthlyStats} />
-          </View>
-        </View>
+        {catches.length > 0 && (
+          <>
+            {/* Summary stats */}
+            <View style={s.statsGrid}>
+              <StatCard icon="fish-outline" value={`${totalCatches}`} label="Total Catches" />
+              <StatCard
+                icon="trophy-outline"
+                value={bestCatch ? `${bestCatch.weightLb} lb` : '-'}
+                label="Personal Best"
+                color={palette.pinHot}
+              />
+              <StatCard icon="scale-outline" value={avgWeight > 0 ? `${avgWeight.toFixed(1)} lb` : '-'} label="Avg Weight" />
+              <StatCard icon="location-outline" value={`${uniqueLocations}`} label="Locations" />
+              <StatCard icon="layers-outline" value={`${uniqueSpecies}`} label="Species" />
+              <StatCard icon="color-wand-outline" value={topBait ? topBait[0] : '-'} label="Top Bait" color={palette.success} />
+            </View>
 
-        {/* Species detail rows */}
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Species Details</Text>
-          {speciesStats.map((sp) => (
-            <View key={sp.species} style={s.speciesRow}>
-              <View style={s.speciesInfo}>
-                <Ionicons name="fish-outline" size={16} color={palette.accent} />
-                <View>
-                  <Text style={s.speciesName}>{sp.species}</Text>
-                  <Text style={s.speciesMeta}>
-                    {sp.count} caught · Avg {sp.avgWeight.toFixed(1)} lb · Best {sp.bestWeight} lb
-                  </Text>
+            {/* Personal Bests from catchEnhancements */}
+            {personalBests.length > 0 && (
+              <View style={s.section}>
+                <Text style={s.sectionTitle}>Personal Bests</Text>
+                {personalBests.map((pb) => (
+                  <View key={pb.species} style={s.pbRow}>
+                    <Ionicons name="trophy" size={16} color="#FFD700" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.pbSpecies}>{pb.species}</Text>
+                      <Text style={s.pbMeta}>
+                        {pb.weight} lb{pb.length ? ` / ${pb.length}"` : ''}
+                        {pb.locationName ? ` at ${pb.locationName}` : ''}
+                      </Text>
+                    </View>
+                    <Text style={s.pbDate}>
+                      {new Date(pb.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Species breakdown */}
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>Species Breakdown</Text>
+              <View style={s.card}>
+                <SpeciesPieChart stats={speciesStats} />
+              </View>
+            </View>
+
+            {/* Monthly catches */}
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>Monthly Catches</Text>
+              <View style={s.card}>
+                <MonthlyCatchChart data={monthlyStats} />
+              </View>
+            </View>
+
+            {/* Species detail rows */}
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>Species Details</Text>
+              {speciesStats.map((sp) => (
+                <View key={sp.species} style={s.speciesRow}>
+                  <View style={s.speciesInfo}>
+                    <Ionicons name="fish-outline" size={16} color={palette.accent} />
+                    <View>
+                      <Text style={s.speciesName}>{sp.species}</Text>
+                      <Text style={s.speciesMeta}>
+                        {sp.count} caught{sp.avgWeight > 0 ? ` · Avg ${sp.avgWeight.toFixed(1)} lb` : ''}{sp.bestWeight > 0 ? ` · Best ${sp.bestWeight} lb` : ''}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-              </View>
+              ))}
             </View>
-          ))}
-        </View>
 
-        {/* Recent catches */}
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Recent Catches</Text>
-          {catches.slice(0, 5).map((c) => (
-            <View key={c.id} style={s.catchRow}>
-              <View style={s.catchDate}>
-                <Text style={s.catchDateText}>
-                  {new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </Text>
-              </View>
-              <View style={s.catchInfo}>
-                <Text style={s.catchSpecies}>{c.species}</Text>
-                <Text style={s.catchMeta}>
-                  {c.weightLb} lb{c.lengthIn ? ` · ${c.lengthIn}"` : ''} · {c.bait}
-                </Text>
-                <Text style={s.catchLocation}>{c.location}</Text>
-              </View>
-              <Text style={s.catchWeight}>{c.weightLb} lb</Text>
+            {/* Recent catches */}
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>Recent Catches</Text>
+              {catches.slice(0, 5).map((c) => (
+                <View key={c.id} style={s.catchRow}>
+                  <View style={s.catchDate}>
+                    <Text style={s.catchDateText}>
+                      {new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </Text>
+                  </View>
+                  <View style={s.catchInfo}>
+                    <Text style={s.catchSpecies}>{c.species}</Text>
+                    <Text style={s.catchMeta}>
+                      {c.weightLb > 0 ? `${c.weightLb} lb` : ''}{c.lengthIn ? ` · ${c.lengthIn}"` : ''}{c.bait !== 'Unknown' ? ` · ${c.bait}` : ''}
+                    </Text>
+                    <Text style={s.catchLocation}>{c.location}</Text>
+                  </View>
+                  {c.weightLb > 0 && (
+                    <Text style={s.catchWeight}>{c.weightLb} lb</Text>
+                  )}
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
+          </>
+        )}
 
         <View style={{ height: 60 }} />
       </ScrollView>
@@ -354,10 +517,52 @@ export function StatsScreen() {
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: palette.background },
   content: { padding: 20, gap: 16 },
+  centerContent: { justifyContent: 'center', alignItems: 'center' },
+  loadingText: { color: palette.textMuted, fontSize: 14, marginTop: 8 },
 
   header: { gap: 4 },
   title: { ...typeStyles.screenTitle, color: palette.text },
   subtitle: { color: palette.textMuted, fontSize: 14 },
+
+  // Error
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    padding: 12,
+    backgroundColor: '#FFF3E0',
+    borderRadius: 8,
+  },
+  errorBannerText: { color: palette.textSecondary, fontSize: 12, flex: 1 },
+  errorRetryText: { color: palette.accent, fontSize: 12, fontWeight: '700' },
+
+  // Empty states
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 60,
+    gap: 12,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: palette.text,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: palette.textMuted,
+    textAlign: 'center',
+    paddingHorizontal: 24,
+    lineHeight: 20,
+  },
+  filteredEmpty: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    gap: 8,
+  },
+  filteredEmptyText: {
+    color: palette.textMuted,
+    fontSize: 14,
+  },
 
   filterRow: { flexDirection: 'row', gap: 6 },
   filterChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: palette.surface },
@@ -389,6 +594,19 @@ const s = StyleSheet.create({
   legendDot: { width: 10, height: 10, borderRadius: 5 },
   legendSpecies: { color: palette.text, fontSize: 12, fontWeight: '600', flex: 1 },
   legendCount: { color: palette.textMuted, fontSize: 11 },
+
+  // Personal Bests
+  pbRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: palette.surface,
+    borderRadius: 10,
+    padding: 12,
+  },
+  pbSpecies: { color: palette.text, fontSize: 14, fontWeight: '600' },
+  pbMeta: { color: palette.textMuted, fontSize: 11, marginTop: 2 },
+  pbDate: { color: palette.textDim, fontSize: 11 },
 
   speciesRow: {
     backgroundColor: palette.surface,

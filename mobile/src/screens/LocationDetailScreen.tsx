@@ -6,10 +6,12 @@ import {
   StyleSheet,
   ActivityIndicator,
   Pressable,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { palette, scoreColor, scoreLabel, getConditionBand, conditionConfig } from '../theme/palette';
-import { type as typeStyles } from '../theme/typography';
+import { fonts, type as typeStyles } from '../theme/typography';
+import { SkeletonLoader, SkeletonCard } from '../components/ui/SkeletonLoader';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { ScoreBreakdownBar } from '../components/ScoreBreakdownBar';
 import { WeatherCard } from '../components/WeatherCard';
@@ -17,6 +19,29 @@ import { WeatherForecastSection } from '../components/WeatherForecastSection';
 import { ForecastChart } from '../components/ForecastChart';
 import { ExplanationCard } from '../components/ExplanationCard';
 import { api } from '../services/api';
+import { getCachedLocationDetail, getStaleLocationDetail, cacheLocationDetail } from '../services/locationDetailCache';
+import {
+  getSpeciesLikelihood,
+  getMonthlyActivityChart,
+  type SpeciesLikelihood,
+} from '../services/speciesDistribution';
+import {
+  getHourlyPressure,
+  getCurrentPressure,
+  type HourlyPressure,
+  type PressureReading,
+} from '../services/fishingPressure';
+import {
+  getDailyBiteForecast,
+  getWeeklyBiteForecast,
+  formatHour,
+  type DailyBiteForecast as BiteFC,
+} from '../services/bestTimeWindows';
+import {
+  getWaterInsights,
+  conditionColor,
+  type WaterInsightsDashboard,
+} from '../services/waterInsights';
 import type {
   FishingLocation,
   ActivityLevel,
@@ -27,6 +52,8 @@ import type {
   LayerBreakdown,
 } from '../types/models';
 import type { RootStackProps } from '../types/navigation';
+
+const DETAIL_WIDTH = Dimensions.get('window').width;
 
 type Props = RootStackProps<'LocationDetail'>;
 
@@ -53,6 +80,7 @@ function activityLabel(level: ActivityLevel): string {
 
 // ── Species Activity Section ──────────────────────────────────────
 function SpeciesActivityCard({ data }: { data: SpeciesActivity[] }) {
+  if (!data || data.length === 0) return null;
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>Species Activity</Text>
@@ -96,6 +124,7 @@ function SpeciesActivityCard({ data }: { data: SpeciesActivity[] }) {
 
 // ── Lure Recommendations Section ─────────────────────────────────
 function LureRecommendationsCard({ data }: { data: LureRecommendation[] }) {
+  if (!data || data.length === 0) return null;
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>Recommended Lures</Text>
@@ -158,6 +187,7 @@ function minutesAgo(isoString: string): number {
 }
 
 function WaterConditionsCard({ data }: { data: WaterLevel }) {
+  if (!data?.lastUpdated) return null;
   const mins = minutesAgo(data.lastUpdated);
 
   const trendIcon =
@@ -278,7 +308,8 @@ const QUALITY_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 function LayerBreakdownCard({ prediction }: { prediction: PredictV2Response }) {
-  const { breakdown } = prediction;
+  const breakdown = prediction?.breakdown;
+  if (!breakdown?.layers) return null;
   const layers = Object.entries(breakdown.layers);
 
   return (
@@ -338,6 +369,256 @@ function LayerBreakdownCard({ prediction }: { prediction: PredictV2Response }) {
   );
 }
 
+// ── Inline Integration: Species Distribution Chart ──────────────────────────
+function SpeciesDistributionChart({ species }: { species: SpeciesLikelihood[] }) {
+  if (!species || species.length === 0) return null;
+  const maxLikelihood = Math.max(...species.map((s) => s.likelihood), 0.01);
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Species Distribution</Text>
+      {species.slice(0, 6).map((sp) => {
+        const pct = Math.round(sp.likelihood * 100);
+        const barWidth = (sp.likelihood / maxLikelihood) * 100;
+        return (
+          <View key={sp.speciesId} style={styles.speciesBarRow}>
+            <Text style={styles.speciesBarName} numberOfLines={1}>{sp.commonName}</Text>
+            <View style={styles.speciesBarTrack}>
+              <View
+                style={[
+                  styles.speciesBarFill,
+                  {
+                    width: `${barWidth}%` as any,
+                    backgroundColor:
+                      sp.confidence === 'high' ? '#2E7D32'
+                      : sp.confidence === 'medium' ? '#FFA726'
+                      : palette.textMuted,
+                  },
+                ]}
+              />
+            </View>
+            <Text style={styles.speciesBarPct}>{pct}%</Text>
+          </View>
+        );
+      })}
+      <Text style={styles.speciesHint}>Based on habitat, season, and geographic range</Text>
+    </View>
+  );
+}
+
+// ── Inline Integration: 24-Hour Fishing Pressure Chart ──────────────────────
+function PressureChartCard({ hourly, current }: { hourly: HourlyPressure[]; current: PressureReading }) {
+  const maxScore = Math.max(...hourly.map((h) => h.score), 1);
+  const currentHour = new Date().getHours();
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.pressureChartHeader}>
+        <Text style={styles.cardTitle}>Fishing Pressure</Text>
+        <View style={[styles.pressureNowBadge, { backgroundColor: current.color + '18' }]}>
+          <Ionicons name={current.icon as any} size={13} color={current.color} />
+          <Text style={[styles.pressureNowText, { color: current.color }]}>{current.label}</Text>
+        </View>
+      </View>
+      <Text style={styles.pressureChartDesc}>{current.description}</Text>
+
+      {/* 24-hour bar chart */}
+      <View style={styles.pressureBars}>
+        {hourly.map((h) => {
+          const heightPct = (h.score / maxScore) * 100;
+          const isNow = h.hour === currentHour;
+          const barColor =
+            h.level === 'very-high' || h.level === 'high' ? '#EF5350'
+            : h.level === 'moderate' ? '#FFA726'
+            : '#66BB6A';
+          return (
+            <View key={h.hour} style={styles.pressureBarCol}>
+              <View style={styles.pressureBarWrapper}>
+                <View
+                  style={[
+                    styles.pressureBar,
+                    {
+                      height: `${Math.max(heightPct, 4)}%` as any,
+                      backgroundColor: isNow ? palette.accent : barColor,
+                    },
+                  ]}
+                />
+              </View>
+              {h.hour % 6 === 0 && (
+                <Text style={[styles.pressureBarLabel, isNow && { color: palette.accent, fontWeight: '700' }]}>
+                  {h.hour === 0 ? '12A' : h.hour === 6 ? '6A' : h.hour === 12 ? '12P' : '6P'}
+                </Text>
+              )}
+            </View>
+          );
+        })}
+      </View>
+      {current.peakHours.length > 0 && (
+        <Text style={styles.pressurePeakHint}>
+          Peak: {current.peakHours.join(', ')}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+// ── Inline Integration: Best Times (3-day) ──────────────────────────────────
+function BestTimesCard({ forecasts }: { forecasts: BiteFC[] }) {
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Best Times \u2014 Next 3 Days</Text>
+      {forecasts.slice(0, 3).map((fc, i) => {
+        const dayLabel = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : days[fc.date.getDay()];
+        const ratingColor =
+          fc.overallRating >= 70 ? '#2E7D32'
+          : fc.overallRating >= 55 ? '#66BB6A'
+          : fc.overallRating >= 40 ? '#FFA726'
+          : '#EF5350';
+
+        return (
+          <View key={i} style={[styles.bestTimeRow, i > 0 && styles.bestTimeDivider]}>
+            <View style={styles.bestTimeLeft}>
+              <Text style={styles.bestTimeDayLabel}>{dayLabel}</Text>
+              <View style={[styles.bestTimeRatingBadge, { backgroundColor: ratingColor + '15' }]}>
+                <Text style={[styles.bestTimeRating, { color: ratingColor }]}>{fc.ratingLabel}</Text>
+              </View>
+            </View>
+            <View style={styles.bestTimeRight}>
+              {fc.bestWindow ? (
+                <>
+                  <Ionicons name="time-outline" size={13} color={palette.accent} />
+                  <Text style={styles.bestTimeWindow}>{fc.bestWindow.label}</Text>
+                </>
+              ) : (
+                <Text style={styles.bestTimeNone}>No peak window</Text>
+              )}
+            </View>
+          </View>
+        );
+      })}
+      <Text style={styles.bestTimeHint}>
+        Moon: {forecasts[0]?.moonPhase ?? 'Unknown'} ({forecasts[0]?.moonIllumination ?? 0}% illumination)
+      </Text>
+    </View>
+  );
+}
+
+// ── Inline Integration: Water Insights Card ─────────────────────────────────
+function WaterInsightsCard({ data }: { data: WaterInsightsDashboard }) {
+  return (
+    <View style={styles.card}>
+      <View style={styles.waterInsightHeader}>
+        <Text style={styles.cardTitle}>Water Insights</Text>
+        <View style={[styles.waterCondBadge, { backgroundColor: conditionColor(data.overallCondition) + '18' }]}>
+          <Text style={[styles.waterCondText, { color: conditionColor(data.overallCondition) }]}>
+            {data.overallCondition.charAt(0).toUpperCase() + data.overallCondition.slice(1)}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.waterInsightGrid}>
+        {data.insights.map((insight) => (
+          <View key={insight.label} style={styles.waterInsightItem}>
+            <Ionicons name={insight.icon as any} size={18} color={insight.color} />
+            <Text style={styles.waterInsightLabel}>{insight.label}</Text>
+            <Text style={[styles.waterInsightValue, { color: insight.color }]}>
+              {insight.value}{insight.unit}
+            </Text>
+            {insight.trend && (
+              <Ionicons
+                name={
+                  insight.trend === 'rising' ? 'trending-up' :
+                  insight.trend === 'falling' ? 'trending-down' : 'remove-outline'
+                }
+                size={14}
+                color={
+                  insight.trend === 'rising' ? palette.accent :
+                  insight.trend === 'falling' ? palette.error : palette.textMuted
+                }
+              />
+            )}
+          </View>
+        ))}
+      </View>
+      <Text style={styles.waterInsightSummary}>{data.summary}</Text>
+      <Text style={styles.waterInsightImpact}>{data.fishingImpact}</Text>
+    </View>
+  );
+}
+
+// ── Open-Meteo weather fetch for any lat/lon ─────────────────────
+async function fetchOpenMeteoConditions(
+  lat: number,
+  lon: number,
+): Promise<Partial<import('../types/models').CurrentConditions> | null> {
+  try {
+    const params = new URLSearchParams({
+      latitude: lat.toFixed(4),
+      longitude: lon.toFixed(4),
+      current_weather: 'true',
+      hourly: 'relative_humidity_2m,pressure_msl',
+      forecast_days: '1',
+      timezone: 'auto',
+    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    const resp = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const cw = data.current_weather;
+    if (!cw) return null;
+
+    const currentHour = new Date().getHours();
+    const humidity = data.hourly?.relative_humidity_2m?.[currentHour] ?? 50;
+    const pressureHpa = data.hourly?.pressure_msl?.[currentHour] ?? 1013;
+    const pressureInHg = Math.round(pressureHpa / 33.8639 * 100) / 100;
+
+    // Wind direction from degrees to compass
+    const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    const windDir = dirs[Math.round(cw.winddirection / 22.5) % 16];
+
+    // Weather code to description
+    const weatherCode = cw.weathercode ?? 0;
+    let weather = 'Clear';
+    let weatherIcon: 'sunny' | 'partly-cloudy' | 'cloudy' | 'rainy' | 'stormy' | 'snowy' | 'foggy' | 'windy' = 'sunny';
+    if (weatherCode <= 1) { weather = 'Clear'; weatherIcon = 'sunny'; }
+    else if (weatherCode <= 3) { weather = 'Partly Cloudy'; weatherIcon = 'partly-cloudy'; }
+    else if (weatherCode <= 48) { weather = 'Cloudy'; weatherIcon = 'cloudy'; }
+    else if (weatherCode <= 67) { weather = 'Rainy'; weatherIcon = 'rainy'; }
+    else if (weatherCode <= 77) { weather = 'Snowy'; weatherIcon = 'snowy'; }
+    else if (weatherCode <= 82) { weather = 'Rainy'; weatherIcon = 'rainy'; }
+    else { weather = 'Stormy'; weatherIcon = 'stormy'; }
+
+    const airTempF = Math.round(cw.temperature * 9 / 5 + 32);
+    const windMph = Math.round(cw.windspeed * 0.621371);
+
+    // Compute solunar and moon info from bestTimeWindows service
+    const biteForecast = getDailyBiteForecast(lat, lon);
+
+    return {
+      airTemp: airTempF,
+      weather,
+      weatherIcon,
+      windSpeed: windMph,
+      windDirection: windDir,
+      pressure: pressureInHg,
+      pressureTrend: 'steady',
+      humidity,
+      moonPhase: biteForecast.moonPhase,
+      solunarRating: biteForecast.overallRating >= 70 ? 'excellent'
+        : biteForecast.overallRating >= 55 ? 'good'
+        : biteForecast.overallRating >= 40 ? 'fair' : 'poor',
+      sunrise: formatHour(Math.round(biteForecast.sunrise)),
+      sunset: formatHour(Math.round(biteForecast.sunset)),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function LocationDetailScreen({ route, navigation }: Props) {
   const { locationId } = route.params;
   const [location, setLocation] = useState<FishingLocation | null>(null);
@@ -346,45 +627,133 @@ export function LocationDetailScreen({ route, navigation }: Props) {
   const [predictionLoading, setPredictionLoading] = useState(false);
   const [predictionError, setPredictionError] = useState<string | null>(null);
 
+  // Integrated feature state
+  const [speciesData, setSpeciesData] = useState<SpeciesLikelihood[]>([]);
+  const [hourlyPressure, setHourlyPressure] = useState<HourlyPressure[]>([]);
+  const [currentPressure, setCurrentPressure] = useState<PressureReading | null>(null);
+  const [biteForecasts, setBiteForecasts] = useState<BiteFC[]>([]);
+  const [waterInsights, setWaterInsights] = useState<WaterInsightsDashboard | null>(null);
+
   useEffect(() => {
     let cancelled = false;
 
+    // 1. Try instant cache hit (shows UI immediately)
+    const cached = getCachedLocationDetail(locationId) ?? getStaleLocationDetail(locationId);
+    if (cached) {
+      setLocation(cached);
+      setLoading(false);
+      navigation.setOptions({ title: cached.name || 'Unseen Site' });
+
+      // Kick off prediction immediately using cached location
+      setPredictionLoading(true);
+      const today = new Date().toISOString().slice(0, 10);
+      api.predictV2(cached.name ?? '', today).then((pred) => {
+        if (!cancelled) { setPrediction(pred); setPredictionLoading(false); }
+      }).catch((err) => {
+        if (!cancelled) { setPredictionError(err?.message ?? 'Prediction unavailable'); setPredictionLoading(false); }
+      });
+
+      // For OSM-discovered spots (or any spot with placeholder conditions),
+      // fetch live weather from Open-Meteo to populate conditions
+      if (cached.lat && cached.lon && (!cached.conditions?.weather || cached.conditions.weather === 'Unknown')) {
+        fetchOpenMeteoConditions(cached.lat, cached.lon).then((cond) => {
+          if (!cancelled && cond) {
+            setLocation((prev) => prev ? { ...prev, conditions: { ...prev.conditions, ...cond } } : prev);
+          }
+        }).catch(() => {});
+      }
+    }
+
+    // 2. Always fetch fresh data in background (revalidate)
     api.getLocation(locationId).then((loc) => {
       if (cancelled) return;
-      setLocation(loc ?? null);
+      if (!loc) {
+        // OSM-discovered spots won't be found via api — stop loading if we had no cache
+        if (!cached) setLoading(false);
+        return;
+      }
+      cacheLocationDetail(loc);
+      setLocation(loc);
       setLoading(false);
-      if (loc) {
-        navigation.setOptions({ title: loc.name });
+      navigation.setOptions({ title: loc.name || 'Unseen Site' });
 
-        // Fetch v2 prediction in parallel
+      // Only start prediction if we didn't already from cache
+      if (!cached) {
         setPredictionLoading(true);
         const today = new Date().toISOString().slice(0, 10);
-        api.predictV2(loc.name, today).then((pred) => {
-          if (!cancelled) {
-            setPrediction(pred);
-            setPredictionLoading(false);
-          }
+        api.predictV2(loc.name ?? '', today).then((pred) => {
+          if (!cancelled) { setPrediction(pred); setPredictionLoading(false); }
         }).catch((err) => {
-          if (!cancelled) {
-            setPredictionError(err?.message ?? 'Prediction unavailable');
-            setPredictionLoading(false);
-          }
+          if (!cancelled) { setPredictionError(err?.message ?? 'Prediction unavailable'); setPredictionLoading(false); }
         });
       }
+
+      // Fetch live weather if conditions seem like placeholders
+      if (loc.lat && loc.lon && (!loc.conditions?.weather || loc.conditions.weather === 'Unknown')) {
+        fetchOpenMeteoConditions(loc.lat, loc.lon).then((cond) => {
+          if (!cancelled && cond) {
+            setLocation((prev) => prev ? { ...prev, conditions: { ...prev.conditions, ...cond } } : prev);
+          }
+        }).catch(() => {});
+      }
+    }).catch(() => {
+      if (!cancelled && !cached) setLoading(false);
     });
 
     return () => { cancelled = true; };
   }, [locationId]);
 
+  // Load integrated feature data once we have the location
+  useEffect(() => {
+    if (!location) return;
+    let cancelled = false;
+    const { lat, lon, name } = location;
+
+    // Synchronous computations
+    setSpeciesData(getSpeciesLikelihood(lat, lon));
+    setHourlyPressure(getHourlyPressure());
+    setCurrentPressure(getCurrentPressure({ lat, lon }));
+    setBiteForecasts(getWeeklyBiteForecast(lat, lon));
+
+    // Async water insights
+    getWaterInsights(lat, lon, { locationName: name }).then((w) => {
+      if (!cancelled) setWaterInsights(w);
+    }).catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [location]);
+
   if (loading || !location) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator color={palette.accent} size="large" />
-      </View>
+      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        <View style={{ alignItems: 'center', gap: 12, paddingVertical: 20 }}>
+          <SkeletonLoader width={100} height={100} borderRadius={50} />
+          <SkeletonLoader width="60%" height={22} borderRadius={6} />
+          <SkeletonLoader width="40%" height={14} borderRadius={4} />
+        </View>
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
+      </ScrollView>
     );
   }
 
-  const { scoreBreakdown } = location;
+  // Update score breakdown from prediction if available
+  const predScore = prediction?.breakdown?.fishing_score ?? prediction?.fishing_score;
+  const scoreBreakdown = predScore != null
+    ? {
+        catchProbability: Math.round(predScore * 0.3),
+        cpue: Math.round(predScore * 0.3),
+        conditions: Math.round(predScore * 0.25),
+        trophyPotential: Math.round(predScore * 0.15),
+      }
+    : location.scoreBreakdown ?? {
+        catchProbability: 50,
+        cpue: 50,
+        conditions: 50,
+        trophyPotential: 40,
+      };
+  const safeScore = predScore ?? location.score ?? 50;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -392,7 +761,7 @@ export function LocationDetailScreen({ route, navigation }: Props) {
       <View style={styles.scoreSection}>
         {/* Condition band badge */}
         {(() => {
-          const band = getConditionBand(location.score);
+          const band = getConditionBand(safeScore);
           const cfg = conditionConfig[band];
           return (
             <View style={[styles.conditionBadge, { backgroundColor: cfg.bgTint }]}>
@@ -401,9 +770,9 @@ export function LocationDetailScreen({ route, navigation }: Props) {
             </View>
           );
         })()}
-        <ScoreGauge score={location.score} size={180} />
-        <Text style={styles.locationName}>{location.name}</Text>
-        <Text style={styles.locationSubtitle}>{location.subtitle}</Text>
+        <ScoreGauge score={safeScore} size={180} />
+        <Text style={styles.locationName}>{location.name || 'Unseen Site'}</Text>
+        <Text style={styles.locationSubtitle}>{location.subtitle || 'Water Body'}</Text>
 
         {/* Busyness / Popularity indicator */}
         <View style={styles.busynessRow}>
@@ -455,18 +824,48 @@ export function LocationDetailScreen({ route, navigation }: Props) {
       )}
 
       {/* AI Explanation */}
-      <ExplanationCard explanation={prediction?.explanation ?? location.explanation} />
+      {(prediction?.explanation || location.explanation) && (
+        <ExplanationCard explanation={prediction?.explanation ?? location.explanation ?? ''} />
+      )}
 
       {/* 7-Day Forecast */}
-      <ForecastChart forecast={location.forecast} />
+      {(location.forecast ?? []).length > 0 && (
+        <ForecastChart forecast={location.forecast ?? []} />
+      )}
 
       {/* Current Conditions */}
-      <WeatherCard conditions={location.conditions} />
+      {location.conditions && (
+        <WeatherCard conditions={location.conditions} />
+      )}
 
       {/* Detailed Weather Forecast */}
-      <WeatherForecastSection location={location} />
+      {location.conditions && (
+        <WeatherForecastSection location={location} />
+      )}
 
-      {/* Water Conditions (USGS) */}
+      {/* ── Integrated Feature Cards ─────────────────────────────────── */}
+
+      {/* Best Times — next 3 days */}
+      {biteForecasts.length > 0 && (
+        <BestTimesCard forecasts={biteForecasts} />
+      )}
+
+      {/* Fishing Pressure 24-hour chart */}
+      {hourlyPressure.length > 0 && currentPressure && (
+        <PressureChartCard hourly={hourlyPressure} current={currentPressure} />
+      )}
+
+      {/* Water Insights (from service, richer than waterLevel) */}
+      {waterInsights && waterInsights.insights.length > 0 && (
+        <WaterInsightsCard data={waterInsights} />
+      )}
+
+      {/* Species Distribution Chart */}
+      {speciesData.length > 0 && (
+        <SpeciesDistributionChart species={speciesData} />
+      )}
+
+      {/* Water Conditions (legacy USGS card) */}
       {location.waterLevel && (
         <WaterConditionsCard data={location.waterLevel} />
       )}
@@ -579,30 +978,14 @@ export function LocationDetailScreen({ route, navigation }: Props) {
       <View style={styles.card}>
         <View style={styles.reviewHeader}>
           <Text style={styles.cardTitle}>Reviews</Text>
-          <View style={styles.reviewRatingBadge}>
-            <Ionicons name="star" size={13} color="#F9A825" />
-            <Text style={styles.reviewRatingText}>4.3</Text>
-            <Text style={styles.reviewCountText}>(47)</Text>
-          </View>
         </View>
-        {[
-          { user: 'BassMaster_TX', rating: 5, date: 'Mar 14', text: 'Incredible morning bite. Caught 8 largemouth on topwater before 9 AM. Parking lot was only half full.' },
-          { user: 'FishOn_Mike', rating: 4, date: 'Mar 10', text: 'Good shore fishing access on the north end. Water was a bit murky but still caught a few. Boat ramp is well maintained.' },
-          { user: 'WeekendAngler', rating: 3, date: 'Mar 6', text: 'Decent spot but gets crowded on weekends. Try early mornings for best results. Trail to the water is easy.' },
-        ].map((review, i) => (
-          <View key={i} style={[styles.reviewItem, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.borderLight, paddingTop: 10 }]}>
-            <View style={styles.reviewItemHeader}>
-              <Text style={styles.reviewUser}>{review.user}</Text>
-              <View style={styles.reviewStars}>
-                {Array.from({ length: 5 }, (_, j) => (
-                  <Ionicons key={j} name={j < review.rating ? 'star' : 'star-outline'} size={11} color={j < review.rating ? '#F9A825' : palette.textDim} />
-                ))}
-              </View>
-              <Text style={styles.reviewDate}>{review.date}</Text>
-            </View>
-            <Text style={styles.reviewText}>{review.text}</Text>
-          </View>
-        ))}
+        <View style={{ alignItems: 'center', paddingVertical: 16, gap: 8 }}>
+          <Ionicons name="chatbubble-outline" size={28} color={palette.textDim} />
+          <Text style={{ color: palette.textMuted, fontSize: 14 }}>No reviews yet</Text>
+          <Text style={{ color: palette.textDim, fontSize: 12, textAlign: 'center' }}>
+            Be the first to share your experience at this spot.
+          </Text>
+        </View>
         <Pressable style={styles.reviewCTA}>
           <Ionicons name="create-outline" size={14} color={palette.accent} />
           <Text style={styles.reviewCTAText}>Write a Review</Text>
@@ -651,10 +1034,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   locationName: {
+    fontFamily: 'PlayfairDisplay-Bold',
     color: palette.text,
     fontSize: 22,
-    fontWeight: '600',
+    fontWeight: '400',
     textAlign: 'center',
+    letterSpacing: -0.3,
   },
   locationSubtitle: {
     color: palette.textMuted,
@@ -707,9 +1092,14 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: palette.surface,
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 16,
     gap: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   cardTitle: {
     ...typeStyles.sectionHeader,
@@ -1223,5 +1613,203 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 16,
     fontWeight: '700',
+  },
+
+  // ── Species Distribution Chart ────────────────────────────────────
+  speciesBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  speciesBarName: {
+    width: 100,
+    fontSize: 12,
+    fontWeight: '600',
+    color: palette.textSecondary,
+  },
+  speciesBarTrack: {
+    flex: 1,
+    height: 10,
+    backgroundColor: palette.surfaceRaised,
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  speciesBarFill: {
+    height: 10,
+    borderRadius: 5,
+  },
+  speciesBarPct: {
+    width: 32,
+    fontSize: 12,
+    fontWeight: '700',
+    color: palette.text,
+    textAlign: 'right',
+  },
+  speciesHint: {
+    fontSize: 11,
+    color: palette.textDim,
+    marginTop: 4,
+  },
+
+  // ── Pressure Chart ────────────────────────────────────────────────
+  pressureChartHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pressureNowBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  pressureNowText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  pressureChartDesc: {
+    fontSize: 12,
+    color: palette.textSecondary,
+    lineHeight: 16,
+    marginBottom: 4,
+  },
+  pressureBars: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    height: 80,
+    gap: 1,
+    marginBottom: 16,
+  },
+  pressureBarCol: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  pressureBarWrapper: {
+    width: '100%',
+    height: 64,
+    justifyContent: 'flex-end',
+  },
+  pressureBar: {
+    width: '100%',
+    borderRadius: 2,
+    minHeight: 2,
+  },
+  pressureBarLabel: {
+    fontSize: 8,
+    color: palette.textDim,
+    marginTop: 4,
+    position: 'absolute' as const,
+    bottom: -14,
+  },
+  pressurePeakHint: {
+    fontSize: 11,
+    color: palette.textMuted,
+    marginTop: 4,
+  },
+
+  // ── Best Times Card ───────────────────────────────────────────────
+  bestTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  bestTimeDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: palette.borderLight,
+  },
+  bestTimeLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  bestTimeDayLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: palette.text,
+    width: 72,
+  },
+  bestTimeRatingBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  bestTimeRating: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  bestTimeRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  bestTimeWindow: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: palette.text,
+  },
+  bestTimeNone: {
+    fontSize: 12,
+    color: palette.textMuted,
+  },
+  bestTimeHint: {
+    fontSize: 11,
+    color: palette.textDim,
+    marginTop: 6,
+  },
+
+  // ── Water Insights Card ───────────────────────────────────────────
+  waterInsightHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  waterCondBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  waterCondText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  waterInsightGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  waterInsightItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: palette.surfaceRaised,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  waterInsightLabel: {
+    fontSize: 11,
+    color: palette.textMuted,
+    fontWeight: '500',
+  },
+  waterInsightValue: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  waterInsightSummary: {
+    fontSize: 12,
+    color: palette.textSecondary,
+    lineHeight: 16,
+  },
+  waterInsightImpact: {
+    fontSize: 12,
+    color: palette.textMuted,
+    marginTop: 4,
+    fontStyle: 'italic',
   },
 });

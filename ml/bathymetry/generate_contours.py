@@ -171,15 +171,29 @@ def depth_to_contours(
     intervals_m: list[float] = None,
     smooth_tolerance: float = 0.0002,
     lake_name: str = 'Unknown',
+    lake_id: str = '',
+    filled: bool = True,
 ) -> dict:
     """
-    Convert depth raster to contour lines as GeoJSON FeatureCollection.
+    Convert depth raster to GeoJSON FeatureCollection.
 
-    Uses GDAL contour generation for robust results.
+    Two modes:
+    - filled=True (default): Filled polygons for papercut blue style.
+      Each polygon represents "all area deeper than X metres."
+      Render shallowest first, deepest last for the layered look.
+    - filled=False: Contour boundary lines (original behavior).
+
+    Uses rasterio.features.shapes for robust contour extraction.
     """
     from rasterio.features import shapes
     import shapely.geometry as sg
     from shapely.ops import unary_union
+
+    # Papercut blue palette (light shallow → dark deep)
+    PAPERCUT_BLUES = [
+        '#E8F4FD', '#B8DCF0', '#7BB8DE', '#4A98C9',
+        '#2574A9', '#1A5276', '#0E3D5C', '#071E2E',
+    ]
 
     if intervals_m is None:
         # Auto-select intervals based on max depth
@@ -190,7 +204,7 @@ def depth_to_contours(
 
     features = []
 
-    for depth_val in intervals_m:
+    for band_idx, depth_val in enumerate(intervals_m):
         mask = (depth_raster >= depth_val).astype(np.uint8)
 
         if mask.sum() == 0:
@@ -202,38 +216,59 @@ def depth_to_contours(
                 if val == 1:
                     poly = sg.shape(geom)
                     if poly.is_valid and poly.area > 1e-10:
+                        if smooth_tolerance > 0:
+                            poly = poly.simplify(smooth_tolerance, preserve_topology=True)
                         polygons.append(poly)
 
             if not polygons:
                 continue
 
-            # Merge touching polygons and extract boundaries
             merged = unary_union(polygons)
 
-            if merged.geom_type == 'MultiPolygon':
-                boundaries = [p.exterior for p in merged.geoms]
-            elif merged.geom_type == 'Polygon':
-                boundaries = [merged.exterior]
+            if filled:
+                # Output filled polygons for papercut style
+                geoms = merged.geoms if merged.geom_type == 'MultiPolygon' else [merged]
+                color_idx = min(band_idx, len(PAPERCUT_BLUES) - 1)
+
+                for geom in geoms:
+                    if geom.area < 1e-10:
+                        continue
+                    features.append({
+                        'type': 'Feature',
+                        'geometry': sg.mapping(geom),
+                        'properties': {
+                            'depth_m': round(depth_val, 1),
+                            'depth_ft': round(depth_val * 3.28084, 1),
+                            'band_index': band_idx,
+                            'color': PAPERCUT_BLUES[color_idx],
+                            'lake': lake_name,
+                            'lake_id': lake_id,
+                            'source': 'opencatch-ml',
+                        },
+                    })
             else:
-                continue
-
-            for boundary in boundaries:
-                if smooth_tolerance > 0:
-                    boundary = boundary.simplify(smooth_tolerance)
-
-                if boundary.length < 1e-6:
+                # Output contour boundary lines (original behavior)
+                if merged.geom_type == 'MultiPolygon':
+                    boundaries = [p.exterior for p in merged.geoms]
+                elif merged.geom_type == 'Polygon':
+                    boundaries = [merged.exterior]
+                else:
                     continue
 
-                features.append({
-                    'type': 'Feature',
-                    'geometry': sg.mapping(boundary),
-                    'properties': {
-                        'depth_m': round(depth_val, 1),
-                        'depth_ft': round(depth_val * 3.28084, 1),
-                        'lake': lake_name,
-                        'source': 'opencatch-ml',
-                    },
-                })
+                for boundary in boundaries:
+                    if boundary.length < 1e-6:
+                        continue
+                    features.append({
+                        'type': 'Feature',
+                        'geometry': sg.mapping(boundary),
+                        'properties': {
+                            'depth_m': round(depth_val, 1),
+                            'depth_ft': round(depth_val * 3.28084, 1),
+                            'lake': lake_name,
+                            'lake_id': lake_id,
+                            'source': 'opencatch-ml',
+                        },
+                    })
 
         except Exception as e:
             log.warning(f"Contour generation failed at {depth_val}m: {e}")
@@ -333,7 +368,7 @@ def generate_pmtiles(geojson_path: Path, output_dir: Path) -> Optional[Path]:
         '--attribution', 'OpenCatch ML Pipeline',
         '--minimum-zoom', '8',
         '--maximum-zoom', '14',
-        '--drop-densest-as-needed',
+        '--coalesce-densest-as-needed',  # Preserve nested polygon structure
         '--extend-zooms-if-still-dropping',
         '--layer', 'contours',
         str(geojson_path),

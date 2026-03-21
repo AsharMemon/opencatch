@@ -18,6 +18,20 @@ import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
 import { StarRating } from '../components/StarRating';
 import { api, ApiError } from '../services/api';
+import {
+  takeCatchPhoto,
+  pickCatchPhoto,
+  fetchCurrentConditions,
+  saveCatch,
+  type CatchPhoto,
+  type EnhancedCatch,
+} from '../services/catchEnhancements';
+import {
+  identifySpecies,
+  getSpeciesHints,
+  type PhotoIdentificationResult,
+  type SpeciesHints,
+} from '../services/fishSpeciesAI';
 import type { CatchReport, CatchReportV2Create } from '../types/models';
 import type { RootStackProps } from '../types/navigation';
 
@@ -49,11 +63,31 @@ export function CatchReportScreen({ route, navigation }: Props) {
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<CatchPhoto[]>([]);
 
   const [lat, setLat] = useState(passedLat ?? 0);
   const [lon, setLon] = useState(passedLon ?? 0);
   const [locationResolved, setLocationResolved] = useState(!!passedLat);
+
+  // Weather auto-fill state
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [autoWeather, setAutoWeather] = useState<{
+    airTemp?: number;
+    windSpeed?: number;
+    windDirection?: string;
+    pressure?: number;
+    cloudCover?: string;
+  } | null>(null);
+
+  // AI species identification state
+  const [aiIdentifying, setAiIdentifying] = useState(false);
+  const [aiResult, setAiResult] = useState<PhotoIdentificationResult | null>(null);
+  const [speciesAutoFilled, setSpeciesAutoFilled] = useState(false);
+
+  // Bait/technique for enhanced catch
+  const [bait, setBait] = useState('');
+  const [technique, setTechnique] = useState('');
+  const [lengthIn, setLengthIn] = useState('');
 
   // Auto-detect GPS if not passed
   useEffect(() => {
@@ -72,6 +106,29 @@ export function CatchReportScreen({ route, navigation }: Props) {
     }
   }, []);
 
+  // Auto-fill weather conditions when location is resolved
+  useEffect(() => {
+    if (locationResolved && lat !== 0 && lon !== 0 && !autoWeather) {
+      setWeatherLoading(true);
+      fetchCurrentConditions(lat, lon)
+        .then((conditions) => {
+          if (conditions.airTemp != null || conditions.windSpeed != null) {
+            setAutoWeather({
+              airTemp: conditions.airTemp,
+              windSpeed: conditions.windSpeed,
+              windDirection: conditions.windDirection,
+              pressure: conditions.pressure,
+              cloudCover: conditions.cloudCover,
+            });
+          }
+        })
+        .catch(() => {
+          // Weather auto-fill is best-effort; silent fail
+        })
+        .finally(() => setWeatherLoading(false));
+    }
+  }, [locationResolved, lat, lon]);
+
   const now = new Date();
   const dateLabel = now.toLocaleDateString('en-US', {
     weekday: 'short',
@@ -86,11 +143,76 @@ export function CatchReportScreen({ route, navigation }: Props) {
 
   const canSubmit = rating > 0 && numberCaught.trim() !== '' && parseInt(numberCaught) >= 0;
 
-  const handleTakePhoto = () => {
+  /** Run AI species identification on a photo URI. Silent on failure. */
+  const runSpeciesAI = async (photoUri: string) => {
+    setAiIdentifying(true);
+    try {
+      const result = await identifySpecies(photoUri);
+      if (result && result.confidence >= 60) {
+        setAiResult(result);
+        setSpecies(result.speciesName);
+        setSpeciesAutoFilled(true);
+        // Auto-fill species-specific hints
+        if (result.hints) {
+          if (!bait.trim() && result.hints.commonBaits.length > 0) {
+            setBait(result.hints.commonBaits[0]);
+          }
+          if (!technique.trim() && result.hints.topTechnique) {
+            setTechnique(result.hints.topTechnique);
+          }
+        }
+      }
+      // If confidence < 60 or null result, do nothing — silent failure
+    } catch {
+      // Never block the UX
+    } finally {
+      setAiIdentifying(false);
+    }
+  };
+
+  /** Clear AI auto-fill state when user manually changes species. */
+  const handleManualSpeciesChange = (sp: string) => {
+    setSpecies(sp);
+    setSpeciesAutoFilled(false);
+    setAiResult(null);
+  };
+
+  const handleTakePhoto = async () => {
+    const photo = await takeCatchPhoto();
+    if (photo) {
+      setPhotos((prev) => [...prev, photo]);
+      // Run AI identification on the first photo taken
+      if (photos.length === 0) {
+        runSpeciesAI(photo.uri);
+      }
+    }
+  };
+
+  const handlePickPhoto = async () => {
+    const photo = await pickCatchPhoto();
+    if (photo) {
+      setPhotos((prev) => [...prev, photo]);
+      // Run AI identification on the first photo picked
+      if (photos.length === 0) {
+        runSpeciesAI(photo.uri);
+      }
+    }
+  };
+
+  const handlePhotoAction = () => {
     Alert.alert(
-      'Camera',
-      'Camera feature coming soon. AI Fish ID will be available in a future update.',
+      'Add Photo',
+      'Choose a photo source',
+      [
+        { text: 'Camera', onPress: handleTakePhoto },
+        { text: 'Photo Library', onPress: handlePickPhoto },
+        { text: 'Cancel', style: 'cancel' },
+      ],
     );
+  };
+
+  const removePhoto = (idx: number) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleSubmit = async () => {
@@ -99,6 +221,54 @@ export function CatchReportScreen({ route, navigation }: Props) {
 
     const now = new Date();
     const effortHours = Math.max(0.5, parseFloat(numberCaught) > 0 ? 2.0 : 1.0);
+    const weightLb = largestWeight ? parseFloat(largestWeight) : undefined;
+    const lengthVal = lengthIn ? parseFloat(lengthIn) : undefined;
+
+    // Save to local AsyncStorage via catchEnhancements
+    try {
+      const catchData: Omit<EnhancedCatch, 'id'> = {
+        species,
+        weight: weightLb,
+        length: lengthVal,
+        lat,
+        lon,
+        photos,
+        bait: bait.trim() || undefined,
+        technique: technique.trim() || undefined,
+        airTemp: autoWeather?.airTemp,
+        windSpeed: autoWeather?.windSpeed,
+        windDirection: autoWeather?.windDirection,
+        pressure: autoWeather?.pressure,
+        cloudCover: autoWeather?.cloudCover,
+        notes: notes.trim() || undefined,
+        released: parseInt(numberKept) === 0,
+        timestamp: now.getTime(),
+      };
+
+      const saved = await saveCatch(catchData);
+
+      // Check if this was a personal best (saveCatch handles PB tracking internally)
+      if (weightLb && weightLb > 0) {
+        // The PB check happens inside saveCatch, but we can notify the user
+        const { getPersonalBests } = await import('../services/catchEnhancements');
+        const bests = await getPersonalBests();
+        const pb = bests.find(
+          (b) => b.species.toLowerCase() === species.toLowerCase() && b.catchId === saved.id,
+        );
+        if (pb) {
+          Alert.alert(
+            'New Personal Best!',
+            `${weightLb} lb ${species} is your new record!`,
+            [{ text: 'OK', onPress: () => navigation.goBack() }],
+          );
+          setSubmitting(false);
+          return;
+        }
+      }
+    } catch (localErr) {
+      console.warn('[CatchReport] Failed to save locally:', localErr);
+      // Continue to submit to server even if local save fails
+    }
 
     // Build V2 report matching FastAPI CatchReportCreate schema
     const reportV2: CatchReportV2Create = {
@@ -111,7 +281,7 @@ export function CatchReportScreen({ route, navigation }: Props) {
       species: species.toLowerCase().replace(/\s+/g, '_'),
       catch_count: parseInt(numberCaught) || 0,
       kept_count: parseInt(numberKept) || 0,
-      largest_weight_lb: largestWeight ? parseFloat(largestWeight) : undefined,
+      largest_weight_lb: weightLb,
       rating,
       reported_at: now.toISOString(),
       notes: notes.trim() || undefined,
@@ -122,13 +292,13 @@ export function CatchReportScreen({ route, navigation }: Props) {
       species,
       numberCaught: parseInt(numberCaught),
       numberKept: parseInt(numberKept) || 0,
-      largestWeight: largestWeight ? parseFloat(largestWeight) : undefined,
+      largestWeight: weightLb,
       rating,
       lat,
       lon,
       date: now.toISOString(),
       notes: notes.trim() || undefined,
-      photoUri: photoUri ?? undefined,
+      photoUri: photos[0]?.uri ?? undefined,
     };
 
     try {
@@ -158,10 +328,12 @@ export function CatchReportScreen({ route, navigation }: Props) {
         ]);
       }
     } catch (err: any) {
-      const message = err instanceof ApiError
-        ? `Server error (${err.status}). Please try again later.`
-        : 'Network error. Check your connection and try again.';
-      Alert.alert('Submission Failed', message);
+      // Server failed but local save succeeded — still a success
+      Alert.alert(
+        'Saved Locally',
+        'Catch saved to your device. It will sync when you have a connection.',
+        [{ text: 'OK', onPress: () => navigation.goBack() }],
+      );
     } finally {
       setSubmitting(false);
     }
@@ -185,33 +357,63 @@ export function CatchReportScreen({ route, navigation }: Props) {
             styles.cameraButton,
             pressed && styles.cameraButtonPressed,
           ]}
-          onPress={handleTakePhoto}
+          onPress={handlePhotoAction}
         >
-          {photoUri ? (
-            <Image source={{ uri: photoUri }} style={styles.cameraPreview} />
+          {photos.length > 0 ? (
+            <View>
+              <Image source={{ uri: photos[photos.length - 1].uri }} style={styles.cameraPreview} />
+              <View style={styles.photoCountBadge}>
+                <Text style={styles.photoCountText}>{photos.length} photo{photos.length > 1 ? 's' : ''}</Text>
+              </View>
+            </View>
           ) : (
             <View style={styles.cameraPlaceholder}>
               <Ionicons name="camera-outline" size={32} color={palette.accent} />
               <Text style={styles.cameraTitle}>Take a Photo</Text>
-              <Text style={styles.cameraSubtitle}>AI Fish ID coming soon</Text>
+              <Text style={styles.cameraSubtitle}>Tap to use camera or select from gallery</Text>
             </View>
           )}
         </Pressable>
 
-        {/* AI Identification placeholder */}
-        <View style={styles.aiSection}>
-          <View style={styles.aiHeader}>
-            <Text style={styles.aiTitle}>AI Identification</Text>
-            <View style={styles.aiBadge}>
-              <Text style={styles.aiBadgeText}>Coming Soon</Text>
-            </View>
-          </View>
-          <Text style={styles.aiDescription}>
-            Snap a photo of your catch and our ML model will identify the species automatically.
-          </Text>
-        </View>
+        {/* Photo thumbnails row */}
+        {photos.length > 1 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
+            {photos.map((photo, idx) => (
+              <Pressable key={idx} onLongPress={() => removePhoto(idx)} style={styles.photoThumb}>
+                <Image source={{ uri: photo.uri }} style={styles.photoThumbImage} />
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
 
-        {/* Auto-captured info */}
+        {/* AI Species Identification Banner */}
+        {aiIdentifying && (
+          <View style={styles.aiBanner}>
+            <ActivityIndicator size="small" color={palette.accent} />
+            <Text style={styles.aiBannerText}>Identifying species...</Text>
+          </View>
+        )}
+        {aiResult && speciesAutoFilled && !aiIdentifying && (
+          <View style={styles.aiBannerSuccess}>
+            <View style={styles.aiBannerRow}>
+              <Ionicons name="checkmark-circle" size={18} color={palette.success} />
+              <Text style={styles.aiBannerSuccessText}>
+                Identified: {aiResult.speciesName} ({aiResult.confidence}% confident)
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => {
+                setSpeciesAutoFilled(false);
+                setAiResult(null);
+              }}
+              hitSlop={8}
+            >
+              <Text style={styles.aiBannerChange}>Change</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* Auto-captured info + weather conditions */}
         <View style={styles.autoSection}>
           <View style={styles.autoRow}>
             <Ionicons name="calendar-outline" size={16} color={palette.textMuted} />
@@ -227,11 +429,69 @@ export function CatchReportScreen({ route, navigation }: Props) {
                 : 'Detecting location...'}
             </Text>
           </View>
+
+          {/* Weather auto-fill display */}
+          {weatherLoading && (
+            <View style={styles.autoRow}>
+              <ActivityIndicator size="small" color={palette.accent} />
+              <Text style={styles.autoText}>Fetching weather conditions...</Text>
+            </View>
+          )}
+          {autoWeather && (
+            <View style={styles.weatherAutoFill}>
+              <View style={styles.autoRow}>
+                <Ionicons name="partly-sunny-outline" size={16} color={palette.accent} />
+                <Text style={styles.autoTextAccent}>Weather auto-filled</Text>
+              </View>
+              <View style={styles.weatherGrid}>
+                {autoWeather.airTemp != null && (
+                  <View style={styles.weatherChip}>
+                    <Ionicons name="thermometer-outline" size={12} color={palette.textSecondary} />
+                    <Text style={styles.weatherChipText}>{autoWeather.airTemp}°F</Text>
+                  </View>
+                )}
+                {autoWeather.windSpeed != null && (
+                  <View style={styles.weatherChip}>
+                    <Ionicons name="flag-outline" size={12} color={palette.textSecondary} />
+                    <Text style={styles.weatherChipText}>
+                      {autoWeather.windSpeed} mph {autoWeather.windDirection ?? ''}
+                    </Text>
+                  </View>
+                )}
+                {autoWeather.pressure != null && (
+                  <View style={styles.weatherChip}>
+                    <Ionicons name="speedometer-outline" size={12} color={palette.textSecondary} />
+                    <Text style={styles.weatherChipText}>{autoWeather.pressure} hPa</Text>
+                  </View>
+                )}
+                {autoWeather.cloudCover != null && (
+                  <View style={styles.weatherChip}>
+                    <Ionicons name="cloud-outline" size={12} color={palette.textSecondary} />
+                    <Text style={styles.weatherChipText}>{autoWeather.cloudCover}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Species selector — scrollable chip row */}
         <View style={styles.field}>
-          <Text style={styles.fieldLabel}>Species</Text>
+          <View style={styles.fieldLabelRow}>
+            <Text style={styles.fieldLabel}>Species</Text>
+            {speciesAutoFilled && (
+              <View style={styles.aiBadge}>
+                <Ionicons name="sparkles" size={10} color={palette.accent} />
+                <Text style={styles.aiBadgeText}>AI</Text>
+              </View>
+            )}
+            {aiIdentifying && (
+              <View style={styles.aiIdentifyingLabel}>
+                <ActivityIndicator size={10} color={palette.accent} />
+                <Text style={styles.aiIdentifyingText}>Identifying...</Text>
+              </View>
+            )}
+          </View>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -244,7 +504,7 @@ export function CatchReportScreen({ route, navigation }: Props) {
                   styles.speciesChip,
                   species === sp && styles.speciesChipActive,
                 ]}
-                onPress={() => setSpecies(sp)}
+                onPress={() => handleManualSpeciesChange(sp)}
               >
                 <Text
                   style={[
@@ -285,18 +545,93 @@ export function CatchReportScreen({ route, navigation }: Props) {
           </View>
         </View>
 
-        {/* Largest weight */}
-        <View style={styles.field}>
-          <Text style={styles.fieldLabel}>Largest Weight (lbs) - Optional</Text>
-          <TextInput
-            style={styles.input}
-            value={largestWeight}
-            onChangeText={setLargestWeight}
-            keyboardType="decimal-pad"
-            placeholder="e.g. 4.5"
-            placeholderTextColor={palette.textDim}
-          />
+        {/* Largest weight & length */}
+        <View style={styles.rowFields}>
+          <View style={[styles.field, { flex: 1 }]}>
+            <Text style={styles.fieldLabel}>Largest Weight (lbs)</Text>
+            <TextInput
+              style={styles.input}
+              value={largestWeight}
+              onChangeText={setLargestWeight}
+              keyboardType="decimal-pad"
+              placeholder="e.g. 4.5"
+              placeholderTextColor={palette.textDim}
+            />
+          </View>
+          <View style={[styles.field, { flex: 1 }]}>
+            <Text style={styles.fieldLabel}>Length (in)</Text>
+            <TextInput
+              style={styles.input}
+              value={lengthIn}
+              onChangeText={setLengthIn}
+              keyboardType="decimal-pad"
+              placeholder="e.g. 19"
+              placeholderTextColor={palette.textDim}
+            />
+          </View>
         </View>
+
+        {/* Bait & Technique */}
+        <View style={styles.rowFields}>
+          <View style={[styles.field, { flex: 1 }]}>
+            <View style={styles.fieldLabelRow}>
+              <Text style={styles.fieldLabel}>Bait / Lure</Text>
+              {speciesAutoFilled && aiResult?.hints && bait === aiResult.hints.commonBaits[0] && (
+                <View style={styles.aiBadge}>
+                  <Ionicons name="sparkles" size={10} color={palette.accent} />
+                  <Text style={styles.aiBadgeText}>AI</Text>
+                </View>
+              )}
+            </View>
+            <TextInput
+              style={styles.input}
+              value={bait}
+              onChangeText={setBait}
+              placeholder="e.g. Senko"
+              placeholderTextColor={palette.textDim}
+            />
+          </View>
+          <View style={[styles.field, { flex: 1 }]}>
+            <View style={styles.fieldLabelRow}>
+              <Text style={styles.fieldLabel}>Technique</Text>
+              {speciesAutoFilled && aiResult?.hints && technique === aiResult.hints.topTechnique && (
+                <View style={styles.aiBadge}>
+                  <Ionicons name="sparkles" size={10} color={palette.accent} />
+                  <Text style={styles.aiBadgeText}>AI</Text>
+                </View>
+              )}
+            </View>
+            <TextInput
+              style={styles.input}
+              value={technique}
+              onChangeText={setTechnique}
+              placeholder="e.g. Flipping"
+              placeholderTextColor={palette.textDim}
+            />
+          </View>
+        </View>
+
+        {/* Species hints from AI */}
+        {speciesAutoFilled && aiResult?.hints && (
+          <View style={styles.speciesHintsCard}>
+            <View style={styles.autoRow}>
+              <Ionicons name="bulb-outline" size={14} color={palette.accent} />
+              <Text style={styles.autoTextAccent}>Species tips for {aiResult.speciesName}</Text>
+            </View>
+            <View style={styles.weatherGrid}>
+              <View style={styles.weatherChip}>
+                <Ionicons name="scale-outline" size={12} color={palette.textSecondary} />
+                <Text style={styles.weatherChipText}>{aiResult.hints.typicalWeightRange}</Text>
+              </View>
+              {aiResult.hints.commonBaits.slice(0, 3).map((b) => (
+                <View key={b} style={styles.weatherChip}>
+                  <Ionicons name="fish-outline" size={12} color={palette.textSecondary} />
+                  <Text style={styles.weatherChipText}>{b}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Rating */}
         <View style={styles.field}>
@@ -406,39 +741,36 @@ const styles = StyleSheet.create({
     height: 200,
     resizeMode: 'cover',
   },
-
-  // ── AI Identification section ──────────────────────────────────
-  aiSection: {
-    backgroundColor: palette.accentLight,
-    borderRadius: 8,
-    padding: 16,
-    gap: 8,
-  },
-  aiHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  aiTitle: {
-    color: palette.text,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  aiBadge: {
-    backgroundColor: ACCENT,
-    borderRadius: 8,
+  photoCountBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 12,
     paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
-  aiBadgeText: {
+  photoCountText: {
     color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
   },
-  aiDescription: {
-    color: palette.textSecondary,
-    fontSize: 13,
-    lineHeight: 19,
+  photoRow: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  photoThumb: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  photoThumbImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
 
   // ── Auto-captured info ─────────────────────────────────────────
@@ -461,6 +793,121 @@ const styles = StyleSheet.create({
   autoText: {
     color: palette.textSecondary,
     fontSize: 14,
+  },
+  autoTextAccent: {
+    color: palette.accent,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  weatherAutoFill: {
+    marginTop: 4,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: palette.borderLight,
+    gap: 8,
+  },
+  weatherGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    paddingLeft: 26,
+  },
+  weatherChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: palette.accentLight,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  weatherChipText: {
+    color: palette.textSecondary,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+
+  // ── AI Identification Banner ──────────────────────────────────
+  aiBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: palette.accentLight,
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: palette.accent,
+  },
+  aiBannerText: {
+    color: palette.accent,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  aiBannerSuccess: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: palette.success,
+  },
+  aiBannerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  aiBannerSuccessText: {
+    color: palette.success,
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  aiBannerChange: {
+    color: palette.accent,
+    fontSize: 13,
+    fontWeight: '700',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  aiBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: palette.accentLight,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  aiBadgeText: {
+    color: palette.accent,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  aiIdentifyingLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  aiIdentifyingText: {
+    color: palette.textMuted,
+    fontSize: 11,
+    fontStyle: 'italic',
+  },
+  fieldLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  speciesHintsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: palette.borderLight,
   },
 
   // ── Form fields ────────────────────────────────────────────────

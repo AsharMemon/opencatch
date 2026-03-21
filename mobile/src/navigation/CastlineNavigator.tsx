@@ -1,8 +1,22 @@
-import React from 'react';
-import { StyleSheet, Platform } from 'react-native';
+import React, { useCallback, useRef } from 'react';
+import { Animated, Image, StyleSheet, Platform, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { hapticLight } from '../utils/haptics';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const logoImage = require('../../assets/logo.png');
+
+function HeaderLogo() {
+  return (
+    <Image
+      source={logoImage}
+      style={{ height: 32, width: 120 }}
+      resizeMode="contain"
+    />
+  );
+}
 
 // MapLibre GL doesn't work on web — use a placeholder
 const MapScreen = Platform.OS === 'web'
@@ -19,7 +33,7 @@ const MapScreen = Platform.OS === 'web'
   : require('../screens/MapScreen').MapScreen;
 import { CatchReportScreen } from '../screens/CatchReportScreen';
 import { CollectionScreen } from '../screens/CollectionScreen';
-import { ActivityScreen } from '../screens/ActivityScreen';
+import { ToolsScreen } from '../screens/ToolsScreen';
 import { ForecastsScreen } from '../screens/ForecastsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { LocationDetailScreen } from '../screens/LocationDetailScreen';
@@ -32,8 +46,15 @@ import { RegulationsScreen } from '../screens/RegulationsScreen';
 import { AlertsScreen } from '../screens/AlertsScreen';
 import { SafetyScreen } from '../screens/SafetyScreen';
 import { TrackRecordingScreen } from '../screens/TrackRecordingScreen';
+import { TrackHistoryScreen } from '../screens/TrackHistoryScreen';
 import { WeatherBuoysScreen } from '../screens/WeatherBuoysScreen';
 import { SunMoonScreen } from '../screens/SunMoonScreen';
+import { FishingPressureScreen } from '../screens/FishingPressureScreen';
+import { BestTimesScreen } from '../screens/BestTimesScreen';
+import { WaterInsightsScreen } from '../screens/WaterInsightsScreen';
+import { SpeciesMapScreen } from '../screens/SpeciesMapScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
+import { AnnotationScreen } from '../screens/AnnotationScreen';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
 import type { RootStackParamList, TabParamList } from '../types/navigation';
@@ -46,7 +67,7 @@ const TAB_ICONS: Record<string, { focused: keyof typeof Ionicons.glyphMap; defau
   MapTab: { focused: 'map', default: 'map-outline' },
   LogTab: { focused: 'add-circle', default: 'add-circle-outline' },
   ForecastsTab: { focused: 'analytics', default: 'analytics-outline' },
-  ActivityTab: { focused: 'list', default: 'list-outline' },
+  ToolsTab: { focused: 'construct', default: 'construct-outline' },
   ProfileTab: { focused: 'person', default: 'person-outline' },
 };
 
@@ -64,19 +85,21 @@ function TabNavigator({ user, onLogout }: NavProps) {
         },
         headerTintColor: palette.text,
         headerShadowVisible: false,
-        headerTitleStyle: typeStyles.navHeader,
+        headerTitleStyle: { fontFamily: typeStyles.navHeader.fontFamily, fontSize: typeStyles.navHeader.fontSize, fontWeight: typeStyles.navHeader.fontWeight as any },
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopColor: palette.border,
+          backgroundColor: 'rgba(255, 255, 255, 0.88)',
+          borderTopColor: 'rgba(229, 229, 224, 0.5)',
           borderTopWidth: StyleSheet.hairlineWidth,
           height: Platform.OS === 'ios' ? 88 : 64,
           paddingBottom: Platform.OS === 'ios' ? 28 : 8,
           paddingTop: 8,
           elevation: 0,
           shadowColor: '#000',
-          shadowOpacity: 0.04,
-          shadowRadius: 8,
-          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.06,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: -3 },
+          // Frosted glass backdrop on iOS
+          ...(Platform.OS === 'ios' ? { backdropFilter: 'blur(20px)' } as any : {}),
         },
         tabBarActiveTintColor: palette.accent,
         tabBarInactiveTintColor: palette.tabInactive,
@@ -84,13 +107,29 @@ function TabNavigator({ user, onLogout }: NavProps) {
           fontSize: 10,
           fontWeight: '600',
           letterSpacing: 0.3,
+          marginTop: 2,
         },
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({ focused, color }) => {
           const iconConfig = TAB_ICONS[route.name];
           const iconName = iconConfig
             ? (focused ? iconConfig.focused : iconConfig.default)
             : 'ellipse-outline';
-          return <Ionicons name={iconName as any} size={22} color={color} />;
+          return (
+            <View style={{ alignItems: 'center' }}>
+              <Ionicons name={iconName as any} size={22} color={color} />
+              {focused && (
+                <View
+                  style={{
+                    width: 4,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: palette.accent,
+                    marginTop: 3,
+                  }}
+                />
+              )}
+            </View>
+          );
         },
       })}
     >
@@ -98,14 +137,16 @@ function TabNavigator({ user, onLogout }: NavProps) {
         name="MapTab"
         component={MapScreen}
         options={{ title: 'Map', headerShown: false }}
+        listeners={{ tabPress: () => hapticLight() }}
       />
       <Tab.Screen
         name="LogTab"
         component={LogTabPlaceholder}
-        options={{ title: 'Log', headerTitle: 'OpenCatch' }}
+        options={{ title: 'Log', headerTitle: () => <HeaderLogo /> }}
         listeners={({ navigation }: any) => ({
           tabPress: (e: any) => {
             e.preventDefault();
+            hapticLight();
             (navigation as any).navigate('CatchReport', {});
           },
         })}
@@ -113,16 +154,19 @@ function TabNavigator({ user, onLogout }: NavProps) {
       <Tab.Screen
         name="ForecastsTab"
         component={ForecastsScreen}
-        options={{ title: 'Forecasts', headerTitle: 'OpenCatch' }}
+        options={{ title: 'Forecasts', headerTitle: () => <HeaderLogo /> }}
+        listeners={{ tabPress: () => hapticLight() }}
       />
       <Tab.Screen
-        name="ActivityTab"
-        component={ActivityScreen}
-        options={{ title: 'Activity', headerTitle: 'OpenCatch' }}
+        name="ToolsTab"
+        component={ToolsScreen}
+        options={{ title: 'Tools', headerTitle: () => <HeaderLogo /> }}
+        listeners={{ tabPress: () => hapticLight() }}
       />
       <Tab.Screen
         name="ProfileTab"
-        options={{ title: 'Profile', headerTitle: 'OpenCatch' }}
+        options={{ title: 'Profile', headerTitle: () => <HeaderLogo /> }}
+        listeners={{ tabPress: () => hapticLight() }}
       >
         {(props: any) => <ProfileScreen {...props} user={user} onLogout={onLogout} />}
       </Tab.Screen>
@@ -143,9 +187,9 @@ export function OpenCatchNavigator({ user, onLogout }: NavProps) {
         headerTintColor: palette.text,
         headerShadowVisible: false,
         contentStyle: { backgroundColor: palette.background },
-        headerTitleStyle: {
-          fontWeight: '600',
-        },
+        headerTitleStyle: { fontFamily: typeStyles.navHeader.fontFamily, fontSize: typeStyles.navHeader.fontSize, fontWeight: typeStyles.navHeader.fontWeight as any },
+        animation: 'fade_from_bottom',
+        animationDuration: 250,
       }}
     >
       <Stack.Screen
@@ -213,6 +257,11 @@ export function OpenCatchNavigator({ user, onLogout }: NavProps) {
         options={{ title: 'Track Recording' }}
       />
       <Stack.Screen
+        name="TrackHistory"
+        component={TrackHistoryScreen}
+        options={{ title: 'Track History' }}
+      />
+      <Stack.Screen
         name="WeatherBuoys"
         component={WeatherBuoysScreen}
         options={{ title: 'Weather Buoys' }}
@@ -221,6 +270,36 @@ export function OpenCatchNavigator({ user, onLogout }: NavProps) {
         name="SunMoon"
         component={SunMoonScreen}
         options={{ title: 'Sun, Moon & Solunar' }}
+      />
+      <Stack.Screen
+        name="FishingPressure"
+        component={FishingPressureScreen}
+        options={{ title: 'Fishing Pressure' }}
+      />
+      <Stack.Screen
+        name="BestTimes"
+        component={BestTimesScreen}
+        options={{ title: 'Best Fishing Times' }}
+      />
+      <Stack.Screen
+        name="WaterInsights"
+        component={WaterInsightsScreen}
+        options={{ title: 'Water Insights' }}
+      />
+      <Stack.Screen
+        name="SpeciesMap"
+        component={SpeciesMapScreen}
+        options={{ title: 'Species Map' }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ title: 'Settings' }}
+      />
+      <Stack.Screen
+        name="Annotations"
+        component={AnnotationScreen}
+        options={{ title: 'Annotations' }}
       />
     </Stack.Navigator>
   );

@@ -7,7 +7,7 @@ export type TabParamList = {
   MapTab: undefined;
   LogTab: undefined;
   ForecastsTab: undefined;
-  ActivityTab: undefined;
+  ToolsTab: undefined;
   ProfileTab: undefined;
 };
 
@@ -28,8 +28,15 @@ export type RootStackParamList = {
   Alerts: undefined;
   Safety: undefined;
   TrackRecording: undefined;
+  TrackHistory: undefined;
   WeatherBuoys: { lat?: number; lon?: number };
   SunMoon: undefined;
+  FishingPressure: undefined;
+  BestTimes: undefined;
+  WaterInsights: { lat?: number; lon?: number };
+  SpeciesMap: undefined;
+  Settings: undefined;
+  Annotations: undefined;
 };
 
 // Screen prop helpers

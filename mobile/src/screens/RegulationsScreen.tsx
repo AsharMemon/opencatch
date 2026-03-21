@@ -3,6 +3,7 @@ import {
   ScrollView,
   View,
   Text,
+  TextInput,
   StyleSheet,
   Pressable,
   Linking,
@@ -273,11 +274,20 @@ export function RegulationsScreen({ route }: any) {
   const allRegs = useMemo(() => getAllRegulations(), []);
   const initialCode = route?.params?.stateCode ?? allRegs[0].stateCode;
   const [selectedCode, setSelectedCode] = useState<string>(initialCode);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const reg = useMemo(
     () => getRegulations(selectedCode),
     [selectedCode],
   );
+
+  const filteredRegs = useMemo(() => {
+    if (!searchQuery.trim()) return allRegs;
+    const q = searchQuery.toLowerCase();
+    return allRegs.filter(
+      (r) => r.state.toLowerCase().includes(q) || r.stateCode.toLowerCase().includes(q),
+    );
+  }, [allRegs, searchQuery]);
 
   if (!reg) {
     return (
@@ -302,6 +312,28 @@ export function RegulationsScreen({ route }: any) {
       {/* Screen title */}
       <Text style={styles.screenTitle}>Fishing Regulations</Text>
 
+      {/* Disclaimer banner */}
+      <View style={styles.disclaimerBanner}>
+        <Ionicons name="alert-circle-outline" size={16} color="#B45309" />
+        <Text style={styles.disclaimerBannerText}>
+          Regulations shown are for reference only. Always verify with official sources before fishing.
+        </Text>
+      </View>
+
+      {/* Search bar for jurisdictions */}
+      <View style={styles.searchBarRow}>
+        <Ionicons name="search-outline" size={16} color={palette.textMuted} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search state or province..."
+          placeholderTextColor={palette.textDim}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCorrect={false}
+          clearButtonMode="while-editing"
+        />
+      </View>
+
       {/* State/province picker */}
       <ScrollView
         horizontal
@@ -309,15 +341,23 @@ export function RegulationsScreen({ route }: any) {
         style={styles.pickerScroll}
         contentContainerStyle={styles.pickerContent}
       >
-        {allRegs.map((r) => (
+        {filteredRegs.map((r) => (
           <StatePill
             key={r.stateCode}
             label={r.state}
             code={r.stateCode}
             selected={r.stateCode === selectedCode}
-            onPress={setSelectedCode}
+            onPress={(code) => {
+              setSelectedCode(code);
+              setSearchQuery('');
+            }}
           />
         ))}
+        {filteredRegs.length === 0 && (
+          <Text style={{ color: palette.textMuted, fontSize: 13, paddingVertical: 8 }}>
+            No matching jurisdictions
+          </Text>
+        )}
       </ScrollView>
 
       {/* Region label */}
@@ -382,10 +422,19 @@ export function RegulationsScreen({ route }: any) {
         <Ionicons name="open-outline" size={16} color="rgba(255,255,255,0.7)" />
       </Pressable>
 
+      {/* More jurisdictions note */}
+      <View style={styles.comingSoonRow}>
+        <Ionicons name="globe-outline" size={16} color={palette.textMuted} />
+        <Text style={styles.comingSoonText}>
+          More jurisdictions coming soon — all 50 states and 13 provinces.
+        </Text>
+      </View>
+
       {/* Disclaimer */}
       <Text style={styles.disclaimer}>
-        Regulations shown are approximate summaries. Always verify with your
+        Regulations shown are for reference only. Always verify with your
         state or province's official wildlife agency before fishing.
+        Data may be outdated or incomplete.
       </Text>
     </ScrollView>
   );
@@ -409,6 +458,65 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 60 : 24,
     paddingBottom: 8,
+  },
+
+  // ── Disclaimer banner ────────────────────────────────
+  disclaimerBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#FEF3C7',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  disclaimerBannerText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#92400E',
+    lineHeight: 17,
+    fontWeight: '500',
+  },
+
+  // ── Search bar ──────────────────────────────────────
+  searchBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    backgroundColor: palette.surface,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: palette.text,
+    paddingVertical: 0,
+  },
+
+  // ── Coming soon ─────────────────────────────────────
+  comingSoonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 4,
+    paddingVertical: 8,
+  },
+  comingSoonText: {
+    flex: 1,
+    fontSize: 12,
+    color: palette.textMuted,
+    fontStyle: 'italic',
   },
 
   // ── Picker ─────────────────────────────────────────

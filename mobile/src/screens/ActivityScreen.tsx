@@ -10,8 +10,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
 import { ActivityHeatmap } from '../components/ActivityHeatmap';
-import type { TabProps } from '../types/navigation';
-
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface StatCard {
@@ -193,7 +191,7 @@ function EmptyState() {
 
 // ── Main Screen ──────────────────────────────────────────────────────────────
 
-export function ActivityScreen(_props: TabProps<'ActivityTab'>) {
+export function ActivityScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterChip>('All');
 
   const hasActivities = ACTIVITIES.length > 0;

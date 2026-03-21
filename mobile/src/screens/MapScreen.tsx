@@ -57,14 +57,35 @@ try {
   // MapLibre not available on web — will show fallback UI
 }
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { palette, getConditionBand, conditionConfig, scoreColor } from '../theme/palette';
 import { SearchBar } from '../components/SearchBar';
-import { api, buildApiTileSourceUrl } from '../services/api';
+import { FishingTimeBanner } from '../components/FishingTimeBanner';
+import {
+  getCatchesWithPhotos,
+  catchPhotosToGeoJSON,
+  getCatchPhotoThumbnail,
+  formatCatchConditions,
+  filterCatchesInBounds,
+  type CatchWithPhoto,
+} from '../services/catchPhotoOverlay';
+import { scheduleBestTimeNotification } from '../services/fishingNotifications';
+import { EnhancedSearchBar } from '../components/EnhancedSearchBar';
+import { SpotInsightsCard } from '../components/SpotInsightsCard';
+import { api, buildTileSourceUrl } from '../services/api';
+import { TILE_SERVER_DEPLOYED } from '../config/network';
 import { fetchNearbyMarinas, formatAmenities } from '../services/marinaDirectory';
 import type { MarinaPOI, MarinaPOIType } from '../services/marinaDirectory';
 import { fetchWindGrid, windGridToGeoJSON } from '../services/windOverlay';
+import {
+  fetchNearbyAccessPoints,
+  accessPointsToGeoJSON,
+  ACCESS_POINT_CONFIG,
+} from '../services/accessPointService';
+import type { AccessPoint, AccessPointType } from '../services/accessPointService';
+import { fetchNearbyTrails, trailsToGeoJSON } from '../services/trailService';
 import {
   getFishingAlerts,
   type FishingWeatherAlert,
@@ -72,6 +93,58 @@ import {
 } from '../services/weatherAlerts';
 import type { FishingLocation, Waypoint, WaypointIcon, BestFishingV2Entry } from '../types/models';
 import type { TabProps } from '../types/navigation';
+import {
+  trackRecorder,
+  buildSpeedColoredGeoJSON,
+  type FishingTrack,
+} from '../services/trackRecorder';
+import {
+  discoverFishingSpots,
+  cancelPendingDiscovery,
+  discoveredToLocations,
+  getCachedSpotsForBBox,
+  prefetchAdjacentCells,
+  type DiscoveredSpot,
+  type BoundingBox,
+} from '../services/fishingSpotDiscovery';
+import { getTopFishingSpots, isStaticSpot } from '../data/topFishingSpots';
+import { cacheLocationDetail, prefetchLocationDetails } from '../services/locationDetailCache';
+import {
+  getTipsForWaterbody,
+  inferWaterbodyType,
+  type ContextualTip,
+  type WaterbodyContext,
+  type WeatherConditions,
+} from '../services/contextualTips';
+import {
+  loadAnnotations,
+  saveAnnotation,
+  deleteAnnotation as removeAnnotation,
+  distanceMeters,
+  markerAnnotationsGeoJSON,
+  arrowAnnotationsGeoJSON,
+  circleAnnotationsGeoJSON,
+  ANNOTATION_COLORS,
+  ANNOTATION_ICONS,
+  type MapAnnotation,
+  type AnnotationType,
+  type AnnotationCoordinate,
+} from '../services/chartAnnotations';
+import {
+  loadContourSettings,
+  saveContourSettings,
+  resetContourSettings,
+  buildContourColorExpression,
+  buildContourWidthExpression,
+  getColorStops,
+  CONTOUR_INTERVALS,
+  COLOR_SCHEMES,
+  DEFAULT_CONTOUR_SETTINGS,
+  type DepthContourSettings,
+  type ContourInterval,
+  type ContourColorScheme,
+} from '../services/depthContourSettings';
+import { QuickActionFAB } from '../components/QuickActionFAB';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -79,6 +152,15 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const DEFAULT_CENTER: [number, number] = [-95.0, 45.0]; // [lng, lat] — centered to show US + Canada
 const DEFAULT_ZOOM = 3.5;
+
+// AsyncStorage keys for persisting last map view
+const MAP_STATE_KEY = 'opencatch_map_state';
+const LAST_LOCATION_KEY = 'opencatch_last_location';
+
+// Module-level cache for discovered spots — survives tab switches (component unmount/remount)
+let _cachedDiscoveredSpots: DiscoveredSpot[] = [];
+let _cachedDiscoveryBbox: BoundingBox | null = null;
+let _cachedDiscoveryZoom: number = 0;
 
 // Bottom sheet snap points
 const SHEET_HIDDEN = 40; // Fully collapsed — just the drag handle visible
@@ -173,8 +255,9 @@ const FONT_STACKS = {
   italic: ['Open Sans Italic'],
   bold: ['Open Sans Bold'],
 } as const;
+// Vector overlays enabled by default.
+// 'local-bathymetry' is OFF until tiles.opencatch.app is deployed.
 const DEFAULT_VECTOR_OVERLAYS = new Set([
-  'local-bathymetry',
   'public-lands',
   'access-points',
   'parking',
@@ -233,6 +316,10 @@ const BATHYMETRY_STYLE: object = {
       tileSize: 256,
       maxzoom: 12,
     },
+    // Inland lake bathymetry filled contours (papercut blue style)
+    // NOT included in static style — added dynamically via VectorSource
+    // once the tile server is deployed and serving PMTiles.
+    // See: ml/bathymetry/fetch_globathy.py for the pipeline.
   },
   layers: [
     // ── Background ──────────────────────────────────────────────
@@ -314,7 +401,9 @@ const BATHYMETRY_STYLE: object = {
       maxzoom: 12,
     },
 
-    // ── Bathymetry contours reserved for future Martin/local data ──
+    // ── Inland lake bathymetry — papercut blue filled contours ──
+    // Layers added dynamically via VectorSource once tile server is deployed.
+    // Palette: #E8F4FD → #B8DCF0 → #7BB8DE → #4A98C9 → #2574A9 → #1A5276 → #0E3D5C → #071E2E
 
     // ── Land fill — warm tan/beige like wooden map ──────────────
     {
@@ -1746,6 +1835,38 @@ function LayerPicker({ visible, currentStyle, activeOverlays, showQualityPins, o
 
 // ── Site Card (from Explore) ──────────────────────────────────────
 
+// ── Water body highlight circle GeoJSON generator ──────────────
+function makeCircleGeoJSON(
+  centerLon: number,
+  centerLat: number,
+  radiusKm: number = 0.8,
+  points: number = 64,
+): GeoJSON.FeatureCollection {
+  const coords: [number, number][] = [];
+  const km = radiusKm;
+  for (let i = 0; i <= points; i++) {
+    const angle = (i / points) * 2 * Math.PI;
+    const dx = km * Math.cos(angle);
+    const dy = km * Math.sin(angle);
+    const lat = centerLat + (dy / 111.32);
+    const lon = centerLon + (dx / (111.32 * Math.cos((centerLat * Math.PI) / 180)));
+    coords.push([lon, lat]);
+  }
+  return {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'Polygon',
+          coordinates: [coords],
+        },
+      },
+    ],
+  };
+}
+
 interface SiteCardProps {
   location: FishingLocation;
   distanceMi: number | null;
@@ -1766,10 +1887,10 @@ function SiteCard({ location, distanceMi, onPress }: SiteCardProps) {
       <View style={styles.cardHeader}>
         <View style={styles.cardTitleArea}>
           <Text style={styles.cardName} numberOfLines={1}>
-            {location.name}
+            {location.name || 'Unseen Site'}
           </Text>
           <Text style={styles.cardSubtitle} numberOfLines={1}>
-            {location.subtitle}
+            {location.subtitle || 'Water Body'}
           </Text>
         </View>
         <View style={[styles.conditionBadge, { backgroundColor: config.bgTint }]}>
@@ -1832,6 +1953,126 @@ function TopoHintBubble({ zoom }: { zoom: number }) {
   );
 }
 
+
+// ── Contextual Tip Card (condition-aware, lake-specific) ─────────
+
+const TIP_ROTATE_INTERVAL = 15_000; // 15 seconds
+
+interface ContextualTipCardProps {
+  tips: ContextualTip[];
+  waterbodyName: string;
+  onDismiss: () => void;
+}
+
+const ContextualTipCard = React.memo(function ContextualTipCard({ tips, waterbodyName, onDismiss }: ContextualTipCardProps) {
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (tips.length <= 1) return;
+    const interval = setInterval(() => {
+      Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+        setCurrentIdx((prev) => (prev + 1) % tips.length);
+        Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+      });
+    }, TIP_ROTATE_INTERVAL);
+    return () => clearInterval(interval);
+  }, [tips.length, fadeAnim]);
+
+  if (tips.length === 0) return null;
+
+  const tip = tips[currentIdx % tips.length];
+
+  return (
+    <View style={styles.contextualTipCard}>
+      <View style={styles.contextualTipHeader}>
+        <Ionicons name="bulb-outline" size={14} color={palette.warning} />
+        <Text style={styles.contextualTipHeaderText} numberOfLines={1}>{waterbodyName}</Text>
+        <Pressable onPress={onDismiss} hitSlop={8} style={styles.contextualTipClose}>
+          <Ionicons name="close" size={14} color={palette.textMuted} />
+        </Pressable>
+      </View>
+      <Animated.View style={{ opacity: fadeAnim }}>
+        <View style={styles.contextualTipBody}>
+          <Ionicons name={tip.icon as any} size={16} color={palette.accent} style={{ marginTop: 1 }} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.contextualTipTitle}>{tip.title}</Text>
+            <Text style={styles.contextualTipText} numberOfLines={3}>{tip.text}</Text>
+          </View>
+        </View>
+      </Animated.View>
+      {tips.length > 1 && (
+        <View style={styles.contextualTipDots}>
+          {tips.map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.contextualTipDot,
+                i === currentIdx % tips.length && styles.contextualTipDotActive,
+              ]}
+            />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+});
+
+// ── Access Point Summary Pill ────────────────────────────────────
+
+interface AccessPointSummary {
+  boat_launch: number;
+  shore_fishing: number;
+  kayak_launch: number;
+  parking: number;
+  trailhead: number;
+  fishing_pier: number;
+  fish_cleaning: number;
+}
+
+function computeAccessSummary(points: AccessPoint[]): AccessPointSummary {
+  const summary: AccessPointSummary = {
+    boat_launch: 0, shore_fishing: 0, kayak_launch: 0,
+    parking: 0, trailhead: 0, fishing_pier: 0, fish_cleaning: 0,
+  };
+  for (const p of points) {
+    const k = p.type as string;
+    if (k in summary) (summary as any)[k] = ((summary as any)[k] || 0) + 1;
+  }
+  return summary;
+}
+
+function AccessPointSummaryPill({
+  summary,
+  onDismiss,
+}: {
+  summary: AccessPointSummary;
+  onDismiss: () => void;
+}) {
+  const parts: string[] = [];
+  if (summary.boat_launch > 0) parts.push(`${summary.boat_launch} boat launch${summary.boat_launch > 1 ? 'es' : ''}`);
+  if (summary.parking > 0) parts.push(`${summary.parking} parking`);
+  if (summary.trailhead > 0) parts.push(`${summary.trailhead} trailhead${summary.trailhead > 1 ? 's' : ''}`);
+  if (summary.shore_fishing > 0) parts.push(`${summary.shore_fishing} shore access`);
+  if (summary.kayak_launch > 0) parts.push(`${summary.kayak_launch} kayak launch${summary.kayak_launch > 1 ? 'es' : ''}`);
+  if (summary.fishing_pier > 0) parts.push(`${summary.fishing_pier} pier${summary.fishing_pier > 1 ? 's' : ''}`);
+  if (summary.fish_cleaning > 0) parts.push(`${summary.fish_cleaning} cleaning station${summary.fish_cleaning > 1 ? 's' : ''}`);
+
+  if (parts.length === 0) return null;
+
+  return (
+    <View style={styles.accessSummaryPill}>
+      <Ionicons name="navigate-circle-outline" size={16} color={palette.accent} />
+      <Text style={styles.accessSummaryText} numberOfLines={1}>
+        {parts.join(', ')}
+      </Text>
+      <Pressable onPress={onDismiss} hitSlop={8}>
+        <Ionicons name="close" size={14} color={palette.textMuted} />
+      </Pressable>
+    </View>
+  );
+}
+
 // ── Measure helper ────────────────────────────────────────────────
 
 function measureTotalDistance(points: [number, number][]): number {
@@ -1850,7 +2091,7 @@ const COMPASS_SIZE = 52;
 const COMPASS_HALF = COMPASS_SIZE / 2;
 function CompassRoseSvg() { const r = COMPASS_HALF - 2; const tickR = r - 3; const labelR = r - 11; const cardinals = [{ label: 'N', angle: 0 },{ label: 'E', angle: 90 },{ label: 'S', angle: 180 },{ label: 'W', angle: 270 }]; return (<Svg width={COMPASS_SIZE} height={COMPASS_SIZE}><G origin={`${COMPASS_HALF}, ${COMPASS_HALF}`}><Circle cx={COMPASS_HALF} cy={COMPASS_HALF} r={r} stroke={palette.border} strokeWidth={1} fill="none" />{Array.from({ length: 12 }).map((_, i) => { const a = i * 30; const rad = (a * Math.PI) / 180; const iC = a % 90 === 0; const iR = iC ? tickR - 5 : tickR - 3; return (<Line key={a} x1={COMPASS_HALF + Math.sin(rad) * iR} y1={COMPASS_HALF - Math.cos(rad) * iR} x2={COMPASS_HALF + Math.sin(rad) * tickR} y2={COMPASS_HALF - Math.cos(rad) * tickR} stroke={iC ? palette.text : palette.textMuted} strokeWidth={iC ? 1.5 : 0.8} />); })}<Polygon points={`${COMPASS_HALF},${COMPASS_HALF - r + 1} ${COMPASS_HALF - 3},${COMPASS_HALF - r + 8} ${COMPASS_HALF + 3},${COMPASS_HALF - r + 8}`} fill="#C44B4B" />{cardinals.map(({ label, angle }) => { const rad = (angle * Math.PI) / 180; return (<SvgText key={label} x={COMPASS_HALF + Math.sin(rad) * labelR} y={COMPASS_HALF - Math.cos(rad) * labelR + 3.5} fontSize={label === 'N' ? 9 : 7} fontWeight={label === 'N' ? '700' : '600'} fill={label === 'N' ? '#C44B4B' : palette.textSecondary} textAnchor="middle">{label}</SvgText>); })}<Circle cx={COMPASS_HALF} cy={COMPASS_HALF} r={2} fill={palette.accent} /></G></Svg>); }
 function CompassWidget({ heading, mode, onToggleMode }: { heading: number; mode: CompassMode; onToggleMode: () => void }) { const animatedRotation = useRef(new Animated.Value(0)).current; const lastH = useRef(0); useEffect(() => { let d = heading - lastH.current; if (d > 180) d -= 360; if (d < -180) d += 360; const t = lastH.current + d; lastH.current = t; Animated.timing(animatedRotation, { toValue: -t, duration: 250, useNativeDriver: true }).start(); }, [heading, animatedRotation]); const rotI = animatedRotation.interpolate({ inputRange: [-720, 720], outputRange: ['-720deg', '720deg'] }); const cardinal = degreesToCardinal(heading); const degLabel = `${Math.round(((heading % 360) + 360) % 360)}\u00B0`; return (<Pressable style={[cwStyles.container, mode === 'heading' && cwStyles.containerActive]} onPress={onToggleMode} accessibilityLabel={`Compass: ${degLabel} ${cardinal}. Tap to toggle heading mode.`}><Animated.View style={{ transform: [{ rotate: rotI }] }}><CompassRoseSvg /></Animated.View><View style={cwStyles.readout}><Text style={cwStyles.degrees}>{degLabel}</Text><Text style={cwStyles.cardinal}>{cardinal}</Text></View>{mode === 'heading' && <View style={cwStyles.trackingDot} />}</Pressable>); }
-const cwStyles = StyleSheet.create({ container: { position: 'absolute', top: Platform.OS === 'ios' ? 220 : 180, right: 16, width: COMPASS_SIZE + 8, alignItems: 'center', backgroundColor: palette.surface, borderRadius: (COMPASS_SIZE + 8) / 2, paddingVertical: 4, paddingHorizontal: 4, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 }, containerActive: { borderWidth: 1.5, borderColor: palette.accent }, readout: { flexDirection: 'row', alignItems: 'baseline', gap: 2, marginTop: 1, marginBottom: 2 }, degrees: { fontSize: 10, fontWeight: '700', color: palette.text }, cardinal: { fontSize: 8, fontWeight: '600', color: palette.textSecondary }, trackingDot: { position: 'absolute', top: 4, right: 4, width: 6, height: 6, borderRadius: 3, backgroundColor: palette.accent } });
+const cwStyles = StyleSheet.create({ container: { position: 'absolute', top: Platform.OS === 'ios' ? 155 : 115, left: 16, width: COMPASS_SIZE + 8, alignItems: 'center', backgroundColor: palette.surface, borderRadius: (COMPASS_SIZE + 8) / 2, paddingVertical: 4, paddingHorizontal: 4, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 }, containerActive: { borderWidth: 1.5, borderColor: palette.accent }, readout: { flexDirection: 'row', alignItems: 'baseline', gap: 2, marginTop: 1, marginBottom: 2 }, degrees: { fontSize: 10, fontWeight: '700', color: palette.text }, cardinal: { fontSize: 8, fontWeight: '600', color: palette.textSecondary }, trackingDot: { position: 'absolute', top: 4, right: 4, width: 6, height: 6, borderRadius: 3, backgroundColor: palette.accent } });
 
 // ── MapScreen ─────────────────────────────────────────────────────
 
@@ -1866,7 +2107,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [bestFishing, setBestFishing] = useState<BestFishingV2Entry[]>([]);
   const [search, setSearch] = useState('');
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
 
   // Map style selection — default to hybrid (satellite land + bathymetry water)
@@ -1918,14 +2159,93 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const windDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastWindCenter = useRef<{ lat: number; lon: number } | null>(null);
 
+  // Access points overlay
+  const [accessEnabled, setAccessEnabled] = useState(false);
+  const [accessPoints, setAccessPoints] = useState<AccessPoint[]>([]);
+  const [accessTrailGeoJSON, setAccessTrailGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [accessLoading, setAccessLoading] = useState(false);
+  const accessFetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastAccessCenter = useRef<{ lat: number; lon: number } | null>(null);
+
+  // Dynamic fishing spot discovery (OSM Overpass)
+  // Initialize from module-level cache so pins survive tab switches
+  const [discoveredSpots, setDiscoveredSpots] = useState<DiscoveredSpot[]>(_cachedDiscoveredSpots);
+  const [discoveryLoading, setDiscoveryLoading] = useState(false);
+  const discoveryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastDiscoveryBbox = useRef<BoundingBox | null>(_cachedDiscoveryBbox);
+  const lastDiscoveryZoom = useRef<number>(_cachedDiscoveryZoom);
+  /** Timestamp of component mount — Overpass discovery is deferred for 3s after mount */
+  const mountTimeRef = useRef<number>(Date.now());
+  /** Holds the last known good set of pins so we never flash empty during a fetch */
+  const previousSpotsRef = useRef<DiscoveredSpot[]>(_cachedDiscoveredSpots);
+
+  // Active track recording overlay
+  const [liveTrack, setLiveTrack] = useState<FishingTrack | null>(null);
+  const [liveTrackGeoJSON, setLiveTrackGeoJSON] = useState<any>(null);
+  const [dismissedTrackId, setDismissedTrackId] = useState<string | null>(null);
+  const recordingPulse = useRef(new Animated.Value(1)).current;
+
+  // Focused location card slide-up animation
+  const focusedCardTranslateY = useRef(new Animated.Value(120)).current;
+  const focusedCardOpacity = useRef(new Animated.Value(0)).current;
+
+  // Water body highlight pulse
+  const [waterHighlightOpacity, setWaterHighlightOpacity] = useState(0.3);
+
+  // Contextual tips (Feature 1)
+  const [contextualTips, setContextualTips] = useState<ContextualTip[]>([]);
+  const [contextualTipsDismissed, setContextualTipsDismissed] = useState(false);
+  const [contextualWaterbodyName, setContextualWaterbodyName] = useState('');
+
+  // Catch photo overlay
+  const [photosEnabled, setPhotosEnabled] = useState(false);
+  const [catchPhotos, setCatchPhotos] = useState<CatchWithPhoto[]>([]);
+  const [catchPhotosLoading, setCatchPhotosLoading] = useState(false);
+  const [selectedCatchPhoto, setSelectedCatchPhoto] = useState<CatchWithPhoto | null>(null);
+  const [photosInView, setPhotosInView] = useState(0);
+
+  // Highlighted access points on spot click (Feature 2)
+  const [highlightedAccessPoints, setHighlightedAccessPoints] = useState<AccessPoint[]>([]);
+  const [highlightedAccessSummary, setHighlightedAccessSummary] = useState<AccessPointSummary | null>(null);
+  const [highlightedAccessLoading, setHighlightedAccessLoading] = useState(false);
+
+  // ── Chart Annotations ──────────────────────────────────────────────
+  const [annotationMode, setAnnotationMode] = useState(false);
+  const [annotationTool, setAnnotationTool] = useState<AnnotationType>('marker');
+  const [annotationColor, setAnnotationColor] = useState<string>(ANNOTATION_COLORS[0].color);
+  const [annotationIcon, setAnnotationIcon] = useState('fish');
+  const [annotations, setAnnotations] = useState<MapAnnotation[]>([]);
+  const [showAnnotations, setShowAnnotations] = useState(true);
+  const [annotationTextInput, setAnnotationTextInput] = useState('');
+  const [annotationTextCoord, setAnnotationTextCoord] = useState<AnnotationCoordinate | null>(null);
+  const [showAnnotationTextModal, setShowAnnotationTextModal] = useState(false);
+  // Arrow drawing state: first tap sets start, second sets end
+  const [arrowStart, setArrowStart] = useState<AnnotationCoordinate | null>(null);
+
+  // ── Depth Contour Settings ─────────────────────────────────────────
+  const [contourSettings, setContourSettings] = useState<DepthContourSettings>(DEFAULT_CONTOUR_SETTINGS);
+  const [showContourModal, setShowContourModal] = useState(false);
+
   // Bottom sheet
   const sheetHeight = useRef(new Animated.Value(SHEET_COLLAPSED)).current;
   const currentHeight = useRef(SHEET_COLLAPSED);
   const dragStartHeight = useRef(SHEET_COLLAPSED);
+  const [sheetSettled, setSheetSettled] = useState(true);
+
+  // Tips modal (shown on-demand from focused card)
+  const [showTipsModal, setShowTipsModal] = useState(false);
+
+  // Load annotations and contour settings from AsyncStorage on mount
+  useEffect(() => {
+    loadAnnotations().then(setAnnotations);
+    loadContourSettings().then(setContourSettings);
+  }, []);
 
   useEffect(() => {
-    if (!ENABLE_EXPERIMENTAL_VECTOR_OVERLAYS) {
-      setAvailableVectorLayers({});
+    if (!ENABLE_EXPERIMENTAL_VECTOR_OVERLAYS || !TILE_SERVER_DEPLOYED) {
+      // Mark all vector layers as unavailable when tile server isn't reachable
+      const allLayers = Object.values(VECTOR_OVERLAY_LAYER_BY_KEY);
+      setAvailableVectorLayers(Object.fromEntries(allLayers.map((l) => [l, false])));
       return;
     }
 
@@ -1935,8 +2255,13 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       const uniqueLayers = Array.from(new Set(Object.values(VECTOR_OVERLAY_LAYER_BY_KEY)));
       const checks = await Promise.all(
         uniqueLayers.map(async (layerName) => {
+          const url = buildTileSourceUrl(layerName);
+          if (!url) return [layerName, false] as const;
           try {
-            const response = await fetch(buildApiTileSourceUrl(layerName));
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 5000);
+            const response = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeout);
             if (!response.ok) return [layerName, false] as const;
             const payload = await response.json();
             const hasTiles =
@@ -1969,17 +2294,161 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     return () => sheetHeight.removeListener(id);
   }, [sheetHeight]);
 
+  // ── Track recorder subscription ─────────────────────────────────
+  useEffect(() => {
+    // Check for existing active track
+    const existing = trackRecorder.getActiveTrack();
+    if (existing) {
+      setLiveTrack({ ...existing });
+      if (existing.points.length >= 2) {
+        setLiveTrackGeoJSON(buildSpeedColoredGeoJSON(existing.points));
+      }
+    }
+
+    const unsub = trackRecorder.subscribe((track: FishingTrack | null) => {
+      if (track) {
+        setLiveTrack({ ...track });
+        if (track.points.length >= 2) {
+          setLiveTrackGeoJSON(buildSpeedColoredGeoJSON(track.points));
+        }
+      } else {
+        // Recording stopped — keep last track visible until dismissed
+        setLiveTrackGeoJSON((prev: any) => prev);
+        setLiveTrack(null);
+      }
+    });
+    return unsub;
+  }, []);
+
+  // Focused location card slide-up animation
+  useEffect(() => {
+    if (focusedLocation) {
+      focusedCardTranslateY.setValue(60);
+      focusedCardOpacity.setValue(0);
+      Animated.parallel([
+        Animated.spring(focusedCardTranslateY, {
+          toValue: 0,
+          damping: 24,
+          stiffness: 280,
+          mass: 0.8,
+          useNativeDriver: true,
+        }),
+        Animated.timing(focusedCardOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [focusedLocation]);
+
+  // Focused card swipe-to-dismiss gesture
+  const focusedCardDragY = useRef(0);
+  const focusedCardPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, gs) => gs.dy > 8,
+        onMoveShouldSetPanResponderCapture: (_, gs) => gs.dy > 8,
+        onPanResponderGrant: () => {
+          focusedCardDragY.current = 0;
+        },
+        onPanResponderMove: (_, gs) => {
+          const dy = Math.max(0, gs.dy);
+          focusedCardTranslateY.setValue(dy);
+          focusedCardOpacity.setValue(Math.max(0, 1 - dy / 120));
+        },
+        onPanResponderRelease: (_, gs) => {
+          if (gs.dy > 50 || gs.vy > 0.5) {
+            // Dismiss
+            Animated.parallel([
+              Animated.timing(focusedCardTranslateY, {
+                toValue: 200,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+              Animated.timing(focusedCardOpacity, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
+              setFocusedLocation(null);
+              setHighlightedAccessPoints([]);
+              setHighlightedAccessSummary(null);
+              setContextualTips([]);
+              setContextualTipsDismissed(false);
+            });
+          } else {
+            // Snap back
+            Animated.parallel([
+              Animated.spring(focusedCardTranslateY, {
+                toValue: 0,
+                damping: 24,
+                stiffness: 280,
+                mass: 0.8,
+                useNativeDriver: true,
+              }),
+              Animated.timing(focusedCardOpacity, {
+                toValue: 1,
+                duration: 150,
+                useNativeDriver: true,
+              }),
+            ]).start();
+          }
+        },
+      }),
+    [focusedCardTranslateY, focusedCardOpacity],
+  );
+
+  // Water body highlight pulse animation (oscillate opacity 0.3 → 0.7)
+  useEffect(() => {
+    if (!focusedLocation) return;
+    let frame: ReturnType<typeof requestAnimationFrame>;
+    let start: number | null = null;
+    const animate = (time: number) => {
+      if (start === null) start = time;
+      const elapsed = time - start;
+      // 2-second cycle: 0→0.7→0.3 smoothly
+      const t = (elapsed % 2000) / 2000;
+      const val = 0.3 + 0.4 * Math.sin(t * Math.PI);
+      setWaterHighlightOpacity(val);
+      frame = requestAnimationFrame(animate);
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [focusedLocation]);
+
+  // Recording indicator pulse animation
+  useEffect(() => {
+    if (liveTrack) {
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(recordingPulse, { toValue: 1.3, duration: 800, useNativeDriver: true }),
+          Animated.timing(recordingPulse, { toValue: 1, duration: 800, useNativeDriver: true }),
+        ]),
+      );
+      pulse.start();
+      return () => pulse.stop();
+    } else {
+      recordingPulse.setValue(1);
+    }
+  }, [liveTrack !== null]);
+
   const animateSheetTo = useCallback((target: number) => {
+    setSheetSettled(false);
     Animated.spring(sheetHeight, {
       toValue: target,
-      damping: 22,
-      stiffness: 260,
-      mass: 0.8,
+      damping: 28,
+      stiffness: 300,
+      mass: 0.7,
       useNativeDriver: false,
       overshootClamping: false,
-      restDisplacementThreshold: 0.5,
-      restSpeedThreshold: 0.5,
-    }).start();
+      restDisplacementThreshold: 0.3,
+      restSpeedThreshold: 0.3,
+    }).start(() => {
+      setSheetSettled(true);
+    });
     currentHeight.current = target;
   }, [sheetHeight]);
 
@@ -2018,11 +2487,49 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     [sheetHeight, animateSheetTo],
   );
 
-  // ── Data loading ────────────────────────────────────────────────
+  // ── Restore last known location from cache (instant, no network) ──
+  useEffect(() => {
+    (async () => {
+      try {
+        const cached = await AsyncStorage.getItem(LAST_LOCATION_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed?.lat && parsed?.lon) {
+            setUserLocation(parsed);
+          }
+        }
+      } catch {
+        // Ignore cache read errors
+      }
+    })();
+  }, []);
+
+  // ── Restore last map center/zoom from cache ──
+  const [initialMapCenter, setInitialMapCenter] = useState<[number, number] | null>(null);
+  const [initialMapZoom, setInitialMapZoom] = useState<number | null>(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const cached = await AsyncStorage.getItem(MAP_STATE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed?.center && parsed?.zoom) {
+            setInitialMapCenter(parsed.center);
+            setInitialMapZoom(parsed.zoom);
+          }
+        }
+      } catch {
+        // Ignore cache read errors
+      }
+    })();
+  }, []);
+
+  // ── Data loading (background, non-blocking) ────────────────────
   useEffect(() => {
     let cancelled = false;
 
-    async function loadData() {
+    // Backend data loads in background — map is already visible with static pins
+    (async () => {
       try {
         const today = new Date().toISOString().slice(0, 10);
         const [locs, wps, bestRes] = await Promise.all([
@@ -2034,22 +2541,37 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           setLocations(locs);
           setWaypoints(wps);
           if (bestRes) setBestFishing(bestRes.top_locations);
-          setLoading(false);
         }
       } catch {
-        if (!cancelled) setLoading(false);
+        // Backend unavailable — static pins still showing, no problem
       }
-    }
+    })();
 
-    loadData();
-
+    // GPS location in background — don't block map render
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        const loc = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        if (!cancelled) setUserLocation({ lat: loc.coords.latitude, lon: loc.coords.longitude });
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const loc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+          if (!cancelled) {
+            const coords = { lat: loc.coords.latitude, lon: loc.coords.longitude };
+            setUserLocation(coords);
+            // Cache for next launch
+            AsyncStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(coords)).catch(() => {});
+            // Pan to user location smoothly
+            if (cameraRef.current) {
+              cameraRef.current.setCamera({
+                centerCoordinate: [coords.lon, coords.lat],
+                zoomLevel: 8,
+                animationDuration: 1200,
+              });
+            }
+          }
+        }
+      } catch {
+        // GPS unavailable — map stays at default/cached center
       }
     })();
 
@@ -2089,16 +2611,121 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const topAlert = weatherAlerts.length > 0 ? weatherAlerts[0] : null;
   const bannerColor = topAlert ? SEVERITY_BANNER_COLORS[topAlert.severity] : '#1976D2';
 
+  // ── Dynamic fishing spot discovery (Overpass) ───────────────────
+
+  const fetchDiscoveredSpots = useCallback(async (bbox: BoundingBox, zoom: number) => {
+    const prev = lastDiscoveryBbox.current;
+    const prevZoom = lastDiscoveryZoom.current;
+    if (prev) {
+      const latDiff = Math.abs(prev.south - bbox.south) + Math.abs(prev.north - bbox.north);
+      const lonDiff = Math.abs(prev.west - bbox.west) + Math.abs(prev.east - bbox.east);
+      const zoomTierChanged =
+        (zoom <= 5) !== (prevZoom <= 5) || (zoom <= 8) !== (prevZoom <= 8);
+      // Increased threshold from 0.3 to 0.5 to reduce unnecessary refetches
+      if (latDiff < 0.5 && lonDiff < 0.5 && !zoomTierChanged) return;
+    }
+    lastDiscoveryBbox.current = bbox;
+    lastDiscoveryZoom.current = zoom;
+
+    // Immediately show cached data (even stale) while we fetch fresh data
+    const cached = getCachedSpotsForBBox(bbox, zoom);
+    if (cached && cached.length > 0) {
+      setDiscoveredSpots(cached);
+      previousSpotsRef.current = cached;
+      _cachedDiscoveredSpots = cached;
+    }
+    // If no cache and no previous spots, keep showing whatever we had
+
+    setDiscoveryLoading(true);
+    try {
+      const spots = await discoverFishingSpots(bbox, zoom);
+      // Only replace pins when we actually got results (cancel-and-replace, not cancel-and-clear)
+      if (spots.length > 0) {
+        setDiscoveredSpots(spots);
+        previousSpotsRef.current = spots;
+        _cachedDiscoveredSpots = spots;
+        _cachedDiscoveryBbox = bbox;
+        _cachedDiscoveryZoom = zoom;
+      } else if (previousSpotsRef.current.length > 0) {
+        // Empty result for this area — keep previous pins visible (stale-while-revalidate)
+        setDiscoveredSpots(previousSpotsRef.current);
+      }
+      // Pre-fetch adjacent grid cells in the background for faster panning
+      prefetchAdjacentCells(bbox, zoom);
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.warn('[MapScreen] Fishing spot discovery failed:', err);
+      }
+      // On error/abort: keep showing previous pins, never clear to empty
+      if (previousSpotsRef.current.length > 0) {
+        setDiscoveredSpots(previousSpotsRef.current);
+      }
+    } finally {
+      setDiscoveryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      cancelPendingDiscovery();
+      if (discoveryTimer.current) clearTimeout(discoveryTimer.current);
+    };
+  }, []);
+
+  // Pre-bundled top fishing spots (appear instantly on startup)
+  const staticSpots = useMemo(() => getTopFishingSpots(), []);
+
+  // Merge backend locations + static spots + dynamically discovered spots
+  const allLocations = useMemo(() => {
+    // Build a coordinate lookup for de-duplication
+    const coordKey = (lat: number, lon: number) =>
+      `${Math.round(lat * 200)},${Math.round(lon * 200)}`; // ~500m grid
+    const seen = new Set<string>();
+    const result: FishingLocation[] = [];
+
+    // 1. Backend locations take highest priority
+    for (const loc of locations) {
+      seen.add(loc.id);
+      seen.add(coordKey(loc.lat, loc.lon));
+      result.push(loc);
+    }
+
+    // 2. Discovered spots (from Overpass)
+    if (discoveredSpots.length > 0) {
+      const discovered = discoveredToLocations(discoveredSpots);
+      for (const dl of discovered) {
+        const ck = coordKey(dl.lat, dl.lon);
+        if (!seen.has(dl.id) && !seen.has(ck)) {
+          seen.add(dl.id);
+          seen.add(ck);
+          result.push(dl);
+        }
+      }
+    }
+
+    // 3. Static pre-bundled spots (lowest priority, fill the map on startup)
+    for (const sl of staticSpots) {
+      const ck = coordKey(sl.lat, sl.lon);
+      if (!seen.has(sl.id) && !seen.has(ck)) {
+        seen.add(sl.id);
+        seen.add(ck);
+        result.push(sl);
+      }
+    }
+
+    return result;
+  }, [locations, discoveredSpots, staticSpots]);
+
   // ── Computed lists ──────────────────────────────────────────────
 
   const locationsWithDistance = useMemo(() => {
-    return locations.map((loc) => ({
+    return allLocations.map((loc) => ({
       location: loc,
       distanceMi: userLocation
         ? haversineDistance(userLocation.lat, userLocation.lon, loc.lat, loc.lon)
         : null,
     }));
-  }, [locations, userLocation]);
+  }, [allLocations, userLocation]);
 
   const displayList = useMemo(() => {
     let list = [...locationsWithDistance];
@@ -2123,35 +2750,67 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
   // ── GeoJSON sources for MapLibre markers ────────────────────────
 
+  // Main location GeoJSON — no longer depends on selectedMarkerId to avoid
+  // expensive full-collection rebuilds on every pin tap.
   const locationGeoJSON = useMemo((): GeoJSON.FeatureCollection => ({
     type: 'FeatureCollection',
     features: (search.trim()
-      ? locations.filter(
+      ? allLocations.filter(
           (l) =>
             l.name.toLowerCase().includes(search.toLowerCase()) ||
             l.subtitle.toLowerCase().includes(search.toLowerCase()),
         )
-      : locations
-    ).map((loc) => ({
-      type: 'Feature',
-      id: loc.id,
-      geometry: {
-        type: 'Point',
-        coordinates: [loc.lon, loc.lat], // MapLibre uses [lng, lat]
-      },
-      properties: {
+      : allLocations
+    ).map((loc) => {
+      const isOsm = loc.id.startsWith('osm-');
+      const isStatic = isStaticSpot(loc.id);
+      const band = getConditionBand(loc.score);
+      return {
+        type: 'Feature' as const,
         id: loc.id,
-        name: loc.name,
-        score: loc.score,
-        band: getConditionBand(loc.score),
-        color: conditionConfig[getConditionBand(loc.score)].color,
-        displayColor: showQualityPins
-          ? conditionConfig[getConditionBand(loc.score)].color
-          : palette.accent,
-        isSelected: selectedMarkerId === loc.id ? 1 : 0,
-      },
-    })),
-  }), [locations, search, selectedMarkerId, showQualityPins]);
+        geometry: {
+          type: 'Point' as const,
+          coordinates: [loc.lon, loc.lat],
+        },
+        properties: {
+          id: loc.id,
+          name: loc.name,
+          score: loc.score,
+          band,
+          color: conditionConfig[band].color,
+          displayColor: showQualityPins
+            ? conditionConfig[band].color
+            : isOsm ? '#3B82C4' : isStatic ? '#4A90C4' : palette.accent,
+          isSelected: 0,
+          isDiscovered: isOsm ? 1 : 0,
+        },
+      };
+    }),
+  }), [allLocations, search, showQualityPins]);
+
+  // Separate tiny GeoJSON just for the selected pin — rebuilds cheaply on tap
+  const selectedPinGeoJSON = useMemo((): GeoJSON.FeatureCollection | null => {
+    if (!selectedMarkerId) return null;
+    const loc = allLocations.find((l) => l.id === selectedMarkerId);
+    if (!loc) return null;
+    const isOsm = loc.id.startsWith('osm-');
+    const band = getConditionBand(loc.score);
+    return {
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature' as const,
+        id: loc.id,
+        geometry: { type: 'Point' as const, coordinates: [loc.lon, loc.lat] },
+        properties: {
+          id: loc.id,
+          name: loc.name,
+          displayColor: showQualityPins
+            ? conditionConfig[band].color
+            : isOsm ? '#3B82C4' : palette.accent,
+        },
+      }],
+    };
+  }, [selectedMarkerId, allLocations, showQualityPins]);
 
   const waypointGeoJSON = useMemo((): GeoJSON.FeatureCollection => ({
     type: 'FeatureCollection',
@@ -2197,6 +2856,11 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     })),
   }), [marinaPOIs]);
 
+  const accessGeoJSON = useMemo(
+    () => accessPointsToGeoJSON(accessPoints),
+    [accessPoints],
+  );
+
   // ── Overlay raster sources (built dynamically) ──────────────────
   // Overlays are added as raster sources within the style. For simplicity
   // we render them as additional RasterSource + RasterLayer components.
@@ -2240,6 +2904,31 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     fetchMarinasForCenter(center.lat, center.lon);
   }, [marinasEnabled, userLocation, fetchMarinasForCenter]);
 
+  // ── Catch photo overlay data fetching ──────────────────────────
+  useEffect(() => {
+    if (!photosEnabled) {
+      setCatchPhotos([]);
+      setPhotosInView(0);
+      setSelectedCatchPhoto(null);
+      return;
+    }
+    setCatchPhotosLoading(true);
+    getCatchesWithPhotos()
+      .then((photos) => {
+        setCatchPhotos(photos);
+        setPhotosInView(photos.length);
+      })
+      .catch(() => {})
+      .finally(() => setCatchPhotosLoading(false));
+  }, [photosEnabled]);
+
+  // Schedule fishing time notification when we have user location
+  useEffect(() => {
+    if (userLocation) {
+      scheduleBestTimeNotification(userLocation.lat, userLocation.lon).catch(() => {});
+    }
+  }, [userLocation]);
+
   // ── Wind overlay data fetching ──────────────────────────────────
   const loadWindData = useCallback(async (lat: number, lon: number) => {
     setWindLoading(true);
@@ -2267,11 +2956,61 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     loadWindData(lat, lon);
   }, [windEnabled, userLocation, loadWindData]);
 
+  // ── Access points + trails data fetching ─────────────────────────
+
+  const fetchAccessForCenter = useCallback(async (lat: number, lon: number) => {
+    if (lastAccessCenter.current) {
+      const dlat = lat - lastAccessCenter.current.lat;
+      const dlon = lon - lastAccessCenter.current.lon;
+      const approxKm = Math.sqrt(dlat * dlat + dlon * dlon) * 111;
+      if (approxKm < 5) return;
+    }
+    setAccessLoading(true);
+    try {
+      const [points, trails] = await Promise.all([
+        fetchNearbyAccessPoints(lat, lon, 15_000),
+        fetchNearbyTrails(lat, lon, 10_000),
+      ]);
+      setAccessPoints(points);
+      setAccessTrailGeoJSON(trailsToGeoJSON(trails));
+      lastAccessCenter.current = { lat, lon };
+    } catch {
+      // Silently fail
+    } finally {
+      setAccessLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!accessEnabled) {
+      setAccessPoints([]);
+      setAccessTrailGeoJSON(null);
+      lastAccessCenter.current = null;
+      return;
+    }
+    const center = userLocation ?? { lat: DEFAULT_CENTER[1], lon: DEFAULT_CENTER[0] };
+    fetchAccessForCenter(center.lat, center.lon);
+  }, [accessEnabled, userLocation, fetchAccessForCenter]);
+
+  // Ref to debounce map state persistence
+  const mapStateSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleRegionChange = useCallback((feature: any) => {
     const zoom = feature?.properties?.zoomLevel;
     if (zoom !== undefined) setCurrentZoom(zoom);
     const bearing = feature?.properties?.heading ?? feature?.properties?.bearing;
     if (bearing !== undefined) setCompassHeading(bearing);
+
+    // Persist map center/zoom to AsyncStorage (debounced)
+    if (feature?.geometry?.coordinates && zoom !== undefined) {
+      if (mapStateSaveTimer.current) clearTimeout(mapStateSaveTimer.current);
+      mapStateSaveTimer.current = setTimeout(() => {
+        AsyncStorage.setItem(MAP_STATE_KEY, JSON.stringify({
+          center: feature.geometry.coordinates,
+          zoom,
+        })).catch(() => {});
+      }, 2000);
+    }
 
     // Debounced marina re-fetch on pan
     if (marinasEnabled && feature?.geometry?.coordinates) {
@@ -2279,6 +3018,15 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       if (marinaFetchTimer.current) clearTimeout(marinaFetchTimer.current);
       marinaFetchTimer.current = setTimeout(() => {
         fetchMarinasForCenter(lat, lng);
+      }, 2000);
+    }
+
+    // Debounced access-point re-fetch on pan
+    if (accessEnabled && feature?.geometry?.coordinates) {
+      const [aLon, aLat] = feature.geometry.coordinates;
+      if (accessFetchTimer.current) clearTimeout(accessFetchTimer.current);
+      accessFetchTimer.current = setTimeout(() => {
+        fetchAccessForCenter(aLat, aLon);
       }, 2000);
     }
 
@@ -2292,7 +3040,54 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         windDebounceRef.current = setTimeout(() => loadWindData(wLat, wLon), 2000);
       }
     }
-  }, [marinasEnabled, fetchMarinasForCenter, windEnabled, loadWindData]);
+
+    // Debounced fishing spot discovery on pan/zoom (deferred 3s after mount)
+    if (feature?.properties?.visibleBounds || feature?.geometry?.coordinates) {
+      if (discoveryTimer.current) clearTimeout(discoveryTimer.current);
+      const msSinceMountVal = Date.now() - mountTimeRef.current;
+      const discoveryDelay = msSinceMountVal < 3000 ? 3000 - msSinceMountVal + 500 : 1200;
+      discoveryTimer.current = setTimeout(async () => {
+        const z = feature?.properties?.zoomLevel ?? currentZoom;
+        // Try to get visible bounds from the map ref
+        try {
+          const bounds = await mapRef.current?.getVisibleBounds();
+          if (bounds) {
+            // bounds = [[ne_lon, ne_lat], [sw_lon, sw_lat]]
+            const bbox: BoundingBox = {
+              south: bounds[1][1],
+              west: bounds[1][0],
+              north: bounds[0][1],
+              east: bounds[0][0],
+            };
+            fetchDiscoveredSpots(bbox, z);
+          } else if (feature?.geometry?.coordinates) {
+            // Fallback: estimate bbox from center + zoom
+            const [cLon, cLat] = feature.geometry.coordinates;
+            const span = 180 / Math.pow(2, z); // approximate degree span
+            const bbox: BoundingBox = {
+              south: cLat - span / 2,
+              west: cLon - span,
+              north: cLat + span / 2,
+              east: cLon + span,
+            };
+            fetchDiscoveredSpots(bbox, z);
+          }
+        } catch {
+          // getVisibleBounds not available — use center estimate
+          if (feature?.geometry?.coordinates) {
+            const [cLon, cLat] = feature.geometry.coordinates;
+            const span = 180 / Math.pow(2, z);
+            fetchDiscoveredSpots({
+              south: cLat - span / 2,
+              west: cLon - span,
+              north: cLat + span / 2,
+              east: cLon + span,
+            }, z);
+          }
+        }
+      }, discoveryDelay);
+    }
+  }, [marinasEnabled, fetchMarinasForCenter, accessEnabled, fetchAccessForCenter, windEnabled, loadWindData, fetchDiscoveredSpots, currentZoom]);
 
   // Compass mode toggle: static (north-up) vs heading (map follows device bearing)
   const handleToggleCompassMode = useCallback(() => {
@@ -2326,15 +3121,29 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     return () => { sub?.remove(); };
   }, [compassMode]);
 
+  // Handle tapping a search result — fly to the location and focus it
+  const handleSearchSelectLocation = useCallback((locationId: string) => {
+    const loc = allLocations.find((l) => l.id === locationId);
+    if (!loc) return;
+    setFocusedLocation(loc);
+    setSelectedMarkerId(loc.id);
+    cacheLocationDetail(loc);
+    cameraRef.current?.setCamera({
+      centerCoordinate: [loc.lon, loc.lat],
+      zoomLevel: 13,
+      animationDuration: 800,
+    });
+  }, [allLocations]);
+
   const visibleLocations = useMemo(() => {
     return search.trim()
-      ? locations.filter(
+      ? allLocations.filter(
           (l) =>
             l.name.toLowerCase().includes(search.toLowerCase()) ||
             l.subtitle.toLowerCase().includes(search.toLowerCase()),
         )
-      : locations;
-  }, [locations, search]);
+      : allLocations;
+  }, [allLocations, search]);
 
   const filteredLocations = visibleLocations;
 
@@ -2346,12 +3155,53 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     (location: FishingLocation) => {
       setSelectedMarkerId(location.id);
       setFocusedLocation(location);
+      // Pre-cache for faster LocationDetailScreen load
+      cacheLocationDetail(location);
       cameraRef.current?.setCamera({
         centerCoordinate: [location.lon, location.lat],
-        zoomLevel: Math.max(currentZoom, 10),
+        zoomLevel: Math.max(currentZoom, 12),
         animationDuration: 500,
       });
       animateSheetTo(SHEET_HIDDEN);
+
+      // Feature 2: Auto-fetch nearby access points on spot click
+      setHighlightedAccessLoading(true);
+      setHighlightedAccessPoints([]);
+      setHighlightedAccessSummary(null);
+      fetchNearbyAccessPoints(location.lat, location.lon, 5_000).then((pts) => { // min 5km enforced in service
+        setHighlightedAccessPoints(pts);
+        setHighlightedAccessSummary(computeAccessSummary(pts));
+        setHighlightedAccessLoading(false);
+      }).catch(() => {
+        setHighlightedAccessLoading(false);
+      });
+
+      // Feature 1: Generate contextual tips for this water body
+      const species = location.speciesActivity?.map((s) => s.species) ?? [];
+      const waterbody: WaterbodyContext = {
+        name: location.name,
+        type: inferWaterbodyType(location.name),
+        lat: location.lat,
+        lon: location.lon,
+        species,
+      };
+      const wxConditions: WeatherConditions = {
+        airTemp: location.conditions.airTemp,
+        waterTemp: location.conditions.waterTemp,
+        windSpeed: location.conditions.windSpeed,
+        windDirection: location.conditions.windDirection,
+        pressure: location.conditions.pressure,
+        pressureTrend: location.conditions.pressureTrend,
+        weather: location.conditions.weather,
+        humidity: location.conditions.humidity,
+        moonPhase: location.conditions.moonPhase,
+        sunrise: location.conditions.sunrise,
+        sunset: location.conditions.sunset,
+      };
+      const tips = getTipsForWaterbody(waterbody, wxConditions);
+      setContextualTips(tips);
+      setContextualWaterbodyName(location.name);
+      setContextualTipsDismissed(false);
     },
     [animateSheetTo, currentZoom],
   );
@@ -2387,12 +3237,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       }
 
       const locationId = String(props.id ?? feature.id ?? '');
-      const location = locations.find((loc) => loc.id === locationId);
+      const location = allLocations.find((loc) => loc.id === locationId);
       if (location) {
         handleMarkerPress(location);
       }
     },
-    [currentZoom, handleMarkerPress, locations],
+    [currentZoom, handleMarkerPress, allLocations],
   );
 
   const handleMapLongPress = useCallback((event: any) => {
@@ -2449,16 +3299,91 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     }
   }, [animateSheetTo]);
 
+  // ── Annotation save helper ────────────────────────────────────────
+  const handleSaveAnnotation = useCallback(async (
+    partial: Omit<MapAnnotation, 'id' | 'createdAt' | 'updatedAt'>,
+  ) => {
+    const saved = await saveAnnotation(partial);
+    setAnnotations((prev) => [...prev, saved]);
+  }, []);
+
   const handleMapPress = useCallback((event?: any) => {
     if (measureMode && event?.geometry?.coordinates) {
       const [lng, lat] = event.geometry.coordinates as [number, number];
       setMeasurePoints((prev) => [...prev, [lat, lng]]);
       return;
     }
+
+    // ── Annotation mode tap handling ──────────────────────────────
+    if (annotationMode && event?.geometry?.coordinates) {
+      const [lng, lat] = event.geometry.coordinates as [number, number];
+      const coord: AnnotationCoordinate = { latitude: lat, longitude: lng };
+
+      if (annotationTool === 'marker') {
+        handleSaveAnnotation({
+          type: 'marker',
+          coordinate: coord,
+          label: '',
+          color: annotationColor,
+          icon: annotationIcon,
+        });
+        return;
+      }
+
+      if (annotationTool === 'text') {
+        setAnnotationTextCoord(coord);
+        setAnnotationTextInput('');
+        setShowAnnotationTextModal(true);
+        return;
+      }
+
+      if (annotationTool === 'circle') {
+        // First tap = center, second tap = edge (radius)
+        if (!arrowStart) {
+          setArrowStart(coord);
+        } else {
+          const radiusM = distanceMeters(arrowStart, coord);
+          handleSaveAnnotation({
+            type: 'circle',
+            coordinate: arrowStart,
+            radiusMeters: radiusM,
+            label: `${Math.round(radiusM)}m`,
+            color: annotationColor,
+          });
+          setArrowStart(null);
+        }
+        return;
+      }
+
+      if (annotationTool === 'arrow') {
+        if (!arrowStart) {
+          setArrowStart(coord);
+        } else {
+          handleSaveAnnotation({
+            type: 'arrow',
+            coordinate: arrowStart,
+            endCoordinate: coord,
+            label: '',
+            color: annotationColor,
+          });
+          setArrowStart(null);
+        }
+        return;
+      }
+
+      return;
+    }
+
     setSelectedMarkerId(null);
     setFocusedLocation(null);
     setSelectedMarina(null);
-  }, [measureMode]);
+    // Clear highlighted access points (Feature 2)
+    setHighlightedAccessPoints([]);
+    setHighlightedAccessSummary(null);
+    // Clear contextual tips (Feature 1)
+    setContextualTips([]);
+    setContextualTipsDismissed(false);
+  }, [measureMode, annotationMode, annotationTool, annotationColor, annotationIcon, arrowStart, handleSaveAnnotation]);
 
   // ── Derived ─────────────────────────────────────────────────────
   const waypointIonicon = (wpIcon: WaypointIcon): string =>
@@ -2528,7 +3453,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         logoEnabled={false}
         attributionEnabled={false}
         compassEnabled
-        compassViewMargins={{ x: 16, y: Platform.OS === 'ios' ? 170 : 130 }}
+        compassViewMargins={{ x: 16, y: Platform.OS === 'ios' ? 60 : 20 }}
         onPress={handleMapPress}
         onLongPress={handleMapLongPress}
         onRegionDidChange={handleRegionChange}
@@ -2536,8 +3461,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         <Camera
           ref={cameraRef}
           defaultSettings={{
-            centerCoordinate: DEFAULT_CENTER,
-            zoomLevel: DEFAULT_ZOOM,
+            centerCoordinate: initialMapCenter ?? DEFAULT_CENTER,
+            zoomLevel: initialMapZoom ?? DEFAULT_ZOOM,
           }}
         />
 
@@ -2577,32 +3502,16 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           LineLayer && (
           <VectorSource
             id="local-bathymetry-source"
-            url={buildApiTileSourceUrl(TILE_LAYER_NAMES.bathymetryContours)}
+            url={buildTileSourceUrl(TILE_LAYER_NAMES.bathymetryContours)!}
             maxZoomLevel={14}
           >
             <LineLayer
               id="local-bathymetry-lines"
               sourceLayerID={TILE_LAYER_NAMES.bathymetryContours}
               style={{
-                lineColor: [
-                  'interpolate',
-                  ['linear'],
-                  ['coalesce', ['get', 'depth_ft'], 0],
-                  0, '#9ed4f0',
-                  8, '#67b7dc',
-                  20, '#2d8ab8',
-                  40, '#145374',
-                  80, '#0b2c40',
-                ] as any,
-                lineWidth: [
-                  'interpolate',
-                  ['linear'],
-                  ['zoom'],
-                  6, 0.5,
-                  10, 1,
-                  14, 2.4,
-                ] as any,
-                lineOpacity: 0.9,
+                lineColor: buildContourColorExpression(contourSettings) as any,
+                lineWidth: buildContourWidthExpression(contourSettings) as any,
+                lineOpacity: contourSettings.opacity,
               }}
             />
           </VectorSource>
@@ -2616,7 +3525,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           LineLayer && (
           <VectorSource
             id="public-lands-source"
-            url={buildApiTileSourceUrl(TILE_LAYER_NAMES.publicLands)}
+            url={buildTileSourceUrl(TILE_LAYER_NAMES.publicLands)!}
             maxZoomLevel={14}
           >
             <FillLayer
@@ -2645,7 +3554,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           VectorSource && LineLayer && CircleLayer && (
             <VectorSource
               id="access-points-source"
-              url={buildApiTileSourceUrl(TILE_LAYER_NAMES.accessPoints)}
+              url={buildTileSourceUrl(TILE_LAYER_NAMES.accessPoints)!}
               maxZoomLevel={14}
             >
               {activeOverlays.has('trails') && (
@@ -2717,6 +3626,70 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             </VectorSource>
           )}
 
+        {/* ── Chart Annotations on the map ──────────────────────────── */}
+        {showAnnotations && annotations.length > 0 && ShapeSource && CircleLayer && (
+          <>
+            {/* Marker / text annotations as symbols */}
+            <ShapeSource
+              id="annotation-markers-source"
+              shape={markerAnnotationsGeoJSON(annotations) as any}
+            >
+              <CircleLayer
+                id="annotation-markers-circles"
+                style={{
+                  circleColor: ['get', 'color'] as any,
+                  circleRadius: 8,
+                  circleStrokeColor: '#FFFFFF',
+                  circleStrokeWidth: 2,
+                  circleOpacity: 0.9,
+                }}
+              />
+            </ShapeSource>
+
+            {/* Arrow annotations as lines */}
+            {LineLayer && (
+              <ShapeSource
+                id="annotation-arrows-source"
+                shape={arrowAnnotationsGeoJSON(annotations) as any}
+              >
+                <LineLayer
+                  id="annotation-arrows-lines"
+                  style={{
+                    lineColor: ['get', 'color'] as any,
+                    lineWidth: 3,
+                    lineOpacity: 0.85,
+                  }}
+                />
+              </ShapeSource>
+            )}
+
+            {/* Circle annotations as points with radius */}
+            <ShapeSource
+              id="annotation-circles-source"
+              shape={circleAnnotationsGeoJSON(annotations) as any}
+            >
+              <CircleLayer
+                id="annotation-circles-fill"
+                style={{
+                  circleColor: ['get', 'color'] as any,
+                  circleRadius: [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    6, 4,
+                    10, 12,
+                    14, 24,
+                  ] as any,
+                  circleOpacity: 0.2,
+                  circleStrokeColor: ['get', 'color'] as any,
+                  circleStrokeWidth: 2,
+                  circleStrokeOpacity: 0.7,
+                }}
+              />
+            </ShapeSource>
+          </>
+        )}
+
         {/* Fishing location markers — clustered for smooth zoomed-out rendering */}
         {markerMode === 'locations' && ShapeSource && CircleLayer && SymbolLayer && (
           <ShapeSource
@@ -2766,20 +3739,54 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
               filter={['!', ['has', 'point_count']] as any}
               style={{
                 circleColor: ['get', 'displayColor'] as any,
-                circleRadius: [
-                  'case',
-                  ['==', ['get', 'isSelected'], 1],
-                  9,
-                  6,
-                ] as any,
+                circleRadius: 6,
                 circleStrokeColor: '#FFFFFF',
-                circleStrokeWidth: [
-                  'case',
-                  ['==', ['get', 'isSelected'], 1],
-                  2,
-                  1.2,
-                ] as any,
+                circleStrokeWidth: 1.2,
                 circleOpacity: 0.96,
+              }}
+            />
+          </ShapeSource>
+        )}
+
+        {/* Selected pin highlight — separate layer to avoid full GeoJSON rebuild */}
+        {markerMode === 'locations' && selectedPinGeoJSON && ShapeSource && CircleLayer && (
+          <ShapeSource
+            id="selected-pin-source"
+            shape={selectedPinGeoJSON as any}
+          >
+            <CircleLayer
+              id="selected-pin-layer"
+              style={{
+                circleColor: ['get', 'displayColor'] as any,
+                circleRadius: 9,
+                circleStrokeColor: '#FFFFFF',
+                circleStrokeWidth: 2.5,
+                circleOpacity: 1,
+              }}
+            />
+          </ShapeSource>
+        )}
+
+        {/* Water body highlight glow when a spot is focused */}
+        {focusedLocation && ShapeSource && FillLayer && LineLayer && (
+          <ShapeSource
+            id="water-highlight-source"
+            shape={makeCircleGeoJSON(focusedLocation.lon, focusedLocation.lat, 0.6) as any}
+          >
+            <FillLayer
+              id="water-highlight-fill"
+              style={{
+                fillColor: palette.accent,
+                fillOpacity: waterHighlightOpacity * 0.15,
+              }}
+            />
+            <LineLayer
+              id="water-highlight-stroke"
+              style={{
+                lineColor: palette.accent,
+                lineWidth: 2.5,
+                lineOpacity: waterHighlightOpacity,
+                lineDasharray: [4, 3] as any,
               }}
             />
           </ShapeSource>
@@ -2851,6 +3858,54 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             );
           })}
 
+        {/* Catch photo markers */}
+        {photosEnabled &&
+          catchPhotos.map((cp) => (
+            <PointAnnotation
+              key={`catch-photo-${cp.id}`}
+              id={`catch-photo-${cp.id}`}
+              coordinate={[cp.lon, cp.lat]}
+              onSelected={() => setSelectedCatchPhoto(cp)}
+              onDeselected={() => {
+                if (selectedCatchPhoto?.id === cp.id) setSelectedCatchPhoto(null);
+              }}
+            >
+              <View style={styles.catchPhotoPin}>
+                <View style={styles.catchPhotoInner}>
+                  <Ionicons name="camera" size={14} color="#FFFFFF" />
+                </View>
+              </View>
+              <Callout title="">
+                <View style={styles.catchPhotoCallout}>
+                  <Text style={styles.catchPhotoCalloutTitle} numberOfLines={1}>
+                    {cp.species}
+                  </Text>
+                  {cp.weight != null && (
+                    <Text style={styles.catchPhotoCalloutDetail}>{cp.weight} lbs</Text>
+                  )}
+                  <Text style={styles.catchPhotoCalloutDate}>
+                    {new Date(cp.timestamp).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </Text>
+                  {cp.airTemp != null && (
+                    <Text style={styles.catchPhotoCalloutDetail}>
+                      {cp.airTemp}{'\u00B0'}F
+                      {cp.windSpeed != null ? ` \u00B7 ${cp.windSpeed} mph` : ''}
+                    </Text>
+                  )}
+                  {cp.bait && (
+                    <Text style={styles.catchPhotoCalloutDetail}>
+                      Bait: {cp.bait}
+                    </Text>
+                  )}
+                </View>
+              </Callout>
+            </PointAnnotation>
+          ))}
+
         {/* Measure mode: polyline + point markers */}
         {measureMode && measurePoints.length >= 2 && ShapeSource && LineLayer && (
           <ShapeSource
@@ -2885,6 +3940,81 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             </PointAnnotation>
           ))}
 
+        {/* Access-point trail lines */}
+        {accessEnabled && accessTrailGeoJSON && ShapeSource && LineLayer && (
+          <ShapeSource id="access-trail-source" shape={accessTrailGeoJSON}>
+            <LineLayer
+              id="access-trail-layer"
+              style={{
+                lineColor: '#16A34A',
+                lineWidth: 3,
+                lineDasharray: [6, 3],
+                lineOpacity: 0.75,
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+          </ShapeSource>
+        )}
+
+        {/* Access-point markers */}
+        {accessEnabled &&
+          accessPoints.map((ap) => {
+            const cfg = ACCESS_POINT_CONFIG[ap.type];
+            const size = Math.round(28 * cfg.scale);
+            return (
+              <PointAnnotation
+                key={`ap-${ap.id}`}
+                id={`ap-${ap.id}`}
+                coordinate={[ap.lon, ap.lat]}
+              >
+                <View
+                  style={[
+                    styles.accessPinOuter,
+                    {
+                      backgroundColor: cfg.color,
+                      width: size,
+                      height: size,
+                      borderRadius: size / 2,
+                    },
+                  ]}
+                >
+                  <Ionicons name={cfg.ionicon as any} size={Math.round(14 * cfg.scale)} color="#FFFFFF" />
+                </View>
+                <Callout title="">
+                  <View style={styles.marinaCallout}>
+                    <View style={styles.marinaCalloutHeader}>
+                      <View style={[styles.marinaCalloutBadge, { backgroundColor: cfg.color }]}>
+                        <Ionicons name={cfg.ionicon as any} size={10} color="#FFFFFF" />
+                      </View>
+                      <Text style={styles.marinaCalloutTitle} numberOfLines={1}>
+                        {ap.name}
+                      </Text>
+                    </View>
+                    <Text style={styles.marinaCalloutType}>{cfg.label}</Text>
+                    {ap.fee != null && (
+                      <Text style={styles.marinaCalloutDistance}>
+                        {ap.fee ? 'Fee required' : 'Free access'}
+                      </Text>
+                    )}
+                    {ap.surface ? (
+                      <View style={styles.marinaCalloutRow}>
+                        <Ionicons name="trail-sign-outline" size={11} color={palette.textSecondary} />
+                        <Text style={styles.marinaCalloutDetail}>Surface: {ap.surface}</Text>
+                      </View>
+                    ) : null}
+                    {ap.operator ? (
+                      <View style={styles.marinaCalloutRow}>
+                        <Ionicons name="business-outline" size={11} color={palette.textSecondary} />
+                        <Text style={styles.marinaCalloutDetail}>{ap.operator}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </Callout>
+              </PointAnnotation>
+            );
+          })}
+
         {/* Wind arrow overlay */}
         {windEnabled && windGeoJSON && ShapeSource && SymbolLayer && (
           <ShapeSource id="wind-arrow-source" shape={windGeoJSON}>
@@ -2910,14 +4040,155 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             />
           </ShapeSource>
         )}
+        {/* Live track recording line */}
+        {liveTrackGeoJSON && ShapeSource && LineLayer && dismissedTrackId !== liveTrack?.id && (
+          <ShapeSource id="live-track-source" shape={liveTrackGeoJSON}>
+            <LineLayer
+              id="live-track-layer"
+              style={{
+                lineColor: ['get', 'color'],
+                lineWidth: 4,
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+          </ShapeSource>
+        )}
+
+        {/* Highlighted access points on spot click (Feature 2) */}
+        {highlightedAccessPoints.length > 0 && PointAnnotation && (
+          highlightedAccessPoints.map((ap) => {
+            const cfg = ACCESS_POINT_CONFIG[ap.type];
+            return (
+              <PointAnnotation
+                key={'highlight-ap-' + ap.id}
+                id={'highlight-ap-' + ap.id}
+                coordinate={[ap.lon, ap.lat]}
+                anchor={{ x: 0.5, y: 0.5 }}
+              >
+                <View style={[
+                  styles.highlightedApMarker,
+                  { backgroundColor: cfg.color, transform: [{ scale: cfg.scale }] },
+                ]}>
+                  <Ionicons name={cfg.ionicon as any} size={14} color="#FFFFFF" />
+                </View>
+                <Callout title={ap.name}>
+                  <View style={styles.calloutBubble}>
+                    <Text style={styles.calloutTitle}>{ap.name}</Text>
+                    <Text style={{ fontSize: 11, color: palette.textMuted }}>{cfg.label}</Text>
+                    {ap.fee !== undefined && (
+                      <Text style={{ fontSize: 10, color: palette.textSecondary, marginTop: 2 }}>
+                        {ap.fee ? 'Fee required' : 'Free access'}
+                      </Text>
+                    )}
+                  </View>
+                </Callout>
+              </PointAnnotation>
+            );
+          })
+        )}
+
+        {/* Lines from nearest parking to access points (Feature 2) */}
+        {highlightedAccessPoints.length > 0 && ShapeSource && LineLayer && (() => {
+          const parkingPts = highlightedAccessPoints.filter((p) => p.type === 'parking');
+          const nonParking = highlightedAccessPoints.filter((p) => p.type !== 'parking');
+          if (parkingPts.length === 0 || nonParking.length === 0) return null;
+
+          // Find the nearest parking lot (first one as proxy)
+          const nearest = parkingPts[0];
+          const features = nonParking.map((ap, i) => ({
+            type: 'Feature' as const,
+            id: 'route-' + i,
+            geometry: {
+              type: 'LineString' as const,
+              coordinates: [
+                [nearest.lon, nearest.lat],
+                [ap.lon, ap.lat],
+              ],
+            },
+            properties: { apType: ap.type },
+          }));
+
+          const geoJSON: GeoJSON.FeatureCollection = {
+            type: 'FeatureCollection',
+            features,
+          };
+
+          return (
+            <ShapeSource id="highlighted-routes-source" shape={geoJSON}>
+              <LineLayer
+                id="highlighted-routes-layer"
+                style={{
+                  lineColor: palette.accent,
+                  lineWidth: 2,
+                  lineDasharray: [4, 3],
+                  lineOpacity: 0.6,
+                }}
+              />
+            </ShapeSource>
+          );
+        })()}
+
       </MLMapView>
+
+      {/* Recording banner — tap to open TrackRecordingScreen */}
+      {liveTrack && (
+        <Pressable
+          style={styles.recordingBanner}
+          onPress={() => navigation.navigate('TrackRecording')}
+        >
+          <Animated.View style={[styles.recordingBannerDot, { transform: [{ scale: recordingPulse }] }]}>
+            <View style={styles.recordingBannerDotInner} />
+          </Animated.View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.recordingBannerTitle}>Recording Trip</Text>
+            <Text style={styles.recordingBannerSub}>
+              {liveTrack.points.length} pts ·{' '}
+              {liveTrack.distanceMiles < 0.1
+                ? `${Math.round(liveTrack.distanceMiles * 5280)} ft`
+                : `${liveTrack.distanceMiles.toFixed(2)} mi`}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#FFFFFF" />
+        </Pressable>
+      )}
+
+      {/* Dismiss track overlay after recording stops */}
+      {!liveTrack && liveTrackGeoJSON && dismissedTrackId !== (liveTrack as any)?.id && (
+        <Pressable
+          style={styles.dismissTrackBanner}
+          onPress={() => {
+            setLiveTrackGeoJSON(null);
+          }}
+        >
+          <Ionicons name="close-circle" size={16} color={palette.textMuted} />
+          <Text style={styles.dismissTrackText}>Dismiss track overlay</Text>
+        </Pressable>
+      )}
 
       {/* Search bar overlay */}
       <View style={styles.searchOverlay}>
-        <SearchBar
+        <EnhancedSearchBar
           value={search}
           onChangeText={setSearch}
           onClear={() => setSearch('')}
+          onSelectLocation={handleSearchSelectLocation}
+          nearbySpots={locationsWithDistance.slice(0, 10).map((item) => ({
+            id: item.location.id,
+            name: item.location.name,
+            subtitle: item.location.subtitle,
+            distanceMi: item.distanceMi ?? undefined,
+            type: item.location.subtitle,
+          }))}
+          allLocations={allLocations.map((loc) => ({
+            id: loc.id,
+            name: loc.name,
+            subtitle: loc.subtitle,
+            distanceMi: userLocation
+              ? haversineDistance(userLocation.lat, userLocation.lon, loc.lat, loc.lon)
+              : undefined,
+            type: loc.subtitle,
+          }))}
         />
         {/* Filter chips */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterChipsRow}>
@@ -3097,6 +4368,33 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         />
       </Pressable>
 
+      {/* Annotation mode toggle button */}
+      <Pressable
+        style={[styles.rulerButton, { top: Platform.OS === 'ios' ? 355 : 315 }, annotationMode && styles.rulerButtonActive]}
+        onPress={() => {
+          setAnnotationMode((prev) => {
+            if (prev) setArrowStart(null);
+            return !prev;
+          });
+        }}
+        accessibilityLabel={annotationMode ? 'Exit annotation mode' : 'Annotate map'}
+      >
+        <Ionicons
+          name="create-outline"
+          size={20}
+          color={annotationMode ? '#FFFFFF' : palette.textSecondary}
+        />
+      </Pressable>
+
+      {/* Contour settings button */}
+      <Pressable
+        style={[styles.rulerButton, { top: Platform.OS === 'ios' ? 405 : 365 }]}
+        onPress={() => setShowContourModal(true)}
+        accessibilityLabel="Depth contour settings"
+      >
+        <Ionicons name="color-palette-outline" size={20} color={palette.textSecondary} />
+      </Pressable>
+
       {/* Compass heading widget */}
       <CompassWidget heading={compassHeading} mode={compassMode} onToggleMode={handleToggleCompassMode} />
 
@@ -3139,6 +4437,75 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           />
         )}
       </Pressable>
+
+      {/* Access points toggle button */}
+      <Pressable
+        style={[styles.accessButton, accessEnabled && styles.accessButtonActive]}
+        onPress={() => setAccessEnabled((prev) => !prev)}
+        accessibilityLabel={accessEnabled ? 'Hide access points' : 'Show access points'}
+      >
+        <Ionicons
+          name="trail-sign-outline"
+          size={20}
+          color={accessEnabled ? '#FFFFFF' : palette.textSecondary}
+        />
+        {accessLoading && (
+          <ActivityIndicator
+            size="small"
+            color={accessEnabled ? '#FFFFFF' : palette.accent}
+            style={styles.accessSpinner}
+          />
+        )}
+      </Pressable>
+
+      {/* Catch photos toggle button */}
+      <Pressable
+        style={[styles.photosButton, photosEnabled && styles.photosButtonActive]}
+        onPress={() => setPhotosEnabled((prev) => !prev)}
+        accessibilityLabel={photosEnabled ? 'Hide catch photos' : 'Show catch photos on map'}
+      >
+        <Ionicons
+          name="camera-outline"
+          size={20}
+          color={photosEnabled ? '#FFFFFF' : palette.textSecondary}
+        />
+        {photosInView > 0 && photosEnabled && (
+          <View style={styles.photosBadge}>
+            <Text style={styles.photosBadgeText}>{photosInView > 99 ? '99+' : photosInView}</Text>
+          </View>
+        )}
+        {catchPhotosLoading && (
+          <ActivityIndicator
+            size="small"
+            color={photosEnabled ? '#FFFFFF' : palette.accent}
+            style={styles.photosSpinner}
+          />
+        )}
+      </Pressable>
+
+      {/* Fishing time banner — shows when conditions are good */}
+      {userLocation && (
+        <FishingTimeBanner lat={userLocation.lat} lon={userLocation.lon} />
+      )}
+
+      {/* Access points legend banner */}
+      {accessEnabled && (
+        <View style={styles.accessBanner}>
+          <Ionicons name="trail-sign-outline" size={14} color="#16A34A" style={{ marginRight: 6 }} />
+          <Text style={styles.windBannerText}>Access</Text>
+          <View style={styles.windLegend}>
+            <View style={[styles.windLegendDot, { backgroundColor: '#EA580C' }]} />
+            <Text style={styles.windLegendLabel}>Launch</Text>
+            <View style={[styles.windLegendDot, { backgroundColor: '#2563EB' }]} />
+            <Text style={styles.windLegendLabel}>Parking</Text>
+            <View style={[styles.windLegendDot, { backgroundColor: '#16A34A' }]} />
+            <Text style={styles.windLegendLabel}>Trail</Text>
+            <View style={[styles.windLegendDot, { backgroundColor: '#0D9488' }]} />
+            <Text style={styles.windLegendLabel}>Shore</Text>
+          </View>
+          {accessLoading && <ActivityIndicator size="small" color="#16A34A" style={{ marginLeft: 8 }} />}
+        </View>
+      )}
 
       {/* Wind speed legend banner */}
       {windEnabled && (
@@ -3202,6 +4569,184 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         </View>
       )}
 
+      {/* ── Annotation toolbar (shown when annotation mode active) ─── */}
+      {annotationMode && (
+        <View style={annotStyles.toolbar}>
+          <View style={annotStyles.toolbarRow}>
+            {([
+              { type: 'marker' as AnnotationType, icon: 'location', label: 'Marker' },
+              { type: 'circle' as AnnotationType, icon: 'ellipse-outline', label: 'Circle' },
+              { type: 'arrow' as AnnotationType, icon: 'arrow-forward-outline', label: 'Arrow' },
+              { type: 'text' as AnnotationType, icon: 'chatbubble-outline', label: 'Text' },
+            ]).map((tool) => (
+              <Pressable
+                key={tool.type}
+                style={[annotStyles.toolBtn, annotationTool === tool.type && annotStyles.toolBtnActive]}
+                onPress={() => { setAnnotationTool(tool.type); setArrowStart(null); }}
+              >
+                <Ionicons name={tool.icon as any} size={18} color={annotationTool === tool.type ? '#FFFFFF' : palette.textSecondary} />
+                <Text style={[annotStyles.toolLabel, annotationTool === tool.type && { color: '#FFFFFF' }]}>{tool.label}</Text>
+              </Pressable>
+            ))}
+            <Pressable style={annotStyles.toolBtn} onPress={async () => {
+              if (annotations.length > 0) {
+                const last = annotations[annotations.length - 1];
+                await removeAnnotation(last.id);
+                setAnnotations((prev) => prev.slice(0, -1));
+              }
+            }}>
+              <Ionicons name="backspace-outline" size={18} color={palette.error} />
+              <Text style={[annotStyles.toolLabel, { color: palette.error }]}>Undo</Text>
+            </Pressable>
+            <Pressable style={annotStyles.toolBtn} onPress={() => setShowAnnotations((p) => !p)}>
+              <Ionicons name={showAnnotations ? 'eye' : 'eye-off-outline'} size={18} color={palette.textSecondary} />
+            </Pressable>
+            <Pressable style={annotStyles.toolBtn} onPress={() => { setAnnotationMode(false); navigation.navigate('Annotations'); }}>
+              <Ionicons name="list-outline" size={18} color={palette.accent} />
+            </Pressable>
+          </View>
+          <View style={annotStyles.colorRow}>
+            {ANNOTATION_COLORS.map((c) => (
+              <Pressable
+                key={c.color}
+                style={[annotStyles.colorDot, { backgroundColor: c.color }, annotationColor === c.color && annotStyles.colorDotActive]}
+                onPress={() => setAnnotationColor(c.color)}
+              />
+            ))}
+          </View>
+          <Text style={annotStyles.hint}>
+            {annotationTool === 'marker' && 'Tap map to place a marker'}
+            {annotationTool === 'circle' && (arrowStart ? 'Tap to set radius' : 'Tap center of circle')}
+            {annotationTool === 'arrow' && (arrowStart ? 'Tap to set arrow end' : 'Tap arrow start point')}
+            {annotationTool === 'text' && 'Tap map to place a note'}
+          </Text>
+        </View>
+      )}
+
+      {/* ── Annotation text input modal ────────────────────────────── */}
+      <Modal visible={showAnnotationTextModal} transparent animationType="fade" onRequestClose={() => setShowAnnotationTextModal(false)}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={annotStyles.modalOverlay}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={annotStyles.modalContainer}>
+              <View style={annotStyles.modalCard}>
+                <Text style={annotStyles.modalTitle}>Add Note</Text>
+                <TextInput
+                  style={annotStyles.modalInput}
+                  placeholder="Enter annotation text..."
+                  placeholderTextColor={palette.textDim}
+                  value={annotationTextInput}
+                  onChangeText={setAnnotationTextInput}
+                  autoFocus
+                  maxLength={200}
+                  multiline
+                />
+                <View style={annotStyles.modalButtons}>
+                  <Pressable style={annotStyles.modalBtnCancel} onPress={() => { setShowAnnotationTextModal(false); setAnnotationTextCoord(null); }}>
+                    <Text style={annotStyles.modalBtnCancelText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[annotStyles.modalBtnSave, !annotationTextInput.trim() && { opacity: 0.4 }]}
+                    disabled={!annotationTextInput.trim()}
+                    onPress={async () => {
+                      if (annotationTextCoord && annotationTextInput.trim()) {
+                        await handleSaveAnnotation({ type: 'text', coordinate: annotationTextCoord, label: annotationTextInput.trim(), color: annotationColor });
+                        setShowAnnotationTextModal(false);
+                        setAnnotationTextCoord(null);
+                        setAnnotationTextInput('');
+                      }
+                    }}
+                  >
+                    <Text style={annotStyles.modalBtnSaveText}>Save</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </KeyboardAvoidingView>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* ── Depth Contour Settings Modal ───────────────────────────── */}
+      <Modal visible={showContourModal} transparent animationType="slide" onRequestClose={() => setShowContourModal(false)}>
+        <TouchableWithoutFeedback onPress={() => setShowContourModal(false)}>
+          <View style={annotStyles.modalOverlay}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={contourStyles.card}>
+                <View style={contourStyles.header}>
+                  <Text style={contourStyles.title}>Depth Contours</Text>
+                  <Pressable onPress={() => setShowContourModal(false)}>
+                    <Ionicons name="close" size={22} color={palette.textMuted} />
+                  </Pressable>
+                </View>
+                <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: SCREEN_HEIGHT * 0.55 }}>
+                  <Text style={contourStyles.sectionLabel}>Contour Interval</Text>
+                  <View style={contourStyles.intervalRow}>
+                    {CONTOUR_INTERVALS.map((opt) => (
+                      <Pressable
+                        key={opt.value}
+                        style={[contourStyles.intervalBtn, contourSettings.interval === opt.value && contourStyles.intervalBtnActive]}
+                        onPress={() => { const u = { ...contourSettings, interval: opt.value }; setContourSettings(u); saveContourSettings(u); }}
+                      >
+                        <Text style={[contourStyles.intervalText, contourSettings.interval === opt.value && { color: '#FFFFFF' }]}>{opt.label}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+
+                  <Text style={contourStyles.sectionLabel}>Color Scheme</Text>
+                  {COLOR_SCHEMES.map((scheme) => {
+                    const isActive = contourSettings.colorScheme === scheme.key;
+                    const stops = scheme.key === 'custom' ? getColorStops(contourSettings) : scheme.stops;
+                    return (
+                      <Pressable
+                        key={scheme.key}
+                        style={[contourStyles.schemeRow, isActive && contourStyles.schemeRowActive]}
+                        onPress={() => { const u = { ...contourSettings, colorScheme: scheme.key }; setContourSettings(u); saveContourSettings(u); }}
+                      >
+                        <View style={contourStyles.schemeInfo}>
+                          <Text style={[contourStyles.schemeLabel, isActive && { color: palette.accent }]}>{scheme.label}</Text>
+                          <Text style={contourStyles.schemeDesc}>{scheme.description}</Text>
+                        </View>
+                        <View style={contourStyles.gradientPreview}>
+                          {stops.map((stop, i) => (<View key={i} style={[contourStyles.gradientStop, { backgroundColor: stop }]} />))}
+                        </View>
+                        {isActive && <Ionicons name="checkmark-circle" size={20} color={palette.accent} />}
+                      </Pressable>
+                    );
+                  })}
+
+                  <Text style={contourStyles.sectionLabel}>Opacity: {Math.round(contourSettings.opacity * 100)}%</Text>
+                  <View style={contourStyles.intervalRow}>
+                    {[0.3, 0.5, 0.7, 0.85, 1.0].map((val) => (
+                      <Pressable
+                        key={val}
+                        style={[contourStyles.intervalBtn, contourSettings.opacity === val && contourStyles.intervalBtnActive]}
+                        onPress={() => { const u = { ...contourSettings, opacity: val }; setContourSettings(u); saveContourSettings(u); }}
+                      >
+                        <Text style={[contourStyles.intervalText, contourSettings.opacity === val && { color: '#FFFFFF' }]}>{Math.round(val * 100)}%</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+
+                  <View style={contourStyles.toggleRow}>
+                    <Text style={contourStyles.toggleLabel}>Show Depth Labels</Text>
+                    <Pressable
+                      style={[contourStyles.toggleSwitch, contourSettings.showLabels && contourStyles.toggleSwitchActive]}
+                      onPress={() => { const u = { ...contourSettings, showLabels: !contourSettings.showLabels }; setContourSettings(u); saveContourSettings(u); }}
+                    >
+                      <View style={[contourStyles.toggleThumb, contourSettings.showLabels && contourStyles.toggleThumbActive]} />
+                    </Pressable>
+                  </View>
+
+                  <Pressable style={contourStyles.resetBtn} onPress={async () => { const d = await resetContourSettings(); setContourSettings(d); }}>
+                    <Ionicons name="refresh-outline" size={16} color={palette.textMuted} />
+                    <Text style={contourStyles.resetText}>Reset to Defaults</Text>
+                  </Pressable>
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       {/* Layer picker popover */}
       <LayerPicker
         visible={layerPickerVisible}
@@ -3214,14 +4759,70 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         onClose={() => setLayerPickerVisible(false)}
       />
 
-      {/* Contextual topo fishing hints — only when zoomed in */}
+      {/* Contextual topo fishing hints — only when zoomed in, no focused location */}
       {currentZoom >= 10 && !focusedLocation && (
         <TopoHintBubble zoom={currentZoom} />
       )}
 
+      {/* Contextual lake-specific tips — shown when exploring (zoomed in, no focused location) */}
+      {!focusedLocation && currentZoom >= 12 && contextualTips.length > 0 && !contextualTipsDismissed && (
+        <ContextualTipCard
+          tips={contextualTips}
+          waterbodyName={contextualWaterbodyName}
+          onDismiss={() => setContextualTipsDismissed(true)}
+        />
+      )}
+
+      {/* Tips modal — shown on-demand from focused card */}
+      {showTipsModal && contextualTips.length > 0 && (
+        <Modal transparent animationType="fade" visible={showTipsModal} onRequestClose={() => setShowTipsModal(false)}>
+          <TouchableWithoutFeedback onPress={() => setShowTipsModal(false)}>
+            <View style={styles.tipsModalBackdrop}>
+              <TouchableWithoutFeedback>
+                <View style={styles.tipsModalContent}>
+                  <View style={styles.tipsModalHeader}>
+                    <Ionicons name="bulb-outline" size={18} color={palette.warning} />
+                    <Text style={styles.tipsModalTitle}>Fishing Tips</Text>
+                    <Pressable onPress={() => setShowTipsModal(false)} hitSlop={8}>
+                      <Ionicons name="close" size={20} color={palette.textMuted} />
+                    </Pressable>
+                  </View>
+                  <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
+                    {contextualTips.map((tip, i) => (
+                      <View key={i} style={styles.tipsModalItem}>
+                        <Ionicons name={tip.icon as any} size={16} color={palette.accent} style={{ marginTop: 2 }} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.tipsModalItemTitle}>{tip.title}</Text>
+                          <Text style={styles.tipsModalItemText}>{tip.text}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
+
+      {/* Access point summary pill — shown when access points are highlighted */}
+      {focusedLocation && highlightedAccessSummary && (
+        <AccessPointSummaryPill
+          summary={highlightedAccessSummary}
+          onDismiss={() => {
+            setHighlightedAccessPoints([]);
+            setHighlightedAccessSummary(null);
+          }}
+        />
+      )}
+
       {/* Focused location info card */}
       {focusedLocation && (
-        <View style={styles.focusedCard}>
+        <Animated.View style={[styles.focusedCard, { transform: [{ translateY: focusedCardTranslateY }], opacity: focusedCardOpacity }]}>
+          {/* Swipe handle for dismiss gesture */}
+          <View {...focusedCardPanResponder.panHandlers} style={styles.focusedCardSwipeHandle}>
+            <View style={styles.focusedCardHandleBar} />
+          </View>
           <Pressable style={styles.focusedCardDismiss} onPress={() => setFocusedLocation(null)}>
             <Ionicons name="close" size={18} color={palette.textMuted} />
           </Pressable>
@@ -3232,35 +4833,162 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
               </Text>
             </View>
             <View style={{ flex: 1, gap: 2 }}>
-              <Text style={styles.focusedName}>{focusedLocation.name}</Text>
-              <Text style={styles.focusedSubtitle}>{focusedLocation.subtitle}</Text>
+              <Text style={styles.focusedName}>{focusedLocation.name || 'Unseen Site'}</Text>
+              <Text style={styles.focusedSubtitle}>{focusedLocation.subtitle || 'Water Body'}</Text>
               <View style={styles.focusedTags}>
-                <View style={styles.focusedTag}>
-                  <Ionicons name="car-outline" size={10} color={palette.accent} />
-                  <Text style={styles.focusedTagText}>Parking</Text>
-                </View>
-                <View style={styles.focusedTag}>
-                  <Ionicons name="boat-outline" size={10} color={palette.accent} />
-                  <Text style={styles.focusedTagText}>Boat Launch</Text>
-                </View>
-                <View style={styles.focusedTag}>
-                  <Ionicons name="walk-outline" size={10} color={palette.accent} />
-                  <Text style={styles.focusedTagText}>Shore Access</Text>
-                </View>
+                {focusedLocation.id.startsWith('osm-') ? (
+                  <>
+                    <View style={styles.focusedTag}>
+                      <Ionicons name="water-outline" size={10} color="#3B82C4" />
+                      <Text style={styles.focusedTagText}>Water Body</Text>
+                    </View>
+                    <View style={styles.focusedTag}>
+                      <Ionicons name="globe-outline" size={10} color="#3B82C4" />
+                      <Text style={styles.focusedTagText}>OSM</Text>
+                    </View>
+                  </>
+                ) : highlightedAccessSummary ? (
+                  <>
+                    {highlightedAccessSummary.boat_launch > 0 && (
+                      <View style={styles.focusedTag}>
+                        <Ionicons name="boat-outline" size={10} color={ACCESS_POINT_CONFIG.boat_launch.color} />
+                        <Text style={styles.focusedTagText}>{highlightedAccessSummary.boat_launch} Boat Launch{highlightedAccessSummary.boat_launch > 1 ? 'es' : ''}</Text>
+                      </View>
+                    )}
+                    {highlightedAccessSummary.parking > 0 && (
+                      <View style={styles.focusedTag}>
+                        <Ionicons name="car-outline" size={10} color={ACCESS_POINT_CONFIG.parking.color} />
+                        <Text style={styles.focusedTagText}>{highlightedAccessSummary.parking} Parking</Text>
+                      </View>
+                    )}
+                    {highlightedAccessSummary.trailhead > 0 && (
+                      <View style={styles.focusedTag}>
+                        <Ionicons name="walk-outline" size={10} color={ACCESS_POINT_CONFIG.trailhead.color} />
+                        <Text style={styles.focusedTagText}>{highlightedAccessSummary.trailhead} Trailhead{highlightedAccessSummary.trailhead > 1 ? 's' : ''}</Text>
+                      </View>
+                    )}
+                    {highlightedAccessSummary.shore_fishing > 0 && (
+                      <View style={styles.focusedTag}>
+                        <Ionicons name="fish-outline" size={10} color={ACCESS_POINT_CONFIG.shore_fishing.color} />
+                        <Text style={styles.focusedTagText}>{highlightedAccessSummary.shore_fishing} Shore Access</Text>
+                      </View>
+                    )}
+                    {highlightedAccessLoading && (
+                      <ActivityIndicator size="small" color={palette.accent} />
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.focusedTag}>
+                      <Ionicons name="car-outline" size={10} color={palette.accent} />
+                      <Text style={styles.focusedTagText}>Parking</Text>
+                    </View>
+                    <View style={styles.focusedTag}>
+                      <Ionicons name="boat-outline" size={10} color={palette.accent} />
+                      <Text style={styles.focusedTagText}>Boat Launch</Text>
+                    </View>
+                    <View style={styles.focusedTag}>
+                      <Ionicons name="walk-outline" size={10} color={palette.accent} />
+                      <Text style={styles.focusedTagText}>Shore Access</Text>
+                    </View>
+                  </>
+                )}
               </View>
             </View>
           </View>
-          <Pressable
-            style={styles.focusedDetailsBtn}
-            onPress={() => {
-              setFocusedLocation(null);
-              navigation.navigate('LocationDetail', { locationId: focusedLocation.id });
-            }}
-          >
-            <Ionicons name="information-circle-outline" size={16} color="#FFFFFF" />
-            <Text style={styles.focusedDetailsBtnText}>More Details</Text>
-          </Pressable>
-        </View>
+          {/* Inline fishing insights — bite rating, pressure, species, best time */}
+          <SpotInsightsCard
+            lat={focusedLocation.lat}
+            lon={focusedLocation.lon}
+            locationName={focusedLocation.name}
+            compact
+          />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {contextualTips.length > 0 && (
+              <Pressable
+                style={[styles.focusedTipsBtn]}
+                onPress={() => setShowTipsModal(true)}
+              >
+                <Ionicons name="bulb-outline" size={16} color={palette.warning} />
+              </Pressable>
+            )}
+            {focusedLocation.id.startsWith('osm-') && (
+              <Pressable
+                style={[styles.focusedDetailsBtn, { backgroundColor: '#3B82C4', flex: 1 }]}
+                onPress={() => {
+                  const url = Platform.select({
+                    ios: `maps:?daddr=${focusedLocation.lat},${focusedLocation.lon}`,
+                    android: `google.navigation:q=${focusedLocation.lat},${focusedLocation.lon}`,
+                    default: `https://www.google.com/maps/dir/?api=1&destination=${focusedLocation.lat},${focusedLocation.lon}`,
+                  });
+                  if (url) {
+                    import('react-native').then(({ Linking: L }) => L.openURL(url));
+                  }
+                }}
+              >
+                <Ionicons name="navigate-outline" size={16} color="#FFFFFF" />
+                <Text style={styles.focusedDetailsBtnText}>Directions</Text>
+              </Pressable>
+            )}
+            <Pressable
+              style={[styles.focusedDetailsBtn, { flex: 1 }]}
+              onPress={() => {
+                setFocusedLocation(null);
+                navigation.navigate('LocationDetail', { locationId: focusedLocation.id });
+              }}
+            >
+              <Ionicons name="information-circle-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.focusedDetailsBtnText}>More Details</Text>
+            </Pressable>
+          </View>
+        </Animated.View>
+      )}
+
+      {/* Quick Action FAB */}
+      {!focusedLocation && (
+        <QuickActionFAB
+          actions={[
+            {
+              key: 'catch',
+              label: 'Log Catch',
+              icon: 'camera',
+              color: '#E53935',
+              onPress: () => navigation.navigate('CatchReport', {
+                lat: userLocation?.lat,
+                lon: userLocation?.lon,
+              }),
+            },
+            {
+              key: 'track',
+              label: 'Record Trip',
+              icon: 'play',
+              color: '#E65100',
+              onPress: () => navigation.navigate('TrackRecording'),
+            },
+            {
+              key: 'spot',
+              label: 'Mark Spot',
+              icon: 'pin',
+              color: '#2E7D32',
+              onPress: () => {
+                if (userLocation) {
+                  setPendingCoord({ latitude: userLocation.lat, longitude: userLocation.lon });
+                  setShowWaypointModal(true);
+                }
+              },
+            },
+            {
+              key: 'conditions',
+              label: 'Check Conditions',
+              icon: 'water',
+              color: '#1565C0',
+              onPress: () => navigation.navigate('WaterInsights', {
+                lat: userLocation?.lat,
+                lon: userLocation?.lon,
+              }),
+            },
+          ]}
+        />
       )}
 
       {/* Bottom sheet with location list (merged from Explore) */}
@@ -3288,12 +5016,25 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             </ScrollView>
           )}
 
+          {/* Quick area insights when sheet is expanded */}
+          {userLocation && !search.trim() && (
+            <View style={styles.sheetInsightsWrapper}>
+              <SpotInsightsCard
+                lat={userLocation.lat}
+                lon={userLocation.lon}
+                locationName="Your Area"
+              />
+            </View>
+          )}
+
           {/* Count */}
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>
               {search.trim() ? `Results` : `Nearby`}
             </Text>
-            <Text style={styles.sheetCount}>{displayList.length} spots</Text>
+            <Text style={styles.sheetCount}>
+              {displayList.length} spots{discoveredSpots.length > 0 ? ` (${discoveredSpots.length} discovered)` : ''}{discoveryLoading ? ' ...' : ''}
+            </Text>
           </View>
 
           {/* Site card list */}
@@ -3317,10 +5058,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         </View>
       )}
 
-      {/* Loading overlay */}
+      {/* Subtle loading indicator — never blocks the map */}
       {loading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator color={palette.accent} size="large" />
+        <View style={styles.loadingBadge}>
+          <ActivityIndicator color={palette.accent} size="small" />
         </View>
       )}
 
@@ -3401,14 +5142,14 @@ const styles = StyleSheet.create({
   // ── Map callout ──────────────────────────────────────────────────
   calloutBubble: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 10,
     shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 5,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
     minWidth: 160,
     maxWidth: 220,
   },
@@ -3450,20 +5191,21 @@ const styles = StyleSheet.create({
   },
   filterChipsRow: {
     gap: 6,
-    paddingRight: 8,
+    paddingRight: 56,
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
     shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   filterChipActive: {
     backgroundColor: palette.accent,
@@ -3479,27 +5221,134 @@ const styles = StyleSheet.create({
   // Topo hint bubble
   topoHintBubble: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 190 : 150,
-    right: 12,
-    maxWidth: 240,
+    bottom: Platform.OS === 'ios' ? 130 : 100,
+    alignSelf: 'center',
+    left: 16,
+    right: 76,
+    maxWidth: SCREEN_WIDTH - 92,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
     paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderRadius: 10,
     shadowColor: '#000',
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.06,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
+    elevation: 3,
   },
   topoHintBubbleText: {
     flex: 1,
+    color: palette.textSecondary,
+    fontSize: 10,
+    lineHeight: 14,
+  },
+  // Contextual tip card (Feature 1)
+  // Positioned above the focused card, avoiding right-side button column
+  contextualTipCard: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 130 : 100,
+    left: 12,
+    right: 76,
+    maxWidth: SCREEN_WIDTH - 88,
+    backgroundColor: 'rgba(255, 255, 255, 0.90)',
+    borderRadius: 12,
+    padding: 10,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+    zIndex: 5,
+  },
+  contextualTipHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  contextualTipHeaderText: {
+    flex: 1,
+    fontFamily: Platform.OS === 'ios' ? 'Playfair Display' : undefined,
+    fontSize: 13,
+    fontWeight: '700',
     color: palette.text,
+  },
+  contextualTipClose: {
+    padding: 2,
+  },
+  contextualTipBody: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'flex-start',
+  },
+  contextualTipTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: palette.text,
+    marginBottom: 2,
+  },
+  contextualTipText: {
     fontSize: 11,
-    lineHeight: 15,
+    lineHeight: 16,
+    color: palette.textSecondary,
+  },
+  contextualTipDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 4,
+    paddingTop: 2,
+  },
+  contextualTipDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: palette.borderLight,
+  },
+  contextualTipDotActive: {
+    backgroundColor: palette.accent,
+  },
+  // Access summary pill (Feature 2)
+  accessSummaryPill: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 200 : 160,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.10,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
+    maxWidth: SCREEN_WIDTH - 60,
+  },
+  accessSummaryText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: palette.textSecondary,
+  },
+  // Highlighted access point markers (Feature 2)
+  highlightedApMarker: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2.5,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOpacity: 0.20,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 6,
   },
   // Focused location card
   focusedCard: {
@@ -3508,14 +5357,84 @@ const styles = StyleSheet.create({
     left: 12,
     right: 12,
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 14,
-    gap: 10,
+    borderRadius: 16,
+    paddingTop: 4,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 12,
     shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 10,
+  },
+  focusedCardSwipeHandle: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
+  focusedCardHandleBar: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: palette.borderLight,
+  },
+  focusedTipsBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,193,7,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Tips modal styles
+  tipsModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+    paddingBottom: Platform.OS === 'ios' ? 120 : 90,
+    paddingHorizontal: 16,
+  },
+  tipsModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 10,
+  },
+  tipsModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  tipsModalTitle: {
+    flex: 1,
+    fontFamily: Platform.OS === 'ios' ? 'Playfair Display' : undefined,
+    fontSize: 16,
+    fontWeight: '700',
+    color: palette.text,
+  },
+  tipsModalItem: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: palette.borderLight,
+  },
+  tipsModalItemTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: palette.text,
+    marginBottom: 2,
+  },
+  tipsModalItemText: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: palette.textSecondary,
   },
   focusedCardDismiss: {
     position: 'absolute',
@@ -3580,8 +5499,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     backgroundColor: palette.accent,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: 11,
+    borderRadius: 10,
   },
   focusedDetailsBtnText: {
     color: '#FFFFFF',
@@ -3626,7 +5545,7 @@ const styles = StyleSheet.create({
   // ── Map layer toggle ─────────────────────────────────────────────
   layerButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 120 : 80,
+    top: Platform.OS === 'ios' ? 155 : 115,
     right: 16,
     width: 44,
     height: 44,
@@ -3665,15 +5584,15 @@ const styles = StyleSheet.create({
     top: Platform.OS === 'ios' ? 170 : 130,
     right: 16,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 8,
     minWidth: 220,
     maxHeight: '70%',
     shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
   },
   layerSectionTitle: {
     fontSize: 10,
@@ -3745,32 +5664,38 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: palette.background,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 6,
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 10,
   },
   handleArea: {
-    height: 56,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 8,
+    paddingTop: 10,
     cursor: 'grab' as any,
   },
   dragHandle: {
-    width: 44,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#C5C5C0',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: palette.border,
   },
   handleHint: {
-    color: '#C5C5C0',
-    fontSize: 10,
-    marginTop: 2,
-    letterSpacing: 2,
+    color: 'transparent',
+    fontSize: 0,
+    height: 0,
+  },
+  sheetInsightsWrapper: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: palette.borderLight,
+    marginBottom: 8,
   },
   sheetHeader: {
     flexDirection: 'row',
@@ -3780,9 +5705,11 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   sheetTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'PlayfairDisplay-Bold',
+    fontSize: 17,
+    fontWeight: '400',
     color: palette.text,
+    letterSpacing: -0.2,
   },
   sheetCount: {
     fontSize: 13,
@@ -3802,9 +5729,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     backgroundColor: palette.surface,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
   topPickRank: {
     fontSize: 11,
@@ -3826,11 +5758,17 @@ const styles = StyleSheet.create({
   // ── Site card ─────────────────────────────────────────────────
   card: {
     backgroundColor: palette.surface,
-    borderRadius: 10,
-    padding: 14,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   cardPressed: {
-    opacity: 0.85,
+    opacity: 0.92,
+    transform: [{ scale: 0.98 }],
   },
   cardHeader: {
     flexDirection: 'row',
@@ -3933,7 +5871,7 @@ const styles = StyleSheet.create({
   // ── Ruler / measure mode ────────────────────────────────────────
   rulerButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 170 : 130,
+    top: Platform.OS === 'ios' ? 205 : 165,
     right: 16,
     width: 44,
     height: 44,
@@ -4036,11 +5974,19 @@ const styles = StyleSheet.create({
   },
 
   // ── Loading ──────────────────────────────────────────────────────
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(250, 250, 247, 0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  loadingBadge: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 40,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(250, 250, 247, 0.85)',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
 
   // ── Waypoint modal ───────────────────────────────────────────────
@@ -4054,12 +6000,17 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     backgroundColor: palette.background,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     paddingHorizontal: 20,
     paddingBottom: Platform.OS === 'ios' ? 36 : 24,
     paddingTop: 12,
     maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 10,
   },
   modalHandle: {
     width: 36,
@@ -4070,9 +6021,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalTitle: {
+    fontFamily: 'PlayfairDisplay-Bold',
     fontSize: 22,
-    fontWeight: '600',
+    fontWeight: '400',
     color: palette.text,
+    letterSpacing: -0.3,
     marginBottom: 4,
   },
   modalCoords: {
@@ -4205,7 +6158,7 @@ const styles = StyleSheet.create({
   // ── Marina POI styles ──────────────────────────────────────────────
   marinaButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 220 : 180,
+    top: Platform.OS === 'ios' ? 255 : 215,
     right: 16,
     width: 44,
     height: 44,
@@ -4227,7 +6180,7 @@ const styles = StyleSheet.create({
     top: -4,
     right: -4,
   },
-  windButton: { position: 'absolute', top: Platform.OS === 'ios' ? 270 : 230, right: 16, width: 44, height: 44, borderRadius: 22, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  windButton: { position: 'absolute', top: Platform.OS === 'ios' ? 305 : 265, zIndex: 10, right: 16, width: 44, height: 44, borderRadius: 22, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
   windButtonActive: { backgroundColor: palette.accent },
   windSpinner: { position: 'absolute', top: -4, right: -4 },
   windBanner: { position: 'absolute', top: Platform.OS === 'ios' ? 60 : 40, right: 70, flexDirection: 'row', alignItems: 'center', backgroundColor: palette.surface, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
@@ -4304,6 +6257,146 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: palette.textSecondary,
     lineHeight: 15,
+  },
+
+  // ── Access points styles ────────────────────────────────────────────
+  accessButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 455 : 415,
+    right: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: palette.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+    zIndex: 10,
+  },
+  accessButtonActive: {
+    backgroundColor: '#16A34A',
+  },
+  accessSpinner: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+  },
+  // ── Catch photo overlay styles ────────────────────────────────────
+  photosButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 505 : 465,
+    right: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: palette.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+    zIndex: 10,
+  },
+  photosButtonActive: {
+    backgroundColor: '#7C3AED',
+  },
+  photosBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#7C3AED',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+    paddingHorizontal: 3,
+  },
+  photosBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  photosSpinner: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+  },
+  catchPhotoPin: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+    borderWidth: 2,
+    borderColor: '#7C3AED',
+  },
+  catchPhotoInner: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#7C3AED',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  catchPhotoCallout: {
+    width: 180,
+    padding: 8,
+    gap: 2,
+  },
+  catchPhotoCalloutTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: palette.text,
+  },
+  catchPhotoCalloutDate: {
+    fontSize: 11,
+    color: palette.textMuted,
+  },
+  catchPhotoCalloutDetail: {
+    fontSize: 11,
+    color: palette.textSecondary,
+  },
+  accessBanner: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 40,
+    right: 70,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  accessPinOuter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2.5,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
   },
 
   // ── Weather alert banner ──────────────────────────────────────────
@@ -4387,4 +6480,121 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
+
+  // ── Recording overlay ──────────────────────────────────────────
+  recordingBanner: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 118 : 78,
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(196, 75, 75, 0.94)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
+    shadowColor: '#C44B4B',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  recordingBannerDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  recordingBannerDotInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FFFFFF',
+  },
+  recordingBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  recordingBannerSub: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 1,
+  },
+  dismissTrackBanner: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 118 : 78,
+    left: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 3,
+  },
+  dismissTrackText: {
+    fontSize: 12,
+    color: palette.textMuted,
+    fontWeight: '500',
+  },
+});
+
+const annotStyles = StyleSheet.create({
+  toolbar: { position: 'absolute', bottom: Platform.OS === 'ios' ? 100 : 80, left: 12, right: 12, backgroundColor: palette.surface, borderRadius: 16, padding: 10, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: -2 }, elevation: 6 },
+  toolbarRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', marginBottom: 6 },
+  toolBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10, backgroundColor: palette.surfaceAlt || '#F0F0F0', minWidth: 52 },
+  toolBtnActive: { backgroundColor: palette.accent },
+  toolLabel: { fontSize: 10, fontWeight: '600', color: palette.textSecondary, marginTop: 2 },
+  colorRow: { flexDirection: 'row', justifyContent: 'center', gap: 10, paddingTop: 4 },
+  colorDot: { width: 24, height: 24, borderRadius: 12 },
+  colorDotActive: { borderWidth: 2.5, borderColor: palette.text },
+  hint: { fontSize: 11, color: palette.textMuted, textAlign: 'center', marginTop: 4 },
+  modalOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', zIndex: 9999 },
+  modalContainer: { width: '85%' },
+  modalCard: { backgroundColor: palette.surface, borderRadius: 16, padding: 20, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, elevation: 8 },
+  modalTitle: { fontSize: 18, fontFamily: 'PlayfairDisplay-Bold', color: palette.text, marginBottom: 12 },
+  modalInput: { backgroundColor: palette.background, borderRadius: 10, padding: 12, fontSize: 15, color: palette.text, borderWidth: 1, borderColor: palette.border, minHeight: 80, textAlignVertical: 'top' },
+  modalButtons: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 14 },
+  modalBtnCancel: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 10 },
+  modalBtnCancelText: { fontSize: 14, color: palette.textSecondary, fontWeight: '600' },
+  modalBtnSave: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10, backgroundColor: palette.accent },
+  modalBtnSaveText: { fontSize: 14, color: '#FFFFFF', fontWeight: '700' },
+  annotCallout: { backgroundColor: palette.surface, padding: 8, borderRadius: 8, maxWidth: 160, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+  annotCalloutLabel: { fontSize: 13, fontWeight: '600', color: palette.text },
+  annotCalloutDate: { fontSize: 10, color: palette.textMuted, marginTop: 2 },
+  annotCalloutDelete: { fontSize: 11, color: palette.error, fontWeight: '600', marginTop: 4 },
+});
+
+const contourStyles = StyleSheet.create({
+  card: { backgroundColor: palette.surface, borderRadius: 16, padding: 20, width: '90%', maxWidth: 400, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, elevation: 8 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  title: { fontSize: 18, fontFamily: 'PlayfairDisplay-Bold', color: palette.text },
+  sectionLabel: { fontSize: 13, fontWeight: '700', color: palette.textSecondary, marginTop: 14, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  intervalRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  intervalBtn: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, backgroundColor: palette.surfaceRaised, borderWidth: 1, borderColor: palette.border },
+  intervalBtnActive: { backgroundColor: palette.accent, borderColor: palette.accent },
+  intervalText: { fontSize: 13, fontWeight: '600', color: palette.text },
+  schemeRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 10, borderRadius: 10, marginBottom: 6, borderWidth: 1, borderColor: palette.borderLight },
+  schemeRowActive: { borderColor: palette.accent, backgroundColor: palette.accentDim },
+  schemeInfo: { flex: 1, marginRight: 10 },
+  schemeLabel: { fontSize: 14, fontWeight: '600', color: palette.text },
+  schemeDesc: { fontSize: 11, color: palette.textMuted, marginTop: 2 },
+  gradientPreview: { flexDirection: 'row', borderRadius: 4, overflow: 'hidden', marginRight: 8 },
+  gradientStop: { width: 16, height: 16 },
+  toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingVertical: 8 },
+  toggleLabel: { fontSize: 14, fontWeight: '600', color: palette.text },
+  toggleSwitch: { width: 48, height: 28, borderRadius: 14, backgroundColor: palette.surfaceRaised, borderWidth: 1, borderColor: palette.border, justifyContent: 'center', paddingHorizontal: 2 },
+  toggleSwitchActive: { backgroundColor: palette.accent, borderColor: palette.accent },
+  toggleThumb: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+  toggleThumbActive: { alignSelf: 'flex-end' },
+  resetBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, paddingVertical: 10 },
+  resetText: { fontSize: 13, color: palette.textMuted, fontWeight: '600' },
 });

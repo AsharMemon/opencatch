@@ -55,4 +55,42 @@ export const type = {
     fontWeight: '400',
     letterSpacing: -0.5,
   } as TextStyle,
+
+  // ── Body text presets (sans-serif) ──────────────────────────────
+
+  body: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '400',
+    letterSpacing: 0,
+  } as TextStyle,
+
+  bodySmall: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '400',
+    letterSpacing: 0.1,
+  } as TextStyle,
+
+  caption: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '500',
+    letterSpacing: 0.3,
+  } as TextStyle,
+
+  /** Tabular figures for stats / numbers */
+  stat: {
+    fontSize: 22,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.2,
+  } as TextStyle,
+
+  /** Tab bar label */
+  tabLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  } as TextStyle,
 };

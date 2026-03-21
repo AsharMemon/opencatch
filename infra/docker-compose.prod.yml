@@ -1,0 +1,185 @@
+# OpenCatch Production Docker Compose
+# Usage:
+#   cp .env.prod.example .env.prod
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#
+# Required env vars in .env.prod:
+#   POSTGRES_PASSWORD, JWT_SECRET, DOMAIN (e.g. opencatch.app)
+#   Optional: CERTBOT_EMAIL for Let's Encrypt
+
+services:
+  # ── PostgreSQL + PostGIS ─────────────────────────────────────
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: opencatch
+      POSTGRES_USER: opencatch
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./db/02-seed-locations.sql:/docker-entrypoint-initdb.d/02-seed-locations.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opencatch"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # No port exposure — only reachable via internal network
+    networks:
+      - internal
+
+  # ── Redis cache ──────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD:-opencatch-redis}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-opencatch-redis}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - internal
+
+  # ── FastAPI prediction server ────────────────────────────────
+  api:
+    build:
+      context: ..
+      dockerfile: infra/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://opencatch:${POSTGRES_PASSWORD}@db:5432/opencatch
+      REDIS_URL: redis://:${REDIS_PASSWORD:-opencatch-redis}@redis:6379/0
+      MODEL_DIR: /app/castline/models
+      ENVIRONMENT: production
+      JWT_SECRET: ${JWT_SECRET}
+      RATE_LIMIT_RPM: "60"
+      CORS_ORIGINS: '["https://${DOMAIN:-opencatch.app}","https://www.${DOMAIN:-opencatch.app}"]'
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+    networks:
+      - internal
+
+  # ── Martin vector tile server ────────────────────────────────
+  martin:
+    image: ghcr.io/maplibre/martin:v0.14.2
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://opencatch:${POSTGRES_PASSWORD}@db:5432/opencatch
+    volumes:
+      - ./martin/config.yaml:/config.yaml:ro
+    command: ["--config", "/config.yaml"]
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://0.0.0.0:3000/catalog"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - internal
+
+  # ── Background worker (data refresh) ─────────────────────────
+  worker:
+    build:
+      context: ..
+      dockerfile: infra/api/Dockerfile
+    restart: unless-stopped
+    command: ["python", "-m", "castline.api.tasks.refresh_conditions"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://opencatch:${POSTGRES_PASSWORD}@db:5432/opencatch
+      REDIS_URL: redis://:${REDIS_PASSWORD:-opencatch-redis}@redis:6379/0
+      MODEL_DIR: /app/castline/models
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - internal
+
+  # ── Nginx reverse proxy + TLS ──────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot-webroot:/var/www/certbot:ro
+      - certbot-certs:/etc/letsencrypt:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      martin:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - internal
+
+  # ── Certbot (Let's Encrypt) ────────────────────────────────
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - certbot-webroot:/var/www/certbot
+      - certbot-certs:/etc/letsencrypt
+    entrypoint: /bin/sh -c 'trap exit TERM; while :; do sleep 12h & wait $${!}; certbot renew --webroot -w /var/www/certbot --quiet; done'
+    networks:
+      - internal
+
+volumes:
+  pgdata:
+  certbot-webroot:
+  certbot-certs:
+
+networks:
+  internal:
+    driver: bridge

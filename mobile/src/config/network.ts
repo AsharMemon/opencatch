@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 
-const PROD_API_URL = 'https://api.castline.app';
-const PROD_TILE_URL = 'https://tiles.castline.app';
+const PROD_API_URL = 'https://api.opencatch.app';
+const PROD_TILE_URL = 'https://tiles.opencatch.app';
 
 function normalizeBaseUrl(value?: string | null): string | null {
   const trimmed = value?.trim();
@@ -41,3 +41,11 @@ export const API_BASE_URL =
 export const TILE_BASE_URL =
   normalizeBaseUrl(process.env.EXPO_PUBLIC_TILE_SERVER_URL) ??
   (__DEV__ ? defaultDevTileUrl : PROD_TILE_URL);
+
+/**
+ * Whether the tile server (Martin) is deployed and reachable in production.
+ * Flip to `true` once tiles.opencatch.app is live.
+ * In dev mode this is always true (local Docker Martin).
+ */
+export const TILE_SERVER_DEPLOYED: boolean =
+  !!process.env.EXPO_PUBLIC_TILE_SERVER_URL || __DEV__;
