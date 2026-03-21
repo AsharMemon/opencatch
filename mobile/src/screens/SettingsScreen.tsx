@@ -11,11 +11,16 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
 import { SettingsToggle, SettingsButton } from '../components/SettingsRow';
 import { api } from '../services/api';
+import { getAllCatches } from '../services/catchEnhancements';
+import { trackRecorder } from '../services/trackRecorder';
+import { useUnits } from '../hooks/useUnits';
 import type { UserSettings, UnitSystem, MapStyle } from '../types/models';
 
 const MAP_STYLE_LABELS: Record<MapStyle, string> = {
@@ -28,11 +33,19 @@ export function SettingsScreen() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [cacheSize, setCacheSize] = useState<string>('Calculating...');
   const [loading, setLoading] = useState(true);
+  const { units, toggle: toggleUnitsHook } = useUnits();
 
   useEffect(() => {
     loadSettings();
     estimateCacheSize();
   }, []);
+
+  // Keep local settings state in sync with the units hook
+  useEffect(() => {
+    if (settings && settings.units !== units) {
+      setSettings((prev) => (prev ? { ...prev, units } : prev));
+    }
+  }, [units]);
 
   const loadSettings = async () => {
     setLoading(true);
@@ -48,9 +61,20 @@ export function SettingsScreen() {
   const estimateCacheSize = async () => {
     try {
       const keys = await AsyncStorage.getAllKeys();
-      // Rough estimate: count keys as a proxy
-      const sizeMB = Math.max(0.1, keys.length * 0.01);
-      setCacheSize(`${sizeMB.toFixed(1)} MB (${keys.length} items)`);
+      // Read all values and sum their byte sizes for a real estimate
+      const pairs = await AsyncStorage.multiGet(keys);
+      let totalBytes = 0;
+      for (const [key, value] of pairs) {
+        totalBytes += (key?.length ?? 0) * 2; // UTF-16
+        totalBytes += (value?.length ?? 0) * 2;
+      }
+      const sizeMB = totalBytes / (1024 * 1024);
+      if (sizeMB >= 1) {
+        setCacheSize(`${sizeMB.toFixed(1)} MB (${keys.length} items)`);
+      } else {
+        const sizeKB = totalBytes / 1024;
+        setCacheSize(`${sizeKB.toFixed(0)} KB (${keys.length} items)`);
+      }
     } catch {
       setCacheSize('Unable to calculate');
     }
@@ -61,8 +85,9 @@ export function SettingsScreen() {
     api.updateSettings(patch);
   }, []);
 
-  const toggleUnit = () => {
+  const toggleUnit = async () => {
     if (!settings) return;
+    await toggleUnitsHook();
     const next: UnitSystem = settings.units === 'imperial' ? 'metric' : 'imperial';
     updateSetting({ units: next });
   };
@@ -104,12 +129,41 @@ export function SettingsScreen() {
     );
   };
 
-  const handleExportData = () => {
-    Alert.alert(
-      'Export Data',
-      'Your catch history and trip data will be exported. Use the Catch Export screen for CSV format.',
-      [{ text: 'OK' }],
-    );
+  const handleExportData = async () => {
+    try {
+      const [catches, tracks, currentSettings] = await Promise.all([
+        getAllCatches(),
+        trackRecorder.getSavedTracks(),
+        api.getSettings(),
+      ]);
+
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        app: 'OpenCatch',
+        version: '0.1.0',
+        catches,
+        tracks,
+        settings: currentSettings,
+      };
+
+      const json = JSON.stringify(exportData, null, 2);
+      const filename = `opencatch-export-${new Date().toISOString().slice(0, 10)}.json`;
+      const file = new (FileSystem as any).File((FileSystem as any).Paths.cache, filename);
+      (file as any).text = json;
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(file.uri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Export OpenCatch Data',
+          UTI: 'public.json',
+        });
+      } else {
+        Alert.alert('Export Saved', `Data exported to ${filename}`);
+      }
+    } catch (err) {
+      Alert.alert('Export Failed', 'Unable to export data. Please try again.');
+    }
   };
 
   if (loading || !settings) {
@@ -212,7 +266,7 @@ export function SettingsScreen() {
           <SettingsButton
             label="Storage Used"
             value={cacheSize}
-            onPress={() => {}}
+            onPress={estimateCacheSize}
           />
           <SettingsButton
             label="Clear Cache"
@@ -269,7 +323,7 @@ export function SettingsScreen() {
       {/* Branding */}
       <View style={styles.brandSection}>
         <Text style={styles.brandTitle}>OpenCatch</Text>
-        <Text style={styles.brandSubtitle}>AI-Powered Fishing Predictions</Text>
+        <Text style={styles.brandSubtitle}>Your fishing companion.</Text>
       </View>
 
       <View style={{ height: 40 }} />

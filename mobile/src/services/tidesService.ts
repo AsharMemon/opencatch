@@ -360,6 +360,12 @@ export async function getNearestTideStation(
  * predictions.forEach(p => console.log(p.label, p.time, p.heightFt));
  * ```
  */
+/**
+ * Datums to try in order. MLLW is most common for coastal stations,
+ * STND works for Great Lakes/inland stations, MSL is a common fallback.
+ */
+const DATUM_FALLBACK_ORDER = ['MLLW', 'STND', 'MSL', 'NAVD'] as const;
+
 export async function getTidePredictions(
   stationId: string,
   days: number = 3,
@@ -369,33 +375,51 @@ export async function getTidePredictions(
   const endDate = new Date();
   endDate.setDate(endDate.getDate() + clampedDays);
 
-  const params = new URLSearchParams({
-    product: 'predictions',
-    station: stationId,
-    begin_date: formatNoaaDate(beginDate),
-    end_date: formatNoaaDate(endDate),
-    datum: 'MLLW',
-    time_zone: 'lst_ldt',
-    units: 'english',
-    interval: 'hilo',
-    format: 'json',
-    application: 'OpenCatch',
-  });
+  // Try each datum in order — some stations only support certain datums
+  for (const datum of DATUM_FALLBACK_ORDER) {
+    try {
+      const params = new URLSearchParams({
+        product: 'predictions',
+        station: stationId,
+        begin_date: formatNoaaDate(beginDate),
+        end_date: formatNoaaDate(endDate),
+        datum,
+        time_zone: 'lst_ldt',
+        units: 'english',
+        interval: 'hilo',
+        format: 'json',
+        application: 'OpenCatch',
+      });
 
-  const data = await fetchNoaa<NoaaPredictionsResponse>(
-    `${DATA_BASE_URL}?${params.toString()}`,
-  );
+      const data = await fetchNoaa<NoaaPredictionsResponse>(
+        `${DATA_BASE_URL}?${params.toString()}`,
+      );
 
-  if (!data.predictions || data.predictions.length === 0) {
-    return [];
+      if (!data.predictions || data.predictions.length === 0) {
+        continue; // Try next datum
+      }
+
+      return data.predictions.map((p) => ({
+        time: noaaTimeToISO(p.t),
+        heightFt: parseFloat(p.v),
+        type: (p.type ?? 'H') as 'H' | 'L',
+        label: p.type === 'L' ? 'Low' : 'High',
+      }));
+    } catch (err) {
+      // If it's a datum error, try the next one
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('Datum') || msg.includes('datum') || msg.includes('predictions data')) {
+        console.warn(`[OpenCatch] Datum ${datum} failed for station ${stationId}, trying next...`);
+        continue;
+      }
+      // For non-datum errors (network, timeout), throw immediately
+      throw err;
+    }
   }
 
-  return data.predictions.map((p) => ({
-    time: noaaTimeToISO(p.t),
-    heightFt: parseFloat(p.v),
-    type: (p.type ?? 'H') as 'H' | 'L',
-    label: p.type === 'L' ? 'Low' : 'High',
-  }));
+  // All datums failed — return empty rather than throwing
+  console.warn(`[OpenCatch] No predictions available for station ${stationId} with any datum`);
+  return [];
 }
 
 /**
@@ -421,31 +445,43 @@ export async function getTideHourly(
   const endDate = new Date();
   endDate.setDate(endDate.getDate() + 1);
 
-  const params = new URLSearchParams({
-    product: 'predictions',
-    station: stationId,
-    begin_date: formatNoaaDate(beginDate),
-    end_date: formatNoaaDate(endDate),
-    datum: 'MLLW',
-    time_zone: 'lst_ldt',
-    units: 'english',
-    interval: 'h',
-    format: 'json',
-    application: 'OpenCatch',
-  });
+  for (const datum of DATUM_FALLBACK_ORDER) {
+    try {
+      const params = new URLSearchParams({
+        product: 'predictions',
+        station: stationId,
+        begin_date: formatNoaaDate(beginDate),
+        end_date: formatNoaaDate(endDate),
+        datum,
+        time_zone: 'lst_ldt',
+        units: 'english',
+        interval: 'h',
+        format: 'json',
+        application: 'OpenCatch',
+      });
 
-  const data = await fetchNoaa<NoaaPredictionsResponse>(
-    `${DATA_BASE_URL}?${params.toString()}`,
-  );
+      const data = await fetchNoaa<NoaaPredictionsResponse>(
+        `${DATA_BASE_URL}?${params.toString()}`,
+      );
 
-  if (!data.predictions || data.predictions.length === 0) {
-    return [];
+      if (!data.predictions || data.predictions.length === 0) {
+        continue;
+      }
+
+      return data.predictions.map((p) => ({
+        time: noaaTimeToISO(p.t),
+        heightFt: parseFloat(p.v),
+      }));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('Datum') || msg.includes('datum') || msg.includes('predictions data')) {
+        continue;
+      }
+      throw err;
+    }
   }
 
-  return data.predictions.map((p) => ({
-    time: noaaTimeToISO(p.t),
-    heightFt: parseFloat(p.v),
-  }));
+  return [];
 }
 
 /**

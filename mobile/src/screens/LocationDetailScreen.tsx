@@ -63,17 +63,17 @@ function activityColor(level: ActivityLevel): string {
     case 'very-active': return palette.pinHot;
     case 'active':      return palette.pinHeatingUp;
     case 'moderate':    return palette.pinFair;
-    case 'slow':        return palette.pinSlow;
+    case 'low':         return palette.pinSlow;
     case 'inactive':    return palette.textDim;
   }
 }
 
 function activityLabel(level: ActivityLevel): string {
   switch (level) {
-    case 'very-active': return 'Very Active';
-    case 'active':      return 'Active';
-    case 'moderate':    return 'Moderate';
-    case 'slow':        return 'Slow';
+    case 'very-active': return 'Excellent';
+    case 'active':      return 'Good';
+    case 'moderate':    return 'Fair';
+    case 'low':         return 'Poor';
     case 'inactive':    return 'Inactive';
   }
 }
@@ -596,7 +596,16 @@ async function fetchOpenMeteoConditions(
     const windMph = Math.round(cw.windspeed * 0.621371);
 
     // Compute solunar and moon info from bestTimeWindows service
-    const biteForecast = getDailyBiteForecast(lat, lon);
+    // Apply weather penalties based on actual current conditions
+    const biteForecast = getDailyBiteForecast(lat, lon, {
+      tempF: airTempF,
+      windMph,
+      weatherPenalty: {
+        weatherCode,
+        tempF: airTempF,
+        windMph,
+      },
+    });
 
     return {
       airTemp: airTempF,
@@ -709,8 +718,14 @@ export function LocationDetailScreen({ route, navigation }: Props) {
     let cancelled = false;
     const { lat, lon, name } = location;
 
-    // Synchronous computations
-    setSpeciesData(getSpeciesLikelihood(lat, lon));
+    // Only show species distribution for known (non-OSM) locations with real data.
+    // OSM-discovered spots don't have verified species data.
+    const isDiscovered = location.id.startsWith('osm-');
+    if (!isDiscovered) {
+      setSpeciesData(getSpeciesLikelihood(lat, lon));
+    } else {
+      setSpeciesData([]);
+    }
     setHourlyPressure(getHourlyPressure());
     setCurrentPressure(getCurrentPressure({ lat, lon }));
     setBiteForecasts(getWeeklyBiteForecast(lat, lon));
@@ -753,43 +768,40 @@ export function LocationDetailScreen({ route, navigation }: Props) {
         conditions: 50,
         trophyPotential: 40,
       };
-  const safeScore = predScore ?? location.score ?? 50;
+  const rawScore = predScore ?? location.score ?? 0;
+  // If score is 0 (not yet computed) and prediction is still loading, show skeleton
+  const scoreIsLoading = rawScore === 0 && predictionLoading;
+  const safeScore = rawScore;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       {/* Score section */}
       <View style={styles.scoreSection}>
-        {/* Condition band badge */}
-        {(() => {
-          const band = getConditionBand(safeScore);
-          const cfg = conditionConfig[band];
-          return (
-            <View style={[styles.conditionBadge, { backgroundColor: cfg.bgTint }]}>
-              <Ionicons name={cfg.ionicon as any} size={18} color={cfg.color} />
-              <Text style={[styles.conditionBadgeLabel, { color: cfg.color }]}>{cfg.label}</Text>
-            </View>
-          );
-        })()}
-        <ScoreGauge score={safeScore} size={180} />
+        {/* Condition band badge — hide when score is loading */}
+        {scoreIsLoading ? (
+          <View style={{ alignItems: 'center', paddingVertical: 20, gap: 8 }}>
+            <SkeletonLoader width={100} height={100} borderRadius={50} />
+            <SkeletonLoader width="40%" height={16} borderRadius={4} />
+          </View>
+        ) : (
+          <>
+            {(() => {
+              const band = getConditionBand(safeScore);
+              const cfg = conditionConfig[band];
+              return (
+                <View style={[styles.conditionBadge, { backgroundColor: cfg.bgTint }]}>
+                  <Ionicons name={cfg.ionicon as any} size={18} color={cfg.color} />
+                  <Text style={[styles.conditionBadgeLabel, { color: cfg.color }]}>{cfg.label}</Text>
+                </View>
+              );
+            })()}
+            <ScoreGauge score={safeScore} size={180} />
+          </>
+        )}
         <Text style={styles.locationName}>{location.name || 'Unseen Site'}</Text>
         <Text style={styles.locationSubtitle}>{location.subtitle || 'Water Body'}</Text>
 
-        {/* Busyness / Popularity indicator */}
-        <View style={styles.busynessRow}>
-          <View style={styles.busynessDots}>
-            {[1, 2, 3, 4, 5].map((level) => (
-              <View
-                key={level}
-                style={[
-                  styles.busynessDot,
-                  { backgroundColor: level <= 2 ? palette.success : palette.surfaceRaised },
-                ]}
-              />
-            ))}
-          </View>
-          <Text style={styles.busynessText}>Low activity</Text>
-          <Text style={styles.busynessDetail}>3 catches logged this week</Text>
-        </View>
+        {/* Busyness / Popularity — only shown when real data is available */}
       </View>
 
       {/* Score Breakdown */}
@@ -864,6 +876,18 @@ export function LocationDetailScreen({ route, navigation }: Props) {
       {speciesData.length > 0 && (
         <SpeciesDistributionChart species={speciesData} />
       )}
+      {/* Species data unavailable notice for discovered (OSM) spots */}
+      {speciesData.length === 0 && location.id.startsWith('osm-') && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Species</Text>
+          <View style={{ alignItems: 'center', paddingVertical: 12, gap: 6 }}>
+            <Ionicons name="fish-outline" size={24} color={palette.textDim} />
+            <Text style={{ color: palette.textMuted, fontSize: 13, textAlign: 'center' }}>
+              Species data not available for this location
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* Water Conditions (legacy USGS card) */}
       {location.waterLevel && (
@@ -908,71 +932,8 @@ export function LocationDetailScreen({ route, navigation }: Props) {
         </View>
       </View>
 
-      {/* Access & Parking */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Access & Parking</Text>
-        <View style={styles.accessGrid}>
-          <View style={styles.accessItem}>
-            <View style={[styles.accessIconBg, { backgroundColor: 'rgba(61, 139, 55, 0.08)' }]}>
-              <Ionicons name="car-outline" size={18} color={palette.success} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.accessLabel}>Parking</Text>
-              <Text style={styles.accessValue}>Free lot, 30+ spots</Text>
-            </View>
-          </View>
-          <View style={styles.accessItem}>
-            <View style={[styles.accessIconBg, { backgroundColor: 'rgba(10, 110, 189, 0.08)' }]}>
-              <Ionicons name="boat-outline" size={18} color={palette.accent} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.accessLabel}>Boat Launch</Text>
-              <Text style={styles.accessValue}>Public ramp, no fee</Text>
-            </View>
-          </View>
-          <View style={styles.accessItem}>
-            <View style={[styles.accessIconBg, { backgroundColor: 'rgba(251, 140, 0, 0.08)' }]}>
-              <Ionicons name="walk-outline" size={18} color={palette.warning} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.accessLabel}>Shore Access</Text>
-              <Text style={styles.accessValue}>0.2 mi trail from lot</Text>
-            </View>
-          </View>
-          <View style={styles.accessItem}>
-            <View style={[styles.accessIconBg, { backgroundColor: 'rgba(120, 144, 156, 0.08)' }]}>
-              <Ionicons name="globe-outline" size={18} color={palette.pinSlow} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.accessLabel}>Land Type</Text>
-              <Text style={styles.accessValue}>Public — State Park</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* Site Tags */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Site Info</Text>
-        <View style={styles.tagRow}>
-          {['Shore Fishing', 'Boat Launch', 'Kayak Friendly', 'Family Friendly', 'Wheelchair Access'].map((tag) => (
-            <View key={tag} style={styles.siteTag}>
-              <Ionicons
-                name={
-                  tag === 'Shore Fishing' ? 'walk-outline' :
-                  tag === 'Boat Launch' ? 'boat-outline' :
-                  tag === 'Kayak Friendly' ? 'water-outline' :
-                  tag === 'Family Friendly' ? 'people-outline' :
-                  'accessibility-outline'
-                }
-                size={12}
-                color={palette.accent}
-              />
-              <Text style={styles.siteTagText}>{tag}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
+      {/* Access & Parking — will show real data when access point service populates it */}
+      {/* Site Tags — will show real data when available */}
 
       {/* Community Reviews */}
       <View style={styles.card}>

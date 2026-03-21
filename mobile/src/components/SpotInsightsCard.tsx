@@ -11,7 +11,7 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/palette';
 import { fonts } from '../theme/typography';
-import { getDailyBiteForecast, formatHour } from '../services/bestTimeWindows';
+import { getDailyBiteForecast, formatHour, type WeatherWarning } from '../services/bestTimeWindows';
 import { getCurrentPressure, type PressureReading } from '../services/fishingPressure';
 import { getWaterInsights, type WaterInsightsDashboard } from '../services/waterInsights';
 import { getSpeciesLikelihood, type SpeciesLikelihood } from '../services/speciesDistribution';
@@ -33,6 +33,7 @@ interface InsightsData {
   pressure: PressureReading;
   water: WaterInsightsDashboard | null;
   topSpecies: SpeciesLikelihood[];
+  weatherWarnings: WeatherWarning[];
 }
 
 // ── Rating helpers ───────────────────────────────────────────────────────────
@@ -46,10 +47,10 @@ function ratingColor(rating: number): string {
 }
 
 function ratingLabel(rating: number): string {
-  if (rating >= 70) return 'Great';
+  if (rating >= 70) return 'Excellent';
   if (rating >= 55) return 'Good';
   if (rating >= 40) return 'Fair';
-  if (rating >= 25) return 'Slow';
+  if (rating >= 25) return 'Poor';
   return 'Poor';
 }
 
@@ -108,6 +109,7 @@ export const SpotInsightsCard = memo(function SpotInsightsCard({
           pressure,
           water: waterResult,
           topSpecies: species.slice(0, 3),
+          weatherWarnings: biteResult.weatherWarnings ?? [],
         };
         setData(result);
         insightsCache.set(key, { data: result, timestamp: Date.now() });
@@ -132,10 +134,22 @@ export const SpotInsightsCard = memo(function SpotInsightsCard({
 
   if (!data) return null;
 
+  const topWarning = data.weatherWarnings.length > 0 ? data.weatherWarnings[0] : null;
+  const warningColor = topWarning?.severity === 'danger' ? '#B71C1C'
+    : topWarning?.severity === 'warning' ? '#E65100' : '#F57F17';
+
   // ── Compact mode (MapScreen focused card) ──────────────────────────────
   if (compact) {
     return (
       <View style={s.compactContainer}>
+        {/* Weather warning badge */}
+        {topWarning && (
+          <View style={[s.warningBadge, { backgroundColor: warningColor + '15' }]}>
+            <Text style={[s.warningBadgeText, { color: warningColor }]}>
+              {topWarning.message}
+            </Text>
+          </View>
+        )}
         {/* Bite badge + pressure in one row */}
         <View style={s.compactRow}>
           <View style={[s.biteBadge, { backgroundColor: data.biteColor + '18' }]}>
@@ -175,6 +189,20 @@ export const SpotInsightsCard = memo(function SpotInsightsCard({
   // ── Full mode (expanded bottom sheet / detail) ─────────────────────────
   return (
     <View style={s.container}>
+      {/* Weather warning */}
+      {topWarning && (
+        <View style={[s.warningBadgeFull, { backgroundColor: warningColor + '12' }]}>
+          <Ionicons
+            name={topWarning.severity === 'danger' ? 'alert-circle' : 'warning'}
+            size={16}
+            color={warningColor}
+          />
+          <Text style={[s.warningBadgeFullText, { color: warningColor }]}>
+            {topWarning.message}
+          </Text>
+        </View>
+      )}
+
       {/* Bite Rating Row */}
       <View style={s.fullRow}>
         <View style={[s.biteBadgeFull, { backgroundColor: data.biteColor + '15' }]}>
@@ -196,7 +224,7 @@ export const SpotInsightsCard = memo(function SpotInsightsCard({
             </Text>
             <Text style={s.infoDetail} numberOfLines={1}>
               {data.pressure.score >= 60
-                ? 'Busy'
+                ? 'High'
                 : data.pressure.score >= 40
                   ? 'Moderate'
                   : 'Low'}
@@ -262,6 +290,31 @@ const s = StyleSheet.create({
   },
 
   // ── Compact ────────────────────────────────────────────────────────
+  warningBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  warningBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  warningBadgeFull: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  warningBadgeFullText: {
+    fontSize: 13,
+    fontWeight: '700',
+    flex: 1,
+  },
   compactContainer: {
     gap: 6,
     marginTop: 6,

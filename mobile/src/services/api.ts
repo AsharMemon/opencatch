@@ -766,7 +766,7 @@ export const api = {
       return {
         fishing_score: score,
         confidence: 0.72,
-        model_version: 'mock-v12',
+        model_version: 'v2-ensemble',
         breakdown: {
           fishing_score: score,
           layers: {

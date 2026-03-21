@@ -53,11 +53,11 @@ export interface PressureForecast {
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const PRESSURE_CONFIG: Record<PressureLevel, { label: string; color: string; icon: string }> = {
-  'very-low':  { label: 'Very Quiet',   color: '#2E7D32', icon: 'leaf-outline' },
-  'low':       { label: 'Light',        color: '#66BB6A', icon: 'happy-outline' },
-  'moderate':  { label: 'Moderate',     color: '#FFA726', icon: 'people-outline' },
-  'high':      { label: 'Busy',         color: '#EF5350', icon: 'warning-outline' },
-  'very-high': { label: 'Very Crowded', color: '#B71C1C', icon: 'alert-circle-outline' },
+  'very-low':  { label: 'Very Low',  color: '#2E7D32', icon: 'leaf-outline' },
+  'low':       { label: 'Low',       color: '#66BB6A', icon: 'happy-outline' },
+  'moderate':  { label: 'Moderate',  color: '#FFA726', icon: 'people-outline' },
+  'high':      { label: 'High',      color: '#EF5350', icon: 'warning-outline' },
+  'very-high': { label: 'Very High', color: '#B71C1C', icon: 'alert-circle-outline' },
 };
 
 /** US federal holidays (month-day) plus common fishing weekends */
@@ -212,11 +212,11 @@ export function getCurrentPressure(options?: {
 
   // Build description
   let description: string;
-  if (score >= 80) description = 'Expect crowded conditions. Consider less popular spots or off-peak hours.';
-  else if (score >= 60) description = 'Moderately busy. Good spots may be taken early.';
-  else if (score >= 40) description = 'Average activity. Plenty of room at most locations.';
-  else if (score >= 20) description = 'Light activity. Great time for a peaceful outing.';
-  else description = 'Almost nobody is fishing right now. You\'ll have the water to yourself.';
+  if (score >= 80) description = 'Crowded — try off-peak hours or less popular spots.';
+  else if (score >= 60) description = 'Busy — good spots may be taken early.';
+  else if (score >= 40) description = 'Average traffic — plenty of room.';
+  else if (score >= 20) description = 'Quiet — great time for a peaceful outing.';
+  else description = 'Empty — water to yourself.';
 
   return {
     level,

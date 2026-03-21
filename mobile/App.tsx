@@ -9,6 +9,7 @@ import {
   PlayfairDisplay_700Bold,
   PlayfairDisplay_400Regular_Italic,
 } from '@expo-google-fonts/playfair-display';
+import * as ExpoSplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OpenCatchNavigator } from './src/navigation/CastlineNavigator';
 import { SplashScreen } from './src/screens/SplashScreen';
@@ -17,6 +18,10 @@ import { OnboardingScreen, ONBOARDING_COMPLETE_KEY } from './src/screens/Onboard
 import { palette } from './src/theme/palette';
 import { auth, type AuthState, type UserProfile } from './src/services/auth';
 import { setOnTokenExpired } from './src/services/api';
+
+// Keep the native splash screen visible until we explicitly hide it
+// inside the animated SplashScreen component.
+ExpoSplashScreen.preventAutoHideAsync().catch(() => {});
 
 type AppState = 'splash' | 'onboarding' | 'auth' | 'app';
 

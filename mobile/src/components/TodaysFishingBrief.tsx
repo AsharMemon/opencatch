@@ -195,55 +195,22 @@ const s = StyleSheet.create({
     fontSize: 16,
     color: palette.text,
   },
-  ratingRow: {
+  badgeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
   },
-  ratingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  ratingLabel: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  ratingScore: {
+  badgeLabel: {
     fontSize: 13,
-    fontWeight: '600',
-  },
-  ratingMeta: {
-    alignItems: 'flex-end',
-  },
-  moonText: {
-    fontSize: 12,
-    color: palette.textMuted,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    paddingTop: 4,
-  },
-  infoLabel: {
-    fontSize: 11,
-    color: palette.textMuted,
-    fontWeight: '600',
-  },
-  infoValue: {
-    fontSize: 14,
     fontWeight: '700',
-    color: palette.text,
-    marginTop: 1,
-  },
-  infoDetail: {
-    fontSize: 11,
-    color: palette.textMuted,
-    marginTop: 2,
   },
   alertRow: {
     flexDirection: 'row',

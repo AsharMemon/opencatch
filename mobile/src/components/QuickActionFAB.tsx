@@ -15,7 +15,7 @@ interface FABAction {
   key: string;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
-  color: string;
+  color?: string; // optional — falls back to palette.accent
   onPress: () => void;
 }
 
@@ -63,12 +63,12 @@ export function QuickActionFAB({ actions }: QuickActionFABProps) {
         <Pressable style={styles.backdrop} onPress={toggleMenu} />
       )}
 
-      {/* Action items (rendered bottom-up) */}
+      {/* Action items (rendered bottom-up, positioned to the LEFT of the FAB) */}
       {actions.map((action, index) => {
         const reverseIndex = actions.length - index;
         const translateY = animation.interpolate({
           inputRange: [0, 1],
-          outputRange: [0, -(reverseIndex * 64)],
+          outputRange: [0, -(reverseIndex * 52)],
         });
         const scale = animation.interpolate({
           inputRange: [0, 0.4, 1],
@@ -98,10 +98,10 @@ export function QuickActionFAB({ actions }: QuickActionFABProps) {
               <Text style={styles.actionLabelText}>{action.label}</Text>
             </Pressable>
             <Pressable
-              style={[styles.actionButton, { backgroundColor: action.color }]}
+              style={[styles.actionButton, { backgroundColor: palette.accent }]}
               onPress={() => handleAction(action)}
             >
-              <Ionicons name={action.icon} size={22} color="#FFFFFF" />
+              <Ionicons name={action.icon} size={18} color="#FFFFFF" />
             </Pressable>
           </Animated.View>
         );
@@ -155,13 +155,13 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   actionLabel: {
     backgroundColor: 'rgba(255, 255, 255, 0.96)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -174,14 +174,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   actionButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 6,
   },

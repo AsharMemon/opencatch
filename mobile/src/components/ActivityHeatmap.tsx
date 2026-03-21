@@ -1,6 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { palette } from '../theme/palette';
+import { getAllCatches, type EnhancedCatch } from '../services/catchEnhancements';
+import { trackRecorder, type FishingTrack } from '../services/trackRecorder';
 
 // ── Heatmap color scale ─────────────────────────────────────────────────────
 // Empty → light → medium → dark green (GitHub-style, adapted to our palette)
@@ -19,59 +21,47 @@ const WEEKS = 52;
 const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAY_LABELS = ['', 'Mon', '', 'Wed', '', 'Fri', ''] as const;
 
-// ── Mock data generation ────────────────────────────────────────────────────
+// ── Build trip counts from real data ────────────────────────────────────────
 
-function generateMockData(): { trips: number[]; dateStrings: string[] } {
+function buildTripData(
+  catches: EnhancedCatch[],
+  tracks: FishingTrack[],
+): { trips: number[]; dateStrings: string[] } {
   const today = new Date();
   const totalDays = WEEKS * 7;
 
   // Start from `totalDays` days ago, aligned to Sunday
   const start = new Date(today);
   start.setDate(today.getDate() - totalDays + 1);
-  // Roll back to most recent Sunday at or before start
   start.setDate(start.getDate() - start.getDay());
 
   const trips: number[] = [];
   const dateStrings: string[] = [];
 
-  // Seed a simple deterministic RNG so the mock data is stable across renders
-  let seed = 42;
-  const rand = () => {
-    seed = (seed * 16807 + 0) % 2147483647;
-    return (seed - 1) / 2147483646;
-  };
+  // Build a map of date -> count from real data
+  const dateCountMap = new Map<string, number>();
+
+  for (const c of catches) {
+    const d = new Date(c.timestamp).toISOString().slice(0, 10);
+    dateCountMap.set(d, (dateCountMap.get(d) ?? 0) + 1);
+  }
+
+  for (const t of tracks) {
+    const d = new Date(t.startTime).toISOString().slice(0, 10);
+    dateCountMap.set(d, (dateCountMap.get(d) ?? 0) + 1);
+  }
 
   for (let i = 0; i < totalDays; i++) {
     const d = new Date(start);
     d.setDate(start.getDate() + i);
-    dateStrings.push(d.toISOString().slice(0, 10));
+    const dateStr = d.toISOString().slice(0, 10);
+    dateStrings.push(dateStr);
 
-    // Skip future dates
     if (d > today) {
       trips.push(0);
-      continue;
+    } else {
+      trips.push(dateCountMap.get(dateStr) ?? 0);
     }
-
-    const month = d.getMonth();
-    const dow = d.getDay(); // 0=Sun, 6=Sat
-
-    // Seasonal weighting: spring/fall peak, winter low
-    let seasonWeight: number;
-    if (month >= 3 && month <= 5) seasonWeight = 0.35;       // spring
-    else if (month >= 8 && month <= 10) seasonWeight = 0.28;  // fall
-    else if (month >= 6 && month <= 7) seasonWeight = 0.22;   // summer
-    else seasonWeight = 0.08;                                  // winter
-
-    // Weekend boost
-    const weekendBoost = (dow === 0 || dow === 6) ? 0.20 : 0;
-
-    const p = seasonWeight + weekendBoost;
-    const r = rand();
-
-    if (r < p * 0.25) trips.push(3);       // 3+ trips (rare intense day)
-    else if (r < p * 0.55) trips.push(2);
-    else if (r < p) trips.push(1);
-    else trips.push(0);
   }
 
   return { trips, dateStrings };
@@ -81,37 +71,21 @@ function generateMockData(): { trips: number[]; dateStrings: string[] } {
 
 interface HeatmapStats {
   daysFished: number;
-  currentStreak: number;
-  longestStreak: number;
   totalTrips: number;
 }
 
 function computeStats(trips: number[]): HeatmapStats {
   let daysFished = 0;
   let totalTrips = 0;
-  let longestStreak = 0;
-  let currentStreak = 0;
-  let streak = 0;
 
   for (let i = 0; i < trips.length; i++) {
     if (trips[i] > 0) {
       daysFished++;
       totalTrips += trips[i];
-      streak++;
-      if (streak > longestStreak) longestStreak = streak;
-    } else {
-      streak = 0;
     }
   }
 
-  // Current streak: count backward from last day
-  currentStreak = 0;
-  for (let i = trips.length - 1; i >= 0; i--) {
-    if (trips[i] > 0) currentStreak++;
-    else break;
-  }
-
-  return { daysFished, currentStreak, longestStreak, totalTrips };
+  return { daysFished, totalTrips };
 }
 
 // ── Month label positions ───────────────────────────────────────────────────
@@ -138,7 +112,30 @@ function getMonthPositions(dateStrings: string[]): { label: string; col: number 
 // ── Component ───────────────────────────────────────────────────────────────
 
 export function ActivityHeatmap() {
-  const { trips, dateStrings } = useMemo(() => generateMockData(), []);
+  const [catches, setCatches] = useState<EnhancedCatch[]>([]);
+  const [tracks, setTracks] = useState<FishingTrack[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([getAllCatches(), trackRecorder.getSavedTracks()])
+      .then(([c, t]) => {
+        if (!cancelled) {
+          setCatches(c);
+          setTracks(t);
+          setLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLoaded(true);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const { trips, dateStrings } = useMemo(
+    () => buildTripData(catches, tracks),
+    [catches, tracks],
+  );
   const stats = useMemo(() => computeStats(trips), [trips]);
   const monthPositions = useMemo(() => getMonthPositions(dateStrings), [dateStrings]);
 
@@ -157,11 +154,9 @@ export function ActivityHeatmap() {
       {/* Section title */}
       <Text style={s.sectionTitle}>Activity Calendar</Text>
 
-      {/* Stats summary */}
+      {/* Stats summary — streaks removed */}
       <View style={s.statsRow}>
         <StatPill label="Days fished" value={String(stats.daysFished)} />
-        <StatPill label="Current streak" value={`${stats.currentStreak}d`} />
-        <StatPill label="Longest streak" value={`${stats.longestStreak}d`} />
         <StatPill label="Total trips" value={String(stats.totalTrips)} />
       </View>
 

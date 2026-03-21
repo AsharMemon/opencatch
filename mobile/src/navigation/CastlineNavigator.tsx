@@ -12,7 +12,7 @@ function HeaderLogo() {
   return (
     <Image
       source={logoImage}
-      style={{ height: 32, width: 120 }}
+      style={{ height: 38, width: 140 }}
       resizeMode="contain"
     />
   );
@@ -55,6 +55,7 @@ import { WaterInsightsScreen } from '../screens/WaterInsightsScreen';
 import { SpeciesMapScreen } from '../screens/SpeciesMapScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { AnnotationScreen } from '../screens/AnnotationScreen';
+import { ActivityLogScreen } from '../screens/ActivityLogScreen';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
 import type { RootStackParamList, TabParamList } from '../types/navigation';
@@ -80,6 +81,7 @@ function TabNavigator({ user, onLogout }: NavProps) {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
+        animation: 'shift' as const,
         headerStyle: {
           backgroundColor: palette.background,
         },
@@ -300,6 +302,11 @@ export function OpenCatchNavigator({ user, onLogout }: NavProps) {
         name="Annotations"
         component={AnnotationScreen}
         options={{ title: 'Annotations' }}
+      />
+      <Stack.Screen
+        name="ActivityLog"
+        component={ActivityLogScreen}
+        options={{ title: 'Activity Log' }}
       />
     </Stack.Navigator>
   );

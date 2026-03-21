@@ -149,9 +149,9 @@ function buildOverpassQuery(
   node["sport"="canoe"]["access"!="private"]${area};
   node["leisure"="slipway"]["boat"~"canoe|kayak"]${area};
 
-  // Parking near water
-  node["amenity"="parking"]["access"!="private"]${area};
-  way["amenity"="parking"]["access"!="private"]${area};
+  // Parking near water (exclude private and customer-only)
+  node["amenity"="parking"]["access"!="private"]["access"!="customers"]${area};
+  way["amenity"="parking"]["access"!="private"]["access"!="customers"]${area};
 
   // Trailheads
   node["highway"="trailhead"]${area};
@@ -217,6 +217,36 @@ interface OverpassElement {
   tags?: Record<string, string>;
 }
 
+/** Exclusion patterns for parking names that indicate non-recreational use. */
+const PARKING_EXCLUSION_NAMES = /gas\s*station|shell|petro|esso|chevron|husky|co-op|safeway|walmart|superstore|church|school|hospital|clinic|pharmacy|bank|office|hotel|motel|mall|plaza|shopping|casino|funeral|cemetery|dealership/i;
+
+/** Tags indicating the parking is for a commercial business, not recreation. */
+function isParkingForBusiness(tags: Record<string, string>): boolean {
+  // Explicitly private or customer-only
+  if (tags.access === 'customers' || tags.access === 'private') return true;
+
+  // Named after commercial establishments
+  const name = tags.name || tags['name:en'] || '';
+  if (PARKING_EXCLUSION_NAMES.test(name)) return true;
+
+  // Attached to fuel stations, commercial land use
+  if (tags.amenity === 'fuel' || tags['fuel:diesel'] || tags['fuel:octane_95']) return true;
+  if (tags.shop && tags.shop !== 'no') return true;
+  if (tags.landuse === 'commercial' || tags.landuse === 'retail' || tags.landuse === 'industrial') return true;
+  if (tags.building === 'commercial' || tags.building === 'retail') return true;
+
+  return false;
+}
+
+/** Check if parking is explicitly recreational or near recreation. */
+function isRecreationalParking(tags: Record<string, string>): boolean {
+  if (tags.leisure || tags.tourism) return true;
+  if (tags.access === 'yes' || tags.access === 'public' || tags.access === 'permissive') return true;
+  // Parks / recreation areas
+  if (tags.landuse === 'recreation_ground' || tags.landuse === 'grass') return true;
+  return false;
+}
+
 function elementToAccessPoint(el: OverpassElement): AccessPoint | null {
   const tags = el.tags ?? {};
   const lat = el.lat ?? el.center?.lat;
@@ -224,6 +254,9 @@ function elementToAccessPoint(el: OverpassElement): AccessPoint | null {
   if (lat == null || lon == null) return null;
 
   const apType = classifyElement(tags);
+
+  // Filter out parking that belongs to businesses / non-recreational use
+  if (apType === 'parking' && isParkingForBusiness(tags)) return null;
 
   return {
     id: `${el.type}/${el.id}`,
@@ -350,18 +383,20 @@ export async function fetchNearbyAccessPoints(
 
     const unique = deduplicateByProximity(uniqueById, 50);
 
-    // Filter out parking lots that are far from water (basic heuristic:
-    // keep parking only if there's at least one non-parking access point
-    // within ~500m). This prevents flooding the map with random parking.
-    // Apply the same logic to picnic sites.
-    const waterRelated = unique.filter(
-      (p) => p.type !== 'parking' && p.type !== 'picnic_site',
-    );
+    // Filter out parking lots that are far from recreational water access.
+    // Keep parking only if it is:
+    //   1. Within 200m of a boat launch, fishing access, trailhead, or pier, OR
+    //   2. Explicitly tagged as recreational (leisure/tourism tags)
+    // This prevents gas station and business parking from appearing.
+    const recreationalTypes: AccessPointType[] = [
+      'boat_launch', 'shore_fishing', 'kayak_launch', 'trailhead', 'fishing_pier',
+    ];
+    const recreationalPoints = unique.filter((p) => recreationalTypes.includes(p.type));
     const filtered = unique.filter((p) => {
       if (p.type !== 'parking' && p.type !== 'picnic_site') return true;
-      // Keep if any launch/pier/fishing point is within ~0.005 deg (~500m)
-      return waterRelated.some(
-        (np) => Math.abs(np.lat - p.lat) < 0.005 && Math.abs(np.lon - p.lon) < 0.005,
+      // Keep if within 200m of a recreational access point
+      return recreationalPoints.some(
+        (rp) => haversineMeters(p.lat, p.lon, rp.lat, rp.lon) < 200,
       );
     });
 

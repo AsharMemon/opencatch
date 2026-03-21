@@ -332,7 +332,7 @@ export interface Waypoint {
 export type WaypointIcon = 'pin' | 'fish' | 'anchor' | 'star' | 'warning';
 
 // ── Fish Activity ────────────────────────────────────────────────
-export type ActivityLevel = 'inactive' | 'slow' | 'moderate' | 'active' | 'very-active';
+export type ActivityLevel = 'inactive' | 'low' | 'moderate' | 'active' | 'very-active';
 
 export interface SpeciesActivity {
   species: string;

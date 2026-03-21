@@ -5,6 +5,7 @@ import {
   Keyboard,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -16,6 +17,7 @@ import { palette } from '../theme/palette';
 
 const RECENT_SEARCHES_KEY = '@opencatch_recent_searches';
 const MAX_RECENT = 10;
+const MAX_NEARBY_DISTANCE_MI = 124; // ~200 km
 
 // Species quick filters
 const SPECIES_FILTERS = [
@@ -43,6 +45,8 @@ interface EnhancedSearchBarProps {
   onSelectLocation?: (id: string) => void;
   nearbySpots?: NearbySpot[];
   allLocations?: NearbySpot[];
+  /** Called when the search panel should close (e.g. tap outside) */
+  onDismiss?: () => void;
 }
 
 function getWaterbodyIcon(type?: string): keyof typeof Ionicons.glyphMap {
@@ -69,10 +73,12 @@ export function EnhancedSearchBar({
   onSelectLocation,
   nearbySpots = [],
   allLocations = [],
+  onDismiss,
 }: EnhancedSearchBarProps) {
   const [focused, setFocused] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const dropdownAnim = useRef(new Animated.Value(0)).current;
+  const inputRef = useRef<TextInput>(null);
 
   // Load recent searches on mount
   useEffect(() => {
@@ -91,6 +97,17 @@ export function EnhancedSearchBar({
       useNativeDriver: false,
     }).start();
   }, [focused, dropdownAnim]);
+
+  const closePanel = () => {
+    Keyboard.dismiss();
+    setFocused(false);
+    onDismiss?.();
+  };
+
+  const handleClearAndClose = () => {
+    onClear();
+    closePanel();
+  };
 
   const saveRecentSearch = async (text: string) => {
     const trimmed = text.trim();
@@ -141,20 +158,33 @@ export function EnhancedSearchBar({
 
   const showDropdown = focused && value.trim().length === 0;
   const showSuggestions = focused && suggestions.length > 0 && value.trim().length >= 2;
+  const isOpen = showDropdown || showSuggestions;
 
   const dropdownOpacity = dropdownAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 1],
   });
 
-  const topNearby = nearbySpots.slice(0, 5);
+  // Filter nearby spots to within ~200km
+  const topNearby = nearbySpots
+    .filter((s) => s.distanceMi == null || s.distanceMi <= MAX_NEARBY_DISTANCE_MI)
+    .slice(0, 5);
 
   return (
     <View style={styles.wrapper}>
+      {/* Invisible backdrop to close panel on tap outside */}
+      {isOpen && (
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={closePanel}
+        />
+      )}
+
       {/* Search Input */}
       <View style={styles.container}>
         <Ionicons name="search-outline" size={18} color={palette.textMuted} />
         <TextInput
+          ref={inputRef}
           style={styles.input}
           value={value}
           onChangeText={onChangeText}
@@ -169,111 +199,119 @@ export function EnhancedSearchBar({
           }}
           onSubmitEditing={handleSubmit}
         />
-        {value.length > 0 && (
-          <Pressable onPress={() => { onClear(); setFocused(true); }} hitSlop={8}>
+        {/* X button to clear and close */}
+        {(value.length > 0 || focused) && (
+          <Pressable onPress={handleClearAndClose} hitSlop={8}>
             <Ionicons name="close-circle" size={18} color={palette.textMuted} />
           </Pressable>
         )}
       </View>
 
-      {/* Autocomplete suggestions while typing */}
+      {/* Autocomplete suggestions while typing — scrollable FlatList */}
       {showSuggestions && (
         <Animated.View style={[styles.dropdown, { opacity: dropdownOpacity }]}>
-          {suggestions.map((spot) => (
-            <Pressable
-              key={spot.id}
-              style={styles.suggestionRow}
-              onPress={() => {
-                onChangeText(spot.name);
-                saveRecentSearch(spot.name);
-                onSelectLocation?.(spot.id);
-                Keyboard.dismiss();
-                setFocused(false);
-              }}
-            >
-              <Ionicons name={getWaterbodyIcon(spot.type)} size={16} color={palette.textMuted} />
-              <View style={styles.suggestionTextArea}>
-                <Text style={styles.suggestionName} numberOfLines={1}>{spot.name}</Text>
-                <Text style={styles.suggestionSub} numberOfLines={1}>{spot.subtitle}</Text>
-              </View>
-              {spot.distanceMi != null && (
-                <Text style={styles.suggestionDistance}>{formatDistance(spot.distanceMi)}</Text>
-              )}
-            </Pressable>
-          ))}
+          <FlatList
+            data={suggestions}
+            keyExtractor={(item) => item.id}
+            style={{ maxHeight: 300 }}
+            keyboardShouldPersistTaps="handled"
+            renderItem={({ item: spot }) => (
+              <Pressable
+                style={styles.suggestionRow}
+                onPress={() => {
+                  onChangeText(spot.name);
+                  saveRecentSearch(spot.name);
+                  onSelectLocation?.(spot.id);
+                  Keyboard.dismiss();
+                  setFocused(false);
+                }}
+              >
+                <Ionicons name={getWaterbodyIcon(spot.type)} size={16} color={palette.textMuted} />
+                <View style={styles.suggestionTextArea}>
+                  <Text style={styles.suggestionName} numberOfLines={1}>{spot.name}</Text>
+                  <Text style={styles.suggestionSub} numberOfLines={1}>{spot.subtitle}</Text>
+                </View>
+                {spot.distanceMi != null && (
+                  <Text style={styles.suggestionDistance}>{formatDistance(spot.distanceMi)}</Text>
+                )}
+              </Pressable>
+            )}
+          />
         </Animated.View>
       )}
 
-      {/* Dropdown when focused but empty */}
+      {/* Dropdown when focused but empty — scrollable */}
       {showDropdown && (
         <Animated.View style={[styles.dropdown, { opacity: dropdownOpacity }]}>
-          {/* Recent Searches */}
-          {recentSearches.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Recent Searches</Text>
-                <Pressable onPress={clearRecentSearches} hitSlop={8}>
-                  <Text style={styles.clearText}>Clear</Text>
-                </Pressable>
+          <ScrollView style={{ maxHeight: 350 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            {/* Recent Searches */}
+            {recentSearches.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Recent Searches</Text>
+                  <Pressable onPress={clearRecentSearches} hitSlop={8}>
+                    <Text style={styles.clearText}>Clear</Text>
+                  </Pressable>
+                </View>
+                {recentSearches.slice(0, 5).map((text, i) => (
+                  <Pressable
+                    key={`recent-${i}`}
+                    style={styles.recentRow}
+                    onPress={() => handleSelectRecent(text)}
+                  >
+                    <Ionicons name="time-outline" size={16} color={palette.textDim} />
+                    <Text style={styles.recentText} numberOfLines={1}>{text}</Text>
+                  </Pressable>
+                ))}
               </View>
-              {recentSearches.slice(0, 5).map((text, i) => (
-                <Pressable
-                  key={`recent-${i}`}
-                  style={styles.recentRow}
-                  onPress={() => handleSelectRecent(text)}
-                >
-                  <Ionicons name="time-outline" size={16} color={palette.textDim} />
-                  <Text style={styles.recentText} numberOfLines={1}>{text}</Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
+            )}
 
-          {/* Nearby Popular Spots */}
-          {topNearby.length > 0 && (
+            {/* Nearby Popular Spots — filtered to within ~200km */}
+            {topNearby.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Nearby Popular Spots</Text>
+                {topNearby.map((spot) => (
+                  <Pressable
+                    key={spot.id}
+                    style={styles.suggestionRow}
+                    onPress={() => {
+                      onChangeText(spot.name);
+                      saveRecentSearch(spot.name);
+                      onSelectLocation?.(spot.id);
+                      Keyboard.dismiss();
+                      setFocused(false);
+                    }}
+                  >
+                    <Ionicons name={getWaterbodyIcon(spot.type)} size={16} color={palette.accent} />
+                    <View style={styles.suggestionTextArea}>
+                      <Text style={styles.suggestionName} numberOfLines={1}>{spot.name}</Text>
+                      <Text style={styles.suggestionSub} numberOfLines={1}>{spot.subtitle}</Text>
+                    </View>
+                    {spot.distanceMi != null && (
+                      <Text style={styles.suggestionDistance}>{formatDistance(spot.distanceMi)}</Text>
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            {/* Species Filter */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Nearby Popular Spots</Text>
-              {topNearby.map((spot) => (
-                <Pressable
-                  key={spot.id}
-                  style={styles.suggestionRow}
-                  onPress={() => {
-                    onChangeText(spot.name);
-                    saveRecentSearch(spot.name);
-                    onSelectLocation?.(spot.id);
-                    Keyboard.dismiss();
-                    setFocused(false);
-                  }}
-                >
-                  <Ionicons name={getWaterbodyIcon(spot.type)} size={16} color={palette.accent} />
-                  <View style={styles.suggestionTextArea}>
-                    <Text style={styles.suggestionName} numberOfLines={1}>{spot.name}</Text>
-                    <Text style={styles.suggestionSub} numberOfLines={1}>{spot.subtitle}</Text>
-                  </View>
-                  {spot.distanceMi != null && (
-                    <Text style={styles.suggestionDistance}>{formatDistance(spot.distanceMi)}</Text>
-                  )}
-                </Pressable>
-              ))}
+              <Text style={styles.sectionTitle}>Search by Species</Text>
+              <View style={styles.speciesGrid}>
+                {SPECIES_FILTERS.map((sp) => (
+                  <Pressable
+                    key={sp.key}
+                    style={styles.speciesChip}
+                    onPress={() => handleSelectSpecies(sp.query)}
+                  >
+                    <Ionicons name={sp.icon} size={14} color={palette.accent} />
+                    <Text style={styles.speciesChipText}>{sp.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
-          )}
-
-          {/* Species Filter */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Search by Species</Text>
-            <View style={styles.speciesGrid}>
-              {SPECIES_FILTERS.map((sp) => (
-                <Pressable
-                  key={sp.key}
-                  style={styles.speciesChip}
-                  onPress={() => handleSelectSpecies(sp.query)}
-                >
-                  <Ionicons name={sp.icon} size={14} color={palette.accent} />
-                  <Text style={styles.speciesChipText}>{sp.label}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
+          </ScrollView>
         </Animated.View>
       )}
     </View>

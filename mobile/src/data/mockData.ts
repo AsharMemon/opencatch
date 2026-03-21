@@ -150,7 +150,7 @@ export const mockLocations: FishingLocation[] = [
       { species: 'Striped Bass', activity: 'active', confidence: 0.76, bestDepth: '20-40 ft', bestTime: 'Midday' },
       { species: 'Crappie', activity: 'moderate', confidence: 0.65, bestDepth: '8-12 ft', bestTime: 'Evening' },
       { species: 'Bluegill', activity: 'active', confidence: 0.80, bestDepth: '3-8 ft', bestTime: 'All Day' },
-      { species: 'Channel Catfish', activity: 'slow', confidence: 0.52, bestDepth: '15-30 ft', bestTime: 'Night' },
+      { species: 'Channel Catfish', activity: 'low', confidence: 0.52, bestDepth: '15-30 ft', bestTime: 'Night' },
     ] as SpeciesActivity[],
     lureRecommendations: [
       { name: 'Square Bill Crankbait', type: 'Crankbait', color: 'Sexy Shad', technique: 'Deflect off cover in 3-6 ft', confidence: 0.92, reason: 'Rising pressure triggers aggressive reaction strikes' },
@@ -241,7 +241,7 @@ export const mockLocations: FishingLocation[] = [
       { species: 'Largemouth Bass', activity: 'moderate', confidence: 0.70, bestDepth: '5-12 ft', bestTime: 'Morning' },
       { species: 'Striped Bass', activity: 'active', confidence: 0.78, bestDepth: '25-50 ft', bestTime: 'Early Morning' },
       { species: 'Channel Catfish', activity: 'active', confidence: 0.74, bestDepth: '15-30 ft', bestTime: 'Evening' },
-      { species: 'Bluegill', activity: 'slow', confidence: 0.55, bestDepth: '2-5 ft', bestTime: 'Midday' },
+      { species: 'Bluegill', activity: 'low', confidence: 0.55, bestDepth: '2-5 ft', bestTime: 'Midday' },
       { species: 'Crappie', activity: 'moderate', confidence: 0.63, bestDepth: '8-14 ft', bestTime: 'All Day' },
     ] as SpeciesActivity[],
     lureRecommendations: [
@@ -285,9 +285,9 @@ export const mockLocations: FishingLocation[] = [
     waterLevel: waterLevels['kentucky-lake'],
     speciesActivity: [
       { species: 'Largemouth Bass', activity: 'inactive', confidence: 0.85, bestDepth: '20-35 ft', bestTime: 'None' },
-      { species: 'Crappie', activity: 'slow', confidence: 0.58, bestDepth: '10-18 ft', bestTime: 'Late Morning' },
+      { species: 'Crappie', activity: 'low', confidence: 0.58, bestDepth: '10-18 ft', bestTime: 'Late Morning' },
       { species: 'Walleye', activity: 'moderate', confidence: 0.65, bestDepth: '15-25 ft', bestTime: 'Dusk' },
-      { species: 'Channel Catfish', activity: 'slow', confidence: 0.60, bestDepth: '25-40 ft', bestTime: 'Night' },
+      { species: 'Channel Catfish', activity: 'low', confidence: 0.60, bestDepth: '25-40 ft', bestTime: 'Night' },
       { species: 'Bluegill', activity: 'inactive', confidence: 0.72, bestDepth: '8-15 ft', bestTime: 'None' },
     ] as SpeciesActivity[],
     lureRecommendations: [
@@ -375,7 +375,7 @@ export const mockLocations: FishingLocation[] = [
     forecast: makeForecast(56),
     speciesActivity: [
       { species: 'Largemouth Bass', activity: 'moderate', confidence: 0.68, bestDepth: '4-10 ft', bestTime: 'Late Morning' },
-      { species: 'Spotted Bass', activity: 'slow', confidence: 0.55, bestDepth: '8-15 ft', bestTime: 'Afternoon' },
+      { species: 'Spotted Bass', activity: 'low', confidence: 0.55, bestDepth: '8-15 ft', bestTime: 'Afternoon' },
       { species: 'Crappie', activity: 'active', confidence: 0.78, bestDepth: '6-10 ft', bestTime: 'Early Morning' },
       { species: 'Bluegill', activity: 'moderate', confidence: 0.65, bestDepth: '2-5 ft', bestTime: 'Midday' },
       { species: 'Channel Catfish', activity: 'moderate', confidence: 0.60, bestDepth: '15-25 ft', bestTime: 'Night' },

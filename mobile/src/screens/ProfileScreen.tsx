@@ -20,33 +20,18 @@ import { ActivityHeatmap } from '../components/ActivityHeatmap';
 import { AnimatedNumber } from '../components/ui/AnimatedNumber';
 import { hapticLight, hapticSelection } from '../utils/haptics';
 import { api } from '../services/api';
+import { getAllCatches, type EnhancedCatch } from '../services/catchEnhancements';
+import { trackRecorder, type FishingTrack } from '../services/trackRecorder';
 import type { UnitSystem, UserSettings } from '../types/models';
 import type { UserProfile } from '../services/auth';
 
-// ── Mock recent activity data ───────────────────────────────────
+// ── Real stats from AsyncStorage ─────────────────────────────────
 
-interface RecentActivity {
-  id: string;
-  date: string;
-  location: string;
-  fishCount: number;
-  ionicon: string;
+interface RealStats {
+  totalCatches: number;
+  totalTrips: number;
+  uniqueSpecies: number;
 }
-
-const RECENT_ACTIVITY: RecentActivity[] = [
-  { id: '1', date: 'Mar 16', location: 'Lake Fork, TX', fishCount: 7, ionicon: 'fish-outline' },
-  { id: '2', date: 'Mar 14', location: 'Grand Lake, OK', fishCount: 4, ionicon: 'fish-outline' },
-  { id: '3', date: 'Mar 10', location: 'Sam Rayburn, TX', fishCount: 11, ionicon: 'fish-outline' },
-  { id: '4', date: 'Mar 7', location: 'Table Rock Lake, MO', fishCount: 3, ionicon: 'fish-outline' },
-];
-
-// ── Mock stats ─────────────────────────────────────────────────
-
-const STATS = [
-  { label: 'Total Catches', value: 25, icon: 'fish-outline' },
-  { label: 'Trips', value: 12, icon: 'navigate-outline' },
-  { label: 'Species', value: 8, icon: 'leaf-outline' },
-];
 
 interface ProfileScreenProps {
   user: UserProfile | null;
@@ -58,6 +43,8 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
+  const [stats, setStats] = useState<RealStats | null>(null);
+  const [recentCatches, setRecentCatches] = useState<EnhancedCatch[]>([]);
 
   // Staggered entrance animations
   const headerOpacity = useRef(new Animated.Value(0)).current;
@@ -68,6 +55,7 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
 
   useEffect(() => {
     api.getSettings().then(setSettings);
+    loadRealData();
 
     // Staggered entrance
     Animated.stagger(150, [
@@ -82,6 +70,33 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
       Animated.timing(contentOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
     ]).start();
   }, []);
+
+  const loadRealData = async () => {
+    try {
+      const [catches, tracks] = await Promise.all([
+        getAllCatches(),
+        trackRecorder.getSavedTracks(),
+      ]);
+
+      const speciesSet = new Set<string>();
+      for (const c of catches) {
+        if (c.species) speciesSet.add(c.species.toLowerCase());
+      }
+
+      setStats({
+        totalCatches: catches.length,
+        totalTrips: tracks.length,
+        uniqueSpecies: speciesSet.size,
+      });
+
+      // Show up to 4 most recent catches
+      const sorted = [...catches].sort((a, b) => b.timestamp - a.timestamp);
+      setRecentCatches(sorted.slice(0, 4));
+    } catch {
+      setStats({ totalCatches: 0, totalTrips: 0, uniqueSpecies: 0 });
+      setRecentCatches([]);
+    }
+  };
 
   if (!settings) return <View style={styles.screen} />;
 
@@ -115,6 +130,19 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
         onPress: onLogout,
       },
     ]);
+  };
+
+  const STAT_ITEMS = stats
+    ? [
+        { label: 'Total Catches', value: stats.totalCatches, icon: 'fish-outline' },
+        { label: 'Trips', value: stats.totalTrips, icon: 'navigate-outline' },
+        { label: 'Species', value: stats.uniqueSpecies, icon: 'leaf-outline' },
+      ]
+    : [];
+
+  const formatCatchDate = (ts: number) => {
+    const d = new Date(ts);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   return (
@@ -184,49 +212,71 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
 
       {/* Stats row with animated numbers */}
       <Animated.View style={[styles.statsRow, { opacity: statsOpacity, transform: [{ translateY: statsTranslateY }] }]}>
-        {STATS.map((stat, idx) => (
-          <View key={stat.label} style={[styles.statCard, idx < STATS.length - 1 && styles.statCardBorder]}>
-            <View style={styles.statIconCircle}>
-              <Ionicons name={stat.icon as any} size={16} color={palette.accent} />
+        {stats ? (
+          STAT_ITEMS.map((stat, idx) => (
+            <View key={stat.label} style={[styles.statCard, idx < STAT_ITEMS.length - 1 && styles.statCardBorder]}>
+              <View style={styles.statIconCircle}>
+                <Ionicons name={stat.icon as any} size={16} color={palette.accent} />
+              </View>
+              <AnimatedNumber
+                value={stat.value}
+                duration={800 + idx * 200}
+                style={styles.statValue}
+              />
+              <Text style={styles.statLabel}>{stat.label}</Text>
             </View>
-            <AnimatedNumber
-              value={stat.value}
-              duration={800 + idx * 200}
-              style={styles.statValue}
-            />
-            <Text style={styles.statLabel}>{stat.label}</Text>
+          ))
+        ) : (
+          <View style={{ flex: 1, alignItems: 'center', paddingVertical: 12 }}>
+            <Text style={{ color: palette.textMuted, fontSize: 13 }}>Loading stats...</Text>
           </View>
-        ))}
+        )}
       </Animated.View>
 
       <Animated.View style={{ opacity: contentOpacity, gap: 24 }}>
         {/* Activity Heatmap */}
         <ActivityHeatmap />
 
-        {/* Recent Activity */}
+        {/* Recent Activity — from real catches */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Activity</Text>
           <View style={styles.sectionCard}>
-            {RECENT_ACTIVITY.map((activity, idx) => (
-              <Pressable
-                key={activity.id}
-                style={[
-                  styles.activityRow,
-                  idx < RECENT_ACTIVITY.length - 1 && styles.activityRowBorder,
-                ]}
-              >
-                <View style={styles.activityIcon}>
-                  <Ionicons name={activity.ionicon as any} size={18} color={palette.accent} />
-                </View>
-                <View style={styles.activityInfo}>
-                  <Text style={styles.activityLocation} numberOfLines={1}>
-                    {activity.location}
-                  </Text>
-                  <Text style={styles.activityDate}>{activity.date}</Text>
-                </View>
-                <Text style={styles.activityCount}>{activity.fishCount} fish</Text>
-              </Pressable>
-            ))}
+            {recentCatches.length === 0 ? (
+              <View style={styles.emptyActivity}>
+                <Ionicons name="fish-outline" size={28} color={palette.textDim} />
+                <Text style={styles.emptyActivityText}>No catches yet</Text>
+                <Text style={styles.emptyActivitySubtext}>Log your first catch to see it here</Text>
+              </View>
+            ) : (
+              recentCatches.map((c) => (
+                <Pressable
+                  key={c.id}
+                  style={[styles.activityRow, styles.activityRowBorder]}
+                >
+                  <View style={styles.activityIcon}>
+                    <Ionicons name="fish-outline" size={18} color={palette.accent} />
+                  </View>
+                  <View style={styles.activityInfo}>
+                    <Text style={styles.activityLocation} numberOfLines={1}>
+                      {c.species || c.locationName || 'Catch'}
+                    </Text>
+                    <Text style={styles.activityDate}>{formatCatchDate(c.timestamp)}</Text>
+                  </View>
+                  {c.weight ? (
+                    <Text style={styles.activityCount}>{c.weight} lb</Text>
+                  ) : c.length ? (
+                    <Text style={styles.activityCount}>{c.length} in</Text>
+                  ) : null}
+                </Pressable>
+              ))
+            )}
+            <Pressable
+              style={styles.viewAllRow}
+              onPress={() => { hapticLight(); navigation.navigate('ActivityLog'); }}
+            >
+              <Text style={styles.viewAllText}>View All</Text>
+              <Ionicons name="chevron-forward" size={16} color={palette.accent} />
+            </Pressable>
           </View>
         </View>
 
@@ -313,7 +363,7 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
         {/* Branding */}
         <View style={styles.brandSection}>
           <Text style={styles.brandTitle}>OpenCatch</Text>
-          <Text style={styles.brandSubtitle}>AI-Powered Fishing Predictions</Text>
+          <Text style={styles.brandSubtitle}>Your fishing companion.</Text>
           <Text style={styles.brandVersion}>v0.1.0 MVP</Text>
         </View>
 
@@ -511,6 +561,34 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
+  },
+  viewAllRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 4,
+  },
+  viewAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: palette.accent,
+  },
+
+  // ── Empty activity ─────────────────────────────────────────────
+  emptyActivity: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    gap: 6,
+  },
+  emptyActivityText: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  emptyActivitySubtext: {
+    color: palette.textMuted,
+    fontSize: 13,
   },
 
   // ── Branding ──────────────────────────────────────────────────

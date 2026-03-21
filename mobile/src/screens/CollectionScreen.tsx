@@ -92,70 +92,66 @@ const FISH_SPECIES: FishSpecies[] = [
   { id: '45', name: 'Arctic Grayling', emoji: '\uD83E\uDD88', rarity: 'Legendary', caught: false, count: 0, personalBest: null, firstCaught: null },
 ];
 
-// ── Mock analytics data ───────────────────────────────────────────
-const ANALYTICS = {
-  totalCatches: 205,
-  totalCatchesTrend: '+18 this month',
-  bestMonth: 'March',
-  topCondition: 'Falling Pressure',
-  avgPerTrip: 4.3,
-  insights: [
-    'You catch 40% more fish when barometric pressure is falling',
-    'Your best window is early morning (6\u20139 AM)',
-    'Crankbaits account for 62% of your total catches',
-  ],
-};
-
-// ── Personal Analytics Section ────────────────────────────────────
+// ── Personal Analytics Section (real data from AsyncStorage) ──────
 function AnalyticsSection() {
-  return (
-    <View style={styles.analyticsWrapper}>
-      {/* Section header */}
-      <Text style={styles.analyticsSectionTitle}>Your Stats</Text>
+  const [totalCatches, setTotalCatches] = React.useState<number | null>(null);
+  const [totalTrips, setTotalTrips] = React.useState<number | null>(null);
 
-      {/* 2x2 stat grid */}
-      <View style={styles.statGrid}>
-        {/* Total Catches */}
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{ANALYTICS.totalCatches}</Text>
-          <Text style={styles.statLabel}>Total Catches</Text>
-          <Text style={styles.statTrend}>{ANALYTICS.totalCatchesTrend}</Text>
-        </View>
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getAllCatches } = await import('../services/catchEnhancements');
+        const { trackRecorder } = await import('../services/trackRecorder');
+        const [catches, tracks] = await Promise.all([
+          getAllCatches(),
+          trackRecorder.getSavedTracks(),
+        ]);
+        if (!cancelled) {
+          setTotalCatches(catches.length);
+          setTotalTrips(tracks.length);
+        }
+      } catch {
+        if (!cancelled) {
+          setTotalCatches(0);
+          setTotalTrips(0);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
-        {/* Best Month */}
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{ANALYTICS.bestMonth}</Text>
-          <Text style={styles.statLabel}>Best Month</Text>
-          <Text style={styles.statTrend}>Most active</Text>
-        </View>
+  if (totalCatches === null) return null; // Still loading
 
-        {/* Top Conditions */}
-        <View style={styles.statCard}>
-          <Text style={[styles.statValue, styles.statValueSmall]}>
-            {ANALYTICS.topCondition}
-          </Text>
-          <Text style={styles.statLabel}>Top Condition</Text>
-          <Text style={styles.statTrend}>Highest catch rate</Text>
-        </View>
-
-        {/* Avg per Trip */}
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{ANALYTICS.avgPerTrip}</Text>
-          <Text style={styles.statLabel}>Avg per Trip</Text>
-          <Text style={styles.statTrend}>fish per outing</Text>
+  if (totalCatches === 0 && totalTrips === 0) {
+    return (
+      <View style={styles.analyticsWrapper}>
+        <Text style={styles.analyticsSectionTitle}>Your Stats</Text>
+        <View style={{ alignItems: 'center', paddingVertical: 16, gap: 6 }}>
+          <Text style={{ color: palette.textMuted, fontSize: 14 }}>No data yet</Text>
+          <Text style={{ color: palette.textDim, fontSize: 12 }}>Log catches to see your stats here</Text>
         </View>
       </View>
+    );
+  }
 
-      {/* Insights card */}
-      <View style={styles.insightsCard}>
-        <Text style={styles.analyticsSectionTitle}>Your Insights</Text>
-        <View style={styles.insightsList}>
-          {ANALYTICS.insights.map((insight, i) => (
-            <View key={i} style={styles.insightRow}>
-              <View style={styles.insightDot} />
-              <Text style={styles.insightText}>{insight}</Text>
-            </View>
-          ))}
+  const avgPerTrip = (totalTrips ?? 0) > 0 ? ((totalCatches ?? 0) / (totalTrips ?? 1)).toFixed(1) : '0';
+
+  return (
+    <View style={styles.analyticsWrapper}>
+      <Text style={styles.analyticsSectionTitle}>Your Stats</Text>
+      <View style={styles.statGrid}>
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>{totalCatches}</Text>
+          <Text style={styles.statLabel}>Total Catches</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>{totalTrips}</Text>
+          <Text style={styles.statLabel}>Total Trips</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>{avgPerTrip}</Text>
+          <Text style={styles.statLabel}>Avg per Trip</Text>
         </View>
       </View>
     </View>

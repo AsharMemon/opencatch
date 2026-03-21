@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   ScrollView,
   View,
   Text,
   StyleSheet,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
 import { ActivityHeatmap } from '../components/ActivityHeatmap';
+import { getAllCatches, type EnhancedCatch } from '../services/catchEnhancements';
+import { trackRecorder, type FishingTrack } from '../services/trackRecorder';
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface StatCard {
@@ -25,91 +29,80 @@ interface ActivityEntry {
   location: string;
   fishCount: number;
   speciesIcons: string[];
-  temperature: number;
+  temperature: number | null;
   weatherIonicon: string;
   photoPlaceholder: boolean;
 }
 
 type FilterChip = 'All' | 'This Week' | 'This Month' | 'This Year';
 
-// ── Mock Data ────────────────────────────────────────────────────────────────
-
-const STATS: StatCard[] = [
-  { label: 'Total Trips', value: '34', ionicon: 'boat-outline' },
-  { label: 'Total Fish', value: '205', ionicon: 'fish-outline' },
-  { label: 'Best Day', value: '14', ionicon: 'trophy-outline' },
-];
-
-const ACTIVITIES: ActivityEntry[] = [
-  {
-    id: '1',
-    date: 'Mar 16, 2026',
-    time: '6:30 AM',
-    location: 'Lake Fork, TX',
-    fishCount: 7,
-    speciesIcons: ['fish-outline', 'fish'],
-    temperature: 62,
-    weatherIonicon: 'partly-sunny-outline',
-    photoPlaceholder: true,
-  },
-  {
-    id: '2',
-    date: 'Mar 14, 2026',
-    time: '7:00 AM',
-    location: 'Grand Lake, OK',
-    fishCount: 4,
-    speciesIcons: ['fish-outline'],
-    temperature: 58,
-    weatherIonicon: 'sunny-outline',
-    photoPlaceholder: true,
-  },
-  {
-    id: '3',
-    date: 'Mar 10, 2026',
-    time: '5:45 AM',
-    location: 'Sam Rayburn, TX',
-    fishCount: 11,
-    speciesIcons: ['fish-outline', 'fish', 'fish-outline'],
-    temperature: 55,
-    weatherIonicon: 'sunny-outline',
-    photoPlaceholder: true,
-  },
-  {
-    id: '4',
-    date: 'Mar 7, 2026',
-    time: '6:15 AM',
-    location: 'Table Rock Lake, MO',
-    fishCount: 3,
-    speciesIcons: ['fish-outline'],
-    temperature: 51,
-    weatherIonicon: 'rainy-outline',
-    photoPlaceholder: false,
-  },
-  {
-    id: '5',
-    date: 'Mar 3, 2026',
-    time: '7:30 AM',
-    location: 'Lake Texoma, TX/OK',
-    fishCount: 14,
-    speciesIcons: ['fish-outline', 'fish'],
-    temperature: 64,
-    weatherIonicon: 'sunny-outline',
-    photoPlaceholder: true,
-  },
-  {
-    id: '6',
-    date: 'Feb 28, 2026',
-    time: '6:00 AM',
-    location: 'Beaver Lake, AR',
-    fishCount: 5,
-    speciesIcons: ['fish-outline'],
-    temperature: 48,
-    weatherIonicon: 'partly-sunny-outline',
-    photoPlaceholder: false,
-  },
-];
-
 const FILTER_CHIPS: FilterChip[] = ['All', 'This Week', 'This Month', 'This Year'];
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatDate(ts: number): string {
+  return new Date(ts).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function formatTime(ts: number): string {
+  return new Date(ts).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function isInRange(ts: number, filter: FilterChip): boolean {
+  if (filter === 'All') return true;
+  const now = Date.now();
+  const d = new Date(ts);
+  const today = new Date();
+  if (filter === 'This Week') {
+    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+    return ts >= weekAgo;
+  }
+  if (filter === 'This Month') {
+    return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+  }
+  // This Year
+  return d.getFullYear() === today.getFullYear();
+}
+
+function buildEntries(catches: EnhancedCatch[]): ActivityEntry[] {
+  return catches
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .map((c) => ({
+      id: c.id,
+      date: formatDate(c.timestamp),
+      time: formatTime(c.timestamp),
+      location: c.locationName || c.species || 'Catch',
+      fishCount: 1,
+      speciesIcons: c.species ? ['fish-outline'] : [],
+      temperature: c.airTemp ?? null,
+      weatherIonicon: 'partly-sunny-outline',
+      photoPlaceholder: !(c.photos && c.photos.length > 0),
+    }));
+}
+
+function buildStats(catches: EnhancedCatch[], tracks: FishingTrack[]): StatCard[] {
+  let bestDay = 0;
+  const dayCounts = new Map<string, number>();
+  for (const c of catches) {
+    const d = new Date(c.timestamp).toISOString().slice(0, 10);
+    const count = (dayCounts.get(d) ?? 0) + 1;
+    dayCounts.set(d, count);
+    if (count > bestDay) bestDay = count;
+  }
+
+  return [
+    { label: 'Total Trips', value: String(tracks.length), ionicon: 'boat-outline' },
+    { label: 'Total Fish', value: String(catches.length), ionicon: 'fish-outline' },
+    { label: 'Best Day', value: String(bestDay), ionicon: 'trophy-outline' },
+  ];
+}
 
 // ── Stat Card Component ──────────────────────────────────────────────────────
 
@@ -144,9 +137,6 @@ function ActivityCard({ entry }: { entry: ActivityEntry }) {
             <Text style={styles.activityLocation} numberOfLines={1}>
               {entry.location}
             </Text>
-            <Text style={styles.activityFishCount}>
-              {entry.fishCount} fish
-            </Text>
           </View>
 
           <Text style={styles.activityDateTime}>
@@ -164,10 +154,12 @@ function ActivityCard({ entry }: { entry: ActivityEntry }) {
             </View>
 
             {/* Weather */}
-            <View style={styles.weatherBadge}>
-              <Ionicons name={entry.weatherIonicon as any} size={14} color={palette.textSecondary} />
-              <Text style={styles.weatherTemp}>{entry.temperature}{'\u00B0'}F</Text>
-            </View>
+            {entry.temperature != null && (
+              <View style={styles.weatherBadge}>
+                <Ionicons name={entry.weatherIonicon as any} size={14} color={palette.textSecondary} />
+                <Text style={styles.weatherTemp}>{entry.temperature}{'\u00B0'}F</Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -193,8 +185,40 @@ function EmptyState() {
 
 export function ActivityScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterChip>('All');
+  const [catches, setCatches] = useState<EnhancedCatch[]>([]);
+  const [tracks, setTracks] = useState<FishingTrack[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const hasActivities = ACTIVITIES.length > 0;
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([getAllCatches(), trackRecorder.getSavedTracks()])
+      .then(([c, t]) => {
+        if (!cancelled) {
+          setCatches(c);
+          setTracks(t);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const entries = buildEntries(catches);
+  const stats = buildStats(catches, tracks);
+  const filteredEntries = entries.filter((e) => {
+    const ts = catches.find((c) => c.id === e.id)?.timestamp ?? 0;
+    return isInRange(ts, activeFilter);
+  });
+
+  if (loading) {
+    return (
+      <View style={[styles.screen, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={palette.accent} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>
@@ -214,7 +238,7 @@ export function ActivityScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.statsRow}
         >
-          {STATS.map((stat) => (
+          {stats.map((stat) => (
             <StatCardView key={stat.label} stat={stat} />
           ))}
         </ScrollView>
@@ -243,9 +267,9 @@ export function ActivityScreen() {
         </View>
 
         {/* Activity list */}
-        {hasActivities ? (
+        {filteredEntries.length > 0 ? (
           <View style={styles.activityList}>
-            {ACTIVITIES.map((entry) => (
+            {filteredEntries.map((entry) => (
               <ActivityCard key={entry.id} entry={entry} />
             ))}
           </View>
@@ -369,11 +393,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flex: 1,
     marginRight: 8,
-  },
-  activityFishCount: {
-    color: palette.accent,
-    fontSize: 13,
-    fontWeight: '700',
   },
   activityDateTime: {
     color: palette.textMuted,

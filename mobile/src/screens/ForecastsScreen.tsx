@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { palette, getConditionBand, conditionConfig, scoreColor } from '../theme/palette';
 import { fonts, type as typeStyles } from '../theme/typography';
-import { getDailyBiteForecast, getWeeklyBiteForecast, formatHour, type DailyBiteForecast as BiteFC, type TimeWindow } from '../services/bestTimeWindows';
+import { getDailyBiteForecast, getWeeklyBiteForecast, formatHour, computeWeatherPenalty, type DailyBiteForecast as BiteFC, type TimeWindow } from '../services/bestTimeWindows';
 import { getCurrentPressure, type PressureReading } from '../services/fishingPressure';
 import { getWaterInsights, type WaterInsightsDashboard } from '../services/waterInsights';
 import type { TabProps } from '../types/navigation';
@@ -44,6 +44,8 @@ interface HourlyData {
   uvIndex: number;
   windSpeed?: number;  // km/h
   windDirection?: number; // degrees
+  weatherCode?: number; // WMO weather code
+  aqi?: number;        // US AQI
 }
 
 interface DayForecast {
@@ -76,7 +78,28 @@ function isCacheValid(lat: number, lon: number): boolean {
   return dlat < 0.01 && dlon < 0.01;
 }
 
-function conditionFromCloud(cloud: number): { label: string; icon: string } {
+/**
+ * Map WMO weather code to condition label + icon.
+ * Falls back to cloud-cover heuristic only if weatherCode is absent.
+ */
+function conditionFromWMO(weatherCode: number | undefined, cloud: number): { label: string; icon: string } {
+  if (weatherCode !== undefined) {
+    if (weatherCode === 0) return { label: 'Clear', icon: 'sunny-outline' };
+    if (weatherCode === 1) return { label: 'Mainly Clear', icon: 'sunny-outline' };
+    if (weatherCode === 2) return { label: 'Partly Cloudy', icon: 'partly-sunny-outline' };
+    if (weatherCode === 3) return { label: 'Overcast', icon: 'cloudy-outline' };
+    if (weatherCode >= 45 && weatherCode <= 48) return { label: 'Foggy', icon: 'cloud-outline' };
+    if (weatherCode >= 51 && weatherCode <= 55) return { label: 'Drizzle', icon: 'rainy-outline' };
+    if (weatherCode >= 56 && weatherCode <= 57) return { label: 'Freezing Drizzle', icon: 'rainy-outline' };
+    if (weatherCode >= 61 && weatherCode <= 65) return { label: 'Rain', icon: 'rainy-outline' };
+    if (weatherCode >= 66 && weatherCode <= 67) return { label: 'Freezing Rain', icon: 'rainy-outline' };
+    if (weatherCode >= 71 && weatherCode <= 75) return { label: 'Snow', icon: 'snow-outline' };
+    if (weatherCode === 77) return { label: 'Snow Grains', icon: 'snow-outline' };
+    if (weatherCode >= 80 && weatherCode <= 82) return { label: 'Rain Showers', icon: 'rainy-outline' };
+    if (weatherCode >= 85 && weatherCode <= 86) return { label: 'Snow Showers', icon: 'snow-outline' };
+    if (weatherCode >= 95 && weatherCode <= 99) return { label: 'Thunderstorm', icon: 'thunderstorm-outline' };
+  }
+  // Fallback: cloud-cover heuristic
   if (cloud < 20) return { label: 'Clear/Sunny', icon: 'sunny-outline' };
   if (cloud < 50) return { label: 'Partly Cloudy', icon: 'partly-sunny-outline' };
   if (cloud < 80) return { label: 'Mostly Cloudy', icon: 'cloudy-outline' };
@@ -87,7 +110,7 @@ function conditionFromCloud(cloud: number): { label: string; icon: string } {
  * Compute a simple fish activity score from weather conditions.
  * Higher during dawn/dusk, stable pressure, moderate temps.
  */
-function computeFishScore(hour: number, temp: number, pressure: number, cloudCover: number, windSpeed: number): number {
+function computeFishScore(hour: number, temp: number, pressure: number, cloudCover: number, windSpeed: number, weatherCode?: number): number {
   let score = 20;
   // Dawn/dusk bonus
   if ((hour >= 5 && hour <= 9) || (hour >= 17 && hour <= 20)) score += 25;
@@ -103,7 +126,46 @@ function computeFishScore(hour: number, temp: number, pressure: number, cloudCov
   if (pressure >= 1008 && pressure <= 1025) score += 10;
   // Add some variation
   score += Math.round(Math.sin(hour * 0.7 + pressure * 0.01) * 5);
-  return Math.max(5, Math.min(95, score));
+
+  // Apply weather penalty based on dangerous conditions
+  const tempF = temp * 9 / 5 + 32;
+  const windMph = windSpeed * 0.621371;
+  const penalty = computeWeatherPenalty({
+    weatherCode,
+    tempF,
+    windMph,
+  });
+  score = Math.round(score * penalty.multiplier);
+  score = Math.min(score, penalty.cap);
+
+  return Math.max(0, Math.min(95, score));
+}
+
+// AQI fetch from Open-Meteo Air Quality API
+async function fetchAqi(lat: number, lon: number): Promise<Map<string, number[]>> {
+  try {
+    const params = new URLSearchParams({
+      latitude: lat.toFixed(4),
+      longitude: lon.toFixed(4),
+      hourly: 'us_aqi',
+      forecast_days: '16',
+      timezone: 'auto',
+    });
+    const resp = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?${params}`);
+    if (!resp.ok) return new Map();
+    const data = await resp.json();
+    const times: string[] = data.hourly?.time ?? [];
+    const aqiVals: number[] = data.hourly?.us_aqi ?? [];
+    const dayMap = new Map<string, number[]>();
+    for (let i = 0; i < times.length; i++) {
+      const dateStr = times[i].slice(0, 10);
+      if (!dayMap.has(dateStr)) dayMap.set(dateStr, []);
+      dayMap.get(dateStr)!.push(aqiVals[i] ?? 0);
+    }
+    return dayMap;
+  } catch {
+    return new Map();
+  }
 }
 
 async function fetchOpenMeteoForecast(lat: number, lon: number): Promise<DayForecast[]> {
@@ -125,6 +187,7 @@ async function fetchOpenMeteoForecast(lat: number, lon: number): Promise<DayFore
       'uv_index',
       'wind_speed_10m',
       'wind_direction_10m',
+      'weather_code',
     ].join(','),
     forecast_days: '16',
     timezone: 'auto',
@@ -172,13 +235,14 @@ async function fetchOpenMeteoForecast(lat: number, lon: number): Promise<DayFore
       const uv = hourlyData.uv_index?.[i] ?? 0;
       const windSpeed = hourlyData.wind_speed_10m?.[i] ?? 0;
       const windDir = hourlyData.wind_direction_10m?.[i] ?? 0;
+      const weatherCode: number | undefined = hourlyData.weather_code?.[i];
 
       const isToday = dateStr === todayStr;
       const isNow = isToday && hour === currentHour;
       const hourLabel = isNow ? 'Now' : String(hour).padStart(2, '0');
 
-      const cond = conditionFromCloud(cloud);
-      const fishScore = computeFishScore(hour, temp, pressureHpa, cloud, windSpeed);
+      const cond = conditionFromWMO(weatherCode, cloud);
+      const fishScore = computeFishScore(hour, temp, pressureHpa, cloud, windSpeed, weatherCode);
 
       const entry: HourlyData = {
         hour: hourLabel,
@@ -197,6 +261,7 @@ async function fetchOpenMeteoForecast(lat: number, lon: number): Promise<DayFore
         uvIndex: Math.round(uv),
         windSpeed: Math.round(windSpeed),
         windDirection: Math.round(windDir),
+        weatherCode,
       };
 
       if (!dayMap.has(dateStr)) dayMap.set(dateStr, []);
@@ -223,6 +288,40 @@ async function fetchOpenMeteoForecast(lat: number, lon: number): Promise<DayFore
       });
     }
 
+    // Fetch AQI data and merge into hourly entries
+    try {
+      const aqiMap = await fetchAqi(lat, lon);
+      for (const forecast of forecasts) {
+        // Find date key for this forecast day
+        const d = new Date();
+        const idx = forecasts.indexOf(forecast);
+        d.setDate(d.getDate() + idx);
+        const dateKey = d.toISOString().slice(0, 10);
+        // Also try matching by date from the entry
+        for (const [key, aqiValues] of aqiMap) {
+          const keyDate = new Date(key + 'T12:00:00');
+          if (keyDate.getDate() === forecast.date && keyDate.getDay() === ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(forecast.dayLabel)) {
+            for (let i = 0; i < Math.min(forecast.hourly.length, aqiValues.length); i++) {
+              forecast.hourly[i].aqi = Math.round(aqiValues[i]);
+            }
+            break;
+          }
+        }
+        // Simpler fallback: just match sequentially
+        if (!forecast.hourly[0]?.aqi) {
+          const allKeys = [...aqiMap.keys()].sort();
+          if (allKeys[idx]) {
+            const aqiValues = aqiMap.get(allKeys[idx])!;
+            for (let i = 0; i < Math.min(forecast.hourly.length, aqiValues.length); i++) {
+              forecast.hourly[i].aqi = Math.round(aqiValues[i]);
+            }
+          }
+        }
+      }
+    } catch {
+      // AQI is non-critical — continue without it
+    }
+
     // Update cache
     forecastCache = { data: forecasts, lat, lon, timestamp: Date.now() };
 
@@ -241,7 +340,7 @@ async function fetchOpenMeteoForecast(lat: number, lon: number): Promise<DayFore
 
 type RowKey = 'timezone' | 'fishForecast' | 'conditions' | 'cloudCover' | 'visibility' |
               'airTemp' | 'pressure' | 'precipitation' | 'precAccum' | 'snowAccum' |
-              'humidity' | 'uvIndex';
+              'humidity' | 'uvIndex' | 'aqi';
 
 interface RowConfig {
   key: RowKey;
@@ -295,6 +394,22 @@ function uvBg(uv: number): string {
 function uvText(uv: number): string {
   if (uv >= 6) return '#FFFFFF';
   return '#1A1A18';
+}
+
+function aqiBg(aqi: number | undefined): string {
+  if (aqi === undefined) return 'transparent';
+  if (aqi <= 50) return '#4CAF50';   // Green — Good
+  if (aqi <= 100) return '#FDD835';  // Yellow — Moderate
+  if (aqi <= 150) return '#FB8C00';  // Orange — Unhealthy for Sensitive
+  if (aqi <= 200) return '#E53935';  // Red — Unhealthy
+  return '#7B1FA2';                   // Purple — Very Unhealthy
+}
+
+function aqiText(aqi: number | undefined): string {
+  if (aqi === undefined) return '#1A1A18';
+  if (aqi <= 50) return '#FFFFFF';
+  if (aqi <= 100) return '#1A1A18';
+  return '#FFFFFF';
 }
 
 const ROWS: RowConfig[] = [
@@ -385,6 +500,14 @@ const ROWS: RowConfig[] = [
     getValue: (h) => `${h.uvIndex}`,
     getBgColor: (h) => uvBg(h.uvIndex),
     getColor: (h) => uvText(h.uvIndex),
+  },
+  {
+    key: 'aqi',
+    icon: 'leaf-outline',
+    label: 'Air Quality (AQI)',
+    getValue: (h) => h.aqi !== undefined ? `${h.aqi}` : '-',
+    getBgColor: (h) => aqiBg(h.aqi),
+    getColor: (h) => aqiText(h.aqi),
   },
 ];
 
@@ -697,6 +820,8 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
   const [error, setError] = useState<string | null>(null);
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLon, setUserLon] = useState<number | null>(null);
+  const [locationName, setLocationName] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   // Inline insight state
@@ -747,6 +872,39 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
       setLoading(false);
     }
   }, []);
+
+  // Reverse geocode to get location name
+  useEffect(() => {
+    if (userLat == null || userLon == null) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const results = await Location.reverseGeocodeAsync({
+          latitude: userLat,
+          longitude: userLon,
+        });
+        if (!cancelled && results.length > 0) {
+          const r = results[0];
+          const parts: string[] = [];
+          if (r.city) parts.push(r.city);
+          if (r.region) parts.push(r.region);
+          if (parts.length === 0 && r.name) parts.push(r.name);
+          setLocationName(parts.join(', ') || null);
+        }
+      } catch {
+        // Silently fail — coords will be shown instead
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [userLat, userLon]);
+
+  const handleRefresh = useCallback(async () => {
+    if (userLat == null || userLon == null) return;
+    setRefreshing(true);
+    forecastCache = null; // Bust cache for manual refresh
+    await fetchForecast(userLat, userLon);
+    setRefreshing(false);
+  }, [userLat, userLon, fetchForecast]);
 
   useEffect(() => {
     (async () => {
@@ -812,17 +970,23 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
       {/* Header */}
       <View style={s.header}>
         <View style={s.headerTop}>
-          <Ionicons name="search-outline" size={22} color={palette.text} />
+          <Ionicons name="location-outline" size={22} color={palette.accent} />
           <View style={s.headerCenter}>
-            <Text style={s.headerTitle}>Map Location</Text>
+            <Text style={s.headerTitle} numberOfLines={1}>
+              {locationName ? `Forecast for ${locationName}` : 'Forecast'}
+            </Text>
             <Text style={s.headerCoords}>
               {userLat != null && userLon != null
-                ? `${userLat.toFixed(6)}, ${userLon.toFixed(6)}`
+                ? `${userLat.toFixed(4)}, ${userLon.toFixed(4)}`
                 : 'Locating...'}
             </Text>
           </View>
-          <Pressable onPress={() => userLat != null && userLon != null && fetchForecast(userLat, userLon)}>
-            <Ionicons name="refresh-outline" size={22} color={palette.text} />
+          <Pressable onPress={handleRefresh}>
+            {refreshing ? (
+              <ActivityIndicator size="small" color={palette.accent} />
+            ) : (
+              <Ionicons name="refresh-outline" size={22} color={palette.text} />
+            )}
           </Pressable>
         </View>
 

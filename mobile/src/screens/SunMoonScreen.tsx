@@ -10,6 +10,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,6 +18,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
+import * as ExpoLocation from 'expo-location';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
 
@@ -114,10 +116,14 @@ function getSolunarPeriods(date: Date, lat: number, lon: number) {
   ];
 
   const formatHour = (h: number) => {
-    const hr = Math.floor(h) % 12 || 12;
-    const min = Math.round((h % 1) * 60);
-    const ampm = Math.floor(h) % 24 >= 12 ? 'PM' : 'AM';
-    return `${hr}:${min.toString().padStart(2, '0')} ${ampm}`;
+    // Normalise to 0-24 range
+    const norm = ((h % 24) + 24) % 24;
+    if (!isFinite(norm)) return '--:--';
+    const hr = Math.floor(norm) % 12 || 12;
+    const min = Math.round((norm % 1) * 60);
+    const safeMins = isFinite(min) ? min : 0;
+    const ampm = Math.floor(norm) % 24 >= 12 ? 'PM' : 'AM';
+    return `${hr}:${String(safeMins).padStart(2, '0')} ${ampm}`;
   };
 
   return {
@@ -150,15 +156,101 @@ function getFishingRating(moonPhase: number, illumination: number): { rating: st
 
 export function SunMoonScreen() {
   const now = new Date();
-  const lat = 44.98; // Default — would use user location
-  const lon = -93.27;
+  const [lat, setLat] = useState(44.98);
+  const [lon, setLon] = useState(-93.27);
+  const [locationReady, setLocationReady] = useState(false);
+  const [locationName, setLocationName] = useState<string | null>(null);
+
+  // Live sunrise/sunset from Open-Meteo (authoritative)
+  const [liveSunrise, setLiveSunrise] = useState<Date | null>(null);
+  const [liveSunset, setLiveSunset] = useState<Date | null>(null);
+
+  // Get user location on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
+        if (status !== 'granted') { setLocationReady(true); return; }
+        const loc = await ExpoLocation.getCurrentPositionAsync({
+          accuracy: ExpoLocation.Accuracy.Balanced,
+        });
+        if (!cancelled) {
+          setLat(loc.coords.latitude);
+          setLon(loc.coords.longitude);
+          setLocationReady(true);
+        }
+        // Reverse geocode
+        try {
+          const results = await ExpoLocation.reverseGeocodeAsync({
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude,
+          });
+          if (!cancelled && results.length > 0) {
+            const r = results[0];
+            const parts: string[] = [];
+            if (r.city) parts.push(r.city);
+            if (r.region) parts.push(r.region);
+            setLocationName(parts.join(', ') || null);
+          }
+        } catch {}
+      } catch {
+        if (!cancelled) setLocationReady(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Fetch live sunrise/sunset from Open-Meteo (correct timezone handling)
+  useEffect(() => {
+    if (!locationReady) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const params = new URLSearchParams({
+          latitude: lat.toFixed(4),
+          longitude: lon.toFixed(4),
+          daily: 'sunrise,sunset',
+          timezone: 'auto',
+          forecast_days: '1',
+        });
+        const resp = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const sr = data.daily?.sunrise?.[0];
+        const ss = data.daily?.sunset?.[0];
+        if (!cancelled && sr && ss) {
+          setLiveSunrise(new Date(sr));
+          setLiveSunset(new Date(ss));
+        }
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [lat, lon, locationReady]);
 
   const moon = useMemo(() => getMoonPhase(now), []);
-  const sun = useMemo(() => getSunTimes(now, lat, lon), []);
-  const solunar = useMemo(() => getSolunarPeriods(now, lat, lon), []);
+  const sunCalc = useMemo(() => getSunTimes(now, lat, lon), [lat, lon]);
+  const solunar = useMemo(() => getSolunarPeriods(now, lat, lon), [lat, lon]);
   const fishingRating = useMemo(() => getFishingRating(moon.phase, moon.illumination), []);
 
-  const formatTime = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  // Build a sun object that uses live API data when available, falling back to calculation
+  const sun = useMemo(() => {
+    if (!sunCalc) return null;
+    const rise = liveSunrise ?? sunCalc.sunrise;
+    const set = liveSunset ?? sunCalc.sunset;
+    return {
+      sunrise: rise,
+      sunset: set,
+      solarNoon: sunCalc.solarNoon,
+      goldenMorningEnd: new Date(rise.getTime() + 60 * 60 * 1000),
+      goldenEveningStart: new Date(set.getTime() - 60 * 60 * 1000),
+    };
+  }, [sunCalc, liveSunrise, liveSunset]);
+
+  const formatTime = (d: Date) => {
+    if (!d || isNaN(d.getTime())) return '--:--';
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  };
 
   // Moon phase SVG
   const renderMoonPhase = () => {
@@ -192,8 +284,27 @@ export function SunMoonScreen() {
     );
   };
 
+  if (!locationReady) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={palette.accent} />
+        <Text style={{ color: palette.textMuted, marginTop: 12, fontSize: 14 }}>Getting location...</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* Location header */}
+      {locationName && (
+        <View style={styles.ratingCard}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="location-outline" size={18} color={palette.accent} />
+            <Text style={{ fontSize: 15, fontWeight: '600', color: palette.text }}>{locationName}</Text>
+          </View>
+        </View>
+      )}
+
       {/* Fishing Rating Card */}
       <View style={styles.ratingCard}>
         <View style={styles.ratingHeader}>

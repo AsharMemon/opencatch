@@ -24,6 +24,21 @@ export interface TimeWindow {
   species?: string[];  // Which species are most active
 }
 
+export interface WeatherWarning {
+  type: 'snow' | 'freezing_rain' | 'heavy_rain' | 'extreme_cold' | 'cold' | 'high_wind' | 'thunderstorm' | 'poor_aqi' | 'flood' | 'wildfire';
+  message: string;
+  severity: 'danger' | 'warning' | 'caution';
+}
+
+export interface WeatherPenaltyOptions {
+  weatherCode?: number;        // WMO weather code
+  tempF?: number;              // Air temperature in Fahrenheit
+  windMph?: number;            // Wind speed in mph
+  aqi?: number;                // Air Quality Index (US AQI)
+  hasFloodWarning?: boolean;
+  hasWildfireWarning?: boolean;
+}
+
 export interface DailyBiteForecast {
   date: Date;
   overallRating: number;  // 0-100
@@ -37,6 +52,7 @@ export interface DailyBiteForecast {
   moonPhase: string;
   moonIllumination: number;
   hourlyScores: number[];  // 24 entries, 0-100
+  weatherWarnings: WeatherWarning[];
 }
 
 // ── Solunar Calculation ──────────────────────────────────────────────────────
@@ -126,6 +142,89 @@ function getMoonPhaseInfo(date: Date): { name: string; illumination: number; pha
   else name = 'New Moon';
 
   return { name, illumination, phase };
+}
+
+// ── Weather Penalty System ───────────────────────────────────────────────────
+
+/**
+ * Determine weather warnings and compute a penalty multiplier + hard cap
+ * for the fishing score based on dangerous or adverse weather conditions.
+ */
+export function computeWeatherPenalty(opts: WeatherPenaltyOptions): {
+  warnings: WeatherWarning[];
+  cap: number;       // hard maximum score (100 = no cap)
+  multiplier: number; // multiplicative penalty (1.0 = no penalty)
+} {
+  const warnings: WeatherWarning[] = [];
+  let cap = 100;
+  let multiplier = 1.0;
+
+  // Flood / wildfire = score 0, immediate danger
+  if (opts.hasFloodWarning) {
+    warnings.push({ type: 'flood', message: 'Flood warning — Do not fish', severity: 'danger' });
+    cap = 0;
+  }
+  if (opts.hasWildfireWarning) {
+    warnings.push({ type: 'wildfire', message: 'Wildfire warning — Do not fish', severity: 'danger' });
+    cap = 0;
+  }
+
+  // Thunderstorm (WMO codes 95-99): capped at 10
+  if (opts.weatherCode !== undefined && opts.weatherCode >= 95) {
+    warnings.push({ type: 'thunderstorm', message: 'Thunderstorm — Not safe to fish', severity: 'danger' });
+    cap = Math.min(cap, 10);
+  }
+
+  // Snow / freezing rain: capped at 20
+  // WMO codes: 56-57 = freezing drizzle, 66-67 = freezing rain, 71-77 = snow, 85-86 = snow showers
+  if (opts.weatherCode !== undefined) {
+    if ((opts.weatherCode >= 71 && opts.weatherCode <= 77) ||
+        (opts.weatherCode >= 85 && opts.weatherCode <= 86)) {
+      warnings.push({ type: 'snow', message: 'Snow — Not recommended', severity: 'warning' });
+      cap = Math.min(cap, 20);
+    }
+    if ((opts.weatherCode >= 56 && opts.weatherCode <= 57) ||
+        (opts.weatherCode >= 66 && opts.weatherCode <= 67)) {
+      warnings.push({ type: 'freezing_rain', message: 'Freezing rain — Not recommended', severity: 'warning' });
+      cap = Math.min(cap, 20);
+    }
+  }
+
+  // Heavy rain (WMO codes 63, 65, 67, 80-82): capped at 40
+  if (opts.weatherCode !== undefined) {
+    if (opts.weatherCode === 63 || opts.weatherCode === 65 ||
+        (opts.weatherCode >= 80 && opts.weatherCode <= 82)) {
+      warnings.push({ type: 'heavy_rain', message: 'Heavy rain — Poor conditions', severity: 'caution' });
+      cap = Math.min(cap, 40);
+    }
+  }
+
+  // Temperature penalties
+  if (opts.tempF !== undefined) {
+    if (opts.tempF < -7 * 9 / 5 + 32) {
+      // Below -7°C / ~20°F: capped at 15
+      warnings.push({ type: 'extreme_cold', message: 'Extreme cold — Dangerous conditions', severity: 'danger' });
+      cap = Math.min(cap, 15);
+    } else if (opts.tempF < 32) {
+      // Below 32°F / 0°C: score reduced by 50%
+      warnings.push({ type: 'cold', message: 'Freezing temperatures', severity: 'caution' });
+      multiplier *= 0.5;
+    }
+  }
+
+  // Wind > 30 mph: score reduced by 40%
+  if (opts.windMph !== undefined && opts.windMph > 30) {
+    warnings.push({ type: 'high_wind', message: `High wind ${opts.windMph} mph — Unsafe on water`, severity: 'warning' });
+    multiplier *= 0.6;
+  }
+
+  // Poor AQI > 150: score reduced by 30%
+  if (opts.aqi !== undefined && opts.aqi > 150) {
+    warnings.push({ type: 'poor_aqi', message: `Poor air quality (AQI ${opts.aqi})`, severity: 'caution' });
+    multiplier *= 0.7;
+  }
+
+  return { warnings, cap, multiplier };
 }
 
 // ── Score Calculation ────────────────────────────────────────────────────────
@@ -222,13 +321,25 @@ export function getDailyBiteForecast(
     pressureTrend?: 'rising' | 'falling' | 'stable';
     windMph?: number;
     cloudCover?: number;
+    weatherPenalty?: WeatherPenaltyOptions;
   },
 ): DailyBiteForecast {
   const date = options?.date ?? new Date();
-  const hourlyScores = computeHourlyScores(date, lat, lon, options);
+  let hourlyScores = computeHourlyScores(date, lat, lon, options);
   const solunar = getSolunarPeriods(date, lat, lon);
   const sun = getSunTimes(date, lat, lon);
   const moon = getMoonPhaseInfo(date);
+
+  // Apply weather penalty if provided
+  const penalty = options?.weatherPenalty
+    ? computeWeatherPenalty(options.weatherPenalty)
+    : { warnings: [] as WeatherWarning[], cap: 100, multiplier: 1.0 };
+
+  if (penalty.multiplier < 1.0 || penalty.cap < 100) {
+    hourlyScores = hourlyScores.map((s) =>
+      Math.min(penalty.cap, Math.max(0, Math.round(s * penalty.multiplier))),
+    );
+  }
 
   // Extract windows from consecutive high-score hours
   const windows: TimeWindow[] = [];
@@ -307,7 +418,7 @@ export function getDailyBiteForecast(
   if (overallRating >= 70) ratingLabel = 'Excellent';
   else if (overallRating >= 55) ratingLabel = 'Good';
   else if (overallRating >= 40) ratingLabel = 'Fair';
-  else if (overallRating >= 25) ratingLabel = 'Slow';
+  else if (overallRating >= 25) ratingLabel = 'Poor';
   else ratingLabel = 'Poor';
 
   return {
@@ -323,6 +434,7 @@ export function getDailyBiteForecast(
     moonPhase: moon.name,
     moonIllumination: moon.illumination,
     hourlyScores,
+    weatherWarnings: penalty.warnings,
   };
 }
 
@@ -337,6 +449,7 @@ export function getWeeklyBiteForecast(
     pressureTrend?: 'rising' | 'falling' | 'stable';
     windMph?: number;
     cloudCover?: number;
+    weatherPenalty?: WeatherPenaltyOptions;
   },
 ): DailyBiteForecast[] {
   const forecasts: DailyBiteForecast[] = [];

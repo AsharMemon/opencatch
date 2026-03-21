@@ -298,7 +298,7 @@ export function BestTimesScreen() {
             <LegendItem color="#E53935" label="Prime" />
             <LegendItem color="#FB8C00" label="Good" />
             <LegendItem color="#0A6EBD" label="Fair" />
-            <LegendItem color="#78909C" label="Slow" />
+            <LegendItem color="#78909C" label="Poor" />
           </View>
         </View>
       </View>

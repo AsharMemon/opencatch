@@ -82,7 +82,7 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.logo}>OpenCatch</Text>
-          <Text style={styles.tagline}>AI-Powered Fishing Predictions</Text>
+          <Text style={styles.tagline}>Discover. Plan. Catch.</Text>
         </View>
 
         {/* Form */}

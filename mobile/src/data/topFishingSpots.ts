@@ -329,8 +329,10 @@ const RAW_SPOTS: StaticSpot[] = [
   { id: 'top-250', name: 'Lake Joseph', lat: 45.1, lon: -79.65, type: 'lake', state: 'ON', country: 'CA' },
 ];
 
-/** Default score for a static spot with no ML data yet. */
-const DEFAULT_SCORE = 55;
+/** Default score for a static spot with no ML data yet.
+ * Set to 0 so the UI knows to show a loading/skeleton state
+ * instead of a misleadingly specific number. */
+const DEFAULT_SCORE = 0;
 
 function typeLabel(t: StaticSpot['type']): string {
   return t.charAt(0).toUpperCase() + t.slice(1);

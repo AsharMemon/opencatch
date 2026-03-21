@@ -37,6 +37,7 @@ export type RootStackParamList = {
   SpeciesMap: undefined;
   Settings: undefined;
   Annotations: undefined;
+  ActivityLog: undefined;
 };
 
 // Screen prop helpers
