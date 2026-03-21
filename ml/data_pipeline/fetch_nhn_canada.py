@@ -71,12 +71,12 @@ log = logging.getLogger("fetch_nhn_canada")
 # NHN configuration
 # ---------------------------------------------------------------------------
 
-# NHN GeoPackage FTP base URL
+# NHN FTP base URL
 NHN_FTP_BASE = "https://ftp.maps.canada.ca/pub/nrcan_rncan/vector/geobase_nhn_rhn/"
-NHN_GPKG_BASE = f"{NHN_FTP_BASE}gpkg/"
+NHN_GDB_BASE = f"{NHN_FTP_BASE}gdb_en/"
 
-# NHN work unit index (shapefile) — maps work unit IDs to provinces
-NHN_INDEX_URL = f"{NHN_FTP_BASE}index/nhn_index_workunit.zip"
+# NHN work unit index CSV
+NHN_INDEX_URL = f"{NHN_FTP_BASE}index/NHN_INDEX.csv"
 
 # Canadian provinces and territories (2-letter codes)
 PROVINCES = {
@@ -225,44 +225,55 @@ def discover_work_units(
 
     work_units = {}
 
-    # Try downloading and parsing the work unit index shapefile
-    index_zip = index_dir / "nhn_index_workunit.zip"
-    if not index_zip.exists():
-        log.info("Downloading NHN work unit index...")
-        download_file(NHN_INDEX_URL, index_zip)
+    # Try downloading and parsing the work unit index CSV
+    index_csv = index_dir / "NHN_INDEX.csv"
+    if not index_csv.exists():
+        log.info("Downloading NHN work unit index CSV...")
+        download_file(NHN_INDEX_URL, index_csv)
 
-    if index_zip.exists():
+    if index_csv.exists():
         try:
-            import geopandas as gpd
+            import pandas as pd
 
-            gdf = gpd.read_file(f"zip://{index_zip}")
-            log.info(f"NHN index: {len(gdf)} work units")
+            df = pd.read_csv(index_csv, encoding="latin-1")
+            log.info(f"NHN index CSV: {len(df)} work units")
 
-            for _, row in gdf.iterrows():
-                wuid = str(row.get("DATASETNAM", row.get("datasetnam", "")))
+            # Column names vary; look for dataset name and province
+            wuid_col = next(
+                (c for c in df.columns if "DATASETNAM" in c.upper() or "DATASET" in c.upper() or "WUID" in c.upper()),
+                df.columns[0],
+            )
+            prov_col = next(
+                (c for c in df.columns if "PROV" in c.upper()),
+                None,
+            )
+            name_col = next(
+                (c for c in df.columns if c.upper() == "NAME" or "NAME_EN" in c.upper()),
+                None,
+            )
+
+            for _, row in df.iterrows():
+                wuid = str(row[wuid_col]).strip()
                 if not wuid:
                     continue
 
-                # Province is typically in the work unit metadata
-                prov = str(row.get("PROVINCE", row.get("province", "")))
-                if not prov:
-                    # Infer province from geometry centroid (rough)
-                    prov = _infer_province(row.geometry.centroid.y, row.geometry.centroid.x)
-
+                prov = str(row[prov_col]).strip() if prov_col else "XX"
                 if province_filter and prov not in province_filter:
                     continue
 
-                # NHN GPKG URL pattern
-                url = f"{NHN_GPKG_BASE}{wuid}/{wuid}_en.zip"
+                # NHN GDB URL pattern: gdb_en/{prefix}/nhn_rhn_{wuid}_gdb_en.zip
+                wuid_lower = wuid.lower()
+                prefix = wuid_lower[:2]  # e.g. "01" from "01AA000"
+                url = f"{NHN_GDB_BASE}{prefix}/nhn_rhn_{wuid_lower}_gdb_en.zip"
 
                 work_units[wuid] = {
                     "province": prov,
                     "url": url,
-                    "name": str(row.get("NAME", row.get("name", wuid))),
+                    "name": str(row[name_col]).strip() if name_col else wuid,
                 }
 
         except Exception as e:
-            log.warning(f"Failed to parse NHN index shapefile: {e}")
+            log.warning(f"Failed to parse NHN index CSV: {e}")
 
     # Fallback: scrape FTP directory
     if not work_units:
@@ -310,25 +321,38 @@ def _infer_province(lat: float, lon: float) -> str:
 def _scrape_ftp_workunits(
     province_filter: Optional[list[str]] = None,
 ) -> dict[str, dict]:
-    """Scrape the NHN FTP directory for available GPKG work units."""
+    """Scrape the NHN FTP directory for available GDB work units."""
     work_units = {}
 
     try:
-        r = requests.get(NHN_GPKG_BASE, timeout=60)
+        # Scrape each numeric prefix directory under gdb_en/
+        r = requests.get(NHN_GDB_BASE, timeout=60)
         r.raise_for_status()
 
         parser = _FTPLinkParser()
         parser.feed(r.text)
 
-        for link in parser.links:
-            wuid = link.strip("/")
-            if not wuid or wuid.startswith("."):
+        for prefix_link in parser.links:
+            prefix = prefix_link.strip("/")
+            if not prefix or not prefix.isdigit():
                 continue
 
-            url = f"{NHN_GPKG_BASE}{wuid}/{wuid}_en.zip"
-            work_units[wuid] = {
-                "province": "XX",  # Unknown until processed
-                "url": url,
+            # Scrape individual work unit zips
+            r2 = requests.get(f"{NHN_GDB_BASE}{prefix}/", timeout=60)
+            r2.raise_for_status()
+            sub_parser = _FTPLinkParser()
+            sub_parser.feed(r2.text)
+
+            for link in sub_parser.links:
+                fname = link.strip("/")
+                if not fname.endswith("_gdb_en.zip"):
+                    continue
+                # Extract wuid from nhn_rhn_{wuid}_gdb_en.zip
+                wuid = fname.replace("nhn_rhn_", "").replace("_gdb_en.zip", "").upper()
+                url = f"{NHN_GDB_BASE}{prefix}/{fname}"
+                work_units[wuid] = {
+                    "province": "XX",
+                    "url": url,
                 "name": wuid,
             }
 
