@@ -26,9 +26,12 @@ let Callout: any = null;
 let UserLocation: any = null;
 let RasterSource: any = null;
 let RasterLayer: any = null;
+let VectorSource: any = null;
 let ShapeSource: any = null;
 let LineLayer: any = null;
 let SymbolLayer: any = null;
+let CircleLayer: any = null;
+let FillLayer: any = null;
 let setAccessToken: any = (_: any) => {};
 type CameraRef = any;
 type MapViewRef = any;
@@ -42,9 +45,12 @@ try {
   UserLocation = maplibre.UserLocation;
   RasterSource = maplibre.RasterSource;
   RasterLayer = maplibre.RasterLayer;
+  VectorSource = maplibre.VectorSource;
   ShapeSource = maplibre.ShapeSource;
   LineLayer = maplibre.LineLayer;
   SymbolLayer = maplibre.SymbolLayer;
+  CircleLayer = maplibre.CircleLayer;
+  FillLayer = maplibre.FillLayer;
   setAccessToken = maplibre.setAccessToken;
   setAccessToken(null);
 } catch (_) {
@@ -55,7 +61,7 @@ import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { palette, getConditionBand, conditionConfig, scoreColor } from '../theme/palette';
 import { SearchBar } from '../components/SearchBar';
-import { api, TILE_SERVER_URL } from '../services/api';
+import { api, buildApiTileSourceUrl } from '../services/api';
 import { fetchNearbyMarinas, formatAmenities } from '../services/marinaDirectory';
 import type { MarinaPOI, MarinaPOIType } from '../services/marinaDirectory';
 import { fetchWindGrid, windGridToGeoJSON } from '../services/windOverlay';
@@ -120,7 +126,7 @@ const MAP_STYLE_IONICONS: Record<MapStyleKey, string> = {
   topo: 'analytics-outline',
   night: 'moon-outline',
 };
-const MAP_STYLE_KEYS: MapStyleKey[] = ['bathymetry', 'satellite', 'outdoors', 'topo', 'night'];
+const MAP_STYLE_KEYS: MapStyleKey[] = ['hybrid', 'bathymetry', 'satellite', 'outdoors', 'topo', 'night'];
 
 // ── Overlay layer definitions ──────────────────────────────────────
 
@@ -132,6 +138,11 @@ interface OverlayLayer {
 }
 
 const OVERLAY_LAYERS: OverlayLayer[] = [
+  { key: 'local-bathymetry', label: 'Lake Contours', ionicon: 'analytics-outline', description: 'Local bathymetry vector contours from PostGIS' },
+  { key: 'public-lands', label: 'Public Lands', ionicon: 'leaf-outline', description: 'Protected and public-access lands overlay' },
+  { key: 'access-points', label: 'Access Points', ionicon: 'fish-outline', description: 'Boat launches, shore access, campgrounds' },
+  { key: 'parking', label: 'Parking', ionicon: 'car-outline', description: 'Parking lots and pull-offs near access' },
+  { key: 'trails', label: 'Trails', ionicon: 'walk-outline', description: 'Named access trails and paths to water' },
   { key: 'nautical', label: 'Nautical Marks', ionicon: 'boat-outline', description: 'OpenSeaMap buoys, channels, marks' },
   { key: 'shaded-relief', label: 'Shaded Relief', ionicon: 'layers-outline', description: '3D terrain and elevation' },
   { key: 'water-flow', label: 'Hydrology', ionicon: 'water-outline', description: 'USGS streams & water features' },
@@ -144,6 +155,31 @@ const OVERLAY_TILE_URLS: Record<string, string> = {
   'water-flow': 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSHydroCached/MapServer/tile/{z}/{y}/{x}',
   'depth-contours': 'https://tiles.arcgis.com/tiles/C8EMgrsFcRFL6LrL/arcgis/rest/services/GEBCO_contours/MapServer/tile/{z}/{y}/{x}',
 };
+
+const WORLD_IMAGERY_TILES = [
+  'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+];
+
+const TILE_LAYER_NAMES = {
+  bathymetryContours: 'bathymetry_contours',
+  publicLands: 'public_lands',
+  accessPoints: 'access_points',
+} as const;
+
+const ENABLE_EXPERIMENTAL_VECTOR_OVERLAYS = true;
+const GLYPH_URL = 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf';
+const FONT_STACKS = {
+  regular: ['Open Sans Regular'],
+  italic: ['Open Sans Italic'],
+  bold: ['Open Sans Bold'],
+} as const;
+const DEFAULT_VECTOR_OVERLAYS = new Set([
+  'local-bathymetry',
+  'public-lands',
+  'access-points',
+  'parking',
+  'trails',
+]);
 
 // Waypoint icon mappings (Ionicons instead of emoji)
 const WAYPOINT_ICONS: { key: WaypointIcon; label: string; ionicon: string }[] = [
@@ -180,7 +216,7 @@ const MARINA_POI_CONFIG: Record<MarinaPOIType, { color: string; ionicon: string;
 const BATHYMETRY_STYLE: object = {
   version: 8,
   name: 'OpenCatch Bathymetry',
-  glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+  glyphs: GLYPH_URL,
   sprite: 'https://tiles.openfreemap.org/sprites/ofm_f384/ofm',
   sources: {
     // Base map vector tiles — OpenFreeMap (free, no key)
@@ -552,7 +588,7 @@ const BATHYMETRY_STYLE: object = {
       'source-layer': 'water_name',
       layout: {
         'text-field': ['get', 'name'],
-        'text-font': ['Noto Sans Italic'],
+        'text-font': FONT_STACKS.italic,
         'text-size': [
           'interpolate',
           ['linear'],
@@ -580,7 +616,7 @@ const BATHYMETRY_STYLE: object = {
       filter: ['==', ['get', 'class'], 'city'],
       layout: {
         'text-field': ['get', 'name'],
-        'text-font': ['Noto Sans Bold'],
+        'text-font': FONT_STACKS.bold,
         'text-size': [
           'interpolate',
           ['linear'],
@@ -605,7 +641,7 @@ const BATHYMETRY_STYLE: object = {
       filter: ['in', ['get', 'class'], ['literal', ['town', 'village']]],
       layout: {
         'text-field': ['get', 'name'],
-        'text-font': ['Noto Sans Regular'],
+        'text-font': FONT_STACKS.regular,
         'text-size': [
           'interpolate',
           ['linear'],
@@ -633,7 +669,7 @@ const BATHYMETRY_STYLE: object = {
       filter: ['==', ['get', 'class'], 'state'],
       layout: {
         'text-field': ['get', 'name'],
-        'text-font': ['Noto Sans Regular'],
+        'text-font': FONT_STACKS.regular,
         'text-size': [
           'interpolate',
           ['linear'],
@@ -662,7 +698,7 @@ const BATHYMETRY_STYLE: object = {
       filter: ['==', ['get', 'class'], 'country'],
       layout: {
         'text-field': ['get', 'name'],
-        'text-font': ['Noto Sans Bold'],
+        'text-font': FONT_STACKS.bold,
         'text-size': [
           'interpolate',
           ['linear'],
@@ -691,7 +727,7 @@ const BATHYMETRY_STYLE: object = {
       'source-layer': 'transportation_name',
       layout: {
         'text-field': ['get', 'name'],
-        'text-font': ['Noto Sans Regular'],
+        'text-font': FONT_STACKS.regular,
         'text-size': [
           'interpolate',
           ['linear'],
@@ -720,7 +756,7 @@ const BATHYMETRY_STYLE: object = {
       filter: ['<=', ['get', 'rank'], 2],
       layout: {
         'text-field': ['get', 'name'],
-        'text-font': ['Noto Sans Regular'],
+        'text-font': FONT_STACKS.regular,
         'text-size': 11,
         'text-offset': [0, 0.8],
         'text-anchor': 'top',
@@ -736,6 +772,41 @@ const BATHYMETRY_STYLE: object = {
   ],
 };
 
+function createHybridStyle(baseStyle: any): object {
+  const cloned = JSON.parse(JSON.stringify(baseStyle));
+  cloned.name = 'OpenCatch Hybrid';
+  cloned.sources = {
+    ...cloned.sources,
+    'world-imagery': {
+      type: 'raster',
+      tiles: WORLD_IMAGERY_TILES,
+      tileSize: 256,
+      maxzoom: 19,
+    },
+  };
+
+  const imageryLayer = {
+    id: 'world-imagery-base',
+    type: 'raster',
+    source: 'world-imagery',
+    paint: {
+      'raster-opacity': 1,
+      'raster-saturation': 0.05,
+      'raster-contrast': 0.08,
+    },
+  };
+
+  cloned.layers = [
+    cloned.layers[0],
+    imageryLayer,
+    ...cloned.layers.filter((layer: any) => !['landcover', 'landuse', 'land-base', 'buildings'].includes(layer.id)),
+  ];
+
+  return cloned;
+}
+
+const HYBRID_STYLE = createHybridStyle(BATHYMETRY_STYLE);
+
 // ── Night Mode Map Style ──────────────────────────────────────────
 // Dark-adapted colors for nighttime on-the-water use.
 // Inspired by Navionics night mode — low glare, preserves scotopic vision.
@@ -743,7 +814,7 @@ const BATHYMETRY_STYLE: object = {
 const NIGHT_STYLE: object = {
   version: 8,
   name: 'OpenCatch Night',
-  glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+  glyphs: GLYPH_URL,
   sprite: 'https://tiles.openfreemap.org/sprites/ofm_f384/ofm',
   sources: {
     'openmaptiles': {
@@ -1102,7 +1173,7 @@ const NIGHT_STYLE: object = {
       'source-layer': 'water_name',
       layout: {
         'text-field': ['get', 'name'],
-        'text-font': ['Noto Sans Italic'],
+        'text-font': FONT_STACKS.italic,
         'text-size': [
           'interpolate',
           ['linear'],
@@ -1130,7 +1201,7 @@ const NIGHT_STYLE: object = {
       filter: ['==', ['get', 'class'], 'city'],
       layout: {
         'text-field': ['get', 'name'],
-        'text-font': ['Noto Sans Bold'],
+        'text-font': FONT_STACKS.bold,
         'text-size': [
           'interpolate',
           ['linear'],
@@ -1155,7 +1226,7 @@ const NIGHT_STYLE: object = {
       filter: ['in', ['get', 'class'], ['literal', ['town', 'village']]],
       layout: {
         'text-field': ['get', 'name'],
-        'text-font': ['Noto Sans Regular'],
+        'text-font': FONT_STACKS.regular,
         'text-size': [
           'interpolate',
           ['linear'],
@@ -1183,7 +1254,7 @@ const NIGHT_STYLE: object = {
       filter: ['==', ['get', 'class'], 'state'],
       layout: {
         'text-field': ['get', 'name'],
-        'text-font': ['Noto Sans Regular'],
+        'text-font': FONT_STACKS.regular,
         'text-size': [
           'interpolate',
           ['linear'],
@@ -1212,7 +1283,7 @@ const NIGHT_STYLE: object = {
       filter: ['==', ['get', 'class'], 'country'],
       layout: {
         'text-field': ['get', 'name'],
-        'text-font': ['Noto Sans Bold'],
+        'text-font': FONT_STACKS.bold,
         'text-size': [
           'interpolate',
           ['linear'],
@@ -1241,7 +1312,7 @@ const NIGHT_STYLE: object = {
       'source-layer': 'transportation_name',
       layout: {
         'text-field': ['get', 'name'],
-        'text-font': ['Noto Sans Regular'],
+        'text-font': FONT_STACKS.regular,
         'text-size': [
           'interpolate',
           ['linear'],
@@ -1270,7 +1341,7 @@ const NIGHT_STYLE: object = {
       filter: ['<=', ['get', 'rank'], 2],
       layout: {
         'text-field': ['get', 'name'],
-        'text-font': ['Noto Sans Regular'],
+        'text-font': FONT_STACKS.regular,
         'text-size': 11,
         'text-offset': [0, 0.8],
         'text-anchor': 'top',
@@ -1292,6 +1363,14 @@ const ALT_STYLES: Record<string, string> = {
   outdoors: 'https://tiles.openfreemap.org/styles/liberty',
   topo: 'https://tiles.openfreemap.org/styles/liberty',
   hybrid: 'https://tiles.openfreemap.org/styles/liberty', // Will use bathymetry for water
+};
+
+const VECTOR_OVERLAY_LAYER_BY_KEY: Record<string, string> = {
+  'local-bathymetry': TILE_LAYER_NAMES.bathymetryContours,
+  'public-lands': TILE_LAYER_NAMES.publicLands,
+  'access-points': TILE_LAYER_NAMES.accessPoints,
+  'parking': TILE_LAYER_NAMES.accessPoints,
+  'trails': TILE_LAYER_NAMES.accessPoints,
 };
 
 // ── Helpers ───────────────────────────────────────────────────────
@@ -1780,6 +1859,7 @@ type MarkerMode = 'locations' | 'waypoints';
 export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const cameraRef = useRef<CameraRef>(null);
   const mapRef = useRef<MapViewRef>(null);
+  const locationSourceRef = useRef<any>(null);
 
   const [locations, setLocations] = useState<FishingLocation[]>([]);
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
@@ -1797,7 +1877,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [markerMode, setMarkerMode] = useState<MarkerMode>('locations');
 
   // Overlay layers
-  const [activeOverlays, setActiveOverlays] = useState<Set<string>>(new Set());
+  const [activeOverlays, setActiveOverlays] = useState<Set<string>>(new Set(DEFAULT_VECTOR_OVERLAYS));
+  const [availableVectorLayers, setAvailableVectorLayers] = useState<Record<string, boolean>>({});
   const [showQualityPins, setShowQualityPins] = useState(false);
 
   // Marina POI layer
@@ -1814,6 +1895,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
   // Selected marker for callout
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
+  const [focusedLocation, setFocusedLocation] = useState<FishingLocation | null>(null);
 
   // Measure / ruler mode
   const [measureMode, setMeasureMode] = useState(false);
@@ -1840,6 +1922,45 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const sheetHeight = useRef(new Animated.Value(SHEET_COLLAPSED)).current;
   const currentHeight = useRef(SHEET_COLLAPSED);
   const dragStartHeight = useRef(SHEET_COLLAPSED);
+
+  useEffect(() => {
+    if (!ENABLE_EXPERIMENTAL_VECTOR_OVERLAYS) {
+      setAvailableVectorLayers({});
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadVectorAvailability = async () => {
+      const uniqueLayers = Array.from(new Set(Object.values(VECTOR_OVERLAY_LAYER_BY_KEY)));
+      const checks = await Promise.all(
+        uniqueLayers.map(async (layerName) => {
+          try {
+            const response = await fetch(buildApiTileSourceUrl(layerName));
+            if (!response.ok) return [layerName, false] as const;
+            const payload = await response.json();
+            const hasTiles =
+              Array.isArray(payload?.tiles) &&
+              payload.tiles.length > 0 &&
+              typeof payload.tiles[0] === 'string';
+            return [layerName, hasTiles] as const;
+          } catch {
+            return [layerName, false] as const;
+          }
+        }),
+      );
+
+      if (!cancelled) {
+        setAvailableVectorLayers(Object.fromEntries(checks));
+      }
+    };
+
+    loadVectorAvailability();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const id = sheetHeight.addListener(({ value }) => {
@@ -2024,9 +2145,13 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         score: loc.score,
         band: getConditionBand(loc.score),
         color: conditionConfig[getConditionBand(loc.score)].color,
+        displayColor: showQualityPins
+          ? conditionConfig[getConditionBand(loc.score)].color
+          : palette.accent,
+        isSelected: selectedMarkerId === loc.id ? 1 : 0,
       },
     })),
-  }), [locations, search]);
+  }), [locations, search, selectedMarkerId, showQualityPins]);
 
   const waypointGeoJSON = useMemo((): GeoJSON.FeatureCollection => ({
     type: 'FeatureCollection',
@@ -2201,28 +2326,15 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     return () => { sub?.remove(); };
   }, [compassMode]);
 
-  // Show more pins as user zooms in — all pins visible at zoom >= 8
   const visibleLocations = useMemo(() => {
-    const searchFiltered = search.trim()
+    return search.trim()
       ? locations.filter(
           (l) =>
             l.name.toLowerCase().includes(search.toLowerCase()) ||
             l.subtitle.toLowerCase().includes(search.toLowerCase()),
         )
       : locations;
-
-    // At low zoom, show only top-scoring spots
-    if (currentZoom < 4) {
-      return searchFiltered.filter((l) => l.score >= 80).slice(0, 20);
-    } else if (currentZoom < 5) {
-      return searchFiltered.filter((l) => l.score >= 70).slice(0, 50);
-    } else if (currentZoom < 6) {
-      return searchFiltered.filter((l) => l.score >= 60).slice(0, 100);
-    } else if (currentZoom < 8) {
-      return searchFiltered.slice(0, 200);
-    }
-    return searchFiltered; // Show all at high zoom
-  }, [locations, search, currentZoom]);
+  }, [locations, search]);
 
   const filteredLocations = visibleLocations;
 
@@ -2233,39 +2345,54 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const handleMarkerPress = useCallback(
     (location: FishingLocation) => {
       setSelectedMarkerId(location.id);
+      setFocusedLocation(location);
       cameraRef.current?.setCamera({
         centerCoordinate: [location.lon, location.lat],
-        zoomLevel: 10,
+        zoomLevel: Math.max(currentZoom, 10),
         animationDuration: 500,
       });
       animateSheetTo(SHEET_HIDDEN);
     },
-    [animateSheetTo],
+    [animateSheetTo, currentZoom],
   );
-
-  const handleCalloutPress = useCallback(
-    (location: FishingLocation) => {
-      setSelectedMarkerId(null);
-      navigation.navigate('LocationDetail', { locationId: location.id });
-    },
-    [navigation],
-  );
-
-  const [focusedLocation, setFocusedLocation] = useState<FishingLocation | null>(null);
 
   const handleCardPress = useCallback(
     (loc: FishingLocation) => {
-      // Zoom to the location, highlight the pin, collapse the sheet
-      cameraRef.current?.setCamera({
-        centerCoordinate: [loc.lon, loc.lat],
-        zoomLevel: 12,
-        animationDuration: 800,
-      });
-      setFocusedLocation(loc);
-      setSelectedMarkerId(loc.id);
-      animateSheetTo(SHEET_HIDDEN);
+      handleMarkerPress(loc);
     },
-    [animateSheetTo],
+    [handleMarkerPress],
+  );
+
+  const handleLocationSourcePress = useCallback(
+    async (event: any) => {
+      const feature = event?.features?.[0];
+      if (!feature) return;
+
+      const props = feature.properties ?? {};
+      if (props.cluster) {
+        try {
+          const zoom = await locationSourceRef.current?.getClusterExpansionZoom(feature);
+          const coords = feature.geometry?.coordinates as [number, number] | undefined;
+          if (coords) {
+            cameraRef.current?.setCamera({
+              centerCoordinate: coords,
+              zoomLevel: Math.max(zoom ?? currentZoom + 1, currentZoom + 1),
+              animationDuration: 350,
+            });
+          }
+        } catch {
+          // Ignore cluster expansion failures.
+        }
+        return;
+      }
+
+      const locationId = String(props.id ?? feature.id ?? '');
+      const location = locations.find((loc) => loc.id === locationId);
+      if (location) {
+        handleMarkerPress(location);
+      }
+    },
+    [currentZoom, handleMarkerPress, locations],
   );
 
   const handleMapLongPress = useCallback((event: any) => {
@@ -2281,13 +2408,15 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     setLayerPickerVisible((prev) => !prev);
   }, []);
 
-  // Only one overlay at a time
   const handleToggleOverlay = useCallback((key: string) => {
     setActiveOverlays((prev) => {
-      if (prev.has(key)) {
-        return new Set(); // toggle off
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
       }
-      return new Set([key]); // replace with just this one
+      return next;
     });
   }, []);
 
@@ -2327,12 +2456,21 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       return;
     }
     setSelectedMarkerId(null);
+    setFocusedLocation(null);
     setSelectedMarina(null);
   }, [measureMode]);
 
   // ── Derived ─────────────────────────────────────────────────────
   const waypointIonicon = (wpIcon: WaypointIcon): string =>
     WAYPOINT_ICONS.find((i) => i.key === wpIcon)?.ionicon ?? 'location';
+
+  const isVectorOverlayReady = useCallback(
+    (overlayKey: string) => {
+      const layerName = VECTOR_OVERLAY_LAYER_BY_KEY[overlayKey];
+      return !layerName || !!availableVectorLayers[layerName];
+    },
+    [availableVectorLayers],
+  );
 
   const totalVisible =
     markerMode === 'locations' ? filteredLocations.length : filteredWaypoints.length;
@@ -2378,7 +2516,15 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       <MLMapView
         ref={mapRef}
         style={styles.map}
-        mapStyle={mapStyle === 'night' ? NIGHT_STYLE : (mapStyle === 'bathymetry' || mapStyle === 'hybrid') ? BATHYMETRY_STYLE : ALT_STYLES[mapStyle]}
+        mapStyle={
+          mapStyle === 'night'
+            ? NIGHT_STYLE
+            : mapStyle === 'hybrid'
+              ? HYBRID_STYLE
+              : mapStyle === 'bathymetry'
+                ? BATHYMETRY_STYLE
+                : ALT_STYLES[mapStyle]
+        }
         logoEnabled={false}
         attributionEnabled={false}
         compassEnabled
@@ -2423,36 +2569,221 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           );
         })}
 
-        {/* Fishing location markers — using PointAnnotation for custom views */}
-        {markerMode === 'locations' &&
-          filteredLocations.map((loc) => {
-            const band = getConditionBand(loc.score);
-            const cfg = conditionConfig[band];
-            return (
-              <PointAnnotation
-                key={loc.id}
-                id={`loc-${loc.id}`}
-                coordinate={[loc.lon, loc.lat]}
-                onSelected={() => handleMarkerPress(loc)}
-              >
-                <ConditionPin score={loc.score} showQuality={showQualityPins} />
-                <Callout title="">
-                  <Pressable onPress={() => handleCalloutPress(loc)}>
-                    <View style={styles.calloutBubble}>
-                      <Text style={styles.calloutTitle} numberOfLines={1}>{loc.name}</Text>
-                      <View style={styles.calloutScoreRow}>
-                        <View style={[styles.calloutDot, { backgroundColor: cfg.color }]} />
-                        <Text style={[styles.calloutScore, { color: cfg.color }]}>
-                          {loc.score}/100 {cfg.label}
-                        </Text>
-                      </View>
-                      <Text style={styles.calloutHint}>Tap for details</Text>
-                    </View>
-                  </Pressable>
-                </Callout>
-              </PointAnnotation>
-            );
-          })}
+        {/* Real vector-tile overlays from Martin/PostGIS */}
+        {ENABLE_EXPERIMENTAL_VECTOR_OVERLAYS &&
+          isVectorOverlayReady('local-bathymetry') &&
+          activeOverlays.has('local-bathymetry') &&
+          VectorSource &&
+          LineLayer && (
+          <VectorSource
+            id="local-bathymetry-source"
+            url={buildApiTileSourceUrl(TILE_LAYER_NAMES.bathymetryContours)}
+            maxZoomLevel={14}
+          >
+            <LineLayer
+              id="local-bathymetry-lines"
+              sourceLayerID={TILE_LAYER_NAMES.bathymetryContours}
+              style={{
+                lineColor: [
+                  'interpolate',
+                  ['linear'],
+                  ['coalesce', ['get', 'depth_ft'], 0],
+                  0, '#9ed4f0',
+                  8, '#67b7dc',
+                  20, '#2d8ab8',
+                  40, '#145374',
+                  80, '#0b2c40',
+                ] as any,
+                lineWidth: [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  6, 0.5,
+                  10, 1,
+                  14, 2.4,
+                ] as any,
+                lineOpacity: 0.9,
+              }}
+            />
+          </VectorSource>
+        )}
+
+        {ENABLE_EXPERIMENTAL_VECTOR_OVERLAYS &&
+          isVectorOverlayReady('public-lands') &&
+          activeOverlays.has('public-lands') &&
+          VectorSource &&
+          FillLayer &&
+          LineLayer && (
+          <VectorSource
+            id="public-lands-source"
+            url={buildApiTileSourceUrl(TILE_LAYER_NAMES.publicLands)}
+            maxZoomLevel={14}
+          >
+            <FillLayer
+              id="public-lands-fill"
+              sourceLayerID={TILE_LAYER_NAMES.publicLands}
+              style={{
+                fillColor: '#6E9E4B',
+                fillOpacity: 0.18,
+              }}
+            />
+            <LineLayer
+              id="public-lands-outline"
+              sourceLayerID={TILE_LAYER_NAMES.publicLands}
+              style={{
+                lineColor: '#567B39',
+                lineWidth: 1,
+                lineOpacity: 0.45,
+              }}
+            />
+          </VectorSource>
+        )}
+
+        {ENABLE_EXPERIMENTAL_VECTOR_OVERLAYS &&
+          isVectorOverlayReady('access-points') &&
+          (activeOverlays.has('access-points') || activeOverlays.has('parking') || activeOverlays.has('trails')) &&
+          VectorSource && LineLayer && CircleLayer && (
+            <VectorSource
+              id="access-points-source"
+              url={buildApiTileSourceUrl(TILE_LAYER_NAMES.accessPoints)}
+              maxZoomLevel={14}
+            >
+              {activeOverlays.has('trails') && (
+                <LineLayer
+                  id="access-trails-layer"
+                  sourceLayerID={TILE_LAYER_NAMES.accessPoints}
+                  filter={['==', ['get', 'access_type'], 'trail'] as any}
+                  style={{
+                    lineColor: '#C4841D',
+                    lineWidth: [
+                      'interpolate',
+                      ['linear'],
+                      ['zoom'],
+                      9, 0.8,
+                      14, 2.2,
+                    ] as any,
+                    lineOpacity: 0.85,
+                    lineDasharray: [2, 1],
+                  }}
+                />
+              )}
+              {activeOverlays.has('parking') && (
+                <CircleLayer
+                  id="access-parking-layer"
+                  sourceLayerID={TILE_LAYER_NAMES.accessPoints}
+                  filter={['==', ['get', 'access_type'], 'parking'] as any}
+                  style={{
+                    circleColor: '#E7B84B',
+                    circleRadius: [
+                      'interpolate',
+                      ['linear'],
+                      ['zoom'],
+                      7, 2.5,
+                      13, 5.5,
+                    ] as any,
+                    circleStrokeColor: '#6B4B1D',
+                    circleStrokeWidth: 1,
+                    circleOpacity: 0.95,
+                  }}
+                />
+              )}
+              {activeOverlays.has('access-points') && (
+                <CircleLayer
+                  id="access-points-layer"
+                  sourceLayerID={TILE_LAYER_NAMES.accessPoints}
+                  filter={['match', ['get', 'access_type'], ['boat_launch', 'shore_access', 'campground'], true, false] as any}
+                  style={{
+                    circleColor: [
+                      'match',
+                      ['get', 'access_type'],
+                      'boat_launch', '#2563EB',
+                      'shore_access', '#0D9488',
+                      'campground', '#16A34A',
+                      '#2563EB',
+                    ] as any,
+                    circleRadius: [
+                      'interpolate',
+                      ['linear'],
+                      ['zoom'],
+                      7, 3,
+                      13, 6.5,
+                    ] as any,
+                    circleStrokeColor: '#FFFFFF',
+                    circleStrokeWidth: 1.2,
+                    circleOpacity: 0.95,
+                  }}
+                />
+              )}
+            </VectorSource>
+          )}
+
+        {/* Fishing location markers — clustered for smooth zoomed-out rendering */}
+        {markerMode === 'locations' && ShapeSource && CircleLayer && SymbolLayer && (
+          <ShapeSource
+            ref={locationSourceRef}
+            id="location-marker-source"
+            shape={locationGeoJSON as any}
+            cluster
+            clusterRadius={42}
+            clusterMaxZoomLevel={11}
+            onPress={handleLocationSourcePress}
+          >
+            <CircleLayer
+              id="location-clusters-layer"
+              filter={['has', 'point_count'] as any}
+              style={{
+                circleColor: [
+                  'step',
+                  ['get', 'point_count'],
+                  '#2D6A8E',
+                  25, '#1F5E7C',
+                  100, '#15465C',
+                ] as any,
+                circleRadius: [
+                  'step',
+                  ['get', 'point_count'],
+                  18,
+                  25, 22,
+                  100, 28,
+                ] as any,
+                circleStrokeColor: 'rgba(255,255,255,0.85)',
+                circleStrokeWidth: 1.5,
+                circleOpacity: 0.92,
+              }}
+            />
+            <SymbolLayer
+              id="location-cluster-count-layer"
+              filter={['has', 'point_count'] as any}
+              style={{
+                textField: ['get', 'point_count_abbreviated'] as any,
+                textFont: FONT_STACKS.bold,
+                textColor: '#FFFFFF',
+                textSize: 12,
+              }}
+            />
+            <CircleLayer
+              id="location-unclustered-layer"
+              filter={['!', ['has', 'point_count']] as any}
+              style={{
+                circleColor: ['get', 'displayColor'] as any,
+                circleRadius: [
+                  'case',
+                  ['==', ['get', 'isSelected'], 1],
+                  9,
+                  6,
+                ] as any,
+                circleStrokeColor: '#FFFFFF',
+                circleStrokeWidth: [
+                  'case',
+                  ['==', ['get', 'isSelected'], 1],
+                  2,
+                  1.2,
+                ] as any,
+                circleOpacity: 0.96,
+              }}
+            />
+          </ShapeSource>
+        )}
 
         {/* Waypoint markers */}
         {markerMode === 'waypoints' &&

@@ -23,6 +23,33 @@ Implemented 20+ features across services, screens, and navigation.
 ### Session 3 (Current) — Deep Feature Build + UI Integration
 Implemented 12+ additional features including map overlays, new screens, and services.
 
+### Session 4 — Overlay Plumbing + Map Truth Pass
+Implemented a first real end-to-end slice toward the intended overlay-heavy fishing map:
+1. **True hybrid map baseline** — `hybrid` now uses satellite imagery under the stylized bathymetry/water treatment instead of pretending the bathymetry style was satellite.
+2. **Clustered fishing spots** — removed the old zoom-based suppression of most map pins and switched the main location layer to clustered `ShapeSource` rendering.
+3. **Vector-tile overlay plumbing** — added MapLibre `VectorSource` overlays for:
+   - `bathymetry_contours`
+   - `public_lands`
+   - `access_points`
+4. **Access-point database support** — added a new `access_points` PostGIS table for launches, shore access, parking, campgrounds, and trails.
+5. **Access-point ingestion script** — added `scripts/ingest/ingest_access_points.py` to load merged GeoJSON from the access-point pipeline into PostGIS.
+6. **Better mobile network config** — mobile app/auth now use shared API host detection plus:
+   - `EXPO_PUBLIC_API_BASE_URL`
+   - `EXPO_PUBLIC_TILE_SERVER_URL`
+7. **Location paging** — mobile now pages through more than the first 200 locations, and backend `locations` limit was raised to allow larger fetches.
+
+### Session 5 — Map Runtime Recovery + Tile Backend Fixes
+Stabilized the map runtime after the first overlay pass exposed real production-ish failures:
+1. **Glyph/font fix** — custom MapLibre styles now use a working absolute glyph URL (`fonts.openmaptiles.org`) and explicit Open Sans font stacks, including cluster-count labels, so the map no longer depends on broken OpenFreeMap font URLs.
+2. **TileJSON proxy route** — FastAPI now exposes `/api/v1/tiles/{layer}` and rewrites Martin TileJSON back through the API, so the mobile app can mount `VectorSource.url` instead of relying on raw PBF templates.
+3. **Safer vector overlay activation** — mobile probes TileJSON availability before mounting vector overlays, which prevents a dead Martin source from taking down the entire map screen.
+4. **Docker/backend recovery** — Docker Desktop was restarted, the stale `infra-api` image was rebuilt, and the API crash loop caused by missing `PyJWT` in the old image was resolved.
+5. **Live backend verification** — confirmed:
+   - `GET /health` returns `200`
+   - `GET /api/v1/tiles/bathymetry_contours` returns TileJSON
+   - Martin is publishing `bathymetry_contours` and `public_lands`
+6. **Remaining overlay gap narrowed** — `access_points` is still not published by Martin in the current DB state, so that overlay remains data/ingestion-bound rather than plumbing-bound.
+
 ---
 
 ## ALL SERVICES (17 files in `mobile/src/services/`)
@@ -84,6 +111,8 @@ Implemented 12+ additional features including map overlays, new screens, and ser
 | G7 — Marina/bait shop/boat ramp markers | ✅ Complete |
 | B6 — Compass/heading display | ✅ Complete |
 | C11 — Weather alert banner on map | ✅ Complete |
+| Clustered fishing location markers | ✅ Complete |
+| Local vector overlay plumbing (bathy/public land/access) | ✅ First slice complete |
 
 ## NAVIGATION & INTEGRATION
 
@@ -261,13 +290,14 @@ Implemented 12+ additional features including map overlays, new screens, and ser
 ---
 
 ## KNOWN ISSUES
-1. **Hybrid map not done** — needs actual bathymetry data + satellite base + access points
-2. **App uses mock data** — backend at localhost:8000 unreachable from phone; need deployment
-3. **Real LAGOS data unavailable** — using synthetic data for Stage 1
-4. **RTX 3090 slow to provision** — Docker image pull taking 10+ minutes
-5. **Public lands overlay unreliable** — PAD-US tile service intermittent
-6. **No push notifications** — Need Expo push notification setup
-7. **WeatherBuoysScreen uses mock data** — weatherBuoys service exists but not wired in
+1. **`access_points` overlay still not live** — the table/script exist, but Martin is not currently publishing `access_points` from the present DB state, so parking/trails/access-point overlays will stay empty until data is loaded and confirmed
+2. **Overlay data quality/loading still incomplete** — `bathymetry_contours` and `public_lands` now publish, but usefulness still depends on better regional data coverage and actual ingestion runs
+3. **App still falls back to mock data in many API paths** — networking is less fake now, but backend deployment + stricter live-data handling are still needed
+4. **Real LAGOS data unavailable** — using synthetic data for Stage 1
+5. **RTX 3090 slow to provision** — Docker image pull taking 10+ minutes
+6. **Canada public-lands parity not solved** — no Canadian crown/public-land data source is ingested yet
+7. **No push notifications** — Need Expo push notification setup
+8. **WeatherBuoysScreen uses mock data** — weatherBuoys service exists but not wired in
 
 ## TECHNICAL DEBT
 - Mock data still in ForecastsScreen (need real API wiring)
@@ -278,6 +308,18 @@ Implemented 12+ additional features including map overlays, new screens, and ser
 - Backend not deployed (only runs locally)
 - catchEnhancements not yet wired into CatchReportScreen
 - boatProfile not yet wired into SafetyScreen
+- Docker rebuilds are currently expensive because the API image pulls large ML wheels (`catboost`, `xgboost`, `nvidia-nccl-cu12`, etc.)
+- If the API mysteriously crashes on import again, check whether the running `infra-api` image is stale before debugging app code
+- Need actual ingestion runs for:
+  - `scripts/ingest/ingest_pad_us.py`
+  - `scripts/ingest/ingest_bathymetry.py`
+  - `scripts/ingest/ingest_access_points.py`
+- Martin / PostGIS smoke test status:
+  - `public_lands` — confirmed published
+  - `bathymetry_contours` — confirmed published
+  - `access_points` — not currently published
+- Need end-to-end mobile verification that the new TileJSON proxy route behaves correctly on-device, not just via localhost curl
+- Instructional popups are still generic and not lake/river-specific
 
 ---
 

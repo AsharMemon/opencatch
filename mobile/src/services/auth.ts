@@ -5,6 +5,7 @@
  * Tokens are persisted in AsyncStorage and attached to API requests.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from '../config/network';
 
 const STORAGE_KEYS = {
   ACCESS_TOKEN: '@opencatch/access_token',
@@ -36,9 +37,7 @@ export interface AuthState {
 
 // ── API base URL (same as api.ts) ──────────────────────────────
 
-const DEV_API_URL = 'http://localhost:8000';
-const PROD_API_URL = 'https://api.castline.app';
-const BASE_URL = __DEV__ ? DEV_API_URL : PROD_API_URL;
+const BASE_URL = API_BASE_URL;
 
 // ── Token storage ──────────────────────────────────────────────
 

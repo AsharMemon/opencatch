@@ -10,6 +10,7 @@
  */
 import { mockLocations, mockBestLocations, defaultSettings, mockWaypoints } from '../data/mockData';
 import { auth as authService } from './auth';
+import { API_BASE_URL, TILE_BASE_URL } from '../config/network';
 import type {
   FishingLocation,
   PredictionResponse,
@@ -29,17 +30,18 @@ import type {
 
 // ── Config ───────────────────────────────────────────────────────
 const USE_MOCK = false;
+const API_PREFIX = '/api/v1';
 
-// In development, point to local FastAPI; in production, use the domain.
-// When running on a physical device, replace 'localhost' with your machine's IP.
-const DEV_API_URL = 'http://localhost:8000';
-const PROD_API_URL = 'https://api.castline.app';
-const BASE_URL = __DEV__ ? DEV_API_URL : PROD_API_URL;
+const BASE_URL = API_BASE_URL;
 
 // Martin tile server base URL (for map overlays)
-export const TILE_SERVER_URL = __DEV__
-  ? 'http://localhost:3000'
-  : 'https://tiles.castline.app';
+export const TILE_SERVER_URL = TILE_BASE_URL;
+export function buildApiTileTemplate(layer: string): string {
+  return `${BASE_URL}${API_PREFIX}/tiles/${layer}/{z}/{x}/{y}.pbf`;
+}
+export function buildApiTileSourceUrl(layer: string): string {
+  return `${BASE_URL}${API_PREFIX}/tiles/${layer}`;
+}
 
 // ── Request timeout & retry config ──────────────────────────────
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -356,6 +358,7 @@ function mockPredictionFromLocation(loc: FishingLocation): PredictionResponse {
 let _locationsCache: FishingLocation[] | null = null;
 let _locationsCacheTime = 0;
 const LOCATIONS_CACHE_TTL = 60_000; // 1 minute
+const LOCATIONS_PAGE_SIZE = 500;
 
 // ── Public API ───────────────────────────────────────────────────
 export const api = {
@@ -374,8 +377,23 @@ export const api = {
     }
 
     try {
-      const data = await request<BackendLocationsResponse>('/api/v1/locations?limit=200');
-      const adapted = adaptBackendLocations(data.locations);
+      const allLocations: BackendLocation[] = [];
+      let offset = 0;
+      let total = Infinity;
+
+      while (offset < total) {
+        const data = await request<BackendLocationsResponse>(
+          `/api/v1/locations?limit=${LOCATIONS_PAGE_SIZE}&offset=${offset}`,
+        );
+
+        allLocations.push(...data.locations);
+        total = data.total;
+
+        if (data.locations.length === 0) break;
+        offset += data.locations.length;
+      }
+
+      const adapted = adaptBackendLocations(allLocations);
 
       // If backend returned locations but none have lat/lon, merge with mocks
       // so the map still renders pins

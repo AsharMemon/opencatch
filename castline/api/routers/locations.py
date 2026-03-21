@@ -105,7 +105,7 @@ async def list_locations(
     lon: Optional[float] = Query(None, ge=-180, le=180, description="Center longitude for nearby search"),
     radius_km: float = Query(100, ge=1, le=500, description="Search radius in km"),
     q: Optional[str] = Query(None, min_length=2, description="Search by location name"),
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=5000),
     offset: int = Query(0, ge=0),
 ):
     """Discover fishing locations.

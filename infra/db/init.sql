@@ -80,3 +80,27 @@ CREATE TABLE IF NOT EXISTS nhd_flowlines (
 );
 CREATE INDEX IF NOT EXISTS idx_nhd_geom ON nhd_flowlines USING GIST(geom);
 CREATE INDEX IF NOT EXISTS idx_nhd_order ON nhd_flowlines (stream_order);
+
+CREATE TABLE IF NOT EXISTS access_points (
+    id SERIAL PRIMARY KEY,
+    location_id INTEGER REFERENCES locations(id),
+    name VARCHAR(256),
+    access_type VARCHAR(32) NOT NULL,
+    source VARCHAR(32) NOT NULL DEFAULT 'osm',
+    source_id VARCHAR(128),
+    nearest_waterbody VARCHAR(256),
+    distance_to_water_m FLOAT,
+    fee BOOLEAN,
+    is_free BOOLEAN,
+    public_access BOOLEAN,
+    capacity INTEGER,
+    difficulty VARCHAR(64),
+    surface VARCHAR(64),
+    tags JSONB,
+    geom GEOMETRY(Geometry, 4326) NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_access_points_source
+ON access_points (source, source_id, access_type)
+WHERE source_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_access_points_geom ON access_points USING GIST(geom);
+CREATE INDEX IF NOT EXISTS idx_access_points_type ON access_points (access_type);
