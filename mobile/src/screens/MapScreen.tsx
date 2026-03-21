@@ -82,6 +82,19 @@ import { fetchNearbyMarinas, formatAmenities } from '../services/marinaDirectory
 import type { MarinaPOI, MarinaPOIType } from '../services/marinaDirectory';
 import { fetchWindGrid, windGridToGeoJSON } from '../services/windOverlay';
 import {
+  fetchRadarData,
+  getRadarFrames,
+  buildRadarTileUrl,
+  RADAR_LEGEND,
+  type RadarTimestamp,
+} from '../services/precipRadar';
+import {
+  getActiveStormCells,
+  stormCellsToGeoJSON,
+  type StormCell,
+  type StormGeoJSON,
+} from '../services/stormTracking';
+import {
   fetchNearbyAccessPoints,
   accessPointsToGeoJSON,
   ACCESS_POINT_CONFIG,
@@ -95,6 +108,9 @@ import {
 } from '../services/weatherAlerts';
 import type { FishingLocation, Waypoint, WaypointIcon, BestFishingV2Entry } from '../types/models';
 import type { TabProps } from '../types/navigation';
+import { SpeedCourseHUD } from '../components/SpeedCourseHUD';
+import { NoWakeZoneOverlay } from '../components/NoWakeZoneOverlay';
+import { NavigationAidsOverlay } from '../components/NavigationAidsOverlay';
 import {
   trackRecorder,
   buildSpeedColoredGeoJSON,
@@ -144,6 +160,17 @@ import {
   DEFAULT_CONTOUR_SETTINGS,
   type DepthContourSettings,
 } from '../services/depthContourSettings';
+import {
+  getAnchorStatus,
+  addAnchorListener,
+  anchorCircleGeoJSON,
+  type AnchorStatus,
+} from '../services/anchorAlarm';
+import {
+  isMOBActive,
+  addMOBListener,
+  type MOBStatus,
+} from '../services/manOverboard';
 import { QuickActionFAB } from '../components/QuickActionFAB';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -191,7 +218,7 @@ const ALERT_REFRESH_MS = 30 * 60 * 1000;
 
 // ── Map style identifiers ────────────────────────────────────────
 
-type MapStyleKey = 'hybrid' | 'bathymetry' | 'satellite' | 'outdoors' | 'topo' | 'night';
+type MapStyleKey = 'hybrid' | 'bathymetry' | 'satellite' | 'outdoors' | 'topo' | 'night' | 'nautical-chart';
 const MAP_STYLE_LABELS: Record<MapStyleKey, string> = {
   hybrid: 'Hybrid',
   bathymetry: 'Bathymetry',
@@ -199,6 +226,7 @@ const MAP_STYLE_LABELS: Record<MapStyleKey, string> = {
   outdoors: 'Outdoors',
   topo: 'Topographic',
   night: 'Night',
+  'nautical-chart': 'Nautical Chart',
 };
 const MAP_STYLE_IONICONS: Record<MapStyleKey, string> = {
   hybrid: 'earth-outline',
@@ -207,8 +235,42 @@ const MAP_STYLE_IONICONS: Record<MapStyleKey, string> = {
   outdoors: 'compass-outline',
   topo: 'analytics-outline',
   night: 'moon-outline',
+  'nautical-chart': 'boat-outline',
 };
-const MAP_STYLE_KEYS: MapStyleKey[] = ['hybrid', 'bathymetry', 'satellite', 'outdoors', 'topo', 'night'];
+const MAP_STYLE_KEYS: MapStyleKey[] = ['hybrid', 'bathymetry', 'satellite', 'outdoors', 'topo', 'night', 'nautical-chart'];
+
+// NOAA nautical chart raster tile URL
+const NOAA_CHART_TILE_URL = 'https://tileservice.charts.noaa.gov/tiles/50000_1/{z}/{x}/{y}.png';
+
+// Coastal bounding boxes — show nautical chart option when user is near coast
+const COASTAL_BOUNDING_BOXES = [
+  // US East Coast
+  { minLat: 24.5, maxLat: 47.5, minLon: -81.5, maxLon: -65.0 },
+  // US West Coast
+  { minLat: 32.0, maxLat: 49.0, minLon: -125.0, maxLon: -117.0 },
+  // Gulf of Mexico
+  { minLat: 24.0, maxLat: 31.0, minLon: -98.0, maxLon: -80.0 },
+  // Alaska
+  { minLat: 51.0, maxLat: 72.0, minLon: -180.0, maxLon: -129.0 },
+  // Hawaii
+  { minLat: 18.5, maxLat: 22.5, minLon: -161.0, maxLon: -154.0 },
+  // Great Lakes
+  { minLat: 41.0, maxLat: 49.0, minLon: -92.5, maxLon: -76.0 },
+  // Pacific NW / Puget Sound
+  { minLat: 46.0, maxLat: 49.5, minLon: -125.0, maxLon: -122.0 },
+  // Chesapeake Bay
+  { minLat: 36.5, maxLat: 39.7, minLon: -77.5, maxLon: -75.5 },
+  // Canadian Atlantic
+  { minLat: 42.0, maxLat: 52.0, minLon: -67.0, maxLon: -52.0 },
+  // Canadian Pacific
+  { minLat: 48.0, maxLat: 55.0, minLon: -134.0, maxLon: -122.0 },
+];
+
+function isNearCoast(lat: number, lon: number): boolean {
+  return COASTAL_BOUNDING_BOXES.some(
+    (box) => lat >= box.minLat && lat <= box.maxLat && lon >= box.minLon && lon <= box.maxLon
+  );
+}
 
 // ── Overlay layer definitions ──────────────────────────────────────
 
@@ -229,6 +291,10 @@ const OVERLAY_LAYERS: OverlayLayer[] = [
   { key: 'shaded-relief', label: 'Shaded Relief', ionicon: 'layers-outline', description: '3D terrain and elevation' },
   { key: 'water-flow', label: 'Hydrology', ionicon: 'water-outline', description: 'USGS streams & water features' },
   { key: 'depth-contours', label: 'Depth Contours', ionicon: 'resize-outline', description: 'GEBCO bathymetry lines' },
+  { key: 'no-wake-zones', label: 'No-Wake Zones', ionicon: 'speedometer-outline', description: 'Speed-restricted areas on water' },
+  { key: 'nav-aids', label: 'Nav Aids', ionicon: 'radio-outline', description: 'Buoys, lights, channel markers' },
+  { key: 'radar', label: 'Precip Radar', ionicon: 'rainy-outline', description: 'Real-time precipitation radar' },
+  { key: 'satellite-imagery', label: 'Satellite Imagery', ionicon: 'planet-outline', description: 'ESRI high-res satellite tiles' },
 ];
 
 const OVERLAY_TILE_URLS: Record<string, string> = {
@@ -236,6 +302,7 @@ const OVERLAY_TILE_URLS: Record<string, string> = {
   'shaded-relief': 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSShadedReliefOnly/MapServer/tile/{z}/{y}/{x}',
   'water-flow': 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSHydroCached/MapServer/tile/{z}/{y}/{x}',
   'depth-contours': 'https://tiles.arcgis.com/tiles/C8EMgrsFcRFL6LrL/arcgis/rest/services/GEBCO_contours/MapServer/tile/{z}/{y}/{x}',
+  'satellite-imagery': 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
 };
 
 const WORLD_IMAGERY_TILES = [
@@ -1768,13 +1835,14 @@ interface LayerPickerProps {
   currentStyle: MapStyleKey;
   activeOverlays: Set<string>;
   showQualityPins: boolean;
+  userLocation: { lat: number; lon: number } | null;
   onSelectStyle: (style: MapStyleKey) => void;
   onToggleOverlay: (key: string) => void;
   onToggleQualityPins: () => void;
   onClose: () => void;
 }
 
-function LayerPicker({ visible, currentStyle, activeOverlays, showQualityPins, onSelectStyle, onToggleOverlay, onToggleQualityPins, onClose }: LayerPickerProps) {
+function LayerPicker({ visible, currentStyle, activeOverlays, showQualityPins, userLocation: pickerUserLoc, onSelectStyle, onToggleOverlay, onToggleQualityPins, onClose }: LayerPickerProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -1793,7 +1861,13 @@ function LayerPicker({ visible, currentStyle, activeOverlays, showQualityPins, o
       <Animated.View style={[styles.layerPickerCard, { opacity: fadeAnim }]}>
         <ScrollView style={{ maxHeight: 460 }} showsVerticalScrollIndicator={false} bounces={false}>
           <Text style={styles.layerSectionTitle}>MAP STYLE</Text>
-          {MAP_STYLE_KEYS.map((key) => {
+          {MAP_STYLE_KEYS.filter((key) => {
+            // Only show nautical chart option when near coast
+            if (key === 'nautical-chart') {
+              return pickerUserLoc ? isNearCoast(pickerUserLoc.lat, pickerUserLoc.lon) : false;
+            }
+            return true;
+          }).map((key) => {
             const isActive = key === currentStyle;
             return (
               <Pressable
@@ -2220,6 +2294,19 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [windGeoJSON, setWindGeoJSON] = useState<any>(null);
   const [windLoading, setWindLoading] = useState(false);
   const windDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Precipitation radar overlay
+  const [radarEnabled, setRadarEnabled] = useState(false);
+  const [radarTileUrl, setRadarTileUrl] = useState<string | null>(null);
+  const [radarLoading, setRadarLoading] = useState(false);
+  const [radarFrames, setRadarFrames] = useState<Array<{ tileUrl: string; timestamp: RadarTimestamp }>>([]);
+  const [radarFrameIndex, setRadarFrameIndex] = useState(0);
+  const [radarPlaying, setRadarPlaying] = useState(false);
+  const radarAnimRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Storm tracking overlay
+  const [stormCells, setStormCells] = useState<StormCell[]>([]);
+  const [stormGeoJSON, setStormGeoJSON] = useState<StormGeoJSON | null>(null);
   const lastWindCenter = useRef<{ lat: number; lon: number } | null>(null);
 
   // Access points overlay
@@ -2272,6 +2359,77 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [highlightedAccessLoading, setHighlightedAccessLoading] = useState(false);
   // River spot splitting — sub-spots built from access points along a river
   const [riverSpots, setRiverSpots] = useState<{ id: string; name: string; lat: number; lon: number; apType: string }[]>([]);
+
+  // ── Anchor Watch & MOB overlays ──────────────────────────────────
+  const [anchorStatus, setAnchorStatusMap] = useState<AnchorStatus>(getAnchorStatus());
+  const [mobStatus, setMobStatusMap] = useState<MOBStatus>({
+    active: false,
+    event: null,
+    distanceMeters: 0,
+    bearing: 0,
+    currentLat: null,
+    currentLon: null,
+  });
+  const anchorBannerPulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const unsub1 = addAnchorListener(setAnchorStatusMap);
+    const unsub2 = addMOBListener(setMobStatusMap);
+    return () => { unsub1(); unsub2(); };
+  }, []);
+
+  // Pulse the anchor banner when alarming
+  useEffect(() => {
+    if (!anchorStatus.alarm) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(anchorBannerPulse, { toValue: 1.03, duration: 500, useNativeDriver: true }),
+        Animated.timing(anchorBannerPulse, { toValue: 1, duration: 500, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [anchorStatus.alarm, anchorBannerPulse]);
+
+  // Anchor watch GeoJSON for map overlay
+  const anchorCircleFeature = useMemo(() => {
+    if (!anchorStatus.active || !anchorStatus.watch) return null;
+    return anchorCircleGeoJSON(
+      anchorStatus.watch.anchorLat,
+      anchorStatus.watch.anchorLon,
+      anchorStatus.watch.radiusMeters,
+    );
+  }, [anchorStatus.active, anchorStatus.watch?.anchorLat, anchorStatus.watch?.anchorLon, anchorStatus.watch?.radiusMeters]);
+
+  const anchorPointGeoJSON = useMemo(() => {
+    if (!anchorStatus.active || !anchorStatus.watch) return null;
+    return {
+      type: 'FeatureCollection' as const,
+      features: [{
+        type: 'Feature' as const,
+        properties: { icon: 'anchor' },
+        geometry: {
+          type: 'Point' as const,
+          coordinates: [anchorStatus.watch.anchorLon, anchorStatus.watch.anchorLat],
+        },
+      }],
+    };
+  }, [anchorStatus.active, anchorStatus.watch?.anchorLat, anchorStatus.watch?.anchorLon]);
+
+  const mobPointGeoJSON = useMemo(() => {
+    if (!mobStatus.active || !mobStatus.event) return null;
+    return {
+      type: 'FeatureCollection' as const,
+      features: [{
+        type: 'Feature' as const,
+        properties: { icon: 'mob' },
+        geometry: {
+          type: 'Point' as const,
+          coordinates: [mobStatus.event.lon, mobStatus.event.lat],
+        },
+      }],
+    };
+  }, [mobStatus.active, mobStatus.event?.lat, mobStatus.event?.lon]);
 
   // ── Chart Annotations ──────────────────────────────────────────────
   const [annotationMode, setAnnotationMode] = useState(false);
@@ -3052,6 +3210,76 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     loadWindData(lat, lon);
   }, [windEnabled, userLocation, loadWindData]);
 
+  // ── Precipitation radar data fetching ─────────────────────────────
+  useEffect(() => {
+    if (!radarEnabled) {
+      setRadarTileUrl(null);
+      setRadarFrames([]);
+      setRadarFrameIndex(0);
+      setRadarPlaying(false);
+      if (radarAnimRef.current) { clearInterval(radarAnimRef.current); radarAnimRef.current = null; }
+      return;
+    }
+
+    setRadarLoading(true);
+    getRadarFrames(10).then(({ frames, nowcast }) => {
+      const allFrames = [...frames, ...nowcast];
+      setRadarFrames(allFrames);
+      if (allFrames.length > 0) {
+        // Start at last observed frame (before nowcast)
+        const startIdx = Math.max(0, frames.length - 1);
+        setRadarFrameIndex(startIdx);
+        setRadarTileUrl(allFrames[startIdx].tileUrl);
+      }
+    }).catch((err) => {
+      console.warn('[OpenCatch] Radar data error:', err);
+    }).finally(() => {
+      setRadarLoading(false);
+    });
+  }, [radarEnabled]);
+
+  // Radar animation loop
+  useEffect(() => {
+    if (!radarPlaying || radarFrames.length === 0) {
+      if (radarAnimRef.current) { clearInterval(radarAnimRef.current); radarAnimRef.current = null; }
+      return;
+    }
+
+    radarAnimRef.current = setInterval(() => {
+      setRadarFrameIndex((prev) => {
+        const next = (prev + 1) % radarFrames.length;
+        setRadarTileUrl(radarFrames[next].tileUrl);
+        return next;
+      });
+    }, 700);
+
+    return () => {
+      if (radarAnimRef.current) { clearInterval(radarAnimRef.current); radarAnimRef.current = null; }
+    };
+  }, [radarPlaying, radarFrames]);
+
+  // ── Storm cell data fetching ──────────────────────────────────────
+  useEffect(() => {
+    if (!userLocation) return;
+    // Fetch storm cells for a wide area around the user
+    const lat = userLocation.lat;
+    const lon = userLocation.lon;
+    const dLat = 3; // ~200 mile radius
+    const dLon = 3 / Math.cos((lat * Math.PI) / 180);
+    const bbox: [number, number, number, number] = [lat - dLat, lon - dLon, lat + dLat, lon + dLon];
+
+    getActiveStormCells(bbox, lat, lon).then((cells) => {
+      setStormCells(cells);
+      if (cells.length > 0) {
+        setStormGeoJSON(stormCellsToGeoJSON(cells));
+      } else {
+        setStormGeoJSON(null);
+      }
+    }).catch(() => {
+      // Silent fail — storms are supplementary
+    });
+  }, [userLocation]);
+
   // ── Access points + trails data fetching ─────────────────────────
 
   const fetchAccessForCenter = useCallback(async (lat: number, lon: number) => {
@@ -3634,7 +3862,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
               ? HYBRID_STYLE
               : mapStyle === 'bathymetry'
                 ? BATHYMETRY_STYLE
-                : ALT_STYLES[mapStyle]
+                : mapStyle === 'nautical-chart'
+                  ? ALT_STYLES['satellite']
+                  : ALT_STYLES[mapStyle]
         }
         logoEnabled={false}
         attributionEnabled={false}
@@ -3653,6 +3883,43 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
         {/* User location */}
         <UserLocation visible={!!userLocation} />
+
+        {/* NOAA nautical chart overlay — shown when nautical-chart style is selected */}
+        {mapStyle === 'nautical-chart' && RasterSource && RasterLayer && (
+          <RasterSource
+            id="noaa-chart-source"
+            tileUrlTemplates={[NOAA_CHART_TILE_URL]}
+            tileSize={256}
+          >
+            <RasterLayer
+              id="noaa-chart-layer"
+              style={{ rasterOpacity: 0.7 }}
+            />
+          </RasterSource>
+        )}
+
+        {/* No-wake zone overlay */}
+        {activeOverlays.has('no-wake-zones') && userLocation && ShapeSource && FillLayer && SymbolLayer && (
+          <NoWakeZoneOverlay
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            ShapeSource={ShapeSource}
+            FillLayer={FillLayer}
+            SymbolLayer={SymbolLayer}
+            LineLayer={LineLayer}
+          />
+        )}
+
+        {/* Navigation aids overlay (buoys, lights) */}
+        {activeOverlays.has('nav-aids') && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+          <NavigationAidsOverlay
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            ShapeSource={ShapeSource}
+            CircleLayer={CircleLayer}
+            SymbolLayer={SymbolLayer}
+          />
+        )}
 
         {/* Overlay raster tile layers */}
         {Array.from(activeOverlays).map((key) => {
@@ -4239,6 +4506,41 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             />
           </ShapeSource>
         )}
+        {/* Precipitation radar overlay */}
+        {radarEnabled && radarTileUrl && RasterSource && RasterLayer && (
+          <RasterSource
+            id="radar-tile-source"
+            tileUrlTemplates={[radarTileUrl]}
+            tileSize={256}
+          >
+            <RasterLayer
+              id="radar-tile-layer"
+              style={{ rasterOpacity: 0.55 }}
+            />
+          </RasterSource>
+        )}
+
+        {/* Storm cell polygons */}
+        {stormGeoJSON && stormGeoJSON.features.length > 0 && ShapeSource && FillLayer && LineLayer && (
+          <ShapeSource id="storm-cell-source" shape={stormGeoJSON as any}>
+            <FillLayer
+              id="storm-cell-fill"
+              style={{
+                fillColor: ['get', 'fillColor'],
+                fillOpacity: 0.5,
+              }}
+            />
+            <LineLayer
+              id="storm-cell-outline"
+              style={{
+                lineColor: ['get', 'color'],
+                lineWidth: 2,
+                lineOpacity: 0.9,
+              }}
+            />
+          </ShapeSource>
+        )}
+
         {/* Live track recording line */}
         {liveTrackGeoJSON && ShapeSource && LineLayer && dismissedTrackId !== liveTrack?.id && (
           <ShapeSource id="live-track-source" shape={liveTrackGeoJSON}>
@@ -4343,6 +4645,91 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           );
         })()}
 
+        {/* ── Anchor Watch overlay ─────────────────────────────────────── */}
+        {anchorStatus.active && anchorCircleFeature && ShapeSource && FillLayer && LineLayer && (
+          <ShapeSource
+            id="anchor-circle-source"
+            shape={{
+              type: 'FeatureCollection',
+              features: [anchorCircleFeature],
+            } as any}
+          >
+            <FillLayer
+              id="anchor-circle-fill"
+              style={{
+                fillColor: anchorStatus.alarm ? 'rgba(196, 75, 75, 0.15)' : 'rgba(10, 110, 189, 0.10)',
+                fillOutlineColor: anchorStatus.alarm ? palette.error : palette.accent,
+              }}
+            />
+            <LineLayer
+              id="anchor-circle-outline"
+              style={{
+                lineColor: anchorStatus.alarm ? palette.error : palette.accent,
+                lineWidth: 2,
+                lineDasharray: [6, 4],
+                lineOpacity: 0.8,
+              }}
+            />
+          </ShapeSource>
+        )}
+        {anchorStatus.active && anchorPointGeoJSON && ShapeSource && CircleLayer && SymbolLayer && (
+          <ShapeSource id="anchor-point-source" shape={anchorPointGeoJSON as any}>
+            <CircleLayer
+              id="anchor-point-circle"
+              style={{
+                circleColor: '#1A1A18',
+                circleRadius: 10,
+                circleStrokeColor: '#FFFFFF',
+                circleStrokeWidth: 2,
+                circleOpacity: 0.9,
+              }}
+            />
+            <SymbolLayer
+              id="anchor-point-label"
+              style={{
+                textField: '\u2693',
+                textSize: 14,
+                textColor: '#FFFFFF',
+                textOffset: [0, 0],
+              }}
+            />
+          </ShapeSource>
+        )}
+
+        {/* ── MOB marker overlay ───────────────────────────────────────── */}
+        {mobStatus.active && mobPointGeoJSON && ShapeSource && CircleLayer && SymbolLayer && (
+          <ShapeSource id="mob-point-source" shape={mobPointGeoJSON as any}>
+            <CircleLayer
+              id="mob-point-outer"
+              style={{
+                circleColor: 'rgba(196, 75, 75, 0.25)',
+                circleRadius: 24,
+                circleOpacity: 0.8,
+              }}
+            />
+            <CircleLayer
+              id="mob-point-inner"
+              style={{
+                circleColor: palette.error,
+                circleRadius: 10,
+                circleStrokeColor: '#FFFFFF',
+                circleStrokeWidth: 3,
+                circleOpacity: 1,
+              }}
+            />
+            <SymbolLayer
+              id="mob-point-label"
+              style={{
+                textField: 'MOB',
+                textSize: 10,
+                textColor: '#FFFFFF',
+                textFont: ['Open Sans Bold'],
+                textOffset: [0, -2.5],
+              }}
+            />
+          </ShapeSource>
+        )}
+
       </MLMapView>
 
       {/* Recording banner — tap to open TrackRecordingScreen */}
@@ -4378,6 +4765,49 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           <Ionicons name="close-circle" size={16} color={palette.textMuted} />
           <Text style={styles.dismissTrackText}>Dismiss track overlay</Text>
         </Pressable>
+      )}
+
+      {/* ── Anchor Watch Active Banner ──────────────────────────────── */}
+      {anchorStatus.active && (
+        <Animated.View
+          style={[
+            styles.anchorWatchBanner,
+            anchorStatus.alarm && styles.anchorWatchBannerAlarm,
+            { transform: [{ scale: anchorStatus.alarm ? anchorBannerPulse : 1 }] },
+          ]}
+        >
+          <Text style={styles.anchorWatchBannerIcon}>{'\u2693'}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.anchorWatchBannerTitle}>
+              {anchorStatus.alarm ? 'DRIFT ALARM!' : 'Anchor Watch Active'}
+            </Text>
+            <Text style={styles.anchorWatchBannerSub}>
+              Drift: {Math.round(anchorStatus.driftDistance)}m / {anchorStatus.watch?.radiusMeters ?? 0}m
+            </Text>
+          </View>
+          <Text style={[
+            styles.anchorWatchBannerBearing,
+            anchorStatus.alarm && { color: '#FFFFFF' },
+          ]}>
+            {Math.round(anchorStatus.bearing)}{'\u00B0'}
+          </Text>
+        </Animated.View>
+      )}
+
+      {/* ── MOB Active Banner ──────────────────────────────────────── */}
+      {mobStatus.active && mobStatus.event && (
+        <View style={styles.mobBanner}>
+          <View style={styles.mobBannerDot} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.mobBannerTitle}>MAN OVERBOARD</Text>
+            <Text style={styles.mobBannerSub}>
+              {mobStatus.distanceMeters < 1000
+                ? `${Math.round(mobStatus.distanceMeters)}m`
+                : `${(mobStatus.distanceMeters / 1000).toFixed(2)}km`}
+              {' \u00B7 '}{Math.round(mobStatus.bearing)}{'\u00B0'}
+            </Text>
+          </View>
+        </View>
       )}
 
       {/* Search bar overlay */}
@@ -4632,6 +5062,17 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         accessibilityLabel={windEnabled ? 'Hide wind overlay' : 'Show wind overlay'}
       />
 
+      {/* Radar overlay toggle button */}
+      <MapToggleButton
+        style={styles.radarButton}
+        activeStyle={styles.radarButtonActive}
+        isActive={radarEnabled}
+        isLoading={radarLoading}
+        icon="rainy-outline"
+        onPress={() => setRadarEnabled((prev) => !prev)}
+        accessibilityLabel={radarEnabled ? 'Hide precipitation radar' : 'Show precipitation radar'}
+      />
+
       {/* Access points toggle button */}
       <MapToggleButton
         style={styles.accessButton}
@@ -4644,6 +5085,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       />
 
       {/* Catch photos toggle available via layer picker */}
+
+      {/* Speed/Course HUD — shows when moving at boating speed */}
+      <SpeedCourseHUD />
 
       {/* Fishing time banner — shows when conditions are good */}
       {userLocation && (
@@ -4685,6 +5129,51 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             <Text style={styles.windLegendLabel}>Storm</Text>
           </View>
           {windLoading && <ActivityIndicator size="small" color={palette.accent} style={{ marginLeft: 8 }} />}
+        </View>
+      )}
+
+      {/* Precipitation radar controls */}
+      {radarEnabled && radarFrames.length > 0 && (
+        <View style={styles.radarControlBanner}>
+          <Pressable
+            onPress={() => setRadarPlaying((prev) => !prev)}
+            style={styles.radarPlayButton}
+          >
+            <Ionicons
+              name={radarPlaying ? 'pause' : 'play'}
+              size={16}
+              color="#FFFFFF"
+            />
+          </Pressable>
+          <Text style={styles.radarTimestamp}>
+            {radarFrames[radarFrameIndex]?.timestamp.label ?? ''}
+            {radarFrames[radarFrameIndex]?.timestamp.isForecast ? ' (forecast)' : ''}
+          </Text>
+          <View style={styles.radarLegendRow}>
+            {RADAR_LEGEND.map((entry) => (
+              <View key={entry.label} style={styles.windLegend}>
+                <View style={[styles.windLegendDot, { backgroundColor: entry.color }]} />
+                <Text style={styles.windLegendLabel}>{entry.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Storm cell warnings */}
+      {stormCells.length > 0 && (
+        <View style={styles.stormBanner}>
+          <Ionicons name="thunderstorm" size={16} color="#D50000" style={{ marginRight: 6 }} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.stormBannerTitle}>
+              {stormCells.length} severe warning{stormCells.length > 1 ? 's' : ''} nearby
+            </Text>
+            <Text style={styles.stormBannerDetail} numberOfLines={1}>
+              {stormCells[0].event}
+              {stormCells[0].distanceMiles != null ? ` — ${stormCells[0].distanceMiles} mi away` : ''}
+              {stormCells[0].etaMinutes != null ? ` (ETA ${stormCells[0].etaMinutes} min)` : ''}
+            </Text>
+          </View>
         </View>
       )}
 
@@ -4915,6 +5404,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         currentStyle={mapStyle}
         activeOverlays={activeOverlays}
         showQualityPins={showQualityPins}
+        userLocation={userLocation}
         onSelectStyle={setMapStyle}
         onToggleOverlay={handleToggleOverlay}
         onToggleQualityPins={() => setShowQualityPins((p) => !p)}
@@ -6380,6 +6870,15 @@ const styles = StyleSheet.create({
   contourButton: { position: 'absolute', top: Platform.OS === 'ios' ? 455 : 415, zIndex: 5, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
   windButton: { position: 'absolute', top: Platform.OS === 'ios' ? 305 : 265, zIndex: 5, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
   windButtonActive: { backgroundColor: palette.accent },
+  radarButton: { position: 'absolute', top: Platform.OS === 'ios' ? 505 : 465, zIndex: 5, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  radarButtonActive: { backgroundColor: '#1565C0' },
+  radarControlBanner: { position: 'absolute', bottom: Platform.OS === 'ios' ? 120 : 100, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.75)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, gap: 8, zIndex: 10 },
+  radarPlayButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: palette.accent, alignItems: 'center', justifyContent: 'center' },
+  radarTimestamp: { color: '#FFFFFF', fontSize: 12, fontWeight: '600', minWidth: 80 },
+  radarLegendRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, flex: 1, justifyContent: 'flex-end' },
+  stormBanner: { position: 'absolute', top: Platform.OS === 'ios' ? 100 : 80, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFEBEE', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: '#FFCDD2', zIndex: 10, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  stormBannerTitle: { fontSize: 13, fontWeight: '700', color: '#D50000' },
+  stormBannerDetail: { fontSize: 11, color: '#B71C1C', marginTop: 1 },
   windSpinner: { position: 'absolute', top: -4, right: -4 },
   windBanner: { position: 'absolute', top: Platform.OS === 'ios' ? 60 : 40, right: 70, flexDirection: 'row', alignItems: 'center', backgroundColor: palette.surface, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
   windBannerText: { color: palette.text, fontSize: 13, fontWeight: '600', marginRight: 8 },
@@ -6742,6 +7241,89 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: palette.textMuted,
     fontWeight: '500',
+  },
+
+  // Anchor Watch banner
+  anchorWatchBanner: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 118 : 78,
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(10, 110, 189, 0.94)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
+    shadowColor: palette.accent,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  anchorWatchBannerAlarm: {
+    backgroundColor: 'rgba(196, 75, 75, 0.96)',
+    shadowColor: '#C44B4B',
+  },
+  anchorWatchBannerIcon: {
+    fontSize: 20,
+    color: '#FFFFFF',
+  },
+  anchorWatchBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  anchorWatchBannerSub: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 1,
+    fontVariant: ['tabular-nums'],
+  },
+  anchorWatchBannerBearing: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.9)',
+    fontVariant: ['tabular-nums'],
+  },
+
+  // MOB banner
+  mobBanner: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 118 : 78,
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(183, 28, 28, 0.96)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
+    shadowColor: '#B71C1C',
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 10,
+  },
+  mobBannerDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+  },
+  mobBannerTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 1,
+  },
+  mobBannerSub: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 1,
+    fontVariant: ['tabular-nums'],
   },
 });
 

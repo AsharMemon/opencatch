@@ -27,6 +27,13 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Optional deps for file import
+let DocumentPicker: any;
+let FileSystem: any;
+try { DocumentPicker = require('expo-document-picker'); } catch {}
+try { FileSystem = require('expo-file-system'); } catch {}
 import { palette } from '../theme/palette';
 import { type as typeStyles, fonts } from '../theme/typography';
 import {
@@ -36,6 +43,14 @@ import {
   type FishingTrack,
   type TrackStats,
 } from '../services/trackRecorder';
+import {
+  importGPX as parseGPX,
+  importKML as parseKML,
+  getImportPreview,
+  shareGPXFile,
+  shareKMLFile,
+  type ImportPreview,
+} from '../services/gpxExport';
 
 // MapLibre — optional (only works on native)
 let MLMapView: any = null;
@@ -583,7 +598,206 @@ const detailStyles = StyleSheet.create({
   },
 });
 
+// ── Import Preview Modal ─────────────────────────────────────────────────────
+
+function ImportPreviewModal({
+  visible,
+  preview,
+  fileName,
+  onImport,
+  onCancel,
+  importing,
+}: {
+  visible: boolean;
+  preview: ImportPreview | null;
+  fileName: string;
+  onImport: () => void;
+  onCancel: () => void;
+  importing: boolean;
+}) {
+  if (!preview) return null;
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={importStyles.overlay}>
+        <View style={importStyles.sheet}>
+          <View style={importStyles.handle} />
+          <Text style={importStyles.title}>Import File</Text>
+          <Text style={importStyles.fileName} numberOfLines={1}>{fileName}</Text>
+
+          <View style={importStyles.previewGrid}>
+            <View style={importStyles.previewItem}>
+              <Text style={importStyles.previewValue}>{preview.trackCount}</Text>
+              <Text style={importStyles.previewLabel}>
+                Track{preview.trackCount !== 1 ? 's' : ''}
+              </Text>
+            </View>
+            <View style={importStyles.previewItem}>
+              <Text style={importStyles.previewValue}>{preview.totalPoints}</Text>
+              <Text style={importStyles.previewLabel}>Points</Text>
+            </View>
+            <View style={importStyles.previewItem}>
+              <Text style={importStyles.previewValue}>{preview.totalDistanceMiles.toFixed(1)} mi</Text>
+              <Text style={importStyles.previewLabel}>Distance</Text>
+            </View>
+            <View style={importStyles.previewItem}>
+              <Text style={importStyles.previewValue}>{preview.totalWaypoints}</Text>
+              <Text style={importStyles.previewLabel}>Waypoints</Text>
+            </View>
+          </View>
+
+          {preview.trackNames.length > 0 && (
+            <View style={importStyles.namesList}>
+              {preview.trackNames.slice(0, 5).map((name, i) => (
+                <View key={i} style={importStyles.nameRow}>
+                  <Ionicons name="trail-sign" size={14} color={palette.accent} />
+                  <Text style={importStyles.nameText} numberOfLines={1}>{name}</Text>
+                </View>
+              ))}
+              {preview.trackNames.length > 5 && (
+                <Text style={importStyles.moreText}>
+                  +{preview.trackNames.length - 5} more
+                </Text>
+              )}
+            </View>
+          )}
+
+          <View style={importStyles.btnRow}>
+            <Pressable style={importStyles.cancelBtn} onPress={onCancel}>
+              <Text style={importStyles.cancelBtnText}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              style={[importStyles.importBtn, importing && { opacity: 0.6 }]}
+              onPress={onImport}
+              disabled={importing}
+            >
+              {importing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="download" size={16} color="#FFFFFF" />
+                  <Text style={importStyles.importBtnText}>Import</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const importStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: palette.overlay,
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: palette.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: palette.border,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: palette.text,
+    marginBottom: 4,
+  },
+  fileName: {
+    fontSize: 13,
+    color: palette.textMuted,
+    marginBottom: 16,
+  },
+  previewGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: palette.surfaceRaised,
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginBottom: 12,
+  },
+  previewItem: {
+    alignItems: 'center',
+  },
+  previewValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: palette.text,
+  },
+  previewLabel: {
+    fontSize: 10,
+    color: palette.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: 2,
+  },
+  namesList: {
+    gap: 6,
+    marginBottom: 16,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  nameText: {
+    fontSize: 14,
+    color: palette.textSecondary,
+    flex: 1,
+  },
+  moreText: {
+    fontSize: 12,
+    color: palette.textMuted,
+    fontStyle: 'italic',
+    paddingLeft: 22,
+  },
+  btnRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: palette.surfaceRaised,
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: palette.textSecondary,
+  },
+  importBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: palette.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  importBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+});
+
 // ── Main Component ───────────────────────────────────────────────────────────
+
+const TRACKS_STORAGE_KEY = '@opencatch/tracks';
 
 export function TrackHistoryScreen({ navigation }: any) {
   const [tracks, setTracks] = useState<FishingTrack[]>([]);
@@ -591,6 +805,14 @@ export function TrackHistoryScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [viewingTrack, setViewingTrack] = useState<FishingTrack | null>(null);
+
+  // Import state
+  const [importModalVisible, setImportModalVisible] = useState(false);
+  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
+  const [importFileName, setImportFileName] = useState('');
+  const [importFileContent, setImportFileContent] = useState('');
+  const [importIsKml, setImportIsKml] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -619,16 +841,109 @@ export function TrackHistoryScreen({ navigation }: any) {
     }
   }, [tracks, sortKey]);
 
-  const handleExport = async (track: FishingTrack) => {
+  // ── Import handling ──
+
+  const handlePickFile = async () => {
     try {
-      const gpx = trackRecorder.exportGPX(track);
-      await Share.share({
-        message: gpx,
-        title: `${track.name}.gpx`,
+      if (!DocumentPicker || !FileSystem) {
+        Alert.alert('Not Available', 'File import requires expo-document-picker and expo-file-system.');
+        return;
+      }
+
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/gpx+xml', 'application/vnd.google-earth.kml+xml', 'text/xml', 'application/xml', '*/*'],
+        copyToCacheDirectory: true,
       });
-    } catch {
-      Alert.alert('Export Failed', 'Could not export track as GPX.');
+
+      if (result.canceled || !result.assets?.[0]) return;
+
+      const asset = result.assets[0];
+      const name = asset.name ?? 'unknown';
+      const isKml = name.toLowerCase().endsWith('.kml');
+
+      // Read file content
+      const content = await FileSystem.readAsStringAsync(asset.uri, {
+        encoding: 'utf8',
+      });
+
+      if (!content || content.length < 20) {
+        Alert.alert('Invalid File', 'The file appears to be empty or invalid.');
+        return;
+      }
+
+      // Generate preview
+      const preview = getImportPreview(content, isKml);
+      if (preview.trackCount === 0 && preview.totalPoints === 0) {
+        Alert.alert('No Data Found', 'Could not find any tracks or waypoints in this file.');
+        return;
+      }
+
+      setImportFileName(name);
+      setImportFileContent(content);
+      setImportIsKml(isKml);
+      setImportPreview(preview);
+      setImportModalVisible(true);
+    } catch (err) {
+      Alert.alert('Import Failed', 'Could not read the selected file.');
     }
+  };
+
+  const handleConfirmImport = async () => {
+    setImporting(true);
+    try {
+      const imported = importIsKml ? parseKML(importFileContent) : parseGPX(importFileContent);
+      if (imported.length === 0) {
+        Alert.alert('Import Failed', 'No valid tracks found in the file.');
+        setImporting(false);
+        return;
+      }
+
+      // Save imported tracks alongside existing ones
+      const existing = await trackRecorder.getSavedTracks();
+      const merged = [...imported, ...existing];
+      await AsyncStorage.setItem(TRACKS_STORAGE_KEY, JSON.stringify(merged));
+
+      setTracks(merged);
+      const s = await trackRecorder.getStats();
+      setStats(s);
+      setImportModalVisible(false);
+      setImportFileContent('');
+      setImportPreview(null);
+
+      Alert.alert(
+        'Import Complete',
+        `Imported ${imported.length} track${imported.length !== 1 ? 's' : ''} successfully.`,
+      );
+    } catch {
+      Alert.alert('Import Failed', 'An error occurred while importing the file.');
+    }
+    setImporting(false);
+  };
+
+  const handleExport = async (track: FishingTrack) => {
+    Alert.alert('Export Format', 'Choose export format:', [
+      {
+        text: 'GPX',
+        onPress: async () => {
+          try {
+            await shareGPXFile([track]);
+          } catch {
+            Alert.alert('Export Failed', 'Could not export track.');
+          }
+        },
+      },
+      {
+        text: 'KML (Google Earth)',
+        onPress: async () => {
+          try {
+            await shareKMLFile([track]);
+          } catch {
+            Alert.alert('Export Failed', 'Could not export track.');
+          }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const handleDelete = (track: FishingTrack) => {
@@ -695,7 +1010,7 @@ export function TrackHistoryScreen({ navigation }: any) {
         </View>
       )}
 
-      {/* Sort controls */}
+      {/* Sort + Import controls */}
       <View style={styles.sortRow}>
         <Text style={styles.sortTitle}>Sort by</Text>
         {(['date', 'distance', 'duration'] as SortKey[]).map((key) => (
@@ -709,6 +1024,11 @@ export function TrackHistoryScreen({ navigation }: any) {
             </Text>
           </Pressable>
         ))}
+        <View style={{ flex: 1 }} />
+        <Pressable style={styles.importBtn} onPress={handlePickFile}>
+          <Ionicons name="cloud-upload-outline" size={16} color={palette.accent} />
+          <Text style={styles.importBtnText}>Import</Text>
+        </Pressable>
       </View>
 
       {/* Track list */}
@@ -716,14 +1036,23 @@ export function TrackHistoryScreen({ navigation }: any) {
         <View style={styles.emptyState}>
           <Ionicons name="trail-sign-outline" size={48} color={palette.textDim} />
           <Text style={styles.emptyTitle}>No Tracks Yet</Text>
-          <Text style={styles.emptySubtitle}>Start recording a trip to see it here</Text>
-          <Pressable
-            style={styles.emptyBtn}
-            onPress={() => navigation.navigate('TrackRecording')}
-          >
-            <Ionicons name="navigate" size={16} color="#FFFFFF" />
-            <Text style={styles.emptyBtnText}>Start a Trip</Text>
-          </Pressable>
+          <Text style={styles.emptySubtitle}>Start recording a trip or import a GPX/KML file</Text>
+          <View style={styles.emptyBtnRow}>
+            <Pressable
+              style={styles.emptyBtn}
+              onPress={() => navigation.navigate('TrackRecording')}
+            >
+              <Ionicons name="navigate" size={16} color="#FFFFFF" />
+              <Text style={styles.emptyBtnText}>Start a Trip</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.emptyBtn, { backgroundColor: palette.accentDeep }]}
+              onPress={handlePickFile}
+            >
+              <Ionicons name="cloud-upload" size={16} color="#FFFFFF" />
+              <Text style={styles.emptyBtnText}>Import File</Text>
+            </Pressable>
+          </View>
         </View>
       ) : (
         <FlatList
@@ -740,6 +1069,20 @@ export function TrackHistoryScreen({ navigation }: any) {
         track={viewingTrack}
         visible={viewingTrack !== null}
         onClose={() => setViewingTrack(null)}
+      />
+
+      {/* Import preview modal */}
+      <ImportPreviewModal
+        visible={importModalVisible}
+        preview={importPreview}
+        fileName={importFileName}
+        onImport={handleConfirmImport}
+        onCancel={() => {
+          setImportModalVisible(false);
+          setImportFileContent('');
+          setImportPreview(null);
+        }}
+        importing={importing}
       />
     </View>
   );
@@ -823,6 +1166,22 @@ const styles = StyleSheet.create({
     color: palette.accent,
   },
 
+  // Import button in sort row
+  importBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: palette.accentLight,
+  },
+  importBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: palette.accent,
+  },
+
   // Empty state
   emptyState: {
     flex: 1,
@@ -842,6 +1201,11 @@ const styles = StyleSheet.create({
     color: palette.textMuted,
     textAlign: 'center',
   },
+  emptyBtnRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+  },
   emptyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -850,7 +1214,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 10,
-    marginTop: 16,
   },
   emptyBtnText: {
     fontSize: 15,

@@ -39,6 +39,11 @@ export type RootStackParamList = {
   Annotations: undefined;
   ActivityLog: undefined;
   TripPlanner: undefined;
+  FuelCalculator: undefined;
+  Maintenance: undefined;
+  LakeFinder: undefined;
+  KnotGuide: undefined;
+  IceFishing: undefined;
 };
 
 // Screen prop helpers

@@ -19,7 +19,7 @@ export interface StaticSpot {
   country: 'US' | 'CA';
 }
 
-const RAW_SPOTS: StaticSpot[] = [
+export const RAW_SPOTS: StaticSpot[] = [
   // ── Great Lakes ──
   { id: 'top-1', name: 'Lake Erie', lat: 42.2, lon: -81.2, type: 'lake', state: 'OH', country: 'US' },
   { id: 'top-2', name: 'Lake Michigan', lat: 43.5, lon: -87.0, type: 'lake', state: 'WI', country: 'US' },

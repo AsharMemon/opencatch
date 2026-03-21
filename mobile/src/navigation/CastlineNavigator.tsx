@@ -82,6 +82,11 @@ const SettingsScreen = withSuspense(lazy(() => import('../screens/SettingsScreen
 const AnnotationScreen = withSuspense(lazy(() => import('../screens/AnnotationScreen').then(m => ({ default: m.AnnotationScreen }))));
 const ActivityLogScreen = withSuspense(lazy(() => import('../screens/ActivityLogScreen').then(m => ({ default: m.ActivityLogScreen }))));
 const TripPlannerScreen = withSuspense(lazy(() => import('../screens/TripPlannerScreen').then(m => ({ default: m.TripPlannerScreen }))));
+const FuelCalculatorScreen = withSuspense(lazy(() => import('../screens/FuelCalculatorScreen').then(m => ({ default: m.FuelCalculatorScreen }))));
+const MaintenanceScreen = withSuspense(lazy(() => import('../screens/MaintenanceScreen').then(m => ({ default: m.MaintenanceScreen }))));
+const LakeFinderScreen = withSuspense(lazy(() => import('../screens/LakeFinderScreen').then(m => ({ default: m.LakeFinderScreen }))));
+const KnotGuideScreen = withSuspense(lazy(() => import('../screens/KnotGuideScreen').then(m => ({ default: m.KnotGuideScreen }))));
+const IceFishingScreen = withSuspense(lazy(() => import('../screens/IceFishingScreen').then(m => ({ default: m.IceFishingScreen }))));
 
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
@@ -339,6 +344,31 @@ export function OpenCatchNavigator({ user, onLogout }: NavProps) {
         name="TripPlanner"
         component={TripPlannerScreen}
         options={{ title: 'Trip Planner' }}
+      />
+      <Stack.Screen
+        name="FuelCalculator"
+        component={FuelCalculatorScreen}
+        options={{ title: 'Fuel Calculator' }}
+      />
+      <Stack.Screen
+        name="Maintenance"
+        component={MaintenanceScreen}
+        options={{ title: 'Engine & Maintenance' }}
+      />
+      <Stack.Screen
+        name="LakeFinder"
+        component={LakeFinderScreen}
+        options={{ title: 'Lake Finder' }}
+      />
+      <Stack.Screen
+        name="KnotGuide"
+        component={KnotGuideScreen}
+        options={{ title: 'Knots & Rigs' }}
+      />
+      <Stack.Screen
+        name="IceFishing"
+        component={IceFishingScreen}
+        options={{ title: 'Ice Fishing' }}
       />
     </Stack.Navigator>
   );

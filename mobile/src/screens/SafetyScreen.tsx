@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   ScrollView,
   View,
@@ -11,7 +11,9 @@ import {
   Share,
   Platform,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
+import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
@@ -22,6 +24,32 @@ import {
   formatBoatDescription,
   type BoatProfile,
 } from '../services/boatProfile';
+import {
+  startAnchorWatch,
+  stopAnchorWatch,
+  getAnchorStatus,
+  setAnchorRadius,
+  addAnchorListener,
+  isAnchorWatchActive,
+  type AnchorStatus,
+} from '../services/anchorAlarm';
+import {
+  triggerMOB,
+  cancelMOB,
+  isMOBActive,
+  addMOBListener,
+  type MOBStatus,
+} from '../services/manOverboard';
+import {
+  shareCurrentPosition,
+  startSharing,
+  stopSharing,
+  isSharingActive,
+  getSharingTimeRemaining,
+  addSharingListener,
+  type SharingSession,
+} from '../services/liveLocationSharing';
+import { hapticHeavy, hapticError, hapticSuccess } from '../utils/haptics';
 import type { RootStackProps } from '../types/navigation';
 
 // ---------------------------------------------------------------------------
@@ -262,6 +290,121 @@ export function SafetyScreen({ navigation }: RootStackProps<'Safety'>) {
   // -- Saved plans (in-memory for now) --
   const [savedPlans, setSavedPlans] = useState<FloatPlan[]>([]);
 
+  // -- MOB state --
+  const [mobStatus, setMobStatus] = useState<MOBStatus>({
+    active: false,
+    event: null,
+    distanceMeters: 0,
+    bearing: 0,
+    currentLat: null,
+    currentLon: null,
+  });
+  const mobPulse = useRef(new Animated.Value(1)).current;
+
+  // -- Anchor Watch state --
+  const [anchorStatus, setAnchorStatus] = useState<AnchorStatus>(getAnchorStatus());
+  const [anchorRadius, setAnchorRadiusLocal] = useState(150); // default 150m
+  const [settingAnchor, setSettingAnchor] = useState(false);
+  const anchorPulse = useRef(new Animated.Value(1)).current;
+
+  // -- Live Location Sharing state --
+  const [sharingSession, setSharingSession] = useState<SharingSession | null>(null);
+  const [sharingTimeLeft, setSharingTimeLeft] = useState<string | null>(null);
+
+  // -- MOB pulse animation --
+  useEffect(() => {
+    if (!mobStatus.active) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(mobPulse, { toValue: 1.15, duration: 600, useNativeDriver: true }),
+        Animated.timing(mobPulse, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [mobStatus.active, mobPulse]);
+
+  // -- Anchor alarm pulse animation --
+  useEffect(() => {
+    if (!anchorStatus.alarm) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(anchorPulse, { toValue: 1.1, duration: 400, useNativeDriver: true }),
+        Animated.timing(anchorPulse, { toValue: 1, duration: 400, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [anchorStatus.alarm, anchorPulse]);
+
+  // -- Subscribe to service updates --
+  useEffect(() => {
+    const unsub1 = addMOBListener(setMobStatus);
+    const unsub2 = addAnchorListener(setAnchorStatus);
+    const unsub3 = addSharingListener(setSharingSession);
+    return () => { unsub1(); unsub2(); unsub3(); };
+  }, []);
+
+  // -- Sharing timer countdown --
+  useEffect(() => {
+    if (!sharingSession) {
+      setSharingTimeLeft(null);
+      return;
+    }
+    const tick = () => setSharingTimeLeft(getSharingTimeRemaining());
+    tick();
+    const iv = setInterval(tick, 30000);
+    return () => clearInterval(iv);
+  }, [sharingSession]);
+
+  // -- MOB handler --
+  const handleMOB = useCallback(async () => {
+    if (mobStatus.active) {
+      await cancelMOB();
+    } else {
+      hapticHeavy();
+      await triggerMOB();
+    }
+  }, [mobStatus.active]);
+
+  // -- Anchor Watch handlers --
+  const handleStartAnchor = useCallback(async () => {
+    setSettingAnchor(true);
+    try {
+      const Location = await import('expo-location');
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Location is required for anchor watch.');
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      await startAnchorWatch(loc.coords.latitude, loc.coords.longitude, anchorRadius);
+      hapticSuccess();
+    } catch {
+      Alert.alert('Error', 'Unable to set anchor position.');
+    } finally {
+      setSettingAnchor(false);
+    }
+  }, [anchorRadius]);
+
+  const handleStopAnchor = useCallback(async () => {
+    await stopAnchorWatch();
+    hapticSuccess();
+  }, []);
+
+  const handleRadiusChange = useCallback((value: number) => {
+    const rounded = Math.round(value);
+    setAnchorRadiusLocal(rounded);
+    if (isAnchorWatchActive()) {
+      setAnchorRadius(rounded);
+    }
+  }, []);
+
+  // -- Share Location handler --
+  const handleShareLocation = useCallback(async () => {
+    await shareCurrentPosition();
+  }, []);
+
   // -- Boat profiles --
   const [boatProfiles, setBoatProfiles] = useState<BoatProfile[]>([]);
   const [selectedBoatId, setSelectedBoatId] = useState<string | null>(null);
@@ -424,6 +567,171 @@ export function SafetyScreen({ navigation }: RootStackProps<'Safety'>) {
   // ── Render ─────────────────────────────────────────────────────────────
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+      {/* ─── Man Overboard Button ──────────────────────────────────────── */}
+      <Animated.View style={{ transform: [{ scale: mobStatus.active ? mobPulse : 1 }] }}>
+        <Pressable
+          style={[
+            styles.mobButton,
+            mobStatus.active && styles.mobButtonActive,
+          ]}
+          onPress={handleMOB}
+        >
+          <View style={styles.mobIconContainer}>
+            <Ionicons name="person" size={28} color="#FFFFFF" />
+            {mobStatus.active && (
+              <Ionicons name="alert-circle" size={14} color="#FFFFFF" style={styles.mobAlertBadge} />
+            )}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.mobTitle}>
+              {mobStatus.active ? 'MOB ACTIVE' : 'Man Overboard'}
+            </Text>
+            {mobStatus.active && mobStatus.event ? (
+              <Text style={styles.mobSubtitle}>
+                {mobStatus.distanceMeters < 1000
+                  ? `${Math.round(mobStatus.distanceMeters)}m away`
+                  : `${(mobStatus.distanceMeters / 1000).toFixed(2)}km away`}
+                {' \u00B7 '}
+                {Math.round(mobStatus.bearing)}\u00B0
+              </Text>
+            ) : (
+              <Text style={styles.mobSubtitle}>One-tap emergency GPS marker</Text>
+            )}
+          </View>
+          {mobStatus.active ? (
+            <View style={styles.mobCancelBadge}>
+              <Text style={styles.mobCancelText}>CANCEL</Text>
+            </View>
+          ) : (
+            <Ionicons name="hand-left" size={22} color="rgba(255,255,255,0.7)" />
+          )}
+        </Pressable>
+      </Animated.View>
+
+      {/* ─── Anchor Watch ──────────────────────────────────────────────── */}
+      <View style={[styles.card, anchorStatus.alarm && styles.cardAlarm]}>
+        <SectionHeader title="Anchor Watch" icon="locate-outline" />
+        <Text style={styles.cardDescription}>
+          Set your anchor position and get alerted if you drift beyond the safe radius.
+        </Text>
+
+        {/* Radius slider */}
+        <View style={styles.anchorSliderRow}>
+          <Text style={styles.anchorSliderLabel}>Watch Radius</Text>
+          <Text style={styles.anchorSliderValue}>{anchorRadius}m</Text>
+        </View>
+        <Slider
+          style={styles.anchorSlider}
+          minimumValue={50}
+          maximumValue={500}
+          step={10}
+          value={anchorRadius}
+          onValueChange={handleRadiusChange}
+          minimumTrackTintColor={palette.accent}
+          maximumTrackTintColor={palette.borderLight}
+          thumbTintColor={palette.accent}
+        />
+        <View style={styles.anchorSliderLabels}>
+          <Text style={styles.anchorSliderMark}>50m</Text>
+          <Text style={styles.anchorSliderMark}>250m</Text>
+          <Text style={styles.anchorSliderMark}>500m</Text>
+        </View>
+
+        {/* Status display */}
+        {anchorStatus.active && (
+          <Animated.View
+            style={[
+              styles.anchorStatusBox,
+              anchorStatus.alarm && styles.anchorStatusAlarm,
+              { transform: [{ scale: anchorStatus.alarm ? anchorPulse : 1 }] },
+            ]}
+          >
+            <Ionicons
+              name={anchorStatus.alarm ? 'warning' : 'checkmark-circle'}
+              size={20}
+              color={anchorStatus.alarm ? palette.error : palette.success}
+            />
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={[styles.anchorStatusLabel, anchorStatus.alarm && { color: palette.error }]}>
+                {anchorStatus.alarm ? 'DRIFT ALARM!' : 'Holding Position'}
+              </Text>
+              <Text style={styles.anchorStatusDrift}>
+                Drift: {Math.round(anchorStatus.driftDistance)}m / {anchorStatus.watch?.radiusMeters ?? anchorRadius}m
+                {' \u00B7 '}{Math.round(anchorStatus.bearing)}\u00B0
+              </Text>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Start / Stop button */}
+        <Pressable
+          style={[
+            styles.anchorButton,
+            anchorStatus.active ? styles.anchorButtonStop : styles.anchorButtonStart,
+          ]}
+          onPress={anchorStatus.active ? handleStopAnchor : handleStartAnchor}
+          disabled={settingAnchor}
+        >
+          {settingAnchor ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <Ionicons
+                name={anchorStatus.active ? 'stop-circle' : 'navigate'}
+                size={20}
+                color="#FFFFFF"
+              />
+              <Text style={styles.anchorButtonText}>
+                {anchorStatus.active ? 'Stop Anchor Watch' : 'Drop Anchor & Start Watch'}
+              </Text>
+            </>
+          )}
+        </Pressable>
+      </View>
+
+      {/* ─── Live Location Sharing ─────────────────────────────────────── */}
+      <View style={styles.card}>
+        <SectionHeader title="Share Location" icon="location-outline" />
+        <Text style={styles.cardDescription}>
+          Share your real-time position with someone on shore via text or email.
+        </Text>
+
+        {sharingSession ? (
+          <View style={styles.sharingActiveBox}>
+            <View style={styles.sharingDot} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sharingActiveText}>Sharing Active</Text>
+              {sharingTimeLeft && (
+                <Text style={styles.sharingTimeText}>{sharingTimeLeft} remaining</Text>
+              )}
+            </View>
+            <Pressable style={styles.sharingUpdateBtn} onPress={handleShareLocation}>
+              <Ionicons name="refresh" size={16} color={palette.accent} />
+              <Text style={styles.sharingUpdateText}>Update</Text>
+            </Pressable>
+            <Pressable style={styles.sharingStopBtn} onPress={stopSharing}>
+              <Ionicons name="stop-circle" size={16} color={palette.error} />
+            </Pressable>
+          </View>
+        ) : null}
+
+        <View style={styles.shareButtonRow}>
+          <Pressable style={styles.secondaryBtn} onPress={handleShareLocation}>
+            <Ionicons name="share-outline" size={18} color={palette.accent} />
+            <Text style={styles.secondaryBtnText}>Share Now</Text>
+          </Pressable>
+          {!sharingSession && (
+            <Pressable
+              style={styles.primaryBtn}
+              onPress={() => startSharing(4)}
+            >
+              <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
+              <Text style={styles.primaryBtnText}>Start Live Sharing</Text>
+            </Pressable>
+          )}
+        </View>
+      </View>
+
       {/* ─── Emergency SOS ─────────────────────────────────────────────── */}
       <View style={styles.sosContainer}>
         <Text style={[typeStyles.screenTitle, { color: '#FFFFFF', textAlign: 'center', marginBottom: 4 }]}>
@@ -896,6 +1204,184 @@ const styles = StyleSheet.create({
     color: palette.textMuted,
     fontStyle: 'italic',
     marginBottom: 8,
+  },
+
+  // MOB
+  mobButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#B71C1C',
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 16,
+    gap: 14,
+  },
+  mobButtonActive: {
+    backgroundColor: '#D32F2F',
+    borderWidth: 2,
+    borderColor: '#FF8A80',
+  },
+  mobIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mobAlertBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+  },
+  mobTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  mobSubtitle: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
+    marginTop: 2,
+  },
+  mobCancelBadge: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  mobCancelText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+
+  // Anchor Watch
+  cardAlarm: {
+    borderColor: palette.error,
+    borderWidth: 2,
+  },
+  anchorSliderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  anchorSliderLabel: {
+    fontSize: 13,
+    color: palette.textSecondary,
+    fontWeight: '500',
+  },
+  anchorSliderValue: {
+    fontSize: 15,
+    color: palette.accent,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums' as const],
+  },
+  anchorSlider: {
+    width: '100%',
+    height: 36,
+  } as any,
+  anchorSliderLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  anchorSliderMark: {
+    fontSize: 10,
+    color: palette.textDim,
+  },
+  anchorStatusBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(61, 139, 55, 0.08)',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 14,
+  },
+  anchorStatusAlarm: {
+    backgroundColor: 'rgba(196, 75, 75, 0.1)',
+  },
+  anchorStatusLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: palette.success,
+  },
+  anchorStatusDrift: {
+    fontSize: 12,
+    color: palette.textSecondary,
+    marginTop: 2,
+    fontVariant: ['tabular-nums' as const],
+  },
+  anchorButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    paddingVertical: 14,
+    gap: 8,
+  },
+  anchorButtonStart: {
+    backgroundColor: palette.accent,
+  },
+  anchorButtonStop: {
+    backgroundColor: palette.error,
+  },
+  anchorButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
+  // Live Location Sharing
+  sharingActiveBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(61, 139, 55, 0.08)',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 14,
+    gap: 10,
+  },
+  sharingDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: palette.success,
+  },
+  sharingActiveText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: palette.success,
+  },
+  sharingTimeText: {
+    fontSize: 12,
+    color: palette.textSecondary,
+    marginTop: 1,
+  },
+  sharingUpdateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: palette.accent,
+  },
+  sharingUpdateText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: palette.accent,
+  },
+  sharingStopBtn: {
+    padding: 6,
+  },
+  shareButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
   },
 
   // Saved plans

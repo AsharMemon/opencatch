@@ -47,6 +47,8 @@ const TOOL_CATEGORIES: ToolCategory[] = [
       { label: 'Regulations', description: 'Limits & seasons', ionicon: 'document-text', color: '#8B4513', screen: 'Regulations', params: {} },
       { label: 'Species Guide', description: 'ID & techniques', ionicon: 'fish', color: '#4682B4', screen: 'SpeciesGuide' },
       { label: 'Bait Guide', description: 'Match the hatch', ionicon: 'bug', color: '#DAA520', screen: 'BaitGuide', params: {} },
+      { label: 'Lake Finder', description: 'Find fishing spots', ionicon: 'search', color: '#0288D1', screen: 'LakeFinder' },
+      { label: 'Knots & Rigs', description: 'Knot & rig guide', ionicon: 'link', color: '#6D4C41', screen: 'KnotGuide' },
       { label: 'Safety', description: 'Float plan & alerts', ionicon: 'shield-checkmark', color: '#2E7D32', screen: 'Safety' },
       { label: 'Alerts', description: 'Weather warnings', ionicon: 'warning', color: '#E53935', screen: 'Alerts' },
       { label: 'Trip Planner', description: 'Plan fishing trips', ionicon: 'calendar', color: '#7C3AED', screen: 'TripPlanner' },
@@ -62,11 +64,24 @@ const TOOL_CATEGORIES: ToolCategory[] = [
     ],
   },
   {
+    title: 'Boating',
+    items: [
+      { label: 'Fuel Calc', description: 'Trip fuel & range', ionicon: 'water', color: '#E65100', screen: 'FuelCalculator' },
+      { label: 'Maintenance', description: 'Engine hours & service', ionicon: 'build', color: '#5D4037', screen: 'Maintenance' },
+    ],
+  },
+  {
     title: 'Map Tools',
     items: [
       { label: 'Offline Maps', description: 'Download for offline', ionicon: 'cloud-offline', color: '#607D8B', screen: 'OfflineMaps', badge: 'PRO' },
       { label: 'Buoys', description: 'Weather buoy data', ionicon: 'radio', color: '#0288D1', screen: 'WeatherBuoys', params: {} },
       { label: 'Species Map', description: 'Distribution overlay', ionicon: 'analytics', color: '#2E7D32', screen: 'SpeciesMap' },
+    ],
+  },
+  {
+    title: 'Seasonal',
+    items: [
+      { label: 'Ice Fishing', description: 'Ice conditions & tips', ionicon: 'snow', color: '#0D47A1', screen: 'IceFishing' },
     ],
   },
 ];
