@@ -1,0 +1,138 @@
+event_id,lat,lon,date,location,water_temp_c,source,quality
+tourneyx-17300,34.5,-82.85,2023-04-15,"Anderson , SC",16.61,era5_soil,reanalysis_soil
+tourneyx-22206,34.5,-82.85,2024-11-16,"Anderson , SC",12.73,era5_soil,reanalysis_soil
+tourneyx-14253,34.5,-82.85,2022-05-14,"Anderson, SC",21.08,era5_soil,reanalysis_soil
+tourneyx-17973,34.5,-82.85,2023-04-15,"Anderson, SC",16.61,era5_soil,reanalysis_soil
+tourneyx-17160,43.83,-83.83,2023-07-08,"Bay City, MI",20.73,era5_soil,reanalysis_soil
+tourneyx-19578,36.58,-93.35,2024-10-12,"Branson, MO",20.21,era5_soil,reanalysis_soil
+tourneyx-15775,38.13,-92.62,2022-11-05,"Camdenton, MO",15.31,era5_soil,reanalysis_soil
+tourneyx-16955,38.13,-92.62,2023-10-14,"Camdenton, MO",15.82,era5_soil,reanalysis_soil
+tourneyx-18992,38.13,-92.62,2023-10-28,"Camdenton, MO",11.05,era5_soil,reanalysis_soil
+tourneyx-19571,38.13,-92.62,2024-04-06,"Camdenton, MO",10.44,era5_soil,reanalysis_soil
+tourneyx-17428,37.27,-95.55,2023-03-18,"Cherryvale, KS",4.15,era5_soil,reanalysis_soil
+tourneyx-18145,37.27,-95.55,2023-04-08,"Cherryvale, KS",12.46,era5_soil,reanalysis_soil
+tourneyx-17430,37.27,-95.55,2023-05-13,"Cherryvale, KS",22.49,era5_soil,reanalysis_soil
+tourneyx-17433,37.27,-95.55,2023-07-08,"Cherryvale, KS",26.18,era5_soil,reanalysis_soil
+tourneyx-19029,37.27,-95.55,2023-07-08,"Cherryvale, KS",26.18,era5_soil,reanalysis_soil
+tourneyx-20995,37.27,-95.55,2024-04-20,"Cherryvale, KS",14.23,era5_soil,reanalysis_soil
+tourneyx-16913,33.66,-82.2,2022-12-03,"Clarks Hill, SC",12.48,era5_soil,reanalysis_soil
+2016-bass-pro-shops-southern-open-3-day-1,36.03,-83.35,2016-05-19,"Douglas Lake, Dandridge, TN",16.7,era5_soil,reanalysis_soil
+2016-bass-pro-shops-southern-open-3-day-2,36.03,-83.35,2016-05-20,"Douglas Lake, Dandridge, TN",17.32,era5_soil,reanalysis_soil
+tourneyx-5616,41.5,-82.6,2019-05-12,"Erie, PA",10.84,era5_soil,reanalysis_soil
+tourneyx-10298,41.5,-82.6,2021-05-01,"Erie, PA",11.35,era5_soil,reanalysis_soil
+tourneyx-17233,41.5,-82.6,2023-05-06,"Erie, PA",13.55,era5_soil,reanalysis_soil
+tourneyx-20303,41.5,-82.6,2024-04-28,"Erie, PA",18.61,era5_soil,reanalysis_soil
+tourneyx-20358,41.5,-82.6,2024-05-11,"Erie, PA",14.08,era5_soil,reanalysis_soil
+tourneyx-14321,31.97,-85.15,2022-02-26,"Eufala, GA",16.4,era5_soil,reanalysis_soil
+tourneyx-14945,31.97,-85.15,2022-04-02,"Eufala, GA",15.99,era5_soil,reanalysis_soil
+tourneyx-6720,31.63,-91.55,2019-10-26,"Ferriday, LA",17.72,era5_soil,reanalysis_soil
+tourneyx-9621,31.63,-91.55,2020-09-19,"Ferriday, LA",26.11,era5_soil,reanalysis_soil
+tourneyx-10438,31.63,-91.55,2021-01-30,"Ferriday, LA",11.03,era5_soil,reanalysis_soil
+tourneyx-12835,31.63,-91.55,2021-09-11,"Ferriday, LA",25.36,era5_soil,reanalysis_soil
+tourneyx-17317,31.63,-91.55,2023-02-11,"Ferriday, LA",11.11,era5_soil,reanalysis_soil
+tourneyx-7154,36.78,-95.1,2020-04-01,"Grove, OK",13.85,era5_soil,reanalysis_soil
+tourneyx-7940,36.78,-95.1,2020-04-11,"Grove, OK",14.26,era5_soil,reanalysis_soil
+tourneyx-8058,36.78,-95.1,2020-04-25,"Grove, OK",15.65,era5_soil,reanalysis_soil
+tourneyx-8200,36.78,-95.1,2020-05-02,"Grove, OK",21.23,era5_soil,reanalysis_soil
+tourneyx-14166,36.78,-95.1,2022-04-16,"Grove, OK",13.61,era5_soil,reanalysis_soil
+tourneyx-9040,34.37,-86.3,2020-08-08,"Guntersville, AL",27.13,era5_soil,reanalysis_soil
+tourneyx-17774,34.37,-86.3,2023-08-26,"Guntersville, AL",28.68,era5_soil,reanalysis_soil
+tourneyx-3207,30.1,-92.78,2018-03-31,"Hayes, LA",19.05,era5_soil,reanalysis_soil
+tourneyx-4699,30.1,-92.78,2019-04-27,"Hayes, LA",20.64,era5_soil,reanalysis_soil
+tourneyx-7692,30.1,-92.78,2020-04-04,"Hayes, LA",22.41,era5_soil,reanalysis_soil
+tourneyx-11517,30.1,-92.78,2021-04-17,"Hayes, LA",18.9,era5_soil,reanalysis_soil
+tourneyx-19535,33.66,-118.0,2023-10-22,"Huntingtington Beach, CA",21.57,era5_soil,reanalysis_soil
+tourneyx-19541,33.66,-118.0,2023-12-17,"Huntingtington Beach, CA",15.27,era5_soil,reanalysis_soil
+tourneyx-20239,33.66,-118.0,2024-01-20,"Huntingtington Beach, CA",14.57,era5_soil,reanalysis_soil
+tourneyx-20335,33.66,-118.0,2024-02-17,"Huntingtington Beach, CA",14.12,era5_soil,reanalysis_soil
+tourneyx-10137,33.66,-118.0,2020-12-13,"Huntington Beach, CA",13.3,era5_soil,reanalysis_soil
+tourneyx-4405,37.17,-113.3,2019-04-27,"Hurricane, UT",26.67,era5_soil,reanalysis_soil
+tourneyx-11550,37.17,-113.3,2021-04-24,"Hurricane, UT",21.78,era5_soil,reanalysis_soil
+tourneyx-14805,37.17,-113.3,2022-04-30,"Hurricane, UT",23.55,era5_soil,reanalysis_soil
+tourneyx-18217,37.17,-113.3,2023-04-29,"Hurricane, UT",23.95,era5_soil,reanalysis_soil
+tourneyx-21119,37.17,-113.3,2024-04-27,"Hurricane, UT",17.46,era5_soil,reanalysis_soil
+tourneyx-19030,31.08,-94.15,2023-07-15,"Jasper, TX",31.75,era5_soil,reanalysis_soil
+tourneyx-812,36.78,-88.05,2016-03-17,"Kentucky Lake and Lake Barkley, TN",13.62,era5_soil,reanalysis_soil
+tourneyx-6772,28.3,-81.42,2020-01-31,"Kissimmee, FL",17.62,era5_soil,reanalysis_soil
+tourneyx-18826,28.3,-81.42,2023-07-01,"Kissimmee, FL",32.41,era5_soil,reanalysis_soil
+tourneyx-20464,28.3,-81.42,2024-03-02,"Kissimmee, FL",22.3,era5_soil,reanalysis_soil
+tourneyx-20466,28.3,-81.42,2024-03-03,"Kissimmee, FL",21.66,era5_soil,reanalysis_soil
+tourneyx-17303,43.8,-91.23,2023-07-08,"La Crosse, WI",20.02,era5_soil,reanalysis_soil
+tourneyx-19399,43.8,-91.23,2023-09-09,"La Crosse, WI",19.4,era5_soil,reanalysis_soil
+tourneyx-16864,29.91,-96.88,2022-10-22,"La Grange, TX",23.73,era5_soil,reanalysis_soil
+tourneyx-17063,29.91,-96.88,2023-01-07,"La Grange, TX",19.16,era5_soil,reanalysis_soil
+tourneyx-19954,29.91,-96.88,2024-01-06,"La Grange, TX",11.87,era5_soil,reanalysis_soil
+tourneyx-7783,39.47,-76.08,2020-03-21,"La Plata, MD",14.57,era5_soil,reanalysis_soil
+tourneyx-3401,30.32,-89.94,2018-06-03,"Lacombe, LA",28.38,era5_soil,reanalysis_soil
+tourneyx-4622,30.32,-89.94,2019-06-09,"Lacombe, LA",26.87,era5_soil,reanalysis_soil
+tourneyx-8665,30.32,-89.94,2020-06-20,"Lacombe, LA",27.11,era5_soil,reanalysis_soil
+tourneyx-11996,30.32,-89.94,2021-06-19,"Lacombe, LA",24.87,era5_soil,reanalysis_soil
+tourneyx-15729,30.32,-89.94,2022-06-11,"Lacombe, LA",26.31,era5_soil,reanalysis_soil
+tourneyx-18565,30.32,-89.94,2023-06-17,"Lacombe, LA",28.65,era5_soil,reanalysis_soil
+tourneyx-21415,30.32,-89.94,2024-06-15,"Lacombe, LA",29.01,era5_soil,reanalysis_soil
+tourneyx-18475,43.08,-88.92,2023-05-21,"Lake Mills, WI",16.95,era5_soil,reanalysis_soil
+tourneyx-16992,43.08,-88.92,2023-08-12,"Lake Mills, WI",23.06,era5_soil,reanalysis_soil
+tourneyx-21489,38.13,-92.62,2024-10-26,"Lake of the Ozarks, MO",15.47,era5_soil,reanalysis_soil
+tourneyx-4561,28.8,-81.78,2019-02-09,"Leesburg, FL",19.87,era5_soil,reanalysis_soil
+tourneyx-13978,28.8,-81.78,2022-03-19,"Leesburg, FL",22.94,era5_soil,reanalysis_soil
+tourneyx-17272,28.8,-81.78,2023-03-04,"Leesburg, FL",25.79,era5_soil,reanalysis_soil
+tourneyx-21417,28.8,-81.78,2024-06-01,"Leesburg, FL",28.78,era5_soil,reanalysis_soil
+tourneyx-6041,38.13,-121.27,2019-08-23,"Lodi, CA",30.28,era5_soil,reanalysis_soil
+tourneyx-9351,38.13,-121.27,2020-08-22,"Lodi, CA",30.67,era5_soil,reanalysis_soil
+tourneyx-12328,38.13,-121.27,2021-06-19,"Lodi, CA",33.88,era5_soil,reanalysis_soil
+tourneyx-13030,38.13,-121.27,2021-08-21,"Lodi, CA",26.0,era5_soil,reanalysis_soil
+tourneyx-16159,38.13,-121.27,2022-08-20,"Lodi, CA",30.19,era5_soil,reanalysis_soil
+tourneyx-14131,33.77,-118.19,2022-02-06,"Long Beach, CA",13.93,era5_soil,reanalysis_soil
+tourneyx-2854,31.45,-93.55,2017-11-03,"Many, LA",23.15,era5_soil,reanalysis_soil
+tourneyx-20975,31.45,-93.55,2024-05-04,"Many, LA",22.27,era5_soil,reanalysis_soil
+tourneyx-6724,30.7,-91.44,2020-02-22,"New Roads, LA",8.92,era5_soil,reanalysis_soil
+tourneyx-10439,30.7,-91.44,2021-02-20,"New Roads, LA",3.7,era5_soil,reanalysis_soil
+tourneyx-14526,30.7,-91.44,2022-02-26,"New Roads, LA",10.95,era5_soil,reanalysis_soil
+tourneyx-20301,30.7,-91.44,2024-02-24,"New Roads, LA",15.85,era5_soil,reanalysis_soil
+tourneyx-19540,33.62,-117.93,2023-11-19,"Newport Beach, CA",17.75,era5_soil,reanalysis_soil
+tourneyx-10440,32.74,-93.97,2021-03-13,"Oil City, LA",19.31,era5_soil,reanalysis_soil
+tourneyx-15021,32.74,-93.97,2022-04-02,"Oil City, LA",15.35,era5_soil,reanalysis_soil
+tourneyx-17538,32.74,-93.97,2023-03-11,"Oil City, LA",16.19,era5_soil,reanalysis_soil
+tourneyx-19217,32.74,-93.97,2023-10-14,"Oil City, LA",19.28,era5_soil,reanalysis_soil
+tourneyx-22313,32.74,-93.97,2024-10-19,"Oil City, LA",16.06,era5_soil,reanalysis_soil
+tourneyx-5796,39.47,-76.08,2019-06-22,"Perryville, MD",22.56,era5_soil,reanalysis_soil
+tourneyx-7128,39.47,-76.08,2020-08-29,"Perryville, MD",24.54,era5_soil,reanalysis_soil
+2023-strike-king-bassmaster-college-series-at-red-river-presented-by-bass-pro-shops-day-1,32.51,-93.75,2023-05-04,"Red River, Natchitoches, LA",19.82,era5_soil,reanalysis_soil
+2023-strike-king-bassmaster-college-series-at-red-river-presented-by-bass-pro-shops-day-2,32.51,-93.75,2023-05-05,"Red River, Natchitoches, LA",21.83,era5_soil,reanalysis_soil
+2023-bassmaster-junior-series-at-red-river-day-1,32.51,-93.75,2023-05-07,"Red River, Natchitoches, LA",23.93,era5_soil,reanalysis_soil
+2023-strike-king-bassmaster-high-school-series-at-red-river-presented-by-academy-sports-outdoors-day-1,32.51,-93.75,2023-05-07,"Red River, Natchitoches, LA",23.93,era5_soil,reanalysis_soil
+tourneyx-13909,32.71,-117.16,2021-12-11,"San Diego, CA",12.72,era5_soil,reanalysis_soil
+tourneyx-19789,32.71,-117.16,2023-12-09,"San Diego, CA",15.75,era5_soil,reanalysis_soil
+tourneyx-17593,44.32,-74.13,2023-06-17,"Saranac Lake, NY",13.2,era5_soil,reanalysis_soil
+tourneyx-17594,44.32,-74.13,2023-07-01,"Saranac Lake, NY",19.45,era5_soil,reanalysis_soil
+tourneyx-17596,44.32,-74.13,2023-08-19,"Saranac Lake, NY",14.16,era5_soil,reanalysis_soil
+tourneyx-20894,44.32,-74.13,2024-06-16,"Saranac Lake, NY",12.22,era5_soil,reanalysis_soil
+tourneyx-20997,44.32,-74.13,2024-07-27,"Saranac Lake, NY",17.52,era5_soil,reanalysis_soil
+tourneyx-20998,44.32,-74.13,2024-08-25,"Saranac Lake, NY",16.27,era5_soil,reanalysis_soil
+tourneyx-21907,44.32,-74.13,2024-08-17,"Saranac, NY",19.11,era5_soil,reanalysis_soil
+tourneyx-17156,34.37,-86.3,2023-03-04,"Scottsboro , AL",14.77,era5_soil,reanalysis_soil
+tourneyx-20126,34.37,-86.3,2024-05-18,"Scottsboro , AL",21.17,era5_soil,reanalysis_soil
+tourneyx-1279,34.37,-86.3,2016-05-13,"Scottsboro, AL",21.31,era5_soil,reanalysis_soil
+tourneyx-16947,30.75,-84.85,2023-01-14,"Seminole, FL",9.28,era5_soil,reanalysis_soil
+tourneyx-18336,30.75,-84.85,2023-05-27,"Seminole, FL",22.42,era5_soil,reanalysis_soil
+tourneyx-5276,32.51,-93.75,2019-03-30,"Shreveport, LA",17.39,era5_soil,reanalysis_soil
+tourneyx-20128,32.51,-93.75,2024-10-19,"Shreveport, LA",18.63,era5_soil,reanalysis_soil
+tourneyx-22329,32.51,-93.75,2024-10-19,"Shreveport, LA",18.63,era5_soil,reanalysis_soil
+tourneyx-16951,37.63,-93.73,2023-06-03,"Stockton, MO",23.55,era5_soil,reanalysis_soil
+tourneyx-17335,37.63,-93.73,2023-07-23,"Stockton, MO",24.82,era5_soil,reanalysis_soil
+tourneyx-17336,37.63,-93.73,2023-08-06,"Stockton, MO",27.4,era5_soil,reanalysis_soil
+tourneyx-19573,37.63,-93.73,2024-05-18,"Stockton, MO",20.46,era5_soil,reanalysis_soil
+tourneyx-16990,44.83,-87.37,2023-06-10,"Sturgeon Bay, WI",19.43,era5_soil,reanalysis_soil
+tourneyx-878,31.45,-93.55,2016-10-12,"Toledo Bend Reservoir, LA",24.96,era5_soil,reanalysis_soil
+tourneyx-639,31.45,-93.55,2015-10-28,"Toledo Bend, LA",19.81,era5_soil,reanalysis_soil
+elite-2016-a-r-e-truck-caps-bassmaster-elite-at-toledo-bend-day-1,31.45,-93.55,2016-05-12,"Toledo Bend, Many, LA",23.58,era5_soil,reanalysis_soil
+2016-a-r-e-truck-caps-bassmaster-elite-at-toledo-bend-day-1,31.45,-93.55,2016-05-12,"Toledo Bend, Many, LA",23.58,era5_soil,reanalysis_soil
+2016-a-r-e-truck-caps-bassmaster-elite-at-toledo-bend-day-2,31.45,-93.55,2016-05-13,"Toledo Bend, Many, LA",24.17,era5_soil,reanalysis_soil
+elite-2016-a-r-e-truck-caps-bassmaster-elite-at-toledo-bend-day-2,31.45,-93.55,2016-05-13,"Toledo Bend, Many, LA",24.17,era5_soil,reanalysis_soil
+elite-2016-a-r-e-truck-caps-bassmaster-elite-at-toledo-bend-day-3,31.45,-93.55,2016-05-14,"Toledo Bend, Many, LA",23.07,era5_soil,reanalysis_soil
+2016-a-r-e-truck-caps-bassmaster-elite-at-toledo-bend-day-3,31.45,-93.55,2016-05-14,"Toledo Bend, Many, LA",23.07,era5_soil,reanalysis_soil
+tourneyx-12687,43.08,-88.27,2021-07-10,"Waukesha, WI",19.57,era5_soil,reanalysis_soil
+tourneyx-15135,43.08,-88.27,2022-07-23,"Waukesha, WI",25.44,era5_soil,reanalysis_soil
+tourneyx-17076,31.45,-93.55,2023-01-21,"Zwolle, LA",10.44,era5_soil,reanalysis_soil
+tourneyx-19214,31.45,-93.55,2023-09-09,"Zwolle, LA",28.33,era5_soil,reanalysis_soil
+tourneyx-19468,31.45,-93.55,2023-12-02,"Zwolle, LA",16.65,era5_soil,reanalysis_soil

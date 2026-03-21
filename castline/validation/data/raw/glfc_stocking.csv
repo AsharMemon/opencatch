@@ -1,0 +1,25 @@
+stock_id,agency,lake,lake_name,state_prov,location_primary,location_secondary,latitude,longitude,species_code,species_common,strain,year,month,day,year_class,life_stage,stocking_method,number_stocked,total_weight_kg,mean_length_mm,hatchery,notes
+32127,MIDNR,MI,Lake Michigan,MI,Little Bay De Noc,4Th Street Dock,,,LMB,Largemouth Bass,UNKN,2002,5.0,8.0,9999,a,u,10,0.0,163.0,Unknown,Transplants of wild fish
+32186,MIDNR,MI,Lake Michigan,MI,Little Bay De Noc,Escanaba Yacht Harbor,,,LMB,Largemouth Bass,UNKN,2002,5.0,14.0,9999,a,u,5,0.0,163.0,Unknown,Transplants of wild fish
+32126,MIDNR,MI,Lake Michigan,MI,Little Bay De Noc,4Th Street Dock,,,SMB,Smallmouth Bass,UNKN,2002,5.0,8.0,9999,a,u,25,0.0,163.0,Unknown,Transplants of wild fish
+32152,MIDNR,MI,Lake Michigan,MI,Little Bay De Noc,Escanaba Yacht Harbor,,,SMB,Smallmouth Bass,UNKN,2002,5.0,10.0,9999,a,u,15,0.0,163.0,Unknown,Transplants of wild fish
+32185,MIDNR,MI,Lake Michigan,MI,Little Bay De Noc,Escanaba Yacht Harbor,,,SMB,Smallmouth Bass,UNKN,2002,5.0,14.0,9999,a,u,10,0.0,163.0,Unknown,Transplants of wild fish
+27646,MIDNR,HU,Lake Huron,MI,Munuscong Lake,4 Mi Block Road,,,SMB,Smallmouth Bass,UNKN,1998,7.0,14.0,9999,sf,u,6804,7.0,43.0,Unknown,Marsh/Rearing pond release plants
+27647,MIDNR,HU,Lake Huron,MI,Hessel,,46.00380091,-84.42863181,SMB,Smallmouth Bass,UNKN,1998,7.0,14.0,9999,sf,u,6804,7.0,43.0,Unknown,Marsh/Rearing pond release plants
+27648,MIDNR,HU,Lake Huron,MI,Flower Bay,Hill Island Road,,,SMB,Smallmouth Bass,UNKN,1998,7.0,14.0,9999,sf,u,6804,7.0,43.0,Unknown,Marsh/Rearing pond release plants
+27654,MIDNR,HU,Lake Huron,MI,Hessel,,46.00380091,-84.42863181,SMB,Smallmouth Bass,UNKN,1998,8.0,3.0,9999,sf,u,5591,11.0,58.0,Unknown,Marsh/Rearing pond release plants
+23426,MIDNR,HU,Lake Huron,MI,Hessel,,46.00380091,-84.42863181,SMB,Smallmouth Bass,UNKN,1995,8.0,17.0,1995,ff,u,5402,10.0,53.0,Unknown,Marsh/Rearing pond release plants
+23427,MIDNR,HU,Lake Huron,MI,Munuscong Lake,4 Mi Block Road,,,SMB,Smallmouth Bass,UNKN,1995,8.0,17.0,1995,ff,u,5365,10.0,53.0,Unknown,Marsh/Rearing pond release plants
+15934,MIDNR,HU,Lake Huron,MI,Flower Bay,Hill Island Road,,,SMB,Smallmouth Bass,UNKN,1990,7.0,11.0,1990,ff,u,8914,8.0,44.0,Unknown,Marsh/Rearing pond release plants
+15935,MIDNR,HU,Lake Huron,MI,Hessel,,46.00380091,-84.42863181,SMB,Smallmouth Bass,UNKN,1990,7.0,11.0,1990,ff,u,8914,8.0,44.0,Unknown,Marsh/Rearing pond release plants
+15936,MIDNR,HU,Lake Huron,MI,Munuscong Lake,4 Mi Block Road,,,SMB,Smallmouth Bass,UNKN,1990,7.0,11.0,1990,ff,u,12939,12.0,44.0,Unknown,Marsh/Rearing pond release plants
+14420,MIDNR,HU,Lake Huron,MI,Hessel,,46.00380091,-84.42863181,SMB,Smallmouth Bass,UNKN,1989,7.0,19.0,1989,ff,u,3800,9.0,65.0,Unknown,Marsh/Rearing pond release plants
+14426,MIDNR,HU,Lake Huron,MI,Hessel,,46.00380091,-84.42863181,SMB,Smallmouth Bass,UNKN,1989,7.0,21.0,1989,ff,u,3637,7.0,62.0,Unknown,Marsh/Rearing pond release plants
+14428,MIDNR,HU,Lake Huron,MI,Flower Bay,Hill Island Road,,,SMB,Smallmouth Bass,UNKN,1989,7.0,24.0,1989,ff,u,8140,16.0,52.0,Unknown,Marsh/Rearing pond release plants
+14429,MIDNR,HU,Lake Huron,MI,Munuscong Lake,4 Mi Block Road,,,SMB,Smallmouth Bass,UNKN,1989,7.0,24.0,1989,ff,u,7192,14.0,52.0,Unknown,Marsh/Rearing pond release plants
+14430,MIDNR,MI,Lake Michigan,MI,Ford River,,,,SMB,Smallmouth Bass,UNKN,1989,7.0,26.0,1989,ff,u,12034,12.0,44.0,Unknown,Marsh/Rearing pond release plants
+14431,MIDNR,HU,Lake Huron,MI,Hessel,,46.00380091,-84.42863181,SMB,Smallmouth Bass,UNKN,1989,7.0,28.0,1989,ff,u,6408,12.0,52.0,Unknown,Marsh/Rearing pond release plants
+14432,MIDNR,HU,Lake Huron,MI,Hessel,,46.00380091,-84.42863181,SMB,Smallmouth Bass,UNKN,1989,7.0,31.0,1989,ff,u,1300,2.0,58.0,Unknown,Marsh/Rearing pond release plants
+14434,WIDNR,MI,Lake Michigan,WI,Milwaukee,,,,SMB,Smallmouth Bass,UNKN,1989,8.0,2.0,1989,f,u,27250,28.0,,Unknown,
+20192486,OMNR,HU,Lake Huron,ON,Eastern North Channel,Little Current,45.9886,-81.92836,SMB,Smallmouth Bass,UNKN,1986,,,1986,fry,u,1000,,,Unknown,fs_event: 489
+20192431,OMNR,HU,Lake Huron,ON,Eastern North Channel,Little Current,45.9886,-81.92836,SMB,Smallmouth Bass,UNKN,1985,,,1985,fry,u,3200,,,Unknown,fs_event: 434

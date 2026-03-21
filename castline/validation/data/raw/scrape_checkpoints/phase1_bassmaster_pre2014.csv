@@ -1,0 +1,291 @@
+event_id,source,tournament_name,series,date,location,species,total_weight_lb,num_fish,num_anglers,day_number,median_weight_lb,usgs_site_id,baseline_signal
+bm-2005-elite-50-4-day-1,bassmaster,2005 Elite 50 #4,bassmaster_elite,2005-06-15,"Lake Wissota, Chippewa Falls, WI",black_bass,142.31,,38,1,2.6875,2087570.0,0.5846
+bm-2005-elite-50-4-day-2,bassmaster,2005 Elite 50 #4,bassmaster_elite,2005-06-16,"Lake Wissota, Chippewa Falls, WI",black_bass,103.94,,27,2,2.625,2087570.0,0.5797
+bm-2005-elite-50-4-day-3,bassmaster,2005 Elite 50 #4,bassmaster_elite,2005-06-17,"Lake Wissota, Chippewa Falls, WI",black_bass,39.25,,9,3,4.625,2087570.0,0.5747
+bm-bassmaster-series-oklahoma-arkansas-4-day-1,bassmaster,BASSMASTER SERIES OKLAHOMA/ARKANSAS 4,bassmaster_other,2005-06-19,"Grand Lake, Grove, OK",black_bass,613.19,,69,1,9.3125,7185000.0,0.5646
+bm-bassmaster-series-panhandle-4-day-1,bassmaster,BASSMASTER SERIES PANHANDLE 4,bassmaster_other,2005-06-19,"St. Johns River, Palatka, FL",black_bass,202.44,,32,1,6.2188,2232400.0,0.5646
+bm-bassmaster-series-south-carolina-4-day-1,bassmaster,BASSMASTER SERIES SOUTH CAROLINA 4,bassmaster_other,2005-06-19,"Lake Murray, Prosperity, SC",black_bass,496.0,,67,1,7.6875,2168500.0,0.5646
+bm-2005-southern-open-1-day-1,bassmaster,2005 Southern Open #1,bassmaster_open,2005-06-23,"West Point Lake, Lanett, AL",black_bass,706.06,,148,1,4.5625,,0.5443
+bm-2005-southern-open-1-day-2,bassmaster,2005 Southern Open #1,bassmaster_open,2005-06-24,"West Point Lake, Lanett, AL",black_bass,654.62,,142,2,3.5312,,0.5392
+bm-bassmaster-series-louisiana-1-bo-day-1,bassmaster,BASSMASTER SERIES LOUISIANA 1 BO,bassmaster_other,2005-06-26,"Atchafalaya River Basin, Morgan City, LA",black_bass,316.94,,47,1,7.3125,5344500.0,0.529
+bm-bassmaster-series-northeast-2-bo-day-1,bassmaster,BASSMASTER SERIES NORTHEAST 2 BO,bassmaster_other,2005-06-26,"Cayuga Lake, Seneca Falls, NY",black_bass,1107.12,,117,1,9.5,4232730.0,0.529
+bm-bassmaster-series-tennessee-kentucky-4-bo-day-1,bassmaster,BASSMASTER SERIES TENNESSEE/KENTUCKY 4 BO,bassmaster_other,2005-06-26,"Kentucky And Barkley Lakes, Buchanan, TN",black_bass,313.12,,51,1,5.3125,3282000.0,0.529
+bm-bassmaster-series-maryland-virginia-4-day-1,bassmaster,BASSMASTER SERIES MARYLAND/VIRGINIA 4,bassmaster_other,2005-07-10,"James River, Williamsburg, VA",black_bass,254.81,,51,1,3.3125,2035000.0,0.4569
+bm-bassmaster-series-northeast-3-bo-day-1,bassmaster,BASSMASTER SERIES NORTHEAST 3 BO,bassmaster_other,2005-07-10,"1000 Islands, Clayton, NY",black_bass,874.56,,92,1,10.0938,,0.4569
+bm-bassmaster-series-virginia-north-carolin-3-day-1,bassmaster,BASSMASTER SERIES VIRGINIA/NORTH CAROLIN,bassmaster_other,2005-07-17,"High Rock Lake, Salisbury, NC",black_bass,359.44,,68,1,4.2188,2120780.0,0.4216
+bm-bassmaster-series-louisiana-5-day-1,bassmaster,BASSMASTER SERIES LOUISIANA 5,bassmaster_other,2005-07-24,"Red River, Shreveport, LA",black_bass,260.19,,52,1,4.5312,5344500.0,0.3874
+bm-2005-bassmaster-classic-day-1,bassmaster,2005 Bassmaster Classic,bassmaster_classic,2005-07-29,"Three Rivers, Pittsburgh, PA",black_bass,105.06,,37,1,3.1875,,0.3639
+bm-2005-bassmaster-classic-day-2,bassmaster,2005 Bassmaster Classic,bassmaster_classic,2005-07-30,"Three Rivers, Pittsburgh, PA",black_bass,76.0,,31,2,2.25,,0.3593
+bm-bassmaster-series-northeast-4-bo-day-1,bassmaster,BASSMASTER SERIES NORTHEAST 4 BO,bassmaster_other,2005-08-07,"Lake Champlain, Ticonderoga, NY",black_bass,1456.69,,126,1,12.0625,4294413.0,0.3243
+bm-2005-northern-open-2-day-1,bassmaster,2005 Northern Open #2,bassmaster_open,2005-08-11,"Lake Champlain, Plattsburgh, NY",black_bass,1612.38,,135,1,12.1875,4294413.0,0.308
+bm-2005-northern-open-2-day-2,bassmaster,2005 Northern Open #2,bassmaster_open,2005-08-12,"Lake Champlain, Plattsburgh, NY",black_bass,1629.12,,130,2,13.4062,4294413.0,0.3041
+bm-bassmaster-series-south-alabama-3-bo-day-1,bassmaster,BASSMASTER SERIES SOUTH ALABAMA 3 BO,bassmaster_other,2005-08-14,"Lake Of The Ozarks, Selma, AL",black_bass,531.06,,89,1,6.0625,6926000.0,0.2964
+bm-bassmaster-series-south-carolina-5-bo-day-1,bassmaster,BASSMASTER SERIES SOUTH CAROLINA 5 BO,bassmaster_other,2005-08-28,"High Rock Lake, Salisbury, NC",black_bass,311.56,,52,1,5.2812,2120780.0,0.2497
+bm-bassmaster-series-maryland-virginia-5-bo-day-1,bassmaster,BASSMASTER SERIES MARYLAND/VIRGINIA 5 BO,bassmaster_other,2005-09-11,"Potomac River, Marbury, MD",black_bass,288.38,,48,1,6.0938,1646500.0,0.2175
+bm-bassmaster-series-north-alabama-5-bo-day-1,bassmaster,BASSMASTER SERIES NORTH ALABAMA 5 BO,bassmaster_other,2005-09-11,"Lake Guntersville, Guntersville, AL",black_bass,589.06,,75,1,6.5625,3574500.0,0.2175
+bm-bassmaster-series-tennessee-5-bo-day-1,bassmaster,BASSMASTER SERIES TENNESSEE 5 BO,bassmaster_other,2005-09-11,"Cherokee Lake, Morristown, TN",black_bass,207.19,,38,1,3.75,3465500.0,0.2175
+bm-bassmaster-series-virginia-north-carolina-5-bo-day-1,bassmaster,BASSMASTER SERIES VIRGINIA/NORTH CAROLINA 5 BO,bassmaster_other,2005-09-11,"John H. Kerr Reservoir, Henderson, NC",black_bass,208.38,,51,1,3.25,,0.2175
+bm-2005-northern-open-3-day-1,bassmaster,2005 Northern Open #3,bassmaster_open,2005-09-15,"Oneida Lake, Syracuse, NY",black_bass,1252.56,,110,1,12.375,4245840.0,0.2112
+bm-2005-northern-open-3-day-2,bassmaster,2005 Northern Open #3,bassmaster_open,2005-09-16,"Oneida Lake, Syracuse, NY",black_bass,865.62,,100,2,9.375,4245840.0,0.2098
+bm-bassmaster-series-georgia-5-bo-day-1,bassmaster,BASSMASTER SERIES GEORGIA 5 BO,bassmaster_other,2005-10-02,"West Point Lake, Lanett, AL",black_bass,290.56,,68,1,3.4375,,0.2001
+bm-bassmaster-series-oklahoma-arkansas-5-bo-day-1,bassmaster,BASSMASTER SERIES OKLAHOMA/ARKANSAS 5 BO,bassmaster_other,2005-10-02,"Greers Ferry Reservoir, Greers Ferry, AR",black_bass,174.62,,50,1,3.375,,0.2001
+bm-bassmaster-series-panhandle-5-bo-day-1,bassmaster,BASSMASTER SERIES PANHANDLE 5 BO,bassmaster_other,2005-10-09,"Lake Seminole, Bainbridge, GA",black_bass,287.81,,37,1,6.75,2357000.0,0.2029
+bm-2005-central-open-2-day-1,bassmaster,2005 Central Open #2,bassmaster_open,2005-10-13,"Lake Norfork, Mountain Home, AR",black_bass,409.56,,98,1,3.3438,,0.2064
+bm-2005-central-open-2-day-2,bassmaster,2005 Central Open #2,bassmaster_open,2005-10-14,"Lake Norfork, Mountain Home, AR",black_bass,269.25,,80,2,2.875,,0.2075
+bm-2005-western-open-2-day-1,bassmaster,2005 Western Open #2,bassmaster_open,2005-10-13,"Clear Lake, Lakeport, CA",black_bass,1670.5,,147,1,11.4375,11450000.0,0.2064
+bm-2005-western-open-2-day-2,bassmaster,2005 Western Open #2,bassmaster_open,2005-10-14,"Clear Lake, Lakeport, CA",black_bass,1678.06,,146,2,11.625,11450000.0,0.2075
+bm-bassmaster-series-regionals-1-bo-day-1,bassmaster,BASSMASTER SERIES REGIONALS 1 BO,bassmaster_other,2005-10-13,"Tombigbee Waterway, Columbus, MS",black_bass,390.62,,92,1,3.8125,,0.2064
+bm-bassmaster-series-regionals-1-bo-day-2,bassmaster,BASSMASTER SERIES REGIONALS 1 BO,bassmaster_other,2005-10-14,"Tombigbee Waterway, Columbus, MS",black_bass,341.25,,82,2,3.6562,,0.2075
+bm-2005-wbt-preview-day-1,bassmaster,2005 WBT Preview,bassmaster_other,2005-10-20,"Lake Lewisville, Lewisville, TX",black_bass,287.0,,55,1,3.6875,,0.216
+bm-2005-wbt-preview-day-2,bassmaster,2005 WBT Preview,bassmaster_other,2005-10-21,"Lake Lewisville, Lewisville, TX",black_bass,240.94,,55,2,3.25,,0.2177
+bm-bassmaster-series-regionals-2-bo-day-1,bassmaster,BASSMASTER SERIES REGIONALS 2 BO,bassmaster_other,2005-10-27,"Kerr Reservoir, Henderson, NC",black_bass,272.75,,56,1,4.3125,,0.2296
+bm-bassmaster-series-regionals-2-bo-day-2,bassmaster,BASSMASTER SERIES REGIONALS 2 BO,bassmaster_other,2005-10-28,"Kerr Reservoir, Henderson, NC",black_bass,370.19,,65,2,4.875,,0.2319
+bm-bassmaster-series-regionals-3-bo-day-1,bassmaster,BASSMASTER SERIES REGIONALS 3 BO,bassmaster_other,2005-11-03,"Red River, Natchitoches, LA",black_bass,696.38,,107,1,6.625,5344500.0,0.2472
+bm-bassmaster-series-regionals-3-bo-day-2,bassmaster,BASSMASTER SERIES REGIONALS 3 BO,bassmaster_other,2005-11-04,"Red River, Natchitoches, LA",black_bass,575.19,,89,2,6.25,5344500.0,0.25
+bm-2005-central-open-3-day-1,bassmaster,2005 Central Open #3,bassmaster_open,2005-11-10,"Red River, Natchitoches, LA",black_bass,850.31,,118,1,7.4062,5344500.0,0.2685
+bm-2005-central-open-3-day-2,bassmaster,2005 Central Open #3,bassmaster_open,2005-11-11,"Red River, Natchitoches, LA",black_bass,781.94,,108,2,7.25,5344500.0,0.2718
+bm-bassmaster-series-regionals-4-bo-day-1,bassmaster,BASSMASTER SERIES REGIONALS 4 BO,bassmaster_other,2005-11-10,"Clarks Hill Reservoir, Thomason, GA",black_bass,623.06,,105,1,6.125,2196000.0,0.2685
+bm-bassmaster-series-regionals-4-bo-day-2,bassmaster,BASSMASTER SERIES REGIONALS 4 BO,bassmaster_other,2005-11-11,"Clarks Hill Reservoir, Thomason, GA",black_bass,559.31,,94,2,5.4375,2196000.0,0.2718
+bm-bassmaster-series-regionals-5-second-chance-bo-day-1,bassmaster,BASSMASTER SERIES REGIONALS 5 SECOND CHANCE BO,bassmaster_other,2005-11-11,"Old Hickory Lake, Gallatin, TN",black_bass,136.88,,47,1,2.5,3425413.0,0.2718
+bm-2005-southern-open-3-day-1,bassmaster,2005 Southern Open #3,bassmaster_open,2005-11-17,"Kissimmee Chain of Lakes, Kissimmee, FL",black_bass,825.44,,120,1,6.3438,2237700.0,0.2931
+bm-2005-southern-open-3-day-2,bassmaster,2005 Southern Open #3,bassmaster_open,2005-11-18,"Kissimmee Chain of Lakes, Kissimmee, FL",black_bass,735.06,,109,2,5.75,2237700.0,0.2968
+bm-2005-western-open-3-day-1,bassmaster,2005 Western Open #3,bassmaster_open,2005-11-17,"Lake Shasta, Shasta Lake, CA",black_bass,699.0,,99,1,6.9375,,0.2931
+bm-2005-western-open-3-day-2,bassmaster,2005 Western Open #3,bassmaster_open,2005-11-18,"Lake Shasta, Shasta Lake, CA",black_bass,669.19,,98,2,6.9375,,0.2968
+bm-2005-open-championship-day-1,bassmaster,2005 Open Championship,bassmaster_open,2005-12-01,"Alabama River, Prattville, AL",black_bass,422.25,,79,1,4.375,,0.3508
+bm-2005-open-championship-day-2,bassmaster,2005 Open Championship,bassmaster_open,2005-12-02,"Alabama River, Prattville, AL",black_bass,416.62,,79,2,4.875,,0.3553
+bm-2005-open-championship-day-3,bassmaster,2005 Open Championship,bassmaster_open,2005-12-03,"Alabama River, Prattville, AL",black_bass,59.56,,10,3,6.0625,,0.3599
+bm-2006-bassmaster-classic-day-1,bassmaster,2006 Bassmaster Classic,bassmaster_classic,2006-02-24,"Lake Tohopekaliga, Kissimmee, FL",black_bass,722.5,,50,1,14.0938,2267000.0,0.7433
+bm-2006-bassmaster-classic-day-2,bassmaster,2006 Bassmaster Classic,bassmaster_classic,2006-02-25,"Lake Tohopekaliga, Kissimmee, FL",black_bass,587.5,,51,2,10.3125,2267000.0,0.7463
+bm-2006-southern-tour-2-day-1,bassmaster,2006 Southern Tour #2,bassmaster_other,2006-03-02,"Sam Rayburn Reservoir, Jasper, TX",black_bass,1439.31,,133,1,10.4375,8039300.0,0.7601
+bm-2006-southern-tour-2-day-2,bassmaster,2006 Southern Tour #2,bassmaster_other,2006-03-03,"Sam Rayburn Reservoir, Jasper, TX",black_bass,1582.31,,133,2,11.75,8039300.0,0.7627
+bm-2006-elite-series-battle-on-the-border-day-1,bassmaster,2006 Elite Series – Battle on the Border,bassmaster_elite,2006-03-09,"Lake Amistad, Del Rio, TX",black_bass,1932.0,,106,1,17.7812,8449400.0,0.7762
+bm-2006-elite-series-battle-on-the-border-day-2,bassmaster,2006 Elite Series – Battle on the Border,bassmaster_elite,2006-03-10,"Lake Amistad, Del Rio, TX",black_bass,1938.88,,106,2,18.2812,8449400.0,0.7782
+bm-2006-elite-series-battle-on-the-border-day-3,bassmaster,2006 Elite Series – Battle on the Border,bassmaster_elite,2006-03-11,"Lake Amistad, Del Rio, TX",black_bass,948.44,,50,3,19.0938,8449400.0,0.7801
+bm-2006-elite-series-lone-star-shootout-day-1,bassmaster,2006 Elite Series – Lone Star Shootout,bassmaster_elite,2006-03-16,"Sam Rayburn Reservoir, Jasper, TX",black_bass,1541.25,,105,1,14.375,8039300.0,0.7883
+bm-2006-elite-series-lone-star-shootout-day-2,bassmaster,2006 Elite Series – Lone Star Shootout,bassmaster_elite,2006-03-17,"Sam Rayburn Reservoir, Jasper, TX",black_bass,1310.06,,105,2,12.375,8039300.0,0.7897
+bm-2006-elite-series-lone-star-shootout-day-3,bassmaster,2006 Elite Series – Lone Star Shootout,bassmaster_elite,2006-03-18,"Sam Rayburn Reservoir, Jasper, TX",black_bass,592.38,,50,3,11.5625,8039300.0,0.791
+bm-southern-3-manning-day-1,bassmaster,Southern 3 – Manning,bassmaster_other,2006-04-06,"Santee Cooper Lakes, Manning, SC",black_bass,1109.25,,109,1,10.4375,2171500.0,0.799
+bm-southern-3-manning-day-2,bassmaster,Southern 3 – Manning,bassmaster_other,2006-04-07,"Santee Cooper Lakes, Manning, SC",black_bass,1064.0,,103,2,9.75,2171500.0,0.7986
+bm-2006-elite-series-southern-challenge-day-1,bassmaster,2006 Elite Series – Southern Challenge,bassmaster_elite,2006-04-20,"Lake Guntersville, Guntersville, AL",black_bass,1336.25,,102,1,13.375,3574500.0,0.7846
+bm-2006-elite-series-southern-challenge-day-2,bassmaster,2006 Elite Series – Southern Challenge,bassmaster_elite,2006-04-21,"Lake Guntersville, Guntersville, AL",black_bass,1330.31,,103,2,13.6875,3574500.0,0.783
+bm-2006-elite-series-southern-challenge-day-3,bassmaster,2006 Elite Series – Southern Challenge,bassmaster_elite,2006-04-22,"Lake Guntersville, Guntersville, AL",black_bass,610.0,,48,3,13.7188,3574500.0,0.7812
+bm-2006-wbt-1-day-1,bassmaster,2006 WBT #1,bassmaster_other,2006-04-20,"Neely Henry Lake, Neely Henry Lake, AL",black_bass,455.0,,90,1,4.8125,2401390.0,0.7846
+bm-2006-wbt-1-day-2,bassmaster,2006 WBT #1,bassmaster_other,2006-04-21,"Neely Henry Lake, Neely Henry Lake, AL",black_bass,411.25,,87,2,3.625,2401390.0,0.783
+bm-2006-elite-series-pride-of-augusta-day-1,bassmaster,2006 Elite Series – Pride of Augusta,bassmaster_elite,2006-05-04,"Clarks Hill Reservoir, Columbia County, GA",black_bass,1143.81,,104,1,11.125,2196000.0,0.7538
+bm-2006-elite-series-pride-of-augusta-day-2,bassmaster,2006 Elite Series – Pride of Augusta,bassmaster_elite,2006-05-05,"Clarks Hill Reservoir, Columbia County, GA",black_bass,1012.31,,104,2,9.7812,2196000.0,0.751
+bm-2006-elite-series-pride-of-augusta-day-3,bassmaster,2006 Elite Series – Pride of Augusta,bassmaster_elite,2006-05-06,"Clarks Hill Reservoir, Columbia County, GA",black_bass,522.56,,50,3,10.3125,2196000.0,0.7482
+bm-cypress-3-palatka-bo-day-1,bassmaster,CYPRESS 3 – PALATKA BO,bassmaster_other,2006-05-07,"St. John's River, Palatka, FL",black_bass,316.94,,43,1,7.4375,2232400.0,0.7452
+bm-2006-southern-tour-4-day-1,bassmaster,2006 Southern Tour #4,bassmaster_other,2006-05-11,"Lake Eufaula, Eufaula, AL",black_bass,695.38,,116,1,5.375,2343940.0,0.7328
+bm-2006-southern-tour-4-day-2,bassmaster,2006 Southern Tour #4,bassmaster_other,2006-05-12,"Lake Eufaula, Eufaula, AL",black_bass,595.31,,108,2,4.4688,2343940.0,0.7295
+bm-2006-major-memorial-day-1,bassmaster,2006 Major – Memorial,bassmaster_other,2006-05-18,"Eagle Mountain Lake, Ft. Worth, TX",black_bass,455.69,,54,1,8.0312,,0.7083
+bm-2006-major-memorial-day-2,bassmaster,2006 Major – Memorial,bassmaster_other,2006-05-19,"Eagle Mountain Lake, Ft. Worth, TX",black_bass,400.94,,51,2,7.75,,0.7046
+bm-2006-major-memorial-day-3,bassmaster,2006 Major – Memorial,bassmaster_other,2006-05-20,"Eagle Mountain Lake, Ft. Worth, TX",black_bass,89.38,,11,3,7.1875,,0.7008
+bm-2006-wbt-2-day-1,bassmaster,2006 WBT #2,bassmaster_other,2006-05-18,"Lake Lewisville, Lake Lewisville, TX",black_bass,261.25,,60,1,3.6875,,0.7083
+bm-2006-wbt-2-day-2,bassmaster,2006 WBT #2,bassmaster_other,2006-05-19,"Lake Lewisville, Lake Lewisville, TX",black_bass,219.69,,57,2,3.25,,0.7046
+bm-2006-elite-series-sooner-run-day-1,bassmaster,2006 Elite Series – Sooner Run,bassmaster_elite,2006-06-01,"Grand Lake, Grove, OK",black_bass,1284.19,,102,1,12.1562,7185000.0,0.6508
+bm-2006-elite-series-sooner-run-day-2,bassmaster,2006 Elite Series – Sooner Run,bassmaster_elite,2006-06-02,"Grand Lake, Grove, OK",black_bass,1210.06,,102,2,11.9375,7185000.0,0.6464
+bm-2006-elite-series-sooner-run-day-3,bassmaster,2006 Elite Series – Sooner Run,bassmaster_elite,2006-06-03,"Grand Lake, Grove, OK",black_bass,560.75,,50,3,10.9688,7185000.0,0.6418
+bm-2006-elite-series-bluegrass-brawl-day-1,bassmaster,2006 Elite Series – Bluegrass Brawl,bassmaster_elite,2006-06-15,"Kentucky Lake, Kentucky Dam Village, KY",black_bass,1051.5,,96,1,11.625,3282000.0,0.5846
+bm-2006-elite-series-bluegrass-brawl-day-2,bassmaster,2006 Elite Series – Bluegrass Brawl,bassmaster_elite,2006-06-16,"Kentucky Lake, Kentucky Dam Village, KY",black_bass,1037.81,,101,2,10.625,3282000.0,0.5797
+bm-2006-elite-series-bluegrass-brawl-day-3,bassmaster,2006 Elite Series – Bluegrass Brawl,bassmaster_elite,2006-06-17,"Kentucky Lake, Kentucky Dam Village, KY",black_bass,551.44,,50,3,12.1875,3282000.0,0.5747
+bm-2006-northern-tour-1-day-1,bassmaster,2006 Northern Tour #1,bassmaster_other,2006-06-22,"Kentucky Lake, Kentucky Dam Village, KY",black_bass,884.06,,103,1,7.625,3282000.0,0.5494
+bm-2006-northern-tour-1-day-2,bassmaster,2006 Northern Tour #1,bassmaster_other,2006-06-23,"Kentucky Lake, Kentucky Dam Village, KY",black_bass,804.06,,97,2,8.3125,3282000.0,0.5443
+bm-2006-elite-series-empire-chase-day-1,bassmaster,2006 Elite Series – Empire Chase,bassmaster_elite,2006-07-06,"Lake Oneida, Syracuse, NY",black_bass,1249.06,,102,1,12.1875,4245840.0,0.4774
+bm-2006-elite-series-empire-chase-day-2,bassmaster,2006 Elite Series – Empire Chase,bassmaster_elite,2006-07-07,"Lake Oneida, Syracuse, NY",black_bass,1300.0,,102,2,12.75,4245840.0,0.4723
+bm-2006-elite-series-empire-chase-day-3,bassmaster,2006 Elite Series – Empire Chase,bassmaster_elite,2006-07-08,"Lake Oneida, Syracuse, NY",black_bass,677.62,,50,3,13.6875,4245840.0,0.4672
+bm-2006-elite-series-champions-choice-day-1,bassmaster,2006 Elite Series – Champion’s Choice,bassmaster_elite,2006-07-13,"Lake Champlain, Plattsburgh, NY",black_bass,1280.12,,102,1,12.5,4294413.0,0.4417
+bm-2006-elite-series-champions-choice-day-2,bassmaster,2006 Elite Series – Champion’s Choice,bassmaster_elite,2006-07-14,"Lake Champlain, Plattsburgh, NY",black_bass,1419.19,,102,2,13.7812,4294413.0,0.4366
+bm-2006-elite-series-champions-choice-day-3,bassmaster,2006 Elite Series – Champion’s Choice,bassmaster_elite,2006-07-15,"Lake Champlain, Plattsburgh, NY",black_bass,703.44,,50,3,15.0625,4294413.0,0.4316
+bm-2006-northern-tour-2-day-1,bassmaster,2006 Northern Tour #2,bassmaster_other,2006-07-20,"Mississippi River, Fort Madison, IA",black_bass,789.31,,81,1,10.625,5344500.0,0.4067
+bm-2006-northern-tour-2-day-2,bassmaster,2006 Northern Tour #2,bassmaster_other,2006-07-21,"Mississippi River, Fort Madison, IA",black_bass,758.69,,79,2,10.5,5344500.0,0.4019
+bm-2006-major-american-day-1,bassmaster,2006 Major – American,bassmaster_other,2006-07-27,"Lake Wylie, Charlotte, NC",black_bass,489.88,,54,1,9.5312,2146000.0,0.3732
+bm-2006-major-american-day-2,bassmaster,2006 Major – American,bassmaster_other,2006-07-28,"Lake Wylie, Charlotte, NC",black_bass,395.94,,52,2,8.0,2146000.0,0.3685
+bm-2006-major-american-day-3,bassmaster,2006 Major – American,bassmaster_other,2006-07-29,"Lake Wylie, Charlotte, NC",black_bass,106.81,,12,3,8.375,2146000.0,0.3639
+bm-2006-wbt-3-day-1,bassmaster,2006 WBT #3,bassmaster_other,2006-07-27,"Lake Norman, Lake Norman, NC",black_bass,208.0,,54,1,3.1562,2124000.0,0.3732
+bm-2006-wbt-3-day-2,bassmaster,2006 WBT #3,bassmaster_other,2006-07-28,"Lake Norman, Lake Norman, NC",black_bass,174.75,,54,2,2.4688,2124000.0,0.3685
+bm-2006-elite-series-capitol-clash-day-1,bassmaster,2006 Elite Series – Capitol Clash,bassmaster_elite,2006-08-10,"Potomac River, Charles County, MD",black_bass,994.94,,101,1,10.1875,1646500.0,0.312
+bm-2006-elite-series-capitol-clash-day-2,bassmaster,2006 Elite Series – Capitol Clash,bassmaster_elite,2006-08-11,"Potomac River, Charles County, MD",black_bass,966.44,,100,2,9.375,1646500.0,0.308
+bm-2006-elite-series-capitol-clash-day-3,bassmaster,2006 Elite Series – Capitol Clash,bassmaster_elite,2006-08-12,"Potomac River, Charles County, MD",black_bass,469.88,,50,3,9.0625,1646500.0,0.3041
+bm-2006-northern-tour-3-day-1,bassmaster,2006 Northern Tour #3,bassmaster_other,2006-08-17,"Lake Champlain, Plattsburgh, NY",black_bass,1392.38,,113,1,12.8125,4294413.0,0.2853
+bm-2006-northern-tour-3-day-2,bassmaster,2006 Northern Tour #3,bassmaster_other,2006-08-18,"Lake Champlain, Plattsburgh, NY",black_bass,1173.81,,104,2,11.6875,4294413.0,0.2817
+bm-2006-major-legends-day-1,bassmaster,2006 Major – Legends,bassmaster_other,2006-08-24,"Arkansas River, Little Rock, AR",black_bass,241.94,,44,1,4.8125,7194500.0,0.2617
+bm-2006-major-legends-day-2,bassmaster,2006 Major – Legends,bassmaster_other,2006-08-25,"Arkansas River, Little Rock, AR",black_bass,207.19,,44,2,3.8438,7194500.0,0.2586
+bm-2006-major-legends-day-3,bassmaster,2006 Major – Legends,bassmaster_other,2006-08-26,"Arkansas River, Little Rock, AR",black_bass,46.44,,10,3,3.8125,7194500.0,0.2555
+bm-2006-wbt-4-day-1,bassmaster,2006 WBT #4,bassmaster_other,2006-08-24,"Lake Dardanelle, Lake Dardanelle, AR",black_bass,219.56,,51,1,3.0625,7258000.0,0.2617
+bm-2006-wbt-4-day-2,bassmaster,2006 WBT #4,bassmaster_other,2006-08-25,"Lake Dardanelle, Lake Dardanelle, AR",black_bass,181.69,,53,2,2.5625,7258000.0,0.2586
+bm-2006-southern-tour-5-day-1,bassmaster,2006 Southern Tour #5,bassmaster_other,2006-09-07,"Lake Lanier, Gainesville, GA",black_bass,658.75,,120,1,4.4062,2334430.0,0.2251
+bm-2006-southern-tour-5-day-2,bassmaster,2006 Southern Tour #5,bassmaster_other,2006-09-08,"Lake Lanier, Gainesville, GA",black_bass,597.06,,109,2,4.8125,2334430.0,0.2231
+bm-2006-elite-series-the-rock-day-1,bassmaster,2006 Elite Series – The Rock,bassmaster_elite,2006-09-14,"Table Rock Lake, Kimberling City, MO",black_bass,486.75,,81,1,5.25,7053810.0,0.2126
+bm-2006-elite-series-the-rock-day-2,bassmaster,2006 Elite Series – The Rock,bassmaster_elite,2006-09-15,"Table Rock Lake, Kimberling City, MO",black_bass,558.81,,88,2,5.9375,7053810.0,0.2112
+bm-2006-elite-series-the-rock-day-3,bassmaster,2006 Elite Series – The Rock,bassmaster_elite,2006-09-16,"Table Rock Lake, Kimberling City, MO",black_bass,297.0,,44,3,6.5625,7053810.0,0.2098
+bm-2006-wbt-5-day-1,bassmaster,2006 WBT #5,bassmaster_other,2006-09-14,"Bull Shoals Lake, Theodesia, MO",black_bass,87.75,,37,1,1.875,7054500.0,0.2126
+bm-2006-wbt-5-day-2,bassmaster,2006 WBT #5,bassmaster_other,2006-09-15,"Bull Shoals Lake, Theodesia, MO",black_bass,114.25,,42,2,1.9375,7054500.0,0.2112
+bm-2006-northern-tour-4-day-1,bassmaster,2006 Northern Tour #4,bassmaster_other,2006-10-05,"Lake Erie/sandusky Bay, Sandusky, OH",black_bass,354.31,,53,1,5.5,4157060.0,0.2007
+bm-2006-northern-tour-4-day-2,bassmaster,2006 Northern Tour #4,bassmaster_other,2006-10-06,"Lake Erie/sandusky Bay, Sandusky, OH",black_bass,751.25,,63,2,10.875,4157060.0,0.2011
+bm-2006-northern-tour-5-day-1,bassmaster,2006 Northern Tour #5,bassmaster_other,2006-10-26,"Smith Mountain Lake, Moneta, VA",black_bass,444.56,,83,1,4.1875,2450250.0,0.2275
+bm-2006-northern-tour-5-day-2,bassmaster,2006 Northern Tour #5,bassmaster_other,2006-10-27,"Smith Mountain Lake, Moneta, VA",black_bass,495.62,,86,2,4.5625,2450250.0,0.2296
+bm-2006-opens-wild-card-qualifier-day-1,bassmaster,2006 Opens Wild Card Qualifier,bassmaster_open,2006-11-16,"Harris Chain Of Lakes, Leesburg, FL",black_bass,359.38,,55,1,6.1875,2237700.0,0.2894
+bm-2006-opens-wild-card-qualifier-day-2,bassmaster,2006 Opens Wild Card Qualifier,bassmaster_open,2006-11-17,"Harris Chain Of Lakes, Leesburg, FL",black_bass,335.56,,49,2,7.25,2237700.0,0.2931
+bm-2007-wbt-1-day-1,bassmaster,2007 WBT #1,bassmaster_other,2007-02-08,"Lake Amistad, Del Rio, TX",black_bass,524.62,,80,1,4.8125,8449400.0,0.6865
+bm-2007-wbt-1-day-2,bassmaster,2007 WBT #1,bassmaster_other,2007-02-09,"Lake Amistad, Del Rio, TX",black_bass,756.62,,89,2,7.5625,8449400.0,0.6905
+bm-2006-wbt-championship-day-1,bassmaster,2006 WBT Championship,bassmaster_other,2007-02-22,"Lake Mitchell, Birimingham, AL",black_bass,75.06,,12,1,7.5625,,0.7372
+bm-2006-wbt-championship-day-2,bassmaster,2006 WBT Championship,bassmaster_other,2007-02-23,"Lake Mitchell, Birimingham, AL",black_bass,88.94,,12,2,8.3125,,0.7403
+bm-2007-bassmaster-classic-day-1,bassmaster,2007 Bassmaster Classic,bassmaster_classic,2007-02-23,"Lay Lake, Birmingham, AL",black_bass,606.69,,50,1,12.0,2407000.0,0.7403
+bm-2007-bassmaster-classic-day-2,bassmaster,2007 Bassmaster Classic,bassmaster_classic,2007-02-24,"Lay Lake, Birmingham, AL",black_bass,506.12,,49,2,10.9375,2407000.0,0.7433
+bm-2007-southern-open-1-day-1,bassmaster,2007 Southern Open #1,bassmaster_open,2007-03-01,"Kissimmee Chain, Polk County, FL",black_bass,1233.5,,174,1,6.3438,2267000.0,0.7575
+bm-2007-southern-open-1-day-2,bassmaster,2007 Southern Open #1,bassmaster_open,2007-03-02,"Kissimmee Chain, Polk County, FL",black_bass,1032.31,,163,2,6.0,2267000.0,0.7601
+bm-2007-elite-series-battle-on-the-border-day-1,bassmaster,2007 Elite Series – Battle on the Border,bassmaster_elite,2007-03-08,"Lake Amistad, Del Rio, TX",black_bass,1965.06,,108,1,17.625,8449400.0,0.7741
+bm-2007-elite-series-battle-on-the-border-day-2,bassmaster,2007 Elite Series – Battle on the Border,bassmaster_elite,2007-03-09,"Lake Amistad, Del Rio, TX",black_bass,1810.56,,107,2,16.875,8449400.0,0.7762
+bm-2007-elite-series-battle-on-the-border-day-3,bassmaster,2007 Elite Series – Battle on the Border,bassmaster_elite,2007-03-10,"Lake Amistad, Del Rio, TX",black_bass,895.25,,50,3,17.9062,8449400.0,0.7782
+bm-2007-central-open-1-day-1,bassmaster,2007 Central Open #1,bassmaster_open,2007-03-15,"Lake Texoma, Denison, TX",black_bass,669.75,,137,1,3.5625,7332500.0,0.7868
+bm-2007-central-open-1-day-2,bassmaster,2007 Central Open #1,bassmaster_open,2007-03-16,"Lake Texoma, Denison, TX",black_bass,863.94,,144,2,5.5,7332500.0,0.7883
+bm-2007-elite-series-duel-in-the-delta-day-1,bassmaster,2007 Elite Series – Duel in the Delta,bassmaster_elite,2007-03-22,"California Delta, Stockton, CA",black_bass,1430.69,,107,1,13.4375,11447650.0,0.7953
+bm-2007-elite-series-duel-in-the-delta-day-2,bassmaster,2007 Elite Series – Duel in the Delta,bassmaster_elite,2007-03-23,"California Delta, Stockton, CA",black_bass,1432.0,,108,2,12.6875,11447650.0,0.7962
+bm-2007-elite-series-duel-in-the-delta-day-3,bassmaster,2007 Elite Series – Duel in the Delta,bassmaster_elite,2007-03-24,"California Delta, Stockton, CA",black_bass,648.31,,50,3,13.0938,11447650.0,0.7969
+bm-2007-elite-series-golden-state-shootout-day-1,bassmaster,2007 Elite Series – Golden State Shootout,bassmaster_elite,2007-03-29,"Clear Lake, Lakeport, CA",black_bass,2206.44,,108,1,19.8438,11450000.0,0.7995
+bm-2007-elite-series-golden-state-shootout-day-2,bassmaster,2007 Elite Series – Golden State Shootout,bassmaster_elite,2007-03-30,"Clear Lake, Lakeport, CA",black_bass,2249.75,,107,2,20.4375,11450000.0,0.7998
+bm-2007-elite-series-golden-state-shootout-day-3,bassmaster,2007 Elite Series – Golden State Shootout,bassmaster_elite,2007-03-31,"Clear Lake, Lakeport, CA",black_bass,1081.0,,50,3,20.5625,11450000.0,0.7999
+bm-2007-wbt-2-day-1,bassmaster,2007 WBT #2,bassmaster_other,2007-03-29,"Lake Dardanelle, Russellville, AR",black_bass,714.94,,86,1,7.8438,7258000.0,0.7995
+bm-2007-wbt-2-day-2,bassmaster,2007 WBT #2,bassmaster_other,2007-03-30,"Lake Dardanelle, Russellville, AR",black_bass,570.25,,80,2,5.9062,7258000.0,0.7998
+bm-2007-elite-series-pride-of-georgia-day-1,bassmaster,2007 Elite Series – Pride of Georgia,bassmaster_elite,2007-04-19,"Clarks Hill Lake, Evans, GA",black_bass,1119.31,,106,1,9.9062,2196000.0,0.7862
+bm-2007-elite-series-pride-of-georgia-day-2,bassmaster,2007 Elite Series – Pride of Georgia,bassmaster_elite,2007-04-20,"Clarks Hill Lake, Evans, GA",black_bass,1282.06,,107,2,12.0,2196000.0,0.7846
+bm-2007-elite-series-pride-of-georgia-day-3,bassmaster,2007 Elite Series – Pride of Georgia,bassmaster_elite,2007-04-21,"Clarks Hill Lake, Evans, GA",black_bass,558.0,,50,3,11.0,2196000.0,0.783
+bm-2007-elite-series-southern-challenge-day-1,bassmaster,2007 Elite Series – Southern Challenge,bassmaster_elite,2007-04-27,"Lake Guntersville, Guntersville, AL",black_bass,1392.25,,105,1,13.5,3574500.0,0.7712
+bm-2007-elite-series-southern-challenge-day-2,bassmaster,2007 Elite Series – Southern Challenge,bassmaster_elite,2007-04-28,"Lake Guntersville, Guntersville, AL",black_bass,1366.94,,108,2,13.25,3574500.0,0.7689
+bm-2007-southern-open-2-day-1,bassmaster,2007 Southern Open #2,bassmaster_open,2007-05-03,"Santee Cooper Lakes, Manning, SC",black_bass,1088.69,,148,1,5.7188,2171500.0,0.7565
+bm-2007-southern-open-2-day-2,bassmaster,2007 Southern Open #2,bassmaster_open,2007-05-04,"Santee Cooper Lakes, Manning, SC",black_bass,899.56,,124,2,5.875,2171500.0,0.7538
+bm-2007-wbt-3-day-1,bassmaster,2007 WBT #3,bassmaster_other,2007-05-03,"Lake Guntersville, Guntersville, AL",black_bass,506.31,,73,1,6.0625,3574500.0,0.7565
+bm-2007-wbt-3-day-2,bassmaster,2007 WBT #3,bassmaster_other,2007-05-04,"Lake Guntersville, Guntersville, AL",black_bass,522.31,,72,2,6.3125,3574500.0,0.7538
+bm-2007-major-american-day-1,bassmaster,2007 Major – American,bassmaster_other,2007-05-17,"High Rock Lake, Greensboro, NC",black_bass,588.94,,49,1,12.25,2120780.0,0.712
+bm-2007-major-american-day-2,bassmaster,2007 Major – American,bassmaster_other,2007-05-18,"High Rock Lake, Greensboro, NC",black_bass,558.38,,48,2,11.6562,2120780.0,0.7083
+bm-2007-major-american-day-3,bassmaster,2007 Major – American,bassmaster_other,2007-05-19,"High Rock Lake, Greensboro, NC",black_bass,53.81,,11,3,2.8125,2120780.0,0.7046
+bm-2007-elite-series-blue-ridge-brawl-day-1,bassmaster,2007 Elite Series – Blue Ridge Brawl,bassmaster_elite,2007-06-07,"Smith Mountain Lake, Moneta, VA",black_bass,1030.81,,103,1,10.8125,2450250.0,0.6233
+bm-2007-elite-series-blue-ridge-brawl-day-2,bassmaster,2007 Elite Series – Blue Ridge Brawl,bassmaster_elite,2007-06-08,"Smith Mountain Lake, Moneta, VA",black_bass,1044.31,,106,2,9.875,2450250.0,0.6186
+bm-2007-elite-series-blue-ridge-brawl-day-3,bassmaster,2007 Elite Series – Blue Ridge Brawl,bassmaster_elite,2007-06-09,"Smith Mountain Lake, Moneta, VA",black_bass,460.06,,49,3,10.125,2450250.0,0.6138
+bm-2007-central-open-2-day-1,bassmaster,2007 Central Open #2,bassmaster_open,2007-06-14,"Red River, Shreveport, LA",black_bass,911.88,,144,1,6.25,5344500.0,0.5896
+bm-2007-central-open-2-day-2,bassmaster,2007 Central Open #2,bassmaster_open,2007-06-15,"Red River, Shreveport, LA",black_bass,744.5,,131,2,5.125,5344500.0,0.5846
+bm-2007-wbt-4-day-1,bassmaster,2007 WBT #4,bassmaster_other,2007-06-14,"Kentucky and Barkley lakes, Gilbertsville, KY",black_bass,388.56,,66,1,4.7812,3282000.0,0.5896
+bm-2007-wbt-4-day-2,bassmaster,2007 WBT #4,bassmaster_other,2007-06-15,"Kentucky and Barkley lakes, Gilbertsville, KY",black_bass,401.31,,74,2,4.4062,3282000.0,0.5846
+bm-2007-elite-series-sooner-run-day-1,bassmaster,2007 Elite Series – Sooner Run,bassmaster_elite,2007-06-21,"Grand Lake, Grove, OK",black_bass,1480.12,,108,1,13.875,7185000.0,0.5545
+bm-2007-elite-series-sooner-run-day-2,bassmaster,2007 Elite Series – Sooner Run,bassmaster_elite,2007-06-22,"Grand Lake, Grove, OK",black_bass,1449.81,,107,2,13.5,7185000.0,0.5494
+bm-2007-elite-series-sooner-run-day-3,bassmaster,2007 Elite Series – Sooner Run,bassmaster_elite,2007-06-23,"Grand Lake, Grove, OK",black_bass,693.19,,50,3,13.5625,7185000.0,0.5443
+bm-2007-elite-series-champions-choice-day-1,bassmaster,2007 Elite Series – Champion’s Choice,bassmaster_elite,2007-07-12,"Lake Champlain, Plattsburgh, NY",black_bass,1509.88,,108,1,14.5,4294413.0,0.4467
+bm-2007-elite-series-champions-choice-day-2,bassmaster,2007 Elite Series – Champion’s Choice,bassmaster_elite,2007-07-13,"Lake Champlain, Plattsburgh, NY",black_bass,1438.5,,108,2,13.4062,4294413.0,0.4417
+bm-2007-elite-series-champions-choice-day-3,bassmaster,2007 Elite Series – Champion’s Choice,bassmaster_elite,2007-07-14,"Lake Champlain, Plattsburgh, NY",black_bass,723.5,,50,3,14.4375,4294413.0,0.4366
+bm-2007-elite-series-empire-chase-day-1,bassmaster,2007 Elite Series – Empire Chase,bassmaster_elite,2007-07-19,"Lake Erie/niagara River Tributaries, Buffalo, NY",black_bass,1566.75,,107,1,15.1875,,0.4117
+bm-2007-elite-series-empire-chase-day-2,bassmaster,2007 Elite Series – Empire Chase,bassmaster_elite,2007-07-20,"Lake Erie/niagara River Tributaries, Buffalo, NY",black_bass,1742.06,,107,2,16.6875,,0.4067
+bm-2007-elite-series-empire-chase-day-3,bassmaster,2007 Elite Series – Empire Chase,bassmaster_elite,2007-07-21,"Lake Erie/niagara River Tributaries, Buffalo, NY",black_bass,213.69,,12,3,18.1562,,0.4019
+bm-2005-elite-50-4-day-1,bassmaster,2005 Elite 50 #4,bassmaster_elite,2005-06-15,"Lake Wissota, Chippewa Falls, WI",black_bass,142.31,,38,1,2.6875,02087570,0.5846
+bm-2005-elite-50-4-day-2,bassmaster,2005 Elite 50 #4,bassmaster_elite,2005-06-16,"Lake Wissota, Chippewa Falls, WI",black_bass,103.94,,27,2,2.625,02087570,0.5797
+bm-2005-elite-50-4-day-3,bassmaster,2005 Elite 50 #4,bassmaster_elite,2005-06-17,"Lake Wissota, Chippewa Falls, WI",black_bass,39.25,,9,3,4.625,02087570,0.5747
+bm-bassmaster-series-oklahoma-arkansas-4-day-1,bassmaster,BASSMASTER SERIES OKLAHOMA/ARKANSAS 4,bassmaster_other,2005-06-19,"Grand Lake, Grove, OK",black_bass,613.19,,69,1,9.3125,07185000,0.5646
+bm-bassmaster-series-panhandle-4-day-1,bassmaster,BASSMASTER SERIES PANHANDLE 4,bassmaster_other,2005-06-19,"St. Johns River, Palatka, FL",black_bass,202.44,,32,1,6.2188,02232400,0.5646
+bm-bassmaster-series-south-carolina-4-day-1,bassmaster,BASSMASTER SERIES SOUTH CAROLINA 4,bassmaster_other,2005-06-19,"Lake Murray, Prosperity, SC",black_bass,496.0,,67,1,7.6875,02168500,0.5646
+bm-2005-southern-open-1-day-1,bassmaster,2005 Southern Open #1,bassmaster_open,2005-06-23,"West Point Lake, Lanett, AL",black_bass,706.06,,148,1,4.5625,,0.5443
+bm-2005-southern-open-1-day-2,bassmaster,2005 Southern Open #1,bassmaster_open,2005-06-24,"West Point Lake, Lanett, AL",black_bass,654.62,,142,2,3.5312,,0.5392
+bm-bassmaster-series-louisiana-1-bo-day-1,bassmaster,BASSMASTER SERIES LOUISIANA 1 BO,bassmaster_other,2005-06-26,"Atchafalaya River Basin, Morgan City, LA",black_bass,316.94,,47,1,7.3125,05344500,0.529
+bm-bassmaster-series-northeast-2-bo-day-1,bassmaster,BASSMASTER SERIES NORTHEAST 2 BO,bassmaster_other,2005-06-26,"Cayuga Lake, Seneca Falls, NY",black_bass,1107.12,,117,1,9.5,04232730,0.529
+bm-bassmaster-series-tennessee-kentucky-4-bo-day-1,bassmaster,BASSMASTER SERIES TENNESSEE/KENTUCKY 4 BO,bassmaster_other,2005-06-26,"Kentucky And Barkley Lakes, Buchanan, TN",black_bass,313.12,,51,1,5.3125,03282000,0.529
+bm-bassmaster-series-maryland-virginia-4-day-1,bassmaster,BASSMASTER SERIES MARYLAND/VIRGINIA 4,bassmaster_other,2005-07-10,"James River, Williamsburg, VA",black_bass,254.81,,51,1,3.3125,02035000,0.4569
+bm-bassmaster-series-northeast-3-bo-day-1,bassmaster,BASSMASTER SERIES NORTHEAST 3 BO,bassmaster_other,2005-07-10,"1000 Islands, Clayton, NY",black_bass,874.56,,92,1,10.0938,,0.4569
+bm-bassmaster-series-virginia-north-carolin-3-day-1,bassmaster,BASSMASTER SERIES VIRGINIA/NORTH CAROLIN,bassmaster_other,2005-07-17,"High Rock Lake, Salisbury, NC",black_bass,359.44,,68,1,4.2188,02120780,0.4216
+bm-bassmaster-series-louisiana-5-day-1,bassmaster,BASSMASTER SERIES LOUISIANA 5,bassmaster_other,2005-07-24,"Red River, Shreveport, LA",black_bass,260.19,,52,1,4.5312,05344500,0.3874
+bm-2005-bassmaster-classic-day-1,bassmaster,2005 Bassmaster Classic,bassmaster_classic,2005-07-29,"Three Rivers, Pittsburgh, PA",black_bass,105.06,,37,1,3.1875,,0.3639
+bm-2005-bassmaster-classic-day-2,bassmaster,2005 Bassmaster Classic,bassmaster_classic,2005-07-30,"Three Rivers, Pittsburgh, PA",black_bass,76.0,,31,2,2.25,,0.3593
+bm-bassmaster-series-northeast-4-bo-day-1,bassmaster,BASSMASTER SERIES NORTHEAST 4 BO,bassmaster_other,2005-08-07,"Lake Champlain, Ticonderoga, NY",black_bass,1456.69,,126,1,12.0625,04294413,0.3243
+bm-2005-northern-open-2-day-1,bassmaster,2005 Northern Open #2,bassmaster_open,2005-08-11,"Lake Champlain, Plattsburgh, NY",black_bass,1612.38,,135,1,12.1875,04294413,0.308
+bm-2005-northern-open-2-day-2,bassmaster,2005 Northern Open #2,bassmaster_open,2005-08-12,"Lake Champlain, Plattsburgh, NY",black_bass,1629.12,,130,2,13.4062,04294413,0.3041
+bm-bassmaster-series-south-alabama-3-bo-day-1,bassmaster,BASSMASTER SERIES SOUTH ALABAMA 3 BO,bassmaster_other,2005-08-14,"Lake Of The Ozarks, Selma, AL",black_bass,531.06,,89,1,6.0625,06926000,0.2964
+bm-bassmaster-series-south-carolina-5-bo-day-1,bassmaster,BASSMASTER SERIES SOUTH CAROLINA 5 BO,bassmaster_other,2005-08-28,"High Rock Lake, Salisbury, NC",black_bass,311.56,,52,1,5.2812,02120780,0.2497
+bm-bassmaster-series-maryland-virginia-5-bo-day-1,bassmaster,BASSMASTER SERIES MARYLAND/VIRGINIA 5 BO,bassmaster_other,2005-09-11,"Potomac River, Marbury, MD",black_bass,288.38,,48,1,6.0938,01646500,0.2175
+bm-bassmaster-series-north-alabama-5-bo-day-1,bassmaster,BASSMASTER SERIES NORTH ALABAMA 5 BO,bassmaster_other,2005-09-11,"Lake Guntersville, Guntersville, AL",black_bass,589.06,,75,1,6.5625,03574500,0.2175
+bm-bassmaster-series-tennessee-5-bo-day-1,bassmaster,BASSMASTER SERIES TENNESSEE 5 BO,bassmaster_other,2005-09-11,"Cherokee Lake, Morristown, TN",black_bass,207.19,,38,1,3.75,03465500,0.2175
+bm-bassmaster-series-virginia-north-carolina-5-bo-day-1,bassmaster,BASSMASTER SERIES VIRGINIA/NORTH CAROLINA 5 BO,bassmaster_other,2005-09-11,"John H. Kerr Reservoir, Henderson, NC",black_bass,208.38,,51,1,3.25,,0.2175
+bm-2005-northern-open-3-day-1,bassmaster,2005 Northern Open #3,bassmaster_open,2005-09-15,"Oneida Lake, Syracuse, NY",black_bass,1252.56,,110,1,12.375,04245840,0.2112
+bm-2005-northern-open-3-day-2,bassmaster,2005 Northern Open #3,bassmaster_open,2005-09-16,"Oneida Lake, Syracuse, NY",black_bass,865.62,,100,2,9.375,04245840,0.2098
+bm-bassmaster-series-georgia-5-bo-day-1,bassmaster,BASSMASTER SERIES GEORGIA 5 BO,bassmaster_other,2005-10-02,"West Point Lake, Lanett, AL",black_bass,290.56,,68,1,3.4375,,0.2001
+bm-bassmaster-series-oklahoma-arkansas-5-bo-day-1,bassmaster,BASSMASTER SERIES OKLAHOMA/ARKANSAS 5 BO,bassmaster_other,2005-10-02,"Greers Ferry Reservoir, Greers Ferry, AR",black_bass,174.62,,50,1,3.375,,0.2001
+bm-bassmaster-series-panhandle-5-bo-day-1,bassmaster,BASSMASTER SERIES PANHANDLE 5 BO,bassmaster_other,2005-10-09,"Lake Seminole, Bainbridge, GA",black_bass,287.81,,37,1,6.75,02357000,0.2029
+bm-2005-central-open-2-day-1,bassmaster,2005 Central Open #2,bassmaster_open,2005-10-13,"Lake Norfork, Mountain Home, AR",black_bass,409.56,,98,1,3.3438,,0.2064
+bm-2005-central-open-2-day-2,bassmaster,2005 Central Open #2,bassmaster_open,2005-10-14,"Lake Norfork, Mountain Home, AR",black_bass,269.25,,80,2,2.875,,0.2075
+bm-2005-western-open-2-day-1,bassmaster,2005 Western Open #2,bassmaster_open,2005-10-13,"Clear Lake, Lakeport, CA",black_bass,1670.5,,147,1,11.4375,11450000,0.2064
+bm-2005-western-open-2-day-2,bassmaster,2005 Western Open #2,bassmaster_open,2005-10-14,"Clear Lake, Lakeport, CA",black_bass,1678.06,,146,2,11.625,11450000,0.2075
+bm-bassmaster-series-regionals-1-bo-day-1,bassmaster,BASSMASTER SERIES REGIONALS 1 BO,bassmaster_other,2005-10-13,"Tombigbee Waterway, Columbus, MS",black_bass,390.62,,92,1,3.8125,,0.2064
+bm-bassmaster-series-regionals-1-bo-day-2,bassmaster,BASSMASTER SERIES REGIONALS 1 BO,bassmaster_other,2005-10-14,"Tombigbee Waterway, Columbus, MS",black_bass,341.25,,82,2,3.6562,,0.2075
+bm-2005-wbt-preview-day-1,bassmaster,2005 WBT Preview,bassmaster_other,2005-10-20,"Lake Lewisville, Lewisville, TX",black_bass,287.0,,55,1,3.6875,,0.216
+bm-2005-wbt-preview-day-2,bassmaster,2005 WBT Preview,bassmaster_other,2005-10-21,"Lake Lewisville, Lewisville, TX",black_bass,240.94,,55,2,3.25,,0.2177
+bm-bassmaster-series-regionals-2-bo-day-1,bassmaster,BASSMASTER SERIES REGIONALS 2 BO,bassmaster_other,2005-10-27,"Kerr Reservoir, Henderson, NC",black_bass,272.75,,56,1,4.3125,,0.2296
+bm-bassmaster-series-regionals-2-bo-day-2,bassmaster,BASSMASTER SERIES REGIONALS 2 BO,bassmaster_other,2005-10-28,"Kerr Reservoir, Henderson, NC",black_bass,370.19,,65,2,4.875,,0.2319
+bm-bassmaster-series-regionals-3-bo-day-1,bassmaster,BASSMASTER SERIES REGIONALS 3 BO,bassmaster_other,2005-11-03,"Red River, Natchitoches, LA",black_bass,696.38,,107,1,6.625,05344500,0.2472
+bm-bassmaster-series-regionals-3-bo-day-2,bassmaster,BASSMASTER SERIES REGIONALS 3 BO,bassmaster_other,2005-11-04,"Red River, Natchitoches, LA",black_bass,575.19,,89,2,6.25,05344500,0.25
+bm-2005-central-open-3-day-1,bassmaster,2005 Central Open #3,bassmaster_open,2005-11-10,"Red River, Natchitoches, LA",black_bass,850.31,,118,1,7.4062,05344500,0.2685
+bm-2005-central-open-3-day-2,bassmaster,2005 Central Open #3,bassmaster_open,2005-11-11,"Red River, Natchitoches, LA",black_bass,781.94,,108,2,7.25,05344500,0.2718
+bm-bassmaster-series-regionals-4-bo-day-1,bassmaster,BASSMASTER SERIES REGIONALS 4 BO,bassmaster_other,2005-11-10,"Clarks Hill Reservoir, Thomason, GA",black_bass,623.06,,105,1,6.125,02196000,0.2685
+bm-bassmaster-series-regionals-4-bo-day-2,bassmaster,BASSMASTER SERIES REGIONALS 4 BO,bassmaster_other,2005-11-11,"Clarks Hill Reservoir, Thomason, GA",black_bass,559.31,,94,2,5.4375,02196000,0.2718
+bm-bassmaster-series-regionals-5-second-chance-bo-day-1,bassmaster,BASSMASTER SERIES REGIONALS 5 SECOND CHANCE BO,bassmaster_other,2005-11-11,"Old Hickory Lake, Gallatin, TN",black_bass,136.88,,47,1,2.5,03425413,0.2718
+bm-2005-southern-open-3-day-1,bassmaster,2005 Southern Open #3,bassmaster_open,2005-11-17,"Kissimmee Chain of Lakes, Kissimmee, FL",black_bass,825.44,,120,1,6.3438,02237700,0.2931
+bm-2005-southern-open-3-day-2,bassmaster,2005 Southern Open #3,bassmaster_open,2005-11-18,"Kissimmee Chain of Lakes, Kissimmee, FL",black_bass,735.06,,109,2,5.75,02237700,0.2968
+bm-2005-western-open-3-day-1,bassmaster,2005 Western Open #3,bassmaster_open,2005-11-17,"Lake Shasta, Shasta Lake, CA",black_bass,699.0,,99,1,6.9375,,0.2931
+bm-2005-western-open-3-day-2,bassmaster,2005 Western Open #3,bassmaster_open,2005-11-18,"Lake Shasta, Shasta Lake, CA",black_bass,669.19,,98,2,6.9375,,0.2968
+bm-2005-open-championship-day-1,bassmaster,2005 Open Championship,bassmaster_open,2005-12-01,"Alabama River, Prattville, AL",black_bass,422.25,,79,1,4.375,,0.3508
+bm-2005-open-championship-day-2,bassmaster,2005 Open Championship,bassmaster_open,2005-12-02,"Alabama River, Prattville, AL",black_bass,416.62,,79,2,4.875,,0.3553
+bm-2005-open-championship-day-3,bassmaster,2005 Open Championship,bassmaster_open,2005-12-03,"Alabama River, Prattville, AL",black_bass,59.56,,10,3,6.0625,,0.3599
+bm-2006-bassmaster-classic-day-1,bassmaster,2006 Bassmaster Classic,bassmaster_classic,2006-02-24,"Lake Tohopekaliga, Kissimmee, FL",black_bass,722.5,,50,1,14.0938,02267000,0.7433
+bm-2006-bassmaster-classic-day-2,bassmaster,2006 Bassmaster Classic,bassmaster_classic,2006-02-25,"Lake Tohopekaliga, Kissimmee, FL",black_bass,587.5,,51,2,10.3125,02267000,0.7463
+bm-2006-southern-tour-2-day-1,bassmaster,2006 Southern Tour #2,bassmaster_other,2006-03-02,"Sam Rayburn Reservoir, Jasper, TX",black_bass,1439.31,,133,1,10.4375,08039300,0.7601
+bm-2006-southern-tour-2-day-2,bassmaster,2006 Southern Tour #2,bassmaster_other,2006-03-03,"Sam Rayburn Reservoir, Jasper, TX",black_bass,1582.31,,133,2,11.75,08039300,0.7627
+bm-2006-elite-series-battle-on-the-border-day-1,bassmaster,2006 Elite Series – Battle on the Border,bassmaster_elite,2006-03-09,"Lake Amistad, Del Rio, TX",black_bass,1932.0,,106,1,17.7812,08449400,0.7762
+bm-2006-elite-series-battle-on-the-border-day-2,bassmaster,2006 Elite Series – Battle on the Border,bassmaster_elite,2006-03-10,"Lake Amistad, Del Rio, TX",black_bass,1938.88,,106,2,18.2812,08449400,0.7782
+bm-2006-elite-series-battle-on-the-border-day-3,bassmaster,2006 Elite Series – Battle on the Border,bassmaster_elite,2006-03-11,"Lake Amistad, Del Rio, TX",black_bass,948.44,,50,3,19.0938,08449400,0.7801
+bm-2006-elite-series-lone-star-shootout-day-1,bassmaster,2006 Elite Series – Lone Star Shootout,bassmaster_elite,2006-03-16,"Sam Rayburn Reservoir, Jasper, TX",black_bass,1541.25,,105,1,14.375,08039300,0.7883
+bm-2006-elite-series-lone-star-shootout-day-2,bassmaster,2006 Elite Series – Lone Star Shootout,bassmaster_elite,2006-03-17,"Sam Rayburn Reservoir, Jasper, TX",black_bass,1310.06,,105,2,12.375,08039300,0.7897
+bm-2006-elite-series-lone-star-shootout-day-3,bassmaster,2006 Elite Series – Lone Star Shootout,bassmaster_elite,2006-03-18,"Sam Rayburn Reservoir, Jasper, TX",black_bass,592.38,,50,3,11.5625,08039300,0.791
+bm-southern-3-manning-day-1,bassmaster,Southern 3 – Manning,bassmaster_other,2006-04-06,"Santee Cooper Lakes, Manning, SC",black_bass,1109.25,,109,1,10.4375,02171500,0.799
+bm-southern-3-manning-day-2,bassmaster,Southern 3 – Manning,bassmaster_other,2006-04-07,"Santee Cooper Lakes, Manning, SC",black_bass,1064.0,,103,2,9.75,02171500,0.7986
+bm-2006-elite-series-southern-challenge-day-1,bassmaster,2006 Elite Series – Southern Challenge,bassmaster_elite,2006-04-20,"Lake Guntersville, Guntersville, AL",black_bass,1336.25,,102,1,13.375,03574500,0.7846
+bm-2006-elite-series-southern-challenge-day-2,bassmaster,2006 Elite Series – Southern Challenge,bassmaster_elite,2006-04-21,"Lake Guntersville, Guntersville, AL",black_bass,1330.31,,103,2,13.6875,03574500,0.783
+bm-2006-elite-series-southern-challenge-day-3,bassmaster,2006 Elite Series – Southern Challenge,bassmaster_elite,2006-04-22,"Lake Guntersville, Guntersville, AL",black_bass,610.0,,48,3,13.7188,03574500,0.7812
+bm-2006-wbt-1-day-1,bassmaster,2006 WBT #1,bassmaster_other,2006-04-20,"Neely Henry Lake, Neely Henry Lake, AL",black_bass,455.0,,90,1,4.8125,02401390,0.7846
+bm-2006-wbt-1-day-2,bassmaster,2006 WBT #1,bassmaster_other,2006-04-21,"Neely Henry Lake, Neely Henry Lake, AL",black_bass,411.25,,87,2,3.625,02401390,0.783
+bm-2006-elite-series-pride-of-augusta-day-1,bassmaster,2006 Elite Series – Pride of Augusta,bassmaster_elite,2006-05-04,"Clarks Hill Reservoir, Columbia County, GA",black_bass,1143.81,,104,1,11.125,02196000,0.7538
+bm-2006-elite-series-pride-of-augusta-day-2,bassmaster,2006 Elite Series – Pride of Augusta,bassmaster_elite,2006-05-05,"Clarks Hill Reservoir, Columbia County, GA",black_bass,1012.31,,104,2,9.7812,02196000,0.751
+bm-2006-elite-series-pride-of-augusta-day-3,bassmaster,2006 Elite Series – Pride of Augusta,bassmaster_elite,2006-05-06,"Clarks Hill Reservoir, Columbia County, GA",black_bass,522.56,,50,3,10.3125,02196000,0.7482
+bm-cypress-3-palatka-bo-day-1,bassmaster,CYPRESS 3 – PALATKA BO,bassmaster_other,2006-05-07,"St. John's River, Palatka, FL",black_bass,316.94,,43,1,7.4375,02232400,0.7452
+bm-2006-southern-tour-4-day-1,bassmaster,2006 Southern Tour #4,bassmaster_other,2006-05-11,"Lake Eufaula, Eufaula, AL",black_bass,695.38,,116,1,5.375,02343940,0.7328
+bm-2006-southern-tour-4-day-2,bassmaster,2006 Southern Tour #4,bassmaster_other,2006-05-12,"Lake Eufaula, Eufaula, AL",black_bass,595.31,,108,2,4.4688,02343940,0.7295
+bm-2006-major-memorial-day-1,bassmaster,2006 Major – Memorial,bassmaster_other,2006-05-18,"Eagle Mountain Lake, Ft. Worth, TX",black_bass,455.69,,54,1,8.0312,,0.7083
+bm-2006-major-memorial-day-2,bassmaster,2006 Major – Memorial,bassmaster_other,2006-05-19,"Eagle Mountain Lake, Ft. Worth, TX",black_bass,400.94,,51,2,7.75,,0.7046
+bm-2006-major-memorial-day-3,bassmaster,2006 Major – Memorial,bassmaster_other,2006-05-20,"Eagle Mountain Lake, Ft. Worth, TX",black_bass,89.38,,11,3,7.1875,,0.7008
+bm-2006-wbt-2-day-1,bassmaster,2006 WBT #2,bassmaster_other,2006-05-18,"Lake Lewisville, Lake Lewisville, TX",black_bass,261.25,,60,1,3.6875,,0.7083
+bm-2006-wbt-2-day-2,bassmaster,2006 WBT #2,bassmaster_other,2006-05-19,"Lake Lewisville, Lake Lewisville, TX",black_bass,219.69,,57,2,3.25,,0.7046
+bm-2006-elite-series-sooner-run-day-1,bassmaster,2006 Elite Series – Sooner Run,bassmaster_elite,2006-06-01,"Grand Lake, Grove, OK",black_bass,1284.19,,102,1,12.1562,07185000,0.6508
+bm-2006-elite-series-sooner-run-day-2,bassmaster,2006 Elite Series – Sooner Run,bassmaster_elite,2006-06-02,"Grand Lake, Grove, OK",black_bass,1210.06,,102,2,11.9375,07185000,0.6464
+bm-2006-elite-series-sooner-run-day-3,bassmaster,2006 Elite Series – Sooner Run,bassmaster_elite,2006-06-03,"Grand Lake, Grove, OK",black_bass,560.75,,50,3,10.9688,07185000,0.6418
+bm-2006-elite-series-bluegrass-brawl-day-1,bassmaster,2006 Elite Series – Bluegrass Brawl,bassmaster_elite,2006-06-15,"Kentucky Lake, Kentucky Dam Village, KY",black_bass,1051.5,,96,1,11.625,03282000,0.5846
+bm-2006-elite-series-bluegrass-brawl-day-2,bassmaster,2006 Elite Series – Bluegrass Brawl,bassmaster_elite,2006-06-16,"Kentucky Lake, Kentucky Dam Village, KY",black_bass,1037.81,,101,2,10.625,03282000,0.5797
+bm-2006-elite-series-bluegrass-brawl-day-3,bassmaster,2006 Elite Series – Bluegrass Brawl,bassmaster_elite,2006-06-17,"Kentucky Lake, Kentucky Dam Village, KY",black_bass,551.44,,50,3,12.1875,03282000,0.5747
+bm-2006-northern-tour-1-day-1,bassmaster,2006 Northern Tour #1,bassmaster_other,2006-06-22,"Kentucky Lake, Kentucky Dam Village, KY",black_bass,884.06,,103,1,7.625,03282000,0.5494
+bm-2006-northern-tour-1-day-2,bassmaster,2006 Northern Tour #1,bassmaster_other,2006-06-23,"Kentucky Lake, Kentucky Dam Village, KY",black_bass,804.06,,97,2,8.3125,03282000,0.5443
+bm-2006-elite-series-empire-chase-day-1,bassmaster,2006 Elite Series – Empire Chase,bassmaster_elite,2006-07-06,"Lake Oneida, Syracuse, NY",black_bass,1249.06,,102,1,12.1875,04245840,0.4774
+bm-2006-elite-series-empire-chase-day-2,bassmaster,2006 Elite Series – Empire Chase,bassmaster_elite,2006-07-07,"Lake Oneida, Syracuse, NY",black_bass,1300.0,,102,2,12.75,04245840,0.4723
+bm-2006-elite-series-empire-chase-day-3,bassmaster,2006 Elite Series – Empire Chase,bassmaster_elite,2006-07-08,"Lake Oneida, Syracuse, NY",black_bass,677.62,,50,3,13.6875,04245840,0.4672
+bm-2006-elite-series-champions-choice-day-1,bassmaster,2006 Elite Series – Champion’s Choice,bassmaster_elite,2006-07-13,"Lake Champlain, Plattsburgh, NY",black_bass,1280.12,,102,1,12.5,04294413,0.4417
+bm-2006-elite-series-champions-choice-day-2,bassmaster,2006 Elite Series – Champion’s Choice,bassmaster_elite,2006-07-14,"Lake Champlain, Plattsburgh, NY",black_bass,1419.19,,102,2,13.7812,04294413,0.4366
+bm-2006-elite-series-champions-choice-day-3,bassmaster,2006 Elite Series – Champion’s Choice,bassmaster_elite,2006-07-15,"Lake Champlain, Plattsburgh, NY",black_bass,703.44,,50,3,15.0625,04294413,0.4316
+bm-2006-northern-tour-2-day-1,bassmaster,2006 Northern Tour #2,bassmaster_other,2006-07-20,"Mississippi River, Fort Madison, IA",black_bass,789.31,,81,1,10.625,05344500,0.4067
+bm-2006-northern-tour-2-day-2,bassmaster,2006 Northern Tour #2,bassmaster_other,2006-07-21,"Mississippi River, Fort Madison, IA",black_bass,758.69,,79,2,10.5,05344500,0.4019
+bm-2006-major-american-day-1,bassmaster,2006 Major – American,bassmaster_other,2006-07-27,"Lake Wylie, Charlotte, NC",black_bass,489.88,,54,1,9.5312,02146000,0.3732
+bm-2006-major-american-day-2,bassmaster,2006 Major – American,bassmaster_other,2006-07-28,"Lake Wylie, Charlotte, NC",black_bass,395.94,,52,2,8.0,02146000,0.3685
+bm-2006-major-american-day-3,bassmaster,2006 Major – American,bassmaster_other,2006-07-29,"Lake Wylie, Charlotte, NC",black_bass,106.81,,12,3,8.375,02146000,0.3639
+bm-2006-wbt-3-day-1,bassmaster,2006 WBT #3,bassmaster_other,2006-07-27,"Lake Norman, Lake Norman, NC",black_bass,208.0,,54,1,3.1562,02124000,0.3732
+bm-2006-wbt-3-day-2,bassmaster,2006 WBT #3,bassmaster_other,2006-07-28,"Lake Norman, Lake Norman, NC",black_bass,174.75,,54,2,2.4688,02124000,0.3685
+bm-2006-elite-series-capitol-clash-day-1,bassmaster,2006 Elite Series – Capitol Clash,bassmaster_elite,2006-08-10,"Potomac River, Charles County, MD",black_bass,994.94,,101,1,10.1875,01646500,0.312
+bm-2006-elite-series-capitol-clash-day-2,bassmaster,2006 Elite Series – Capitol Clash,bassmaster_elite,2006-08-11,"Potomac River, Charles County, MD",black_bass,966.44,,100,2,9.375,01646500,0.308
+bm-2006-elite-series-capitol-clash-day-3,bassmaster,2006 Elite Series – Capitol Clash,bassmaster_elite,2006-08-12,"Potomac River, Charles County, MD",black_bass,469.88,,50,3,9.0625,01646500,0.3041
+bm-2006-northern-tour-3-day-1,bassmaster,2006 Northern Tour #3,bassmaster_other,2006-08-17,"Lake Champlain, Plattsburgh, NY",black_bass,1392.38,,113,1,12.8125,04294413,0.2853
+bm-2006-northern-tour-3-day-2,bassmaster,2006 Northern Tour #3,bassmaster_other,2006-08-18,"Lake Champlain, Plattsburgh, NY",black_bass,1173.81,,104,2,11.6875,04294413,0.2817
+bm-2006-major-legends-day-1,bassmaster,2006 Major – Legends,bassmaster_other,2006-08-24,"Arkansas River, Little Rock, AR",black_bass,241.94,,44,1,4.8125,07194500,0.2617
+bm-2006-major-legends-day-2,bassmaster,2006 Major – Legends,bassmaster_other,2006-08-25,"Arkansas River, Little Rock, AR",black_bass,207.19,,44,2,3.8438,07194500,0.2586
+bm-2006-major-legends-day-3,bassmaster,2006 Major – Legends,bassmaster_other,2006-08-26,"Arkansas River, Little Rock, AR",black_bass,46.44,,10,3,3.8125,07194500,0.2555
+bm-2006-wbt-4-day-1,bassmaster,2006 WBT #4,bassmaster_other,2006-08-24,"Lake Dardanelle, Lake Dardanelle, AR",black_bass,219.56,,51,1,3.0625,07258000,0.2617
+bm-2006-wbt-4-day-2,bassmaster,2006 WBT #4,bassmaster_other,2006-08-25,"Lake Dardanelle, Lake Dardanelle, AR",black_bass,181.69,,53,2,2.5625,07258000,0.2586

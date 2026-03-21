@@ -1,0 +1,12 @@
+{
+  "status": "trained",
+  "train_rows": 947,
+  "test_rows": 328,
+  "iv_coverage_train": 0,
+  "iv_coverage_test": 0,
+  "model_params": 126801,
+  "best_epoch": 24,
+  "r2": 0.7580602765083313,
+  "rmse": 2.4651862388653845,
+  "mae": 1.7650827169418335
+}

@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'castline.backend.apps.validation',
+    'castline.backend.apps.core',
 ]
 
 MIDDLEWARE = [

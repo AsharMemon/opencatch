@@ -1,0 +1,8 @@
+# Martin vector tile server configuration
+listen_addresses: '0.0.0.0:3000'
+
+postgres:
+  connection_string: ${DATABASE_URL}
+  auto_publish:
+    tables: true
+    functions: false

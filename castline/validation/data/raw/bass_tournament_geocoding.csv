@@ -1,0 +1,127 @@
+location,usgs_site_id,latitude,longitude,needs_geocoding
+"Lake Wissota, Chippewa Falls, WI",02087570,,,no
+"Grand Lake, Grove, OK",07185000,,,no
+"St. Johns River, Palatka, FL",02232400,,,no
+"Lake Murray, Prosperity, SC",02168500,,,no
+"West Point Lake, Lanett, AL",,,,yes
+"Atchafalaya River Basin, Morgan City, LA",05344500,,,no
+"Cayuga Lake, Seneca Falls, NY",04232730,,,no
+"Kentucky And Barkley Lakes, Buchanan, TN",03282000,,,no
+"James River, Williamsburg, VA",02035000,,,no
+"1000 Islands, Clayton, NY",,,,yes
+"High Rock Lake, Salisbury, NC",02120780,,,no
+"Red River, Shreveport, LA",05344500,,,no
+"Three Rivers, Pittsburgh, PA",,,,yes
+"Lake Champlain, Ticonderoga, NY",04294413,,,no
+"Lake Champlain, Plattsburgh, NY",04294413,,,no
+"Lake Of The Ozarks, Selma, AL",06926000,,,no
+"Potomac River, Marbury, MD",01646500,,,no
+"Lake Guntersville, Guntersville, AL",03574500,,,no
+"Cherokee Lake, Morristown, TN",03465500,,,no
+"John H. Kerr Reservoir, Henderson, NC",,,,yes
+"Oneida Lake, Syracuse, NY",04245840,,,no
+"Greers Ferry Reservoir, Greers Ferry, AR",,,,yes
+"Lake Seminole, Bainbridge, GA",02357000,,,no
+"Lake Norfork, Mountain Home, AR",,,,yes
+"Clear Lake, Lakeport, CA",11450000,,,no
+"Tombigbee Waterway, Columbus, MS",,,,yes
+"Lake Lewisville, Lewisville, TX",,,,yes
+"Kerr Reservoir, Henderson, NC",,,,yes
+"Red River, Natchitoches, LA",05344500,,,no
+"Clarks Hill Reservoir, Thomason, GA",02196000,,,no
+"Old Hickory Lake, Gallatin, TN",03425413,,,no
+"Kissimmee Chain of Lakes, Kissimmee, FL",02237700,,,no
+"Lake Shasta, Shasta Lake, CA",,,,yes
+"Alabama River, Prattville, AL",,,,yes
+"Lake Tohopekaliga, Kissimmee, FL",02267000,,,no
+"Sam Rayburn Reservoir, Jasper, TX",08039300,,,no
+"Lake Amistad, Del Rio, TX",08449400,,,no
+"Santee Cooper Lakes, Manning, SC",02171500,,,no
+"Neely Henry Lake, Neely Henry Lake, AL",02401390,,,no
+"Clarks Hill Reservoir, Columbia County, GA",02196000,,,no
+"St. John's River, Palatka, FL",02232400,,,no
+"Lake Eufaula, Eufaula, AL",02343940,,,no
+"Eagle Mountain Lake, Ft. Worth, TX",,,,yes
+"Lake Lewisville, Lake Lewisville, TX",,,,yes
+"Kentucky Lake, Kentucky Dam Village, KY",03282000,,,no
+"Lake Oneida, Syracuse, NY",04245840,,,no
+"Mississippi River, Fort Madison, IA",05344500,,,no
+"Lake Wylie, Charlotte, NC",02146000,,,no
+"Lake Norman, Lake Norman, NC",02124000,,,no
+"Potomac River, Charles County, MD",01646500,,,no
+"Arkansas River, Little Rock, AR",07194500,,,no
+"Lake Dardanelle, Lake Dardanelle, AR",07258000,,,no
+"Lake Lanier, Gainesville, GA",02334430,,,no
+"Table Rock Lake, Kimberling City, MO",07053810,,,no
+"Bull Shoals Lake, Theodesia, MO",07054500,,,no
+"Lake Erie/sandusky Bay, Sandusky, OH",04157060,,,no
+"Smith Mountain Lake, Moneta, VA",02450250,,,no
+"Harris Chain Of Lakes, Leesburg, FL",02237700,,,no
+"Lake Mitchell, Birimingham, AL",,,,yes
+"Lay Lake, Birmingham, AL",02407000,,,no
+"Kissimmee Chain, Polk County, FL",02267000,,,no
+"Lake Texoma, Denison, TX",07332500,,,no
+"California Delta, Stockton, CA",11447650,,,no
+"Lake Dardanelle, Russellville, AR",07258000,,,no
+"Clarks Hill Lake, Evans, GA",02196000,,,no
+"High Rock Lake, Greensboro, NC",02120780,,,no
+"Kentucky and Barkley lakes, Gilbertsville, KY",03282000,,,no
+"Lake Erie/niagara River Tributaries, Buffalo, NY",,,,yes
+"Wheeler Lake, Decatur, AL",03572110,,,no
+"Lake Okeechobee, Okeechobee, FL",02274010,,,no
+"Lake Keowee, Seneca, SC",,,,yes
+"Lake Hartwell, Greenville, SC",02186000,,,no
+"Kissimmee Chain, Lake Wales, FL",02267000,,,no
+"Falcon Lake, Zapata, TX",08459000,,,no
+"Clarks Hill Lake, Columbia County, GA",02196000,,,no
+"Lake Murray, Columbia, SC",02168500,,,no
+"Neely Henry Lake, Gadsden, AL",02401390,,,no
+"Kentucky Lake, Gilbertsville, KY",03282000,,,no
+"Old Hickory Lake, Hendersonville, TN",03425413,,,no
+"Lake Erie/Niagara River Tributaries, Buffalo, NY",,,,yes
+"Clarks Hill Reservoir, Evans, GA",02196000,,,no
+"Kentucky Lake, Paris, TN",03282000,,,no
+"Lake Hamilton, Hot Springs, AR",,,,yes
+"Lake Texoma 0810c3n, Denison, TX",07332500,,,no
+"Harris Chain Of Lakes, Tavares, FL",02237700,,,no
+"Toledo Bend Reservoir, Many, LA",08028500,,,no
+"Lake Dardanelle, Russelville, AR",07258000,,,no
+"Chesapeake Bay, Cecil County, MD",01491000,,,no
+"Ouachita River, West Monroe, LA",07360200,,,no
+"Lake Wheeler, Decatur, AL",03572110,,,no
+"Sam Rayburn Reservoir, Sam Rayburn, TX",08039300,,,no
+"Lake Jordan, Wetumpka, AL",02098206,,,no
+"Alabama River, Montgomery, AL",,,,yes
+"Lake Erie, Sandusky, OH",04213500,,,no
+"Cypress Black Bayou Lake, Shreveport/bossier City, LA",05344500,,,no
+"Santee Cooper, Manning, SC",02171500,,,no
+"Pickwick Lake, Florence, AL",03592718,,,no
+"Smith Lake, Jasper, AL",02450250,,,no
+"Fort Gibson Lake, Muskogee, OK",07193000,,,no
+"Lake Champlain, Plattsburg, NY",04294413,,,no
+"Detroit River, Detroit, MI",,,,yes
+"Lake Seminole, Bainridge, GA",02357000,,,no
+"Louisiana Delta, New Orleans, LA",11447650,,,no
+"Harris Chain of Lakes, Tavares, FL",02237700,,,no
+"Lake Norman, Charlotte, NC",02124000,,,no
+"West Point Lake, LaGrange, GA",,,,yes
+"Douglas Lake, Jefferson County, TN",03467609,,,no
+"James River, Richmond, VA",02035000,,,no
+"Arkansas River, Muskogee, OK",07194500,,,no
+"Table Rock Lake, Branson, MO",07053810,,,no
+"Lewisville Lake, Lewisville, TX",,,,yes
+"Red River, Shreveport-Bossier City, LA",05344500,,,no
+"Bull Shoals Lake, Bull Shoals, AR",07054500,,,no
+"Douglas Lake, Dandridge, TN",03467609,,,no
+"Mississippi River, La Crosse, WI",05344500,,,no
+"Lake Michigan, Green Bay, WI",04157060,,,no
+"Fort Gibson Lake, Wagoner, OK",07193000,,,no
+"Lake Shelbyville, Decatur, IL",,,,yes
+"Lake Decatur, Decatur, IL",,,,yes
+"Grand Lake O' the Cherokees, Tulsa, OK",07185000,,,no
+"Sabine River System, Orange, TX",,,,yes
+"Logan Martin Lake, Pell City, AL",02405500,,,no
+"St. Lawrence River, Waddington, NY",04264331,,,no
+"Lake St. Clair/Detroit River, Detroit, MI",02232400,,,no
+"Muskegon Lake and White Lake, Muskegon, MI",,,,yes
+"Ross Barnett Reservoir, Ridgeland, MS",02485600,,,no

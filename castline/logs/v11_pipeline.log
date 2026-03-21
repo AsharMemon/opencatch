@@ -1,0 +1,277 @@
+[20:17:19] ======================================================================
+[20:17:19] CPUE MODEL v11 — TWO-TIER TRAINING (PREMIUM + AUXILIARY)
+[20:17:19] ======================================================================
+[20:17:19] 
+--- Loading tournament data ---
+[20:17:19]   all_bassmaster_outcomes.csv: 842 rows
+[20:17:19]   elite_outcomes.csv: 334 rows
+[20:17:19]   flw_outcomes.csv: 2260 rows
+[20:17:19]   tourneyx_outcomes.csv: 3014 rows
+[20:17:19]   combined_all_outcomes_v2.csv: 1471 rows
+[20:17:19]   Raw total: 7921
+[20:17:19]   After dedup: 6450
+[20:17:19]   With valid CPUE: 6450
+[20:17:19]   Dropping 2973 length-based events
+[20:17:19]   Premium sources: 3436 rows
+[20:17:19]   Auxiliary sources: 41 rows
+[20:17:19]   Final tournament rows: 3477
+[20:17:19] 
+--- Resolving coordinates ---
+[20:17:19]   FLW weather: 1236 matched
+[20:17:19]   Geocode cache: 2128 matched
+[20:17:19]   Total with coords: 3364/3477 (96.8%)
+[20:17:19] 
+--- Feature Engineering ---
+[20:17:19]   Premium/auxiliary distribution:
+[20:17:19]     flw_outcomes: 2156 rows [PREMIUM]
+[20:17:19]     all_bassmaster_outcomes: 842 rows [PREMIUM]
+[20:17:19]     elite_outcomes: 334 rows [PREMIUM]
+[20:17:19]     tourneyx_outcomes: 32 rows [AUXILIARY]
+[20:17:19]   Temporal + context features: done
+[20:17:19] 
+--- Merging day-level weather ---
+[20:17:19]   Weather daily file: 5152 rows
+[20:17:19]   Merged from daily weather: 3291/3364
+[20:17:19]   FLW weather fallback filled: 14 additional
+[20:17:19]   Computing derived weather features...
+[20:17:19]   Weather coverage: 3305/3364 (98.2%)
+[20:17:19]   Pressure delta coverage: 3277/3364 (97.4%)
+[20:17:19] 
+--- USGS gauge features ---
+[20:17:19]   USGS file: 2943 rows
+[20:17:19]   USGS matched: 991/3364 (29.5%)
+[20:17:19] 
+--- Weather regime features ---
+[20:17:19]   Regime file: 4134 rows
+[20:17:19]   Regime matched: 2298/3364 (68.3%)
+[20:17:19] 
+--- Temperature departure from normals ---
+[20:17:19]   Temp departure file: 5152 rows
+[20:17:19]   Temp departure matched: 3291/3364 (97.8%)
+[20:17:19]   Mean departure: -0.40 C
+[20:17:19]   Warm anomalies: 488.0, Cold: 544.0
+[20:17:19] 
+--- LAGOS morphometry ---
+[20:17:19]   Pre-matched LAGOS file: 1925 locations
+[20:17:19]   LAGOS matched (pre-matched): 1129/3364 (33.6%)
+[20:17:19] 
+--- Species proxy features ---
+[20:17:19]   Multi-species features: weighted_optimal_temp, pressure_sensitivity_score, frontal_response_score, flow_preference_score, spawn_activity, peak_feed_activity
+[20:17:19]   Species features added: 7 (smb_probability, lmb_probability, smb_depth_signal, smb_composite, species_optimal_temp, species_temp_deviation...)
+[20:17:19] 
+--- GeoCLIP embeddings ---
+[20:17:19]   GeoCLIP matched: 3295/3364 (97.9%)
+[20:17:19] 
+  Final dataset: 3364 rows x 151 columns
+[20:17:19]   Date range: 1997-02-23 to 2025-12-04
+[20:17:19]   Unique locations: 280
+[20:17:19]   CPUE range: 1.12 - 136.44 lb/angler
+[20:17:19]   CPUE median: 14.27 lb/angler
+[20:17:19]   Premium rows: 3332
+[20:17:19]   Auxiliary rows: 32
+[20:17:19] 
+Ready: 3364 rows, 117 features
+[20:17:20]   V11 sample weights — premium=2.0x (3332 rows), auxiliary=1.0x (32 rows)
+[20:17:20]   Premium-only subset: 3332 rows, 254 locations
+[20:17:20] 
+======================================================================
+[20:17:20] TRAINING — 117 features, 3364 total rows (3332 premium)
+[20:17:20] ======================================================================
+[20:17:20]   Features: ['num_anglers', 'day_number', 'is_premium_source', 'lat', 'lon', 'month', 'day_of_year', 'month_sin', 'month_cos', 'doy_sin']... (showing first 10)
+[20:17:20] 
+--- Phase 1: Hyperparameter search (premium-only, fold 1) ---
+[20:17:21]   depth=4 lr=0.02 l2=10 sub=0.6: R2=0.4079
+[20:17:22]   depth=4 lr=0.03 l2=10 sub=0.6: R2=0.4035
+[20:17:23]   depth=4 lr=0.03 l2=5 sub=0.7: R2=0.4039
+[20:17:25]   depth=5 lr=0.02 l2=10 sub=0.6: R2=0.4083
+[20:17:27]   depth=4 lr=0.02 l2=15 sub=0.6: R2=0.4095
+[20:17:28]   depth=3 lr=0.03 l2=15 sub=0.6: R2=0.3880
+[20:17:28]   Best config: {'depth': 4, 'lr': 0.02, 'l2': 15, 'subsample': 0.6}
+[20:17:28] 
+--- Phase 2: Premium-only 5-fold GroupKFold ---
+[20:17:28] 
+  Fold 1/5 (train=2665, val=667, val_locs=51)
+[20:17:30]     CatBoost:  R2=0.4095
+[20:17:32]     XGBoost:   R2=0.4170
+[20:17:32]     LightGBM:  R2=0.4422
+[20:17:32]     AvgEnsemble: R2=0.4326
+[20:17:32] 
+  Fold 2/5 (train=2665, val=667, val_locs=51)
+[20:17:35]     CatBoost:  R2=0.4602
+[20:17:36]     XGBoost:   R2=0.4639
+[20:17:37]     LightGBM:  R2=0.4584
+[20:17:37]     AvgEnsemble: R2=0.4709
+[20:17:37] 
+  Fold 3/5 (train=2666, val=666, val_locs=50)
+[20:17:38]     CatBoost:  R2=0.4783
+[20:17:39]     XGBoost:   R2=0.5223
+[20:17:40]     LightGBM:  R2=0.5213
+[20:17:40]     AvgEnsemble: R2=0.5170
+[20:17:40] 
+  Fold 4/5 (train=2666, val=666, val_locs=51)
+[20:17:43]     CatBoost:  R2=0.4514
+[20:17:45]     XGBoost:   R2=0.4824
+[20:17:46]     LightGBM:  R2=0.4789
+[20:17:46]     AvgEnsemble: R2=0.4814
+[20:17:46] 
+  Fold 5/5 (train=2666, val=666, val_locs=51)
+[20:17:47]     CatBoost:  R2=0.4575
+[20:17:48]     XGBoost:   R2=0.5170
+[20:17:49]     LightGBM:  R2=0.5703
+[20:17:49]     AvgEnsemble: R2=0.5297
+[20:17:49] 
+  Premium-only CV Summary:
+[20:17:49]     CatBoost:     0.4514 +/- 0.0228
+[20:17:49]     XGBoost:      0.4805 +/- 0.0385
+[20:17:49]     LightGBM:     0.4942 +/- 0.0464
+[20:17:49]     Avg Ensemble: 0.4863 +/- 0.0345
+[20:17:49] 
+--- Phase 3: Two-tier 5-fold GroupKFold (all data, weighted) ---
+[20:17:49] 
+  Fold 1/5 (train=2691, val=673, val_locs=56)
+[20:17:52]     CatBoost:  R2=0.5044  MAE=8.079 lb
+[20:17:53]     XGBoost:   R2=0.4791  MAE=8.401 lb
+[20:17:54]     LightGBM:  R2=0.5048  MAE=8.128 lb
+[20:17:54]     AvgEnsemble: R2=0.5131
+[20:17:54] 
+  Fold 2/5 (train=2691, val=673, val_locs=56)
+[20:17:56]     CatBoost:  R2=0.2735  MAE=7.307 lb
+[20:17:57]     XGBoost:   R2=0.2758  MAE=7.371 lb
+[20:17:57]     LightGBM:  R2=0.2675  MAE=7.051 lb
+[20:17:57]     AvgEnsemble: R2=0.2839
+[20:17:57] 
+  Fold 3/5 (train=2691, val=673, val_locs=56)
+[20:18:00]     CatBoost:  R2=0.4212  MAE=10.227 lb
+[20:18:01]     XGBoost:   R2=0.4369  MAE=10.416 lb
+[20:18:02]     LightGBM:  R2=0.4948  MAE=9.498 lb
+[20:18:02]     AvgEnsemble: R2=0.4627
+[20:18:02] 
+  Fold 4/5 (train=2691, val=673, val_locs=56)
+[20:18:04]     CatBoost:  R2=0.4744  MAE=7.857 lb
+[20:18:05]     XGBoost:   R2=0.5068  MAE=7.688 lb
+[20:18:06]     LightGBM:  R2=0.5080  MAE=7.467 lb
+[20:18:06]     AvgEnsemble: R2=0.5057
+[20:18:06] 
+  Fold 5/5 (train=2692, val=672, val_locs=56)
+[20:18:09]     CatBoost:  R2=0.5904  MAE=6.361 lb
+[20:18:11]     XGBoost:   R2=0.6512  MAE=5.879 lb
+[20:18:11]     LightGBM:  R2=0.6687  MAE=5.621 lb
+[20:18:11]     AvgEnsemble: R2=0.6481
+[20:18:11] 
+======================================================================
+[20:18:11] STACKING META-LEARNER (Ridge on OOF predictions)
+[20:18:11] ======================================================================
+[20:18:11]   Ridge weights: CB=0.199  XGB=0.115  LGB=0.816
+[20:18:11]   Stacked R2: 0.5190
+[20:18:11]   Stacked MAE: 7.317 lb
+[20:18:11]   Stacked RMSE (log): 0.4645
+[20:18:11] 
+======================================================================
+[20:18:11] TEMPORAL HOLDOUT (train < 2023-06-01, test >= 2023-06-01)
+[20:18:11] ======================================================================
+[20:18:14]   Train: 2969 rows (up to 2023-06-01)
+[20:18:14]   Test:  395 rows (from 2023-06-01)
+[20:18:14]   Temporal R2 (all test):     0.3582
+[20:18:14]   Temporal MAE (all test):    2.973 lb
+[20:18:14]   Temporal R2 (premium-only): 0.3689  (383 rows)
+[20:18:14]   Temporal MAE (premium-only):2.944 lb
+[20:18:14] 
+  --- Premium-only temporal holdout (V7-like) ---
+[20:18:16]   Premium-only train: 2949 rows
+[20:18:16]   Temporal R2 (prem-train, all-test):   0.3425
+[20:18:16]   Temporal MAE (prem-train, all-test):  3.014 lb
+[20:18:16]   Temporal R2 (prem-train, prem-test):  0.3570  (383 rows)
+[20:18:16] 
+======================================================================
+[20:18:16] WALK-FORWARD TEMPORAL VALIDATION (2019+ folds only)
+[20:18:16] ======================================================================
+[20:18:18]   Fold train < 2020 / test 2020-2021: R2=-0.2923  MAE=4.100 lb  (train=2594, test=154)  prem_R2=0.0475 (139 rows)
+[20:18:20]   Fold train < 2022 / test 2022-2023: R2=0.0311  MAE=3.761 lb  (train=2748, test=297)  prem_R2=0.0356 (289 rows)
+[20:18:22]   Fold train < 2024 / test 2024+: R2=0.3592  MAE=2.817 lb  (train=3045, test=319)  prem_R2=0.3632 (311 rows)
+[20:18:22]   Walk-forward mean temporal R2: 0.0327 +/- 0.2660
+[20:18:22]   Walk-forward mean premium R2:  0.1488 +/- 0.1517
+[20:18:22] 
+======================================================================
+[20:18:22] FEATURE IMPORTANCE (top 30)
+[20:18:22] ======================================================================
+[20:18:28]                  log_num_anglers: 26.52%
+[20:18:28]                      num_anglers: 22.86%
+[20:18:28]                   lagos_log_area: 1.91%
+[20:18:28]                    lagos_area_ha: 1.73%
+[20:18:28]                              lon: 1.68%
+[20:18:28]                       geoclip_13: 1.64%
+[20:18:28]                        geoclip_3: 1.62%
+[20:18:28]                        lagos_sdi: 1.57%
+[20:18:28]                       geoclip_12: 1.34%
+[20:18:28]                      series_tier: 1.26%
+[20:18:28]                        geoclip_2: 1.11%
+[20:18:28]                        geoclip_0: 1.08%
+[20:18:28]                       geoclip_14: 1.00%
+[20:18:28]                        geoclip_8: 0.99%
+[20:18:28]                          doy_sin: 0.98%
+[20:18:28]                pressure_trend_6h: 0.91%
+[20:18:28]                       temp_range: 0.83%
+[20:18:28]                        geoclip_6: 0.82%
+[20:18:28]                       geoclip_15: 0.82%
+[20:18:28]                    temp_trend_6h: 0.80%
+[20:18:28]                      flow_rising: 0.80%
+[20:18:28]                 day_length_hours: 0.78%
+[20:18:28]                      day_of_year: 0.74%
+[20:18:28]                     flow_falling: 0.74%
+[20:18:28]               pressure_trend_12h: 0.69%
+[20:18:28]                gauge_distance_km: 0.68%
+[20:18:28]                        geoclip_1: 0.66%
+[20:18:28]                        geoclip_9: 0.65%
+[20:18:28]                      cloud_cover: 0.65%
+[20:18:28]           frontal_response_score: 0.63%
+[20:18:28] 
+======================================================================
+[20:18:28] FINAL SUMMARY — CPUE Model v11 (Two-Tier Training)
+[20:18:28] ======================================================================
+[20:18:28]   Dataset (total):        3364 tournament-days
+[20:18:28]   Dataset (premium):      3332 tournament-days
+[20:18:28]   Dataset (auxiliary):    32 tournament-days
+[20:18:28]   Date range:             1997-02-23 to 2025-12-04
+[20:18:28]   Unique locations:       280
+[20:18:28]   Features:               117
+[20:18:28]   Weather coverage:       3305/3364 (98.2%)
+[20:18:28]   Pressure delta coverage:3277/3364 (97.4%)
+[20:18:28]   Best HP config:         depth=4 lr=0.02 l2=15
+[20:18:28] 
+[20:18:28]   === PREMIUM-ONLY CV (like V7) ===
+[20:18:28]   CPUE R2 (CatBoost):     0.4514 +/- 0.0228
+[20:18:28]   CPUE R2 (XGBoost):      0.4805 +/- 0.0385
+[20:18:28]   CPUE R2 (LightGBM):     0.4942 +/- 0.0464
+[20:18:28]   CPUE R2 (Avg Ensemble): 0.4863 +/- 0.0345
+[20:18:28] 
+[20:18:28]   === TWO-TIER CV (all data, premium 2x weight) ===
+[20:18:28]   CPUE R2 (CatBoost):     0.4528 +/- 0.1051
+[20:18:28]   CPUE R2 (XGBoost):      0.4700 +/- 0.1209
+[20:18:28]   CPUE R2 (LightGBM):     0.4888 +/- 0.1281
+[20:18:28]   CPUE R2 (Avg Ensemble): 0.4827 +/- 0.1172
+[20:18:28]   CPUE R2 (Stacked):      0.5190
+[20:18:28] 
+[20:18:28]   CPUE MAE (CatBoost):    7.966 lb/angler
+[20:18:28]   CPUE MAE (XGBoost):     7.951 lb/angler
+[20:18:28]   CPUE MAE (LightGBM):    7.553 lb/angler
+[20:18:28]   CPUE MAE (Stacked):     7.317 lb/angler
+[20:18:28]   CPUE RMSE (Stacked):    0.4645 (log scale)
+[20:18:28] 
+[20:18:28]   Temporal R2 (mid-2023 split): 0.3582
+[20:18:28]   Walk-forward R2 (mean):       0.0327 +/- 0.2660
+[20:18:28]   Walk-forward R2 (prem-only):  0.1488 +/- 0.1517
+[20:18:28] 
+[20:18:28]   V11 CHANGES vs V10:
+[20:18:28]   1. Two-tier training: premium-only base, then all with premium 2x weights
+[20:18:28]   2. Removed data_source_quality feature
+[20:18:28]   3. Added is_premium_source binary flag
+[20:18:28]   4. Walk-forward folds 2019+ only (dropped noisy pre-2019 folds)
+[20:18:28]   5. Temporal holdout split at 2023-06-01 (mid-year)
+[20:18:28] 
+[20:18:28]   COMPARISON TARGETS:
+[20:18:28]   V7:  CV R2=0.4482  Temporal R2=0.4039  Walk-forward R2=0.26
+[20:18:28]   V9:  CV R2=0.5197  Temporal R2=0.3507  Walk-forward R2=-0.08
+[20:18:28]   V10: CV R2=???     Temporal R2=0.3238  Walk-forward R2=???
+[20:18:28] ======================================================================
+[20:18:28] 
+Total wall time: 69s (1.2 min)

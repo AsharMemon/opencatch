@@ -299,7 +299,7 @@ def fetch_iem_asos_history(
         IEM_ASOS_REQUEST_URL,
         params={
             'station': station,
-            'data': ['tmpf', 'mslp', 'skyc1', 'skyc2', 'skyc3', 'skyc4', 'sknt', 'p01i'],
+            'data': ['tmpf', 'mslp', 'skyc1', 'skyc2', 'skyc3', 'skyc4', 'sknt', 'drct', 'p01i'],
             'year1': start_ts.year,
             'month1': start_ts.month,
             'day1': start_ts.day,
@@ -329,7 +329,8 @@ def fetch_iem_asos_history(
     df['wind_speed_kph'] = pd.to_numeric(df.get('sknt'), errors='coerce') * 1.852
     df['precip_mm'] = pd.to_numeric(df.get('p01i'), errors='coerce').fillna(0.0) * 25.4
     df['cloud_cover_pct'] = df.apply(_sky_cover_pct, axis=1)
-    return df[['valid', 'air_temp_c', 'pressure_mb', 'wind_speed_kph', 'cloud_cover_pct', 'precip_mm']]
+    df['wind_dir_deg'] = pd.to_numeric(df.get('drct'), errors='coerce')
+    return df[['valid', 'air_temp_c', 'pressure_mb', 'wind_speed_kph', 'wind_dir_deg', 'cloud_cover_pct', 'precip_mm']]
 
 
 def _summarize_event_weather(event: WeatherEvent, station: str, history: pd.DataFrame) -> dict[str, Any]:
@@ -345,11 +346,71 @@ def _summarize_event_weather(event: WeatherEvent, station: str, history: pd.Data
             raise ValueError(f'no usable IEM weather rows on or before event date for station {station}')
         event_window = fallback.tail(24).copy()
 
+    # Pressure rate-of-change features (pre-frontal feeding is a strong predictor)
+    pressure_vals = event_window['pressure_mb'].dropna()
+    pressure_delta_3h = float('nan')
+    pressure_delta_6h = float('nan')
+    pressure_delta_12h = float('nan')
+    if len(pressure_vals) >= 2:
+        # Use first and last observations within windows
+        sorted_pressure = event_window[['valid', 'pressure_mb']].dropna().sort_values('valid')
+        if len(sorted_pressure) >= 2:
+            latest = sorted_pressure.iloc[-1]
+            # 3-hour delta
+            cutoff_3h = latest['valid'] - pd.Timedelta(hours=3)
+            before_3h = sorted_pressure.loc[sorted_pressure['valid'] <= cutoff_3h]
+            if not before_3h.empty:
+                pressure_delta_3h = float(latest['pressure_mb'] - before_3h.iloc[-1]['pressure_mb'])
+            # 6-hour delta
+            cutoff_6h = latest['valid'] - pd.Timedelta(hours=6)
+            before_6h = sorted_pressure.loc[sorted_pressure['valid'] <= cutoff_6h]
+            if not before_6h.empty:
+                pressure_delta_6h = float(latest['pressure_mb'] - before_6h.iloc[-1]['pressure_mb'])
+            # 12-hour delta
+            cutoff_12h = latest['valid'] - pd.Timedelta(hours=12)
+            before_12h = sorted_pressure.loc[sorted_pressure['valid'] <= cutoff_12h]
+            if not before_12h.empty:
+                pressure_delta_12h = float(latest['pressure_mb'] - before_12h.iloc[-1]['pressure_mb'])
+
+    # Frontal phase classification (pre-frontal = dropping, post-frontal = rising)
+    front_phase = 'stable'
+    if not pd.isna(pressure_delta_6h):
+        if pressure_delta_6h < -2.0:
+            front_phase = 'pre_frontal'
+        elif pressure_delta_6h > 2.0:
+            front_phase = 'post_frontal'
+        elif pressure_delta_6h < -0.5:
+            front_phase = 'approaching'
+        elif pressure_delta_6h > 0.5:
+            front_phase = 'clearing'
+
+    # Wind direction (mean circular direction)
+    import math
+    wind_dir_mean = float('nan')
+    wind_dir_col = event_window.get('wind_dir_deg')
+    if wind_dir_col is not None:
+        wind_dirs = wind_dir_col.dropna()
+        if len(wind_dirs) > 0:
+            sin_sum = sum(math.sin(math.radians(d)) for d in wind_dirs)
+            cos_sum = sum(math.cos(math.radians(d)) for d in wind_dirs)
+            wind_dir_mean = math.degrees(math.atan2(sin_sum, cos_sum)) % 360
+
+    # Wind direction as sin/cos for model consumption
+    wind_dir_sin = math.sin(math.radians(wind_dir_mean)) if not pd.isna(wind_dir_mean) else float('nan')
+    wind_dir_cos = math.cos(math.radians(wind_dir_mean)) if not pd.isna(wind_dir_mean) else float('nan')
+
     return {
         'event_id': event.event_id,
         'air_temp_c': round(float(event_window['air_temp_c'].dropna().mean() or 0.0), 4),
         'pressure_mb': round(float(event_window['pressure_mb'].dropna().mean() or 0.0), 4),
+        'pressure_delta_3h': round(pressure_delta_3h, 4) if not pd.isna(pressure_delta_3h) else float('nan'),
+        'pressure_delta_6h': round(pressure_delta_6h, 4) if not pd.isna(pressure_delta_6h) else float('nan'),
+        'pressure_delta_12h': round(pressure_delta_12h, 4) if not pd.isna(pressure_delta_12h) else float('nan'),
+        'front_phase': front_phase,
         'wind_speed_kph': round(float(event_window['wind_speed_kph'].dropna().mean() or 0.0), 4),
+        'wind_dir_deg': round(wind_dir_mean, 1) if not pd.isna(wind_dir_mean) else float('nan'),
+        'wind_dir_sin': round(wind_dir_sin, 4) if not pd.isna(wind_dir_sin) else float('nan'),
+        'wind_dir_cos': round(wind_dir_cos, 4) if not pd.isna(wind_dir_cos) else float('nan'),
         'cloud_cover_pct': round(float(event_window['cloud_cover_pct'].dropna().mean() or 0.0), 4),
         'precip_24h_mm': round(float(event_window['precip_mm'].fillna(0.0).sum()), 4),
         'iem_station': station,
@@ -390,7 +451,12 @@ def collect_weather_history(
                     last_error = exc
                     continue
             if last_error is not None:
-                raise last_error
+                import sys as _sys
+                print(
+                    f"weather: warning: skipping event {event.event_id}: {last_error}",
+                    file=_sys.stderr,
+                )
+                continue
         df = pd.DataFrame(rows)
         source_mode = 'iem_asos_api'
     elif source_path is not None:

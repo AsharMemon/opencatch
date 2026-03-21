@@ -1,0 +1,205 @@
+[17:37:38] ======================================================================
+[17:37:38] CPUE MODEL v5 — DAY-LEVEL TOURNAMENT DATA
+[17:37:38] ======================================================================
+[17:37:38] 
+--- Loading tournament data ---
+[17:37:38]   all_bassmaster_outcomes.csv: 842 rows
+[17:37:38]   elite_outcomes.csv: 334 rows
+[17:37:38]   flw_outcomes.csv: 2260 rows
+[17:37:38]   tourneyx_outcomes.csv: 3014 rows
+[17:37:38]   combined_all_outcomes_v2.csv: 1471 rows
+[17:37:38]   Raw total: 7921
+[17:37:38]   After dedup: 6450
+[17:37:38]   With valid CPUE: 6450
+[17:37:38]   Dropping 2973 length-based events
+[17:37:38]   Final tournament rows: 3477
+[17:37:38] 
+--- Resolving coordinates ---
+[17:37:38]   FLW weather: 1236 matched
+[17:37:38]   Geocode cache: 1153 matched
+[17:37:38]   Total with coords: 2389/3477 (68.7%)
+[17:37:38] 
+--- Feature Engineering ---
+[17:37:38]   Temporal + context features: done
+[17:37:38] 
+--- Merging day-level weather ---
+[17:37:38]   Weather daily file: 4179 rows
+[17:37:38]   Merged from daily weather: 2318/2389
+[17:37:38]   FLW weather fallback filled: 14 additional
+[17:37:38]   Computing derived weather features...
+[17:37:38]   Weather coverage: 2332/2389 (97.6%)
+[17:37:38]   Pressure delta coverage: 2304/2389 (96.4%)
+[17:37:38] 
+--- USGS gauge features ---
+[17:37:38]   USGS file: 2943 rows
+[17:37:38]   USGS matched: 178/2389 (7.5%)
+[17:37:38] 
+--- Weather regime features ---
+[17:37:38]   Regime file: 1236 rows
+[17:37:38]   Regime matched: 1166/2389 (48.8%)
+[17:37:38] 
+--- LAGOS morphometry ---
+[17:37:38]   Pre-matched LAGOS file: 1925 locations
+[17:37:38]   LAGOS matched (pre-matched): 1129/2389 (47.3%)
+[17:37:38] 
+--- Species proxy features ---
+[17:37:38]   Multi-species features: weighted_optimal_temp, pressure_sensitivity_score, frontal_response_score, flow_preference_score, spawn_activity, peak_feed_activity
+[17:37:38]   Species features added: 7 (smb_probability, lmb_probability, smb_depth_signal, smb_composite, species_optimal_temp, species_temp_deviation...)
+[17:37:38] 
+--- GeoCLIP embeddings ---
+[17:37:38]   GeoCLIP matched: 2389/2389 (100.0%)
+[17:37:38] 
+  Final dataset: 2389 rows x 140 columns
+[17:37:38]   Date range: 1997-02-23 to 2025-12-04
+[17:37:38]   Unique locations: 146
+[17:37:38]   CPUE range: 1.19 - 136.44 lb/angler
+[17:37:38]   CPUE median: 14.56 lb/angler
+[17:37:38] 
+Ready: 2389 rows, 109 features
+[17:37:39] 
+======================================================================
+[17:37:39] TRAINING — 109 features, 2389 rows
+[17:37:39] ======================================================================
+[17:37:39]   Features: ['num_anglers', 'day_number', 'lat', 'lon', 'month', 'day_of_year', 'month_sin', 'month_cos', 'doy_sin', 'doy_cos']... (showing first 10)
+[17:37:39] 
+--- Hyperparameter search (fold 1) ---
+[17:37:39]   depth=4 lr=0.03 l2=3: R2=0.4493
+[17:37:40]   depth=4 lr=0.05 l2=5: R2=0.4483
+[17:37:41]   depth=5 lr=0.03 l2=5: R2=0.4575
+[17:37:41]   depth=5 lr=0.05 l2=10: R2=0.4498
+[17:37:42]   depth=4 lr=0.03 l2=10: R2=0.4466
+[17:37:42]   Best config: {'depth': 5, 'lr': 0.03, 'l2': 5}
+[17:37:42] 
+--- 5-fold GroupKFold (grouped by location) ---
+[17:37:42] 
+  Fold 1/5 (train=1911, val=478, val_locs=29)
+[17:37:43]     CatBoost:  R2=0.4575  MAE=8.006 lb
+[17:37:44]     XGBoost:   R2=0.4810  MAE=7.911 lb
+Training until validation scores don't improve for 100 rounds
+Early stopping, best iteration is:
+[170]	valid_0's rmse: 0.497419
+[17:37:45]     LightGBM:  R2=0.4289  MAE=8.032 lb
+[17:37:45]     AvgEnsemble: R2=0.4651
+[17:37:45] 
+  Fold 2/5 (train=1911, val=478, val_locs=29)
+[17:37:47]     CatBoost:  R2=0.3444  MAE=10.845 lb
+[17:37:48]     XGBoost:   R2=0.2847  MAE=11.314 lb
+Training until validation scores don't improve for 100 rounds
+Early stopping, best iteration is:
+[186]	valid_0's rmse: 0.57194
+[17:37:48]     LightGBM:  R2=0.3029  MAE=11.054 lb
+[17:37:48]     AvgEnsemble: R2=0.3243
+[17:37:48] 
+  Fold 3/5 (train=1911, val=478, val_locs=29)
+[17:37:49]     CatBoost:  R2=0.5434  MAE=6.567 lb
+[17:37:51]     XGBoost:   R2=0.5384  MAE=6.533 lb
+Training until validation scores don't improve for 100 rounds
+Early stopping, best iteration is:
+[145]	valid_0's rmse: 0.390004
+[17:37:51]     LightGBM:  R2=0.5439  MAE=6.476 lb
+[17:37:51]     AvgEnsemble: R2=0.5624
+[17:37:51] 
+  Fold 4/5 (train=1911, val=478, val_locs=30)
+[17:37:52]     CatBoost:  R2=0.3834  MAE=7.715 lb
+[17:37:53]     XGBoost:   R2=0.3725  MAE=7.679 lb
+Training until validation scores don't improve for 100 rounds
+Early stopping, best iteration is:
+[135]	valid_0's rmse: 0.485032
+[17:37:53]     LightGBM:  R2=0.3875  MAE=7.251 lb
+[17:37:53]     AvgEnsemble: R2=0.3901
+[17:37:53] 
+  Fold 5/5 (train=1912, val=477, val_locs=29)
+[17:37:54]     CatBoost:  R2=0.3835  MAE=5.931 lb
+[17:37:54]     XGBoost:   R2=0.4533  MAE=5.580 lb
+Training until validation scores don't improve for 100 rounds
+Early stopping, best iteration is:
+[62]	valid_0's rmse: 0.40631
+[17:37:55]     LightGBM:  R2=0.4367  MAE=5.661 lb
+[17:37:55]     AvgEnsemble: R2=0.4318
+[17:37:55] 
+======================================================================
+[17:37:55] STACKING META-LEARNER (Ridge on OOF predictions)
+[17:37:55] ======================================================================
+[17:37:55]   Ridge weights: CB=0.468  XGB=0.316  LGB=0.329
+[17:37:55]   Stacked R2: 0.4482
+[17:37:55]   Stacked MAE: 7.525 lb
+[17:37:55]   Stacked RMSE (log): 0.4639
+[17:37:55] 
+======================================================================
+[17:37:55] TEMPORAL HOLDOUT (train < 2023, test >= 2023)
+[17:37:55] ======================================================================
+[17:37:57]   Train: 1937 rows (1997-2022)
+[17:37:57]   Test:  452 rows (2023-2025)
+[17:37:57]   Temporal R2:  0.4039
+[17:37:57]   Temporal MAE: 2.730 lb
+[17:37:57] 
+======================================================================
+[17:37:57] WALK-FORWARD TEMPORAL VALIDATION
+[17:37:57] ======================================================================
+[17:37:57]   Fold train < 2018 / test 2018-2019: R2=-0.0118  MAE=3.407 lb  (train=1527, test=139)
+[17:38:01]   Fold train < 2020 / test 2020-2021: R2=0.3665  MAE=2.505 lb  (train=1666, test=146)
+[17:38:02]   Fold train < 2022 / test 2022-2023: R2=0.2696  MAE=3.117 lb  (train=1812, test=273)
+[17:38:03]   Fold train < 2024 / test 2024-2025: R2=0.4078  MAE=2.693 lb  (train=2085, test=304)
+[17:38:03]   Walk-forward mean temporal R2: 0.2580 +/- 0.1636
+[17:38:03] 
+======================================================================
+[17:38:03] FEATURE IMPORTANCE (top 30)
+[17:38:03] ======================================================================
+[17:38:09]                  log_num_anglers: 9.97%
+[17:38:09]                      num_anglers: 8.74%
+[17:38:09]                    lagos_area_ha: 3.98%
+[17:38:09]                    temp_trend_6h: 3.72%
+[17:38:09]               pressure_trend_12h: 3.71%
+[17:38:09]                        lagos_sdi: 2.73%
+[17:38:09]                pressure_trend_6h: 2.58%
+[17:38:09]                        geoclip_3: 2.58%
+[17:38:09]                        geoclip_0: 2.34%
+[17:38:09]                   lagos_log_area: 2.23%
+[17:38:09]                  stability_index: 2.10%
+[17:38:09]               hours_since_precip: 1.89%
+[17:38:09]                       geoclip_12: 1.88%
+[17:38:09]                      series_tier: 1.88%
+[17:38:09]                hours_since_front: 1.66%
+[17:38:09]                       geoclip_14: 1.64%
+[17:38:09]                       geoclip_13: 1.54%
+[17:38:09]                          doy_sin: 1.54%
+[17:38:09]             wind_shift_magnitude: 1.40%
+[17:38:09]           frontal_response_score: 1.31%
+[17:38:09]                  lunar_phase_cos: 1.22%
+[17:38:09]                      cloud_cover: 1.21%
+[17:38:09]                              lon: 1.15%
+[17:38:09]                  lunar_phase_sin: 1.10%
+[17:38:09]                    humidity_mean: 1.07%
+[17:38:09]                        geoclip_6: 1.05%
+[17:38:09]                        geoclip_1: 1.05%
+[17:38:09]                        geoclip_2: 0.97%
+[17:38:09]                pressure_x_season: 0.96%
+[17:38:09]                       geoclip_11: 0.94%
+[17:38:09] 
+======================================================================
+[17:38:09] FINAL SUMMARY — CPUE Model v5 (Day-Level Tournament)
+[17:38:09] ======================================================================
+[17:38:09]   Dataset:                2389 tournament-days
+[17:38:09]   Date range:             1997-02-23 to 2025-12-04
+[17:38:09]   Unique locations:       146
+[17:38:09]   Features:               109
+[17:38:09]   Weather coverage:       2332/2389 (97.6%)
+[17:38:09]   Pressure delta coverage:2304/2389 (96.4%)
+[17:38:09]   GroupKFold splits:      5
+[17:38:09]   Best HP config:         depth=5 lr=0.03 l2=5
+[17:38:09] 
+[17:38:09]   CPUE R2 (CatBoost):     0.4224 +/- 0.0707
+[17:38:09]   CPUE R2 (XGBoost):      0.4260 +/- 0.0886
+[17:38:09]   CPUE R2 (LightGBM):     0.4200 +/- 0.0781
+[17:38:09]   CPUE R2 (Avg Ensemble): 0.4347 +/- 0.0793
+[17:38:09]   CPUE R2 (Stacked):      0.4482
+[17:38:09] 
+[17:38:09]   CPUE MAE (CatBoost):    7.813 lb/angler
+[17:38:09]   CPUE MAE (XGBoost):     7.803 lb/angler
+[17:38:09]   CPUE MAE (LightGBM):    7.695 lb/angler
+[17:38:09]   CPUE MAE (Stacked):     7.525 lb/angler
+[17:38:09]   CPUE RMSE (Stacked):    0.4639 (log scale)
+[17:38:09] 
+[17:38:09]   Walk-forward R2 (mean): 0.2580 +/- 0.1636
+[17:38:09]   Wall time:              31s
+[17:38:09] ======================================================================

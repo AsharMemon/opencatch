@@ -1,0 +1,26 @@
+# Ignore everything except what the Dockerfile needs
+*
+
+# Allow infra/api for requirements.txt
+!infra/api/requirements.txt
+
+# Allow castline application code (but not data/logs/artifacts)
+!castline/
+castline/validation/data/
+castline/validation/artifacts/
+castline/validation/models/ensemble_artifacts/
+castline/validation/models/tft_artifacts/
+castline/logs/
+
+# Ignore large/unnecessary dirs
+mobile/
+scripts/
+catboost_info/
+lightning_logs/
+*.csv
+*.json
+*.md
+.git/
+.claude/
+__pycache__/
+*.pyc

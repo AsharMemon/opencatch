@@ -1,0 +1,8693 @@
+{
+ "28.2181,-81.3945": {
+  "location": "Lake Tohopekaliga, Kissimmee, FL",
+  "lat": 28.21808,
+  "lon": -81.3944885,
+  "sites": []
+ },
+ "29.4624,-101.0598": {
+  "location": "Lake Amistad, Del Rio, TX",
+  "lat": 29.46243707,
+  "lon": -101.0598453,
+  "sites": []
+ },
+ "34.3700,-86.3000": {
+  "location": "Lake Guntersville, Birmingham, AL",
+  "lat": 34.37,
+  "lon": -86.3,
+  "sites": []
+ },
+ "34.0800,-87.0700": {
+  "location": "Smith Lake, Jasper, AL",
+  "lat": 34.08,
+  "lon": -87.07,
+  "sites": []
+ },
+ "30.7500,-84.8500": {
+  "location": "Lake Seminole, Bainbridge, GA",
+  "lat": 30.75,
+  "lon": -84.85,
+  "sites": []
+ },
+ "29.6500,-81.6300": {
+  "location": "St. Johns River, Palatka, FL",
+  "lat": 29.65,
+  "lon": -81.63,
+  "sites": []
+ },
+ "36.5800,-93.3500": {
+  "location": "Table Rock Lake, Branson, MO",
+  "lat": 36.58,
+  "lon": -93.35,
+  "sites": []
+ },
+ "32.5100,-93.7500": {
+  "location": "Red River, Shreveport, LA",
+  "lat": 32.51,
+  "lon": -93.75,
+  "sites": []
+ },
+ "31.4500,-93.5500": {
+  "location": "Toledo Bend Reservoir, Many, LA",
+  "lat": 31.45,
+  "lon": -93.55,
+  "sites": [
+   {
+    "site_no": "08024200",
+    "site_lat": 31.51573308,
+    "site_lon": -93.6512915,
+    "site_name": "BYU LA NANA NR ZWOLLE, LA",
+    "site_type": "ST",
+    "distance_km": 12.07
+   },
+   {
+    "site_no": "08025500",
+    "site_lat": 31.30712737,
+    "site_lon": -93.5157295,
+    "site_name": "Bayou Toro near Toro, LA",
+    "site_type": "ST",
+    "distance_km": 16.22
+   },
+   {
+    "site_no": "08024060",
+    "site_lat": 31.58072865,
+    "site_lon": -93.462675,
+    "site_name": "BLACKWELL CR AT MANY LA",
+    "site_type": "ST",
+    "distance_km": 16.73
+   },
+   {
+    "site_no": "08024160",
+    "site_lat": 31.60156283,
+    "site_lon": -93.5904568,
+    "site_name": "HURRICANE CK TRIB @ LORING LK NR ZWOLLE, LA",
+    "site_type": "ST",
+    "distance_km": 17.28
+   },
+   {
+    "site_no": "08024400",
+    "site_lat": 31.4671247,
+    "site_lon": -93.7449052,
+    "site_name": "Sabine Rv nr Milam, TX",
+    "site_type": "ST",
+    "distance_km": 18.58
+   }
+  ]
+ },
+ "35.3393,-93.3423": {
+  "location": "Lake Dardanelle, Russellville, AR",
+  "lat": 35.3393382,
+  "lon": -93.3422908,
+  "sites": [
+   {
+    "site_no": "07257693",
+    "site_lat": 35.39305556,
+    "site_lon": -93.2205556,
+    "site_name": "Huckleberry Creek nr Augsburg, AR",
+    "site_type": "ST",
+    "distance_km": 12.55
+   },
+   {
+    "site_no": "07257006",
+    "site_lat": 35.5058333,
+    "site_lon": -93.1813889,
+    "site_name": "Big Piney Creek at Highway 164 near Dover, AR",
+    "site_type": "ST",
+    "distance_km": 23.57
+   },
+   {
+    "site_no": "07257500",
+    "site_lat": 35.46638889,
+    "site_lon": -93.0411111,
+    "site_name": "Illinois Bayou near Scottsville, AR",
+    "site_type": "ST",
+    "distance_km": 30.74
+   },
+   {
+    "site_no": "07260500",
+    "site_lat": 35.0586111,
+    "site_lon": -93.3955556,
+    "site_name": "Petit Jean River at Danville, AR",
+    "site_type": "ST",
+    "distance_km": 31.59
+   },
+   {
+    "site_no": "07257480",
+    "site_lat": 35.5,
+    "site_lon": -93.0186111,
+    "site_name": "North Fork Illinois Bayou nr Scottsville, AR",
+    "site_type": "ST",
+    "distance_km": 34.34
+   }
+  ]
+ },
+ "36.0300,-83.3500": {
+  "location": "Douglas Lake, Dandridge, TN",
+  "lat": 36.03,
+  "lon": -83.35,
+  "sites": []
+ },
+ "44.5300,-73.3300": {
+  "location": "Lake Champlain, Plattsburgh, NY",
+  "lat": 44.53,
+  "lon": -73.33,
+  "sites": []
+ },
+ "40.0200,-75.1200": {
+  "location": "Delaware River, Philadelphia, PA",
+  "lat": 40.02,
+  "lon": -75.12,
+  "sites": []
+ },
+ "42.6800,-76.7200": {
+  "location": "Cayuga Lake, Union Springs, NY",
+  "lat": 42.68,
+  "lon": -76.72,
+  "sites": [
+   {
+    "site_no": "425027076564401",
+    "site_lat": 42.84080556,
+    "site_lon": -76.9455833,
+    "site_name": "SENECA LAKE PLATFORM",
+    "site_type": "LK",
+    "distance_km": 25.67
+   },
+   {
+    "site_no": "425327076313601",
+    "site_lat": 42.89088889,
+    "site_lon": -76.52675,
+    "site_name": "OWASCO LAKE PLATFORM",
+    "site_type": "LK",
+    "distance_km": 28.26
+   },
+   {
+    "site_no": "425606076251601",
+    "site_lat": 42.9181111,
+    "site_lon": -76.4145556,
+    "site_name": "SKANEATELES LAKE PLATFORM",
+    "site_type": "LK",
+    "distance_km": 36.36
+   },
+   {
+    "site_no": "04236000",
+    "site_lat": 42.944767,
+    "site_lon": -76.429192,
+    "site_name": "SKANEATELES LAKE AT SKANEATELES NY",
+    "site_type": "LK",
+    "distance_km": 37.81
+   },
+   {
+    "site_no": "04232482",
+    "site_lat": 42.6803333,
+    "site_lon": -76.95388889,
+    "site_name": "KEUKA LAKE OUTLET AT DRESDEN NY",
+    "site_type": "ST",
+    "distance_km": 19.12
+   }
+  ]
+ },
+ "42.4500,-82.6800": {
+  "location": "Lake St. Clair, Detroit, MI",
+  "lat": 42.45,
+  "lon": -82.68,
+  "sites": []
+ },
+ "35.7500,-95.3700": {
+  "location": "Arkansas River, Muskogee, OK",
+  "lat": 35.75,
+  "lon": -95.37,
+  "sites": []
+ },
+ "45.7200,-86.9500": {
+  "location": "Bays de Noc, Escanaba, MI",
+  "lat": 45.72,
+  "lon": -86.95,
+  "sites": []
+ },
+ "35.5564,-80.8524": {
+  "location": "Lake Norman, Charlotte, NC",
+  "lat": 35.5563973,
+  "lon": -80.8523743,
+  "sites": []
+ },
+ "34.5000,-82.8500": {
+  "location": "Lake Hartwell, Greenville, SC",
+  "lat": 34.5,
+  "lon": -82.85,
+  "sites": []
+ },
+ "32.4200,-89.9500": {
+  "location": "Ross Barnett Reservoir, Ridgeland, MS",
+  "lat": 32.42,
+  "lon": -89.95,
+  "sites": []
+ },
+ "30.0800,-93.7300": {
+  "location": "Sabine River, Orange, TX",
+  "lat": 30.08,
+  "lon": -93.73,
+  "sites": []
+ },
+ "32.4600,-86.4700": {
+  "location": "Alabama River, Prattville, AL",
+  "lat": 32.46,
+  "lon": -86.47,
+  "sites": []
+ },
+ "38.5800,-121.5000": {
+  "location": "Sacramento River, Sacramento, CA",
+  "lat": 38.58,
+  "lon": -121.5,
+  "sites": []
+ },
+ "34.4700,-114.3500": {
+  "location": "Lake Havasu, Lake Havasu City, AZ",
+  "lat": 34.47,
+  "lon": -114.35,
+  "sites": []
+ },
+ "36.7800,-88.0500": {
+  "location": "Kentucky Lake, Paris, TN",
+  "lat": 36.78,
+  "lon": -88.05,
+  "sites": []
+ },
+ "37.5300,-77.4300": {
+  "location": "James River, Richmond, VA",
+  "lat": 37.53,
+  "lon": -77.43,
+  "sites": []
+ },
+ "44.3200,-76.0700": {
+  "location": "St. Lawrence River, Waddington, NY",
+  "lat": 44.32,
+  "lon": -76.07,
+  "sites": []
+ },
+ "43.1800,-75.9000": {
+  "location": "Oneida Lake, Syracuse, NY",
+  "lat": 43.18,
+  "lon": -75.9,
+  "sites": []
+ },
+ "39.4700,-76.0800": {
+  "location": "Chesapeake Bay, Cecil County, MD",
+  "lat": 39.47,
+  "lon": -76.08,
+  "sites": []
+ },
+ "35.9828,-95.3251": {
+  "location": "Fort Gibson Lake, Wagoner, OK",
+  "lat": 35.9827979,
+  "lon": -95.3250953,
+  "sites": []
+ },
+ "44.8300,-87.3700": {
+  "location": "Sturgeon Bay, Door County, WI",
+  "lat": 44.83,
+  "lon": -87.37,
+  "sites": []
+ },
+ "41.5000,-82.6000": {
+  "location": "Lake Erie, Sandusky, OH",
+  "lat": 41.5,
+  "lon": -82.6,
+  "sites": []
+ },
+ "28.3000,-81.4200": {
+  "location": "Kissimmee Chain of Lakes, Kissimmee, FL",
+  "lat": 28.3,
+  "lon": -81.42,
+  "sites": [
+   {
+    "site_no": "02234432",
+    "site_lat": 28.71055556,
+    "site_lon": -81.2386111,
+    "site_name": "LAKE JESUP AT STATE HIGHWAY 417 NEAR OVIEDO, FL",
+    "site_type": "LK",
+    "distance_km": 48.97
+   },
+   {
+    "site_no": "02263800",
+    "site_lat": 28.3041775,
+    "site_lon": -81.450905,
+    "site_name": "SHINGLE CREEK AT AIRPORT NEAR KISSIMMEE, FL",
+    "site_type": "ST",
+    "distance_km": 3.06
+   },
+   {
+    "site_no": "02264495",
+    "site_lat": 28.26723444,
+    "site_lon": -81.4478495,
+    "site_name": "SHINGLE CREEK AT CAMPBELL, FL",
+    "site_type": "ST",
+    "distance_km": 4.55
+   },
+   {
+    "site_no": "02264100",
+    "site_lat": 28.32528785,
+    "site_lon": -81.5206284,
+    "site_name": "BONNET CREEK NEAR VINELAND, FL",
+    "site_type": "ST",
+    "distance_km": 10.24
+   },
+   {
+    "site_no": "02264140",
+    "site_lat": 28.30806625,
+    "site_lon": -81.5245174,
+    "site_name": "BONNET CREEK NEAR KISSIMMEE, FL",
+    "site_type": "ST",
+    "distance_km": 10.27
+   }
+  ]
+ },
+ "36.7800,-95.1000": {
+  "location": "Grand Lake O' the Cherokees, Tulsa, OK",
+  "lat": 36.78,
+  "lon": -95.1,
+  "sites": []
+ },
+ "33.3700,-79.2700": {
+  "location": "Winyah Bay, Georgetown, SC",
+  "lat": 33.37,
+  "lon": -79.27,
+  "sites": []
+ },
+ "32.8130,-95.5472": {
+  "location": "Norfork and Bull Shoals, Mountain Home, AR",
+  "lat": 32.81298841,
+  "lon": -95.54717503,
+  "sites": []
+ },
+ "34.5700,-87.0300": {
+  "location": "Wheeler Lake, Decatur, AL",
+  "lat": 34.57,
+  "lon": -87.03,
+  "sites": [
+   {
+    "site_no": "03577150",
+    "site_lat": 34.6131475,
+    "site_lon": -86.9738969,
+    "site_name": "TENNESSEE RIVER AT DECATUR AL",
+    "site_type": "ST",
+    "distance_km": 7.03
+   },
+   {
+    "site_no": "03577119",
+    "site_lat": 34.5061111,
+    "site_lon": -86.9561111,
+    "site_name": "FLINT CREEK AT RED BANK RD SE NR DECATUR, AL",
+    "site_type": "ST",
+    "distance_km": 9.81
+   },
+   {
+    "site_no": "03577000",
+    "site_lat": 34.4764839,
+    "site_lon": -87.1416814,
+    "site_name": "WEST FLINT CREEK NEAR OAKVILLE AL",
+    "site_type": "ST",
+    "distance_km": 14.59
+   },
+   {
+    "site_no": "03577225",
+    "site_lat": 34.76400884,
+    "site_lon": -86.946383,
+    "site_name": "SWAN CREEK BELOW ATHENS, ALA",
+    "site_type": "ST",
+    "distance_km": 22.89
+   },
+   {
+    "site_no": "03576500",
+    "site_lat": 34.373184,
+    "site_lon": -86.9336049,
+    "site_name": "FLINT CREEK NEAR FALKVILLE AL",
+    "site_type": "ST",
+    "distance_km": 23.6
+   }
+  ]
+ },
+ "33.8700,-96.5800": {
+  "location": "Lake Texoma, Durant, OK",
+  "lat": 33.87,
+  "lon": -96.58,
+  "sites": []
+ },
+ "42.9558,-78.9113": {
+  "location": "Niagara River, Buffalo, NY",
+  "lat": 42.9558151,
+  "lon": -78.9112881,
+  "sites": []
+ },
+ "38.5700,-77.2200": {
+  "location": "Potomac River, Charles County, MD",
+  "lat": 38.57,
+  "lon": -77.22,
+  "sites": [
+   {
+    "site_no": "01658705",
+    "site_lat": 38.5281766,
+    "site_lon": -77.29581489,
+    "site_name": "LITTLE CREEK AT GEIGER ROAD AT QUANTICO, VA",
+    "site_type": "ST",
+    "distance_km": 8.07
+   },
+   {
+    "site_no": "01658698",
+    "site_lat": 38.5331767,
+    "site_lon": -77.32164869,
+    "site_name": "LITTLE CREEK AT MOCKING BIRD RD AT TRIANGLE, VA",
+    "site_type": "ST",
+    "distance_km": 9.74
+   },
+   {
+    "site_no": "01657885",
+    "site_lat": 38.6448396,
+    "site_lon": -77.28720538,
+    "site_name": "NEABSCO CR TRIB AT TELEGRAPH RD NR DALE CITY, VA",
+    "site_type": "ST",
+    "distance_km": 10.17
+   },
+   {
+    "site_no": "01658480",
+    "site_lat": 38.57289796,
+    "site_lon": -77.3472053,
+    "site_name": "QUANTICO CREEK NEAR DUMFRIES, VA",
+    "site_type": "ST",
+    "distance_km": 11.06
+   },
+   {
+    "site_no": "01658650",
+    "site_lat": 38.5717869,
+    "site_lon": -77.348872,
+    "site_name": "S F QUANTICO CREEK NEAR DUMFRIES, VA",
+    "site_type": "ST",
+    "distance_km": 11.21
+   }
+  ]
+ },
+ "43.8000,-91.2300": {
+  "location": "Mississippi River, La Crosse, WI",
+  "lat": 43.8,
+  "lon": -91.23,
+  "sites": []
+ },
+ "46.2000,-93.6000": {
+  "location": "Mille Lacs Lake, Mille Lacs, MN",
+  "lat": 46.2,
+  "lon": -93.6,
+  "sites": []
+ },
+ "30.2800,-91.5500": {
+  "location": "Atchafalaya Basin, Morgan City, LA",
+  "lat": 30.28,
+  "lon": -91.55,
+  "sites": []
+ },
+ "28.8000,-81.7800": {
+  "location": "Harris Chain of Lakes, Leesburg, FL",
+  "lat": 28.8,
+  "lon": -81.78,
+  "sites": [
+   {
+    "site_no": "02237522",
+    "site_lat": 28.81165724,
+    "site_lon": -81.7709109,
+    "site_name": "DEAD RIVER NR TAVARES, FLA.",
+    "site_type": "ST",
+    "distance_km": 1.57
+   },
+   {
+    "site_no": "02238000",
+    "site_lat": 28.87082178,
+    "site_lon": -81.7836894,
+    "site_name": "HAYNES CREEK AT LISBON, FL",
+    "site_type": "ST",
+    "distance_km": 7.88
+   },
+   {
+    "site_no": "02238001",
+    "site_lat": 28.8711111,
+    "site_lon": -81.7844444,
+    "site_name": "HAYNES CREEK BELOW BURRELL DAM AT LISBON, FL",
+    "site_type": "ST",
+    "distance_km": 7.92
+   },
+   {
+    "site_no": "02237293",
+    "site_lat": 28.7444364,
+    "site_lon": -81.8725798,
+    "site_name": "PALATLAKAHA R AT STRUCTURE M-1, NR OKAHUMPKA, FL",
+    "site_type": "ST",
+    "distance_km": 10.94
+   },
+   {
+    "site_no": "02237701",
+    "site_lat": 28.72304997,
+    "site_lon": -81.6847976,
+    "site_name": "APOPKA-BEAUCLAIR CANAL BL DAM NEAR ASTATULA, FL",
+    "site_type": "ST",
+    "distance_km": 12.62
+   }
+  ]
+ },
+ "36.1800,-83.5200": {
+  "location": "Cherokee Lake, Knoxville and Jefferson County, TN",
+  "lat": 36.18,
+  "lon": -83.52,
+  "sites": [
+   {
+    "site_no": "03494000",
+    "site_lat": 36.16768546,
+    "site_lon": -83.5029788,
+    "site_name": "HOLSTON RIVER NEAR JEFFERSON CITY, TN",
+    "site_type": "ST",
+    "distance_km": 2.05
+   },
+   {
+    "site_no": "03493000",
+    "site_lat": 36.12744157,
+    "site_lon": -83.4927213,
+    "site_name": "MOSSY CREEK AT JEFFERSON CITY, TN",
+    "site_type": "ST",
+    "distance_km": 6.34
+   },
+   {
+    "site_no": "03492006",
+    "site_lat": 36.2359256,
+    "site_lon": -83.297393,
+    "site_name": "TURKEY CREEK AT MORRISTOWN,TN",
+    "site_type": "ST",
+    "distance_km": 20.92
+   },
+   {
+    "site_no": "03495005",
+    "site_lat": 36.0775845,
+    "site_lon": -83.7429577,
+    "site_name": "FLAT CREEK NEAR MASCOT, TN",
+    "site_type": "ST",
+    "distance_km": 23.04
+   },
+   {
+    "site_no": "03495405",
+    "site_lat": 36.0778611,
+    "site_lon": -83.768,
+    "site_name": "ROSEBERRY CREEK AT HWY11W NR MASCOT, TN",
+    "site_type": "ST",
+    "distance_km": 25.0
+   }
+  ]
+ },
+ "26.9500,-80.8000": {
+  "location": "Lake Okeechobee, Okeechobee, FL",
+  "lat": 26.95,
+  "lon": -80.8,
+  "sites": [
+   {
+    "site_no": "02259627",
+    "site_lat": 27.12199467,
+    "site_lon": -80.8953402,
+    "site_name": "BUCKHEAD LOCK AT S-127 NR OKEECHOBEE, FL",
+    "site_type": "ST",
+    "distance_km": 21.33
+   },
+   {
+    "site_no": "02259500",
+    "site_lat": 27.06616336,
+    "site_lon": -80.9864537,
+    "site_name": "INDIAN PRAIRIE CANAL NEAR OKEECHOBEE, FLA.",
+    "site_type": "ST",
+    "distance_km": 22.54
+   },
+   {
+    "site_no": "02275705",
+    "site_lat": 27.1625488,
+    "site_lon": -80.717558,
+    "site_name": "HENRY CREEK AT HENRY CRK LOCK NR SHERMAN",
+    "site_type": "ST",
+    "distance_km": 25.0
+   },
+   {
+    "site_no": "02259200",
+    "site_lat": 27.09338463,
+    "site_lon": -81.0067319,
+    "site_name": "INDIAN PRAIRIE CANAL AT S-72 NR OKEECHOBEE, FLA.",
+    "site_type": "ST",
+    "distance_km": 25.95
+   },
+   {
+    "site_no": "02259000",
+    "site_lat": 27.10032883,
+    "site_lon": -81.0120098,
+    "site_name": "INDIAN PRAIRIE CANAL NR LAKEPORT FLA",
+    "site_type": "ST",
+    "distance_km": 26.84
+   }
+  ]
+ },
+ "30.4200,-95.5700": {
+  "location": "Lake Conroe, Houston, TX",
+  "lat": 30.42,
+  "lon": -95.57,
+  "sites": []
+ },
+ "31.0800,-94.1500": {
+  "location": "Lake Sam Rayburn, Lufkin, TX",
+  "lat": 31.08,
+  "lon": -94.15,
+  "sites": []
+ },
+ "47.2300,-93.5300": {
+  "location": "Pokegama Lake, Grand Rapids, MN",
+  "lat": 47.23,
+  "lon": -93.53,
+  "sites": []
+ },
+ "32.7000,-85.9000": {
+  "location": "Lake Martin, Alexander City, AL",
+  "lat": 32.7,
+  "lon": -85.9,
+  "sites": []
+ },
+ "35.5923,-80.9330": {
+  "location": "Lake Norman, Cornelius, NC",
+  "lat": 35.5923267,
+  "lon": -80.932986,
+  "sites": []
+ },
+ "30.4500,-97.9500": {
+  "location": "Lake Travis, Jonestown, TX",
+  "lat": 30.45,
+  "lon": -97.95,
+  "sites": [
+   {
+    "site_no": "08154500",
+    "site_lat": 30.3915902,
+    "site_lon": -97.9069554,
+    "site_name": "Lk Travis nr Austin, TX",
+    "site_type": "LK",
+    "distance_km": 7.7
+   },
+   {
+    "site_no": "08154510",
+    "site_lat": 30.39186795,
+    "site_lon": -97.9080665,
+    "site_name": "Colorado Rv bl Mansfield Dam, Austin, TX",
+    "site_type": "ST",
+    "distance_km": 7.61
+   },
+   {
+    "site_no": "08154000",
+    "site_lat": 30.4210311,
+    "site_lon": -98.0808487,
+    "site_name": "Pedernales Rv nr Spicewood, TX",
+    "site_type": "ST",
+    "distance_km": 12.95
+   },
+   {
+    "site_no": "08154050",
+    "site_lat": 30.53448333,
+    "site_lon": -98.0471,
+    "site_name": "Cow Ck nr Cow Ck Rd nr Lago Vista, TX",
+    "site_type": "ST",
+    "distance_km": 13.22
+   },
+   {
+    "site_no": "08105886",
+    "site_lat": 30.46555556,
+    "site_lon": -97.7878889,
+    "site_name": "Lake Ck at Lake Ck Pkwy nr Austin, TX",
+    "site_type": "ST",
+    "distance_km": 15.63
+   }
+  ]
+ },
+ "44.4500,-100.4000": {
+  "location": "Lake Oahe, Pierre, SD",
+  "lat": 44.45,
+  "lon": -100.4,
+  "sites": []
+ },
+ "33.6000,-86.3300": {
+  "location": "Logan Martin Lake, Pell City, AL",
+  "lat": 33.6,
+  "lon": -86.33,
+  "sites": []
+ },
+ "34.9300,-83.8300": {
+  "location": "Lake Chatuge, Hiawassee, GA",
+  "lat": 34.93,
+  "lon": -83.83,
+  "sites": [
+   {
+    "site_no": "03545000",
+    "site_lat": 34.90481489,
+    "site_lon": -83.7168386,
+    "site_name": "HIWASSEE RIVER AT PRESLEY, GA",
+    "site_type": "ST",
+    "distance_km": 10.69
+   },
+   {
+    "site_no": "03544970",
+    "site_lat": 34.8836111,
+    "site_lon": -83.7223056,
+    "site_name": "HIWASSEE RIVER AT RIVERSIDE DR, NR HIAWASSEE, GA",
+    "site_type": "ST",
+    "distance_km": 11.09
+   },
+   {
+    "site_no": "03547000",
+    "site_lat": 35.02925664,
+    "site_lon": -83.795729,
+    "site_name": "HIWASSEE R BL CHATUGE DAM NEAR HAYESVILLE, NC",
+    "site_type": "ST",
+    "distance_km": 11.47
+   },
+   {
+    "site_no": "03545500",
+    "site_lat": 34.91648145,
+    "site_lon": -83.6985039,
+    "site_name": "HIGHTOWER CREEK NEAR PRESLEY, GA",
+    "site_type": "ST",
+    "distance_km": 12.08
+   },
+   {
+    "site_no": "03550500",
+    "site_lat": 34.84194444,
+    "site_lon": -83.9358333,
+    "site_name": "NOTTELY RIVER NEAR BLAIRSVILLE, GA",
+    "site_type": "ST",
+    "distance_km": 13.75
+   }
+  ]
+ },
+ "34.2800,-83.9500": {
+  "location": "Lake Lanier, Gwinnett, GA",
+  "lat": 34.28,
+  "lon": -83.95,
+  "sites": []
+ },
+ "35.9369,-83.9547": {
+  "location": "Tennessee River, Knoxville, TN",
+  "lat": 35.9368599,
+  "lon": -83.9546616,
+  "sites": []
+ },
+ "32.8600,-95.7200": {
+  "location": "Lake Fork, Emory, TX",
+  "lat": 32.86,
+  "lon": -95.72,
+  "sites": [
+   {
+    "site_no": "08017500",
+    "site_lat": 32.77318113,
+    "site_lon": -95.7991307,
+    "site_name": "Sabine Rv nr Emory, TX",
+    "site_type": "ST",
+    "distance_km": 12.16
+   },
+   {
+    "site_no": "08018730",
+    "site_lat": 32.99067368,
+    "site_lon": -95.6219013,
+    "site_name": "Burke Ck nr Yantis, TX",
+    "site_type": "ST",
+    "distance_km": 17.17
+   },
+   {
+    "site_no": "08017410",
+    "site_lat": 32.8062358,
+    "site_lon": -95.9194109,
+    "site_name": "Sabine Rv nr Wills Point, TX",
+    "site_type": "ST",
+    "distance_km": 19.57
+   },
+   {
+    "site_no": "08018000",
+    "site_lat": 32.66174167,
+    "site_lon": -95.6910806,
+    "site_name": "Grand Saline Ck at FM 857 nr Grand Saline, TX",
+    "site_type": "ST",
+    "distance_km": 22.21
+   },
+   {
+    "site_no": "08019000",
+    "site_lat": 32.76318386,
+    "site_lon": -95.4630094,
+    "site_name": "Lake Fk Ck nr Quitman, TX",
+    "site_type": "ST",
+    "distance_km": 26.32
+   }
+  ]
+ },
+ "35.6800,-94.9500": {
+  "location": "Lake Tenkiller, Cookson, OK",
+  "lat": 35.68,
+  "lon": -94.95,
+  "sites": [
+   {
+    "site_no": "07197360",
+    "site_lat": 35.7850906,
+    "site_lon": -94.8563398,
+    "site_name": "Caney Creek near Barber, OK",
+    "site_type": "ST",
+    "distance_km": 14.42
+   },
+   {
+    "site_no": "07198000",
+    "site_lat": 35.5731511,
+    "site_lon": -95.0688458,
+    "site_name": "Illinois River near Gore, OK",
+    "site_type": "ST",
+    "distance_km": 16.02
+   },
+   {
+    "site_no": "07194555",
+    "site_lat": 35.5186111,
+    "site_lon": -95.1272222,
+    "site_name": "Arkansas River at Gore, OK",
+    "site_type": "ST",
+    "distance_km": 24.06
+   },
+   {
+    "site_no": "07245500",
+    "site_lat": 35.46453847,
+    "site_lon": -94.8621712,
+    "site_name": "Sallisaw Creek near Sallisaw, OK",
+    "site_type": "ST",
+    "distance_km": 25.24
+   },
+   {
+    "site_no": "07196500",
+    "site_lat": 35.9255472,
+    "site_lon": -94.9217028,
+    "site_name": "Illinois River near Tahlequah, OK",
+    "site_type": "ST",
+    "distance_km": 27.42
+   }
+  ]
+ },
+ "31.9700,-85.1500": {
+  "location": "Lake Eufaula, Eufaula, AL",
+  "lat": 31.97,
+  "lon": -85.15,
+  "sites": []
+ },
+ "33.8300,-86.0700": {
+  "location": "Neely Henry Lake, Gadsden, AL",
+  "lat": 33.83,
+  "lon": -86.07,
+  "sites": []
+ },
+ "33.1000,-96.9800": {
+  "location": "Lewisville Lake, Lewisville, TX",
+  "lat": 33.1,
+  "lon": -96.98,
+  "sites": []
+ },
+ "33.2300,-86.5200": {
+  "location": "Lay Lake, Columbiana, AL",
+  "lat": 33.23,
+  "lon": -86.52,
+  "sites": []
+ },
+ "34.9080,-88.0387": {
+  "location": "Pickwick Lake, Florence, AL",
+  "lat": 34.9080476,
+  "lon": -88.038744,
+  "sites": []
+ },
+ "33.3700,-97.0300": {
+  "location": "Lake Ray Roberts, Fort Worth, TX",
+  "lat": 33.37,
+  "lon": -97.03,
+  "sites": []
+ },
+ "43.8300,-83.8300": {
+  "location": "Saginaw Bay, Bangor Charter Township, MI",
+  "lat": 43.83,
+  "lon": -83.83,
+  "sites": []
+ },
+ "28.0185,-97.1205": {
+  "location": "Port Aransas, Port Aransas, TX",
+  "lat": 28.0185204,
+  "lon": -97.1205171,
+  "sites": [
+   {
+    "site_no": "08189520",
+    "site_lat": 28.21693333,
+    "site_lon": -97.3516944,
+    "site_name": "Devils Run Ck at US 77 nr Woodsboro, TX",
+    "site_type": "ST",
+    "distance_km": 31.63
+   },
+   {
+    "site_no": "08189500",
+    "site_lat": 28.29193875,
+    "site_lon": -97.2791751,
+    "site_name": "Mission Rv at Refugio, TX",
+    "site_type": "ST",
+    "distance_km": 34.15
+   },
+   {
+    "site_no": "08189800",
+    "site_lat": 28.04695919,
+    "site_lon": -97.5038832,
+    "site_name": "Chiltipin Ck at Sinton, TX",
+    "site_type": "ST",
+    "distance_km": 37.76
+   },
+   {
+    "site_no": "08189718",
+    "site_lat": 28.04569167,
+    "site_lon": -97.525175,
+    "site_name": "Chiltipin Ck at US 77 nr Sinton, TX",
+    "site_type": "ST",
+    "distance_km": 39.83
+   }
+  ]
+ },
+ "33.5500,-80.1500": {
+  "location": "Santee Cooper Lakes, Clarendon County, SC",
+  "lat": 33.55,
+  "lon": -80.15,
+  "sites": []
+ },
+ "37.5800,-77.3200": {
+  "location": "James River, Henrico, VA",
+  "lat": 37.58,
+  "lon": -77.32,
+  "sites": []
+ },
+ "36.3800,-92.2200": {
+  "location": "Norfork Lake, Mountain Home, AR",
+  "lat": 36.38,
+  "lon": -92.22,
+  "sites": []
+ },
+ "34.2658,-82.0493": {
+  "location": "Lake Greenwood, Greenwood, SC",
+  "lat": 34.2657663,
+  "lon": -82.0492579,
+  "sites": []
+ },
+ "34.0700,-81.2500": {
+  "location": "Lake Murray, Columbia, SC",
+  "lat": 34.07,
+  "lon": -81.25,
+  "sites": [
+   {
+    "site_no": "02168500",
+    "site_lat": 34.052093,
+    "site_lon": -81.22065329,
+    "site_name": "LAKE MURRAY NEAR COLUMBIA, SC",
+    "site_type": "LK",
+    "distance_km": 3.36
+   },
+   {
+    "site_no": "02168501",
+    "site_lat": 34.053482,
+    "site_lon": -81.2167642,
+    "site_name": "LAKE MURRAY TAILRACE NEAR COLUMBIA, SC",
+    "site_type": "ST",
+    "distance_km": 3.57
+   },
+   {
+    "site_no": "02168504",
+    "site_lat": 34.0509822,
+    "site_lon": -81.2095418,
+    "site_name": "SALUDA RIVER BELOW LK MURRAY DAM NR COLUMBIA, SC",
+    "site_type": "ST",
+    "distance_km": 4.29
+   },
+   {
+    "site_no": "02168810",
+    "site_lat": 33.97677778,
+    "site_lon": -81.2278056,
+    "site_name": "TWELVE MILE CREEK AT LEXINGTON, SC",
+    "site_type": "ST",
+    "distance_km": 10.57
+   },
+   {
+    "site_no": "02168900",
+    "site_lat": 34.02596518,
+    "site_lon": -81.127874,
+    "site_name": "SALUDA RIVER AT I-20, NEAR COLUMBIA,SC",
+    "site_type": "ST",
+    "distance_km": 12.27
+   }
+  ]
+ },
+ "36.6000,-78.3200": {
+  "location": "Buggs Island Reservoir, Clarksville, VA",
+  "lat": 36.6,
+  "lon": -78.32,
+  "sites": []
+ },
+ "44.0000,-88.3700": {
+  "location": "Lake Winnebago, Menasha, WI",
+  "lat": 44.0,
+  "lon": -88.37,
+  "sites": []
+ },
+ "37.0700,-111.2500": {
+  "location": "Lake Powell, Page, AZ",
+  "lat": 37.07,
+  "lon": -111.25,
+  "sites": [
+   {
+    "site_no": "09379910",
+    "site_lat": 36.921655,
+    "site_lon": -111.4834913,
+    "site_name": "COLORADO RIVER BELOW GLEN CANYON DAM, AZ",
+    "site_type": "ST",
+    "distance_km": 26.5
+   },
+   {
+    "site_no": "09382000",
+    "site_lat": 36.87221098,
+    "site_lon": -111.59462862,
+    "site_name": "PARIA RIVER AT LEES FERRY, AZ",
+    "site_type": "ST",
+    "distance_km": 37.7
+   },
+   {
+    "site_no": "09380000",
+    "site_lat": 36.86433333,
+    "site_lon": -111.58787222,
+    "site_name": "COLORADO RIVER AT LEES FERRY, AZ",
+    "site_type": "ST",
+    "distance_km": 37.74
+   },
+   {
+    "site_no": "09380002",
+    "site_lat": 36.86498769,
+    "site_lon": -111.5884937,
+    "site_name": "COLORADO R AT LEES FERRY - UNIT VALUES",
+    "site_type": "ST",
+    "distance_km": 37.74
+   },
+   {
+    "site_no": "09383000",
+    "site_lat": 36.8513765,
+    "site_lon": -111.6065497,
+    "site_name": "COLORADO RIVER AT COMPACT POINT NR LEES FERRY, AZ",
+    "site_type": "ST",
+    "distance_km": 39.93
+   }
+  ]
+ },
+ "35.7300,-84.7800": {
+  "location": "Watts Bar Reservoir, Kingston, TN",
+  "lat": 35.73,
+  "lon": -84.78,
+  "sites": []
+ },
+ "38.1300,-92.6200": {
+  "location": "Lake of the Ozarks, Osage Beach, MO",
+  "lat": 38.13,
+  "lon": -92.62,
+  "sites": []
+ },
+ "39.1000,-96.9300": {
+  "location": "Milford Lake, Junction City, KS",
+  "lat": 39.1,
+  "lon": -96.93,
+  "sites": []
+ },
+ "33.6600,-82.2000": {
+  "location": "Clarks Hill Reservoir, Columbia County, GA",
+  "lat": 33.66,
+  "lon": -82.2,
+  "sites": []
+ },
+ "34.5700,-93.2200": {
+  "location": "Lake Ouachita, Hot Springs, AR",
+  "lat": 34.57,
+  "lon": -93.22,
+  "sites": [
+   {
+    "site_no": "07362590",
+    "site_lat": 34.79777778,
+    "site_lon": -92.8513889,
+    "site_name": "Lake Winona at Reform, AR",
+    "site_type": "LK",
+    "distance_km": 42.16
+   },
+   {
+    "site_no": "07362591",
+    "site_lat": 34.79777778,
+    "site_lon": -92.8455556,
+    "site_name": "Alum Fork Saline River at Winona Dam at Reform, AR",
+    "site_type": "LK",
+    "distance_km": 42.59
+   },
+   {
+    "site_no": "073625897",
+    "site_lat": 34.7958333,
+    "site_lon": -92.8416667,
+    "site_name": "Lake Winona Raw Water Intake Pipe near Reform, AR",
+    "site_type": "LK",
+    "distance_km": 42.75
+   },
+   {
+    "site_no": "07357501",
+    "site_lat": 34.571757,
+    "site_lon": -93.1937965,
+    "site_name": "OUACHITA RIV AT BLAKELY MTN DAM NR HOT SPRINGS, AR",
+    "site_type": "ST",
+    "distance_km": 2.41
+   },
+   {
+    "site_no": "07357000",
+    "site_lat": 34.6000908,
+    "site_lon": -93.2057413,
+    "site_name": "LAKE OUACHITA NEAR HOT SPRINGS, ARK.",
+    "site_type": "ST",
+    "distance_km": 3.59
+   }
+  ]
+ },
+ "47.0681,-94.5933": {
+  "location": "Leech Lake, Walker, MN",
+  "lat": 47.0681062,
+  "lon": -94.5933012,
+  "sites": []
+ },
+ "35.1800,-86.2500": {
+  "location": "Tims Ford Lake, Winchester, TN",
+  "lat": 35.18,
+  "lon": -86.25,
+  "sites": [
+   {
+    "site_no": "03580750",
+    "site_lat": 35.1923053,
+    "site_lon": -86.2811006,
+    "site_name": "ELK RIVER BELOW TIMS FORD DAM, TN",
+    "site_type": "ST",
+    "distance_km": 3.14
+   },
+   {
+    "site_no": "03580500",
+    "site_lat": 35.19985507,
+    "site_lon": -86.1246576,
+    "site_name": "BOILING FORK CREEK AT WINCHESTER, TN",
+    "site_type": "ST",
+    "distance_km": 11.6
+   },
+   {
+    "site_no": "03580300",
+    "site_lat": 35.18730516,
+    "site_lon": -86.0949844,
+    "site_name": "BOILING FORK CREEK ABOVE WINCHESTER, TN",
+    "site_type": "ST",
+    "distance_km": 14.11
+   },
+   {
+    "site_no": "03580995",
+    "site_lat": 35.28231879,
+    "site_lon": -86.3715032,
+    "site_name": "E F MULBERRY CR BL JACK DAN DIST. AT LYNCHBURG, TN",
+    "site_type": "ST",
+    "distance_km": 15.85
+   },
+   {
+    "site_no": "03579100",
+    "site_lat": 35.28606458,
+    "site_lon": -86.1054356,
+    "site_name": "ELK RIVER NEAR ESTILL SPRINGS, TN",
+    "site_type": "ST",
+    "distance_km": 17.65
+   }
+  ]
+ },
+ "29.6700,-85.0200": {
+  "location": "Apalachicola Bay, Apalachicola, FL",
+  "lat": 29.67,
+  "lon": -85.02,
+  "sites": []
+ },
+ "33.5000,-88.4200": {
+  "location": "Tombigbee River, Columbus, MS",
+  "lat": 33.5,
+  "lon": -88.42,
+  "sites": [
+   {
+    "site_no": "02443500",
+    "site_lat": 33.51416667,
+    "site_lon": -88.3952778,
+    "site_name": "LUXAPALLILA CREEK NR COLUMBUS, MS",
+    "site_type": "ST",
+    "distance_km": 2.78
+   },
+   {
+    "site_no": "02441390",
+    "site_lat": 33.5175,
+    "site_lon": -88.4894444,
+    "site_name": "TOMBIGBEE RIVER AT STENNIS LOCK AND DAM, MS",
+    "site_type": "ST",
+    "distance_km": 6.73
+   },
+   {
+    "site_no": "02443000",
+    "site_lat": 33.56027778,
+    "site_lon": -88.3152778,
+    "site_name": "LUXAPALLILA CREEK AT STEENS, MS",
+    "site_type": "ST",
+    "distance_km": 11.8
+   },
+   {
+    "site_no": "02443710",
+    "site_lat": 33.33956607,
+    "site_lon": -88.4405959,
+    "site_name": "CEDAR CREEK NR TRINITY, MS",
+    "site_type": "ST",
+    "distance_km": 17.94
+   },
+   {
+    "site_no": "02441300",
+    "site_lat": 33.48138889,
+    "site_lon": -88.6286111,
+    "site_name": "CATALPA CREEK AT MAYHEW, MS",
+    "site_type": "ST",
+    "distance_km": 19.46
+   }
+  ]
+ },
+ "36.3293,-82.0685": {
+  "location": "Watauga Lake, Carter County, TN",
+  "lat": 36.3293406,
+  "lon": -82.0684673,
+  "sites": []
+ },
+ "28.0300,-96.9800": {
+  "location": "Aransas Bay, Port Aransas, TX",
+  "lat": 28.03,
+  "lon": -96.98,
+  "sites": []
+ },
+ "36.5023,-85.1985": {
+  "location": "Dale Hollow Reservoir, KY",
+  "lat": 36.50229982,
+  "lon": -85.19846809,
+  "sites": []
+ },
+ "36.3767,-86.3555": {
+  "location": "Bledsoe Creek State Park, Gallatin, TN",
+  "lat": 36.3767148,
+  "lon": -86.3555472,
+  "sites": []
+ },
+ "35.7667,-78.6777": {
+  "location": "Wake Forest, NC",
+  "lat": 35.7667311,
+  "lon": -78.6776953,
+  "sites": []
+ },
+ "36.3349,-94.1194": {
+  "location": "Rogers, AR",
+  "lat": 36.334857,
+  "lon": -94.1193816,
+  "sites": [
+   {
+    "site_no": "07049500",
+    "site_lat": 36.33229629,
+    "site_lon": -94.0190894,
+    "site_name": "Beaver Lake @ Hwy 12 bridge near Rogers, AR",
+    "site_type": "LK",
+    "distance_km": 8.99
+   },
+   {
+    "site_no": "07195495",
+    "site_lat": 36.13059444,
+    "site_lon": -94.5609806,
+    "site_name": "Lake Frances at Pump Station near Watts, OK",
+    "site_type": "LK",
+    "distance_km": 45.66
+   },
+   {
+    "site_no": "07049563",
+    "site_lat": 36.34035274,
+    "site_lon": -94.0977028,
+    "site_name": "Prairie Creek northeast of Rogers",
+    "site_type": "ST",
+    "distance_km": 2.04
+   },
+   {
+    "site_no": "07194880",
+    "site_lat": 36.2814592,
+    "site_lon": -94.227997,
+    "site_name": "Osage Creek near Cave Springs, AR",
+    "site_type": "ST",
+    "distance_km": 11.4
+   },
+   {
+    "site_no": "07194933",
+    "site_lat": 36.24377778,
+    "site_lon": -94.2391389,
+    "site_name": "Spring Creek at Hwy 112 nr Springdale, AR",
+    "site_type": "ST",
+    "distance_km": 14.76
+   }
+  ]
+ },
+ "34.3162,-93.1707": {
+  "location": "Bismarck, AR",
+  "lat": 34.3162035,
+  "lon": -93.1707339,
+  "sites": [
+   {
+    "site_no": "07358000",
+    "site_lat": 34.4389789,
+    "site_lon": -93.0696234,
+    "site_name": "OUACHITA R NR HOT SPRINGS ARK",
+    "site_type": "ST",
+    "distance_km": 16.51
+   },
+   {
+    "site_no": "07359910",
+    "site_lat": 34.17731706,
+    "site_lon": -93.1001742,
+    "site_name": "CADDO RIVER AT DEGRAY REGULATING DAM, NR ARKADE",
+    "site_type": "ST",
+    "distance_km": 16.75
+   },
+   {
+    "site_no": "07359800",
+    "site_lat": 34.2667627,
+    "site_lon": -93.362681,
+    "site_name": "CADDO RIVER NEAR ALPINE, ARK.",
+    "site_type": "ST",
+    "distance_km": 18.47
+   },
+   {
+    "site_no": "07358501",
+    "site_lat": 34.4433333,
+    "site_lon": -93.0233333,
+    "site_name": "Ouachita Riv at Carpenter Dam nr Hot Springs, AR",
+    "site_type": "ST",
+    "distance_km": 19.57
+   },
+   {
+    "site_no": "07358250",
+    "site_lat": 34.51344444,
+    "site_lon": -93.0804167,
+    "site_name": "Whittington Cr at Whitt. Pk at Hot Springs, AR",
+    "site_type": "ST",
+    "distance_km": 23.44
+   }
+  ]
+ },
+ "30.1000,-92.7800": {
+  "location": "Hayes, LA",
+  "lat": 30.1,
+  "lon": -92.78,
+  "sites": []
+ },
+ "36.4394,-88.0834": {
+  "location": "Paris, TN",
+  "lat": 36.439365,
+  "lon": -88.0834139,
+  "sites": []
+ },
+ "30.3200,-89.9400": {
+  "location": "Lacombe, LA",
+  "lat": 30.32,
+  "lon": -89.94,
+  "sites": [
+   {
+    "site_no": "301200090072400",
+    "site_lat": 30.19963889,
+    "site_lon": -90.12275,
+    "site_name": "L Pontchartrain at Crossover 4 near Mandeville, LA",
+    "site_type": "LK",
+    "distance_km": 22.07
+   },
+   {
+    "site_no": "07374581",
+    "site_lat": 30.30130578,
+    "site_lon": -89.83062149,
+    "site_name": "Bayou Liberty near Slidell,LA",
+    "site_type": "ST",
+    "distance_km": 10.7
+   },
+   {
+    "site_no": "07374573",
+    "site_lat": 30.2576944,
+    "site_lon": -89.752284,
+    "site_name": "CANAL W-14, @ KINGSPOINT BLVD., AT SLIDELL, LA.",
+    "site_type": "ST",
+    "distance_km": 19.31
+   },
+   {
+    "site_no": "07375222",
+    "site_lat": 30.48213676,
+    "site_lon": -90.0389644,
+    "site_name": "Abita River north of Abita Springs, LA",
+    "site_type": "ST",
+    "distance_km": 20.37
+   },
+   {
+    "site_no": "02492600",
+    "site_lat": 30.385193,
+    "site_lon": -89.7367304,
+    "site_name": "Pearl River at Pearl River, LA",
+    "site_type": "ST",
+    "distance_km": 20.81
+   }
+  ]
+ },
+ "30.2902,-90.4018": {
+  "location": "Akers, LA",
+  "lat": 30.2901963,
+  "lon": -90.4017516,
+  "sites": []
+ },
+ "31.4629,-90.8501": {
+  "location": "Bude , MS",
+  "lat": 31.4629491,
+  "lon": -90.8501014,
+  "sites": [
+   {
+    "site_no": "07291500",
+    "site_lat": 31.4401715,
+    "site_lon": -90.8551015,
+    "site_name": "HOMOCHITTO RIVER NR BUDE, MS",
+    "site_type": "ST",
+    "distance_km": 2.58
+   },
+   {
+    "site_no": "07291000",
+    "site_lat": 31.50305556,
+    "site_lon": -90.7775,
+    "site_name": "HOMOCHITTO RIVER AT EDDICETON, MS",
+    "site_type": "ST",
+    "distance_km": 8.2
+   },
+   {
+    "site_no": "07292500",
+    "site_lat": 31.3247222,
+    "site_lon": -91.1094444,
+    "site_name": "HOMOCHITTO RIVER AT ROSETTA, MS",
+    "site_type": "ST",
+    "distance_km": 29.02
+   },
+   {
+    "site_no": "07291230",
+    "site_lat": 31.594614,
+    "site_lon": -90.56343079,
+    "site_name": "SHAWS CREEK NR REDSTAR, MS",
+    "site_type": "ST",
+    "distance_km": 30.86
+   },
+   {
+    "site_no": "07293500",
+    "site_lat": 31.36128028,
+    "site_lon": -91.255665,
+    "site_name": "HOMOCHITTO RIVER NR KINGSTON, MS",
+    "site_type": "ST",
+    "distance_km": 40.11
+   }
+  ]
+ },
+ "37.1700,-113.3000": {
+  "location": "Hurricane, UT",
+  "lat": 37.17,
+  "lon": -113.3,
+  "sites": []
+ },
+ "38.7043,-77.2203": {
+  "location": "Lorton, VA",
+  "lat": 38.7043397,
+  "lon": -77.220343,
+  "sites": []
+ },
+ "38.1300,-121.2700": {
+  "location": "Lodi, CA",
+  "lat": 38.13,
+  "lon": -121.27,
+  "sites": []
+ },
+ "44.8930,-87.5840": {
+  "location": "Gardner   , WI",
+  "lat": 44.8930479,
+  "lon": -87.5840334,
+  "sites": []
+ },
+ "37.4463,-79.0936": {
+  "location": "Madison Heights, VA",
+  "lat": 37.4463105,
+  "lon": -79.0935648,
+  "sites": []
+ },
+ "30.4241,-95.4797": {
+  "location": "Willis, TX",
+  "lat": 30.4241219,
+  "lon": -95.4796587,
+  "sites": [
+   {
+    "site_no": "08070220",
+    "site_lat": 30.4547972,
+    "site_lon": -95.4236389,
+    "site_name": "Caney Ck at FM 1097 nr Willis, TX",
+    "site_type": "ST",
+    "distance_km": 6.36
+   },
+   {
+    "site_no": "08067610",
+    "site_lat": 30.35659665,
+    "site_lon": -95.5604986,
+    "site_name": "Lk Conroe Outflow Weir nr Conroe, TX",
+    "site_type": "ST",
+    "distance_km": 10.79
+   },
+   {
+    "site_no": "08067650",
+    "site_lat": 30.34215289,
+    "site_lon": -95.542998,
+    "site_name": "W Fk San Jacinto Rv bl Lk Conroe nr Conroe, TX",
+    "site_type": "ST",
+    "distance_km": 10.95
+   },
+   {
+    "site_no": "08067653",
+    "site_lat": 30.31453889,
+    "site_lon": -95.51145,
+    "site_name": "W Fk San Jacinto Rv at FM 2854, Conroe, TX",
+    "site_type": "ST",
+    "distance_km": 12.56
+   },
+   {
+    "site_no": "08068020",
+    "site_lat": 30.2949,
+    "site_lon": -95.3521056,
+    "site_name": "E Fk Crystal Ck at FM 1485 nr Cut and Shoot, TX",
+    "site_type": "ST",
+    "distance_km": 18.87
+   }
+  ]
+ },
+ "38.7782,-75.1412": {
+  "location": "Lewes, DE",
+  "lat": 38.7782049,
+  "lon": -75.1412004,
+  "sites": []
+ },
+ "31.6300,-91.5500": {
+  "location": "Ferriday, LA",
+  "lat": 31.63,
+  "lon": -91.55,
+  "sites": [
+   {
+    "site_no": "07373278",
+    "site_lat": 31.69944444,
+    "site_lon": -91.4586111,
+    "site_name": "Lake Saint John near Waterproof, LA",
+    "site_type": "LK",
+    "distance_km": 11.59
+   },
+   {
+    "site_no": "07370190",
+    "site_lat": 31.72398428,
+    "site_lon": -91.5459907,
+    "site_name": "TENSAS R @ CLAYTON, LA",
+    "site_type": "ST",
+    "distance_km": 10.46
+   },
+   {
+    "site_no": "07373267",
+    "site_lat": 31.6221111,
+    "site_lon": -91.8121389,
+    "site_name": "Black R @ Jonesville, LA",
+    "site_type": "ST",
+    "distance_km": 24.84
+   },
+   {
+    "site_no": "07369365",
+    "site_lat": 31.7438611,
+    "site_lon": -91.8286111,
+    "site_name": "Bushley Bayou nr Harrisonburg, LA",
+    "site_type": "ST",
+    "distance_km": 29.24
+   },
+   {
+    "site_no": "07369345",
+    "site_lat": 31.76725,
+    "site_lon": -91.8187222,
+    "site_name": "Ouachita River at Hwy 8 at Harrisonburg, LA",
+    "site_type": "ST",
+    "distance_km": 29.65
+   }
+  ]
+ },
+ "29.8205,-89.6567": {
+  "location": "Hopedale, LA",
+  "lat": 29.8204841,
+  "lon": -89.6567253,
+  "sites": []
+ },
+ "30.7000,-91.4400": {
+  "location": "New Roads, LA",
+  "lat": 30.7,
+  "lon": -91.44,
+  "sites": [
+   {
+    "site_no": "302020091435700",
+    "site_lat": 30.33888889,
+    "site_lon": -91.7325,
+    "site_name": "Lake Pelba at I-10 near Henderson, LA",
+    "site_type": "LK",
+    "distance_km": 48.96
+   },
+   {
+    "site_no": "07373700",
+    "site_lat": 30.7473611,
+    "site_lon": -91.2855833,
+    "site_name": "Thompson Ck nr Starhill, LA",
+    "site_type": "ST",
+    "distance_km": 15.67
+   },
+   {
+    "site_no": "07373500",
+    "site_lat": 30.92240137,
+    "site_lon": -91.293166,
+    "site_name": "WEST FORK THOMPSON CR NR WAKEFIELD, LA.",
+    "site_type": "ST",
+    "distance_km": 28.43
+   },
+   {
+    "site_no": "07373965",
+    "site_lat": 30.61685326,
+    "site_lon": -91.1489958,
+    "site_name": "South Canal near Baker, LA",
+    "site_type": "ST",
+    "distance_km": 29.33
+   },
+   {
+    "site_no": "07381429",
+    "site_lat": 30.44380348,
+    "site_lon": -91.3478872,
+    "site_name": "Choctaw Bayou at I-10 east of Grosse Tete, LA",
+    "site_type": "ST",
+    "distance_km": 29.82
+   }
+  ]
+ },
+ "31.2493,-92.7746": {
+  "location": "Hemphill, LA",
+  "lat": 31.2493483,
+  "lon": -92.7745936,
+  "sites": []
+ },
+ "40.5622,-105.0719": {
+  "location": "Fort Collins, CO",
+  "lat": 40.5622082,
+  "lon": -105.0718534,
+  "sites": []
+ },
+ "38.0783,-103.1363": {
+  "location": "Fort Lyon, CO",
+  "lat": 38.0783465,
+  "lon": -103.1362866,
+  "sites": []
+ },
+ "34.5220,-93.3360": {
+  "location": "Crystal springs , AR",
+  "lat": 34.5220352,
+  "lon": -93.3360221,
+  "sites": []
+ },
+ "35.9606,-85.8142": {
+  "location": "Smithville, TN",
+  "lat": 35.9606186,
+  "lon": -85.8141516,
+  "sites": []
+ },
+ "30.2752,-89.7812": {
+  "location": "Slidell, LA",
+  "lat": 30.2751945,
+  "lon": -89.7811745,
+  "sites": []
+ },
+ "34.5291,-93.0301": {
+  "location": "Hot Springs National Park, AR",
+  "lat": 34.5290712,
+  "lon": -93.0301402,
+  "sites": []
+ },
+ "29.3575,-100.8988": {
+  "location": "Del Rio, TX",
+  "lat": 29.357515,
+  "lon": -100.8987707,
+  "sites": []
+ },
+ "44.2436,-77.3608": {
+  "location": "Belleville, Ontario",
+  "lat": 44.2436328,
+  "lon": -77.3607597,
+  "sites": []
+ },
+ "30.2700,-91.9000": {
+  "location": "Breaux Bridge, LA",
+  "lat": 30.27,
+  "lon": -91.9,
+  "sites": []
+ },
+ "42.7848,-85.1383": {
+  "location": "Lake Odessa, MI",
+  "lat": 42.7847564,
+  "lon": -85.1383367,
+  "sites": []
+ },
+ "35.0566,-78.9947": {
+  "location": "FAYETTEVILLE, AR",
+  "lat": 35.0566476,
+  "lon": -78.994734,
+  "sites": []
+ },
+ "44.3551,-78.7370": {
+  "location": "Lindsay, Ontario",
+  "lat": 44.3551266,
+  "lon": -78.7369939,
+  "sites": []
+ },
+ "31.9178,-91.2370": {
+  "location": "St. Joseph, LA",
+  "lat": 31.9178358,
+  "lon": -91.2369768,
+  "sites": []
+ },
+ "33.6600,-118.0000": {
+  "location": "Huntington Beach, CA",
+  "lat": 33.66,
+  "lon": -118.0,
+  "sites": []
+ },
+ "32.7400,-93.9700": {
+  "location": "Oil City, LA",
+  "lat": 32.74,
+  "lon": -93.97,
+  "sites": []
+ },
+ "31.1466,-92.4974": {
+  "location": "Woodworth, LA",
+  "lat": 31.1465757,
+  "lon": -92.4973598,
+  "sites": [
+   {
+    "site_no": "07383000",
+    "site_lat": 31.1196322,
+    "site_lon": -92.3445769,
+    "site_name": "CHATLIN LK CANAL NR LECOMPTE, LA",
+    "site_type": "ST",
+    "distance_km": 14.85
+   },
+   {
+    "site_no": "07381800",
+    "site_lat": 31.00019035,
+    "site_lon": -92.5668062,
+    "site_name": "SPRING CK NR GLENMORA, LA",
+    "site_type": "ST",
+    "distance_km": 17.57
+   },
+   {
+    "site_no": "07355500",
+    "site_lat": 31.31027778,
+    "site_lon": -92.4388333,
+    "site_name": "Red River at Alexandria, LA",
+    "site_type": "ST",
+    "distance_km": 19.03
+   },
+   {
+    "site_no": "07382000",
+    "site_lat": 31.00027778,
+    "site_lon": -92.3802778,
+    "site_name": "Bayou Cocodrie near Clearwater, LA",
+    "site_type": "ST",
+    "distance_km": 19.72
+   },
+   {
+    "site_no": "08013000",
+    "site_lat": 30.99666667,
+    "site_lon": -92.6736111,
+    "site_name": "Calcasieu River nr Glenmora, LA",
+    "site_type": "ST",
+    "distance_km": 23.66
+   }
+  ]
+ },
+ "43.0346,-89.3216": {
+  "location": "Madison, WI",
+  "lat": 43.0346024,
+  "lon": -89.3215715,
+  "sites": []
+ },
+ "43.0800,-88.2700": {
+  "location": "Waukesha, WI",
+  "lat": 43.08,
+  "lon": -88.27,
+  "sites": []
+ },
+ "38.9669,-122.8354": {
+  "location": "Kelseyville, CA",
+  "lat": 38.966921,
+  "lon": -122.8354355,
+  "sites": []
+ },
+ "44.9497,-93.0931": {
+  "location": "St. Paul, MN",
+  "lat": 44.9497487,
+  "lon": -93.0931028,
+  "sites": [
+   {
+    "site_no": "05289000",
+    "site_lat": 44.9533333,
+    "site_lon": -93.4872222,
+    "site_name": "LAKE MINNETONKA ABV GRAYS BAY OTLT IN MINNETONKA",
+    "site_type": "LK",
+    "distance_km": 31.02
+   },
+   {
+    "site_no": "05341748",
+    "site_lat": 45.05164747,
+    "site_lon": -92.649917,
+    "site_name": "BASS LAKE NEAR HUDSON, WI",
+    "site_type": "LK",
+    "distance_km": 36.64
+   },
+   {
+    "site_no": "05346050",
+    "site_lat": 44.6524444,
+    "site_lon": -92.71025,
+    "site_name": "Clear Lake, east side, at Prairie Island, MN(SW08)",
+    "site_type": "LK",
+    "distance_km": 44.78
+   },
+   {
+    "site_no": "443929092412001",
+    "site_lat": 44.65795556,
+    "site_lon": -92.6887972,
+    "site_name": "North Lake, SW side, lower end, Pr. Is., MN (SW09)",
+    "site_type": "LK",
+    "distance_km": 45.5
+   },
+   {
+    "site_no": "05344850",
+    "site_lat": 44.6383333,
+    "site_lon": -92.6438889,
+    "site_name": "Sturgeon Lake, W side, at Prairie Island, MN(SW02)",
+    "site_type": "LK",
+    "distance_km": 49.55
+   }
+  ]
+ },
+ "35.3880,-94.4265": {
+  "location": "Fort Smith, AR",
+  "lat": 35.3880338,
+  "lon": -94.4265011,
+  "sites": []
+ },
+ "31.2902,-86.2333": {
+  "location": "Covington, LA",
+  "lat": 31.2901684,
+  "lon": -86.2332837,
+  "sites": []
+ },
+ "32.7100,-117.1600": {
+  "location": "San Diego, CA",
+  "lat": 32.71,
+  "lon": -117.16,
+  "sites": []
+ },
+ "31.6261,-91.8136": {
+  "location": "Jonesville, LA",
+  "lat": 31.626142,
+  "lon": -91.8135871,
+  "sites": []
+ },
+ "33.7700,-118.1900": {
+  "location": "Long Beach, CA",
+  "lat": 33.77,
+  "lon": -118.19,
+  "sites": []
+ },
+ "33.8312,-87.2775": {
+  "location": "Jasper, AL",
+  "lat": 33.8312185,
+  "lon": -87.2775053,
+  "sites": []
+ },
+ "35.0423,-88.2734": {
+  "location": "Counce, TN",
+  "lat": 35.0423075,
+  "lon": -88.2733741,
+  "sites": [
+   {
+    "site_no": "03592824",
+    "site_lat": 34.91425466,
+    "site_lon": -88.2467085,
+    "site_name": "TENN-TOM WATERWAY AT CROSS ROADS, MS",
+    "site_type": "LK",
+    "distance_km": 14.44
+   },
+   {
+    "site_no": "03592825",
+    "site_lat": 34.9148102,
+    "site_lon": -88.2455974,
+    "site_name": "YELLOW CREEK AT CROSS ROADS, MS",
+    "site_type": "ST",
+    "distance_km": 14.4
+   },
+   {
+    "site_no": "03592810",
+    "site_lat": 34.91203254,
+    "site_lon": -88.2739314,
+    "site_name": "YELLOW CREEK DIVERSION DITCH NR DOSKIE, MS.",
+    "site_type": "ST",
+    "distance_km": 14.49
+   },
+   {
+    "site_no": "03592800",
+    "site_lat": 34.9006439,
+    "site_lon": -88.2930987,
+    "site_name": "YELLOW CREEK NR DOSKIE, MS",
+    "site_type": "ST",
+    "distance_km": 15.85
+   },
+   {
+    "site_no": "03593800",
+    "site_lat": 35.180686,
+    "site_lon": -88.2096051,
+    "site_name": "HORSE CREEK NEAR SAVANNAH, TN (TVA)",
+    "site_type": "ST",
+    "distance_km": 16.44
+   }
+  ]
+ },
+ "35.5849,-80.8101": {
+  "location": "Mooresville, NC",
+  "lat": 35.5848596,
+  "lon": -80.8100724,
+  "sites": []
+ },
+ "35.8240,-80.2534": {
+  "location": "Lexington, NC",
+  "lat": 35.8240265,
+  "lon": -80.2533838,
+  "sites": []
+ },
+ "35.7516,-78.8230": {
+  "location": "Apex, NC",
+  "lat": 35.7516286,
+  "lon": -78.8229506,
+  "sites": []
+ },
+ "33.9243,-81.3937": {
+  "location": "Gilbert, SC",
+  "lat": 33.9243121,
+  "lon": -81.3937132,
+  "sites": []
+ },
+ "37.1886,-79.6142": {
+  "location": "Moneta, VA",
+  "lat": 37.188635,
+  "lon": -79.6142224,
+  "sites": []
+ },
+ "42.9320,-76.5672": {
+  "location": "Auburn, NY",
+  "lat": 42.9320202,
+  "lon": -76.5672029,
+  "sites": []
+ },
+ "43.2369,-76.1436": {
+  "location": "Brewerton, NY",
+  "lat": 43.2369147,
+  "lon": -76.1436349,
+  "sites": []
+ },
+ "30.4394,-84.1873": {
+  "location": "Lafayette, LA",
+  "lat": 30.4393651,
+  "lon": -84.1872852,
+  "sites": []
+ },
+ "38.1124,-102.9574": {
+  "location": "Hasty, CO",
+  "lat": 38.1124258,
+  "lon": -102.9573667,
+  "sites": []
+ },
+ "42.2607,-81.9173": {
+  "location": "Erieau, ON",
+  "lat": 42.2606932,
+  "lon": -81.9173021,
+  "sites": []
+ },
+ "44.2474,-76.9506": {
+  "location": "Napanee, ON",
+  "lat": 44.2473883,
+  "lon": -76.9505543,
+  "sites": []
+ },
+ "31.1431,-93.2651": {
+  "location": "Leesville, LA",
+  "lat": 31.1431257,
+  "lon": -93.2651126,
+  "sites": []
+ },
+ "45.3447,-111.1733": {
+  "location": "Gallatin, TN",
+  "lat": 45.3446849,
+  "lon": -111.1733095,
+  "sites": []
+ },
+ "29.9442,-89.9645": {
+  "location": "Chalmette, LA",
+  "lat": 29.944196,
+  "lon": -89.9644624,
+  "sites": []
+ },
+ "32.0744,-91.2346": {
+  "location": "Newellton, LA",
+  "lat": 32.0744291,
+  "lon": -91.2345884,
+  "sites": []
+ },
+ "31.2521,-93.3413": {
+  "location": "Anacoco, LA",
+  "lat": 31.2521279,
+  "lon": -93.3412795,
+  "sites": []
+ },
+ "34.1400,-89.8500": {
+  "location": "Enid, MS",
+  "lat": 34.14,
+  "lon": -89.85,
+  "sites": []
+ },
+ "31.7771,-82.2996": {
+  "location": "Appling, GA",
+  "lat": 31.7771435,
+  "lon": -82.2996274,
+  "sites": []
+ },
+ "33.6952,-80.2108": {
+  "location": "Manning, SC",
+  "lat": 33.6952318,
+  "lon": -80.2107811,
+  "sites": []
+ },
+ "32.3063,-92.4504": {
+  "location": "Chatham, LA",
+  "lat": 32.3062644,
+  "lon": -92.4504223,
+  "sites": []
+ },
+ "30.9038,-84.5755": {
+  "location": "Bainbridge, GA",
+  "lat": 30.9038252,
+  "lon": -84.5754768,
+  "sites": [
+   {
+    "site_no": "02356000",
+    "site_lat": 30.91030556,
+    "site_lon": -84.5805,
+    "site_name": "FLINT RIVER AT BAINBRIDGE, GA",
+    "site_type": "ST",
+    "distance_km": 0.87
+   },
+   {
+    "site_no": "02357150",
+    "site_lat": 30.903,
+    "site_lon": -84.7495,
+    "site_name": "SPRING CREEK NEAR REYNOLDSVILLE, GA",
+    "site_type": "ST",
+    "distance_km": 16.6
+   },
+   {
+    "site_no": "02329342",
+    "site_lat": 30.73555556,
+    "site_lon": -84.4969444,
+    "site_name": "LITTLE ATTAPULGUS CREEK AT ATTAPULGUS, GA",
+    "site_type": "ST",
+    "distance_km": 20.16
+   },
+   {
+    "site_no": "02357000",
+    "site_lat": 31.04008333,
+    "site_lon": -84.7393056,
+    "site_name": "SPRING CREEK NEAR IRON CITY, GA",
+    "site_type": "ST",
+    "distance_km": 21.76
+   },
+   {
+    "site_no": "02356980",
+    "site_lat": 31.08657309,
+    "site_lon": -84.7365862,
+    "site_name": "AYCOCKS CREEK NEAR BOYKIN, GA",
+    "site_type": "ST",
+    "distance_km": 25.47
+   }
+  ]
+ },
+ "29.9556,-91.2117": {
+  "location": "Pierre Part, LA",
+  "lat": 29.9556415,
+  "lon": -91.2117148,
+  "sites": []
+ },
+ "29.9100,-96.8800": {
+  "location": "La Grange, TX",
+  "lat": 29.91,
+  "lon": -96.88,
+  "sites": []
+ },
+ "37.6300,-93.7300": {
+  "location": "Stockton, MO",
+  "lat": 37.63,
+  "lon": -93.73,
+  "sites": []
+ },
+ "39.5976,-94.4185": {
+  "location": "Clinton, MO",
+  "lat": 39.5975986,
+  "lon": -94.4184896,
+  "sites": []
+ },
+ "36.6853,-93.1193": {
+  "location": "Forsyth, MO",
+  "lat": 36.685322,
+  "lon": -93.1192589,
+  "sites": []
+ },
+ "34.0065,-79.5971": {
+  "location": "Florence, AL",
+  "lat": 34.0065276,
+  "lon": -79.597075,
+  "sites": []
+ },
+ "42.9058,-88.1390": {
+  "location": "Muskego, WI",
+  "lat": 42.905848,
+  "lon": -88.1389779,
+  "sites": []
+ },
+ "43.0800,-88.9200": {
+  "location": "Lake Mills, WI",
+  "lat": 43.08,
+  "lon": -88.92,
+  "sites": []
+ },
+ "28.0257,-81.7350": {
+  "location": "Winter Haven, FL",
+  "lat": 28.0257073,
+  "lon": -81.7350183,
+  "sites": []
+ },
+ "38.3095,-93.5466": {
+  "location": "Tightwad, MO",
+  "lat": 38.3094675,
+  "lon": -93.5465974,
+  "sites": []
+ },
+ "43.9558,-73.4323": {
+  "location": "Crown Point, NY",
+  "lat": 43.9558406,
+  "lon": -73.4322883,
+  "sites": []
+ },
+ "43.9849,-75.8587": {
+  "location": "Watertown, NY",
+  "lat": 43.9849084,
+  "lon": -75.8586785,
+  "sites": []
+ },
+ "37.2700,-95.5500": {
+  "location": "Cherryvale, KS",
+  "lat": 37.27,
+  "lon": -95.55,
+  "sites": []
+ },
+ "26.7542,-80.9342": {
+  "location": "Clewiston, FL",
+  "lat": 26.7542264,
+  "lon": -80.9342307,
+  "sites": [
+   {
+    "site_no": "02286399",
+    "site_lat": 26.69895504,
+    "site_lon": -80.8067278,
+    "site_name": "MIAMI CA ABOVE S-354 AND S-3 AT LAKE HARBOR, FLA",
+    "site_type": "ST",
+    "distance_km": 14.08
+   },
+   {
+    "site_no": "02283498",
+    "site_lat": 26.70034338,
+    "site_lon": -80.7150588,
+    "site_name": "N NEW RIVER CA AT S-2 AND S351 NR SOUTH BAY FL",
+    "site_type": "ST",
+    "distance_km": 22.58
+   },
+   {
+    "site_no": "02257030",
+    "site_lat": 26.9783892,
+    "site_lon": -81.089234,
+    "site_name": "FISHEATING LOCK AT S-131 NEAR LAKEPORT, FL",
+    "site_type": "ST",
+    "distance_km": 29.29
+   },
+   {
+    "site_no": "02257000",
+    "site_lat": 26.96295833,
+    "site_lon": -81.1208278,
+    "site_name": "FISHEATING CREEK AT LAKEPORT, FL",
+    "site_type": "ST",
+    "distance_km": 29.69
+   },
+   {
+    "site_no": "02258000",
+    "site_lat": 27.02449846,
+    "site_lon": -81.069789,
+    "site_name": "HARNEY POND CANAL NEAR LAKEPORT, FL",
+    "site_type": "ST",
+    "distance_km": 32.92
+   }
+  ]
+ },
+ "44.3200,-74.1300": {
+  "location": "Saranac Lake, NY",
+  "lat": 44.32,
+  "lon": -74.13,
+  "sites": []
+ },
+ "45.6855,-92.9655": {
+  "location": "Rush City, MN",
+  "lat": 45.6855145,
+  "lon": -92.9654903,
+  "sites": []
+ },
+ "30.3606,-90.0895": {
+  "location": "MANDEVILLE, LA",
+  "lat": 30.3605854,
+  "lon": -90.0894693,
+  "sites": []
+ },
+ "37.5901,-86.5489": {
+  "location": "Falls of Rough, KY",
+  "lat": 37.5900543,
+  "lon": -86.5488713,
+  "sites": []
+ },
+ "32.9305,-95.5751": {
+  "location": "Yantis, TX",
+  "lat": 32.9305487,
+  "lon": -95.5750534,
+  "sites": []
+ },
+ "31.3516,-92.1479": {
+  "location": "Deville, LA",
+  "lat": 31.3516395,
+  "lon": -92.1479322,
+  "sites": [
+   {
+    "site_no": "07373210",
+    "site_lat": 31.38408333,
+    "site_lon": -92.2969722,
+    "site_name": "Flagon Bayou NE of Libuse, LA",
+    "site_type": "ST",
+    "distance_km": 14.6
+   },
+   {
+    "site_no": "07373250",
+    "site_lat": 31.5846263,
+    "site_lon": -92.132091,
+    "site_name": "HEMPHILL CREEK AT NEBO, LA",
+    "site_type": "ST",
+    "distance_km": 25.95
+   },
+   {
+    "site_no": "07383360",
+    "site_lat": 31.14191667,
+    "site_lon": -92.0094722,
+    "site_name": "Little River at Boggy Bayou Rd e of Marksville, LA",
+    "site_type": "ST",
+    "distance_km": 26.78
+   },
+   {
+    "site_no": "073732645",
+    "site_lat": 31.574,
+    "site_lon": -91.9918889,
+    "site_name": "French Fork Little River at Archie, LA",
+    "site_type": "ST",
+    "distance_km": 28.82
+   },
+   {
+    "site_no": "07383000",
+    "site_lat": 31.1196322,
+    "site_lon": -92.3445769,
+    "site_name": "CHATLIN LK CANAL NR LECOMPTE, LA",
+    "site_type": "ST",
+    "distance_km": 31.86
+   }
+  ]
+ },
+ "42.5886,-82.8217": {
+  "location": "Harrison Township, MI",
+  "lat": 42.5886235,
+  "lon": -82.8217131,
+  "sites": []
+ },
+ "45.6675,-80.1055": {
+  "location": "Parry Sound, ON",
+  "lat": 45.6675279,
+  "lon": -80.1055284,
+  "sites": []
+ },
+ "44.8618,-93.5307": {
+  "location": "Chanhassen, MN",
+  "lat": 44.8618403,
+  "lon": -93.5307207,
+  "sites": []
+ },
+ "33.6200,-117.9300": {
+  "location": "Newport Beach, CA",
+  "lat": 33.62,
+  "lon": -117.93,
+  "sites": []
+ },
+ "36.6053,-93.5981": {
+  "location": "Shell Knob, MO",
+  "lat": 36.6052675,
+  "lon": -93.5981235,
+  "sites": []
+ },
+ "37.6137,-93.4108": {
+  "location": "Bolivar, MO",
+  "lat": 37.6136916,
+  "lon": -93.4107968,
+  "sites": []
+ },
+ "31.0405,-84.8791": {
+  "location": "Donalsonville, GA",
+  "lat": 31.0404625,
+  "lon": -84.8790911,
+  "sites": [
+   {
+    "site_no": "02343801",
+    "site_lat": 31.25925,
+    "site_lon": -85.1110556,
+    "site_name": "CHATTAHOOCHEE RIVER NEAR COLUMBIA, AL",
+    "site_type": "LK",
+    "distance_km": 32.85
+   },
+   {
+    "site_no": "02357000",
+    "site_lat": 31.04008333,
+    "site_lon": -84.7393056,
+    "site_name": "SPRING CREEK NEAR IRON CITY, GA",
+    "site_type": "ST",
+    "distance_km": 13.32
+   },
+   {
+    "site_no": "02356980",
+    "site_lat": 31.08657309,
+    "site_lon": -84.7365862,
+    "site_name": "AYCOCKS CREEK NEAR BOYKIN, GA",
+    "site_type": "ST",
+    "distance_km": 14.51
+   },
+   {
+    "site_no": "02344000",
+    "site_lat": 31.11657069,
+    "site_lon": -85.0471513,
+    "site_name": "CHATTAHOOCHEE RIVER AT ALAGA, ALA",
+    "site_type": "ST",
+    "distance_km": 18.1
+   },
+   {
+    "site_no": "02356638",
+    "site_lat": 31.17329694,
+    "site_lon": -84.7444408,
+    "site_name": "SPRING CREEK APPROX .25 MI US US27 NR COLQUITT, GA",
+    "site_type": "ST",
+    "distance_km": 19.56
+   }
+  ]
+ },
+ "32.7775,-91.9126": {
+  "location": "Bastrop, LA",
+  "lat": 32.7775015,
+  "lon": -91.9126298,
+  "sites": []
+ },
+ "34.4474,-97.0232": {
+  "location": "Murray, SC",
+  "lat": 34.4474149,
+  "lon": -97.0232045,
+  "sites": []
+ },
+ "31.0946,-92.4004": {
+  "location": "Lecompte, LA",
+  "lat": 31.0946327,
+  "lon": -92.4004119,
+  "sites": []
+ },
+ "34.1193,-80.8314": {
+  "location": "Columbia, SC",
+  "lat": 34.1193211,
+  "lon": -80.8314498,
+  "sites": [
+   {
+    "site_no": "02168500",
+    "site_lat": 34.052093,
+    "site_lon": -81.22065329,
+    "site_name": "LAKE MURRAY NEAR COLUMBIA, SC",
+    "site_type": "LK",
+    "distance_km": 36.61
+   },
+   {
+    "site_no": "02148300",
+    "site_lat": 34.00709738,
+    "site_lon": -80.73258678,
+    "site_name": "COLONELS CREEK NEAR LEESBURG,S.C.",
+    "site_type": "ST",
+    "distance_km": 15.45
+   },
+   {
+    "site_no": "02148071",
+    "site_lat": 34.1937609,
+    "site_lon": -80.67674909,
+    "site_name": "GILLIES CREEK NEAR LUGOFF, SC",
+    "site_type": "ST",
+    "distance_km": 16.47
+   },
+   {
+    "site_no": "02169568",
+    "site_lat": 34.01293324,
+    "site_lon": -80.982035,
+    "site_name": "PEN BRANCH AT COLUMBIA, SC",
+    "site_type": "ST",
+    "distance_km": 18.23
+   },
+   {
+    "site_no": "02169570",
+    "site_lat": 33.98960016,
+    "site_lon": -80.9742573,
+    "site_name": "GILLS CREEK AT COLUMBIA, SC",
+    "site_type": "ST",
+    "distance_km": 19.52
+   }
+  ]
+ },
+ "35.0457,-85.3095": {
+  "location": "Chattanooga, TN",
+  "lat": 35.0457219,
+  "lon": -85.3094883,
+  "sites": []
+ },
+ "38.9582,-122.6264": {
+  "location": "Clearlake, CA",
+  "lat": 38.9582307,
+  "lon": -122.626372,
+  "sites": []
+ },
+ "31.9083,-85.1440": {
+  "location": "Eufala, AL",
+  "lat": 31.9083459,
+  "lon": -85.1439622,
+  "sites": [
+   {
+    "site_no": "02343000",
+    "site_lat": 31.86321687,
+    "site_lon": -85.1610435,
+    "site_name": "BARBOUR CREEK NEAR EUFAULA AL",
+    "site_type": "ST",
+    "distance_km": 5.27
+   },
+   {
+    "site_no": "02342933",
+    "site_lat": 32.0175,
+    "site_lon": -85.295833,
+    "site_name": "SOUTH FORK COWIKEE CREEK NEAR BATESVILLE AL",
+    "site_type": "ST",
+    "distance_km": 18.78
+   },
+   {
+    "site_no": "02343225",
+    "site_lat": 31.8182222,
+    "site_lon": -84.97388889,
+    "site_name": "PATAULA CREEK NEAR GEORGETOWN, GA",
+    "site_type": "ST",
+    "distance_km": 18.93
+   },
+   {
+    "site_no": "02342881",
+    "site_lat": 32.14066667,
+    "site_lon": -85.04938889,
+    "site_name": "CHATTAHOOCHEE RIVER AT SPUR 39, NEAR OMAHA, GA",
+    "site_type": "ST",
+    "distance_km": 27.33
+   },
+   {
+    "site_no": "02343200",
+    "site_lat": 31.9343259,
+    "site_lon": -84.8032561,
+    "site_name": "PATAULA CREEK NEAR LUMPKIN, GA",
+    "site_type": "ST",
+    "distance_km": 32.29
+   }
+  ]
+ },
+ "30.7076,-84.9244": {
+  "location": "Sneads, FL",
+  "lat": 30.7075911,
+  "lon": -84.9244479,
+  "sites": []
+ },
+ "30.7819,-85.5385": {
+  "location": "Chipley , FL",
+  "lat": 30.7818584,
+  "lon": -85.538541,
+  "sites": []
+ },
+ "42.2859,-82.9781": {
+  "location": "Windsor, ON",
+  "lat": 42.2858536,
+  "lon": -82.9780695,
+  "sites": []
+ },
+ "37.2600,-82.0320": {
+  "location": "Buchanan, VA",
+  "lat": 37.2600448,
+  "lon": -82.0320334,
+  "sites": []
+ },
+ "36.7903,-85.3705": {
+  "location": "Burkesville, KY",
+  "lat": 36.7903399,
+  "lon": -85.3705186,
+  "sites": [
+   {
+    "site_no": "03414100",
+    "site_lat": 36.78674648,
+    "site_lon": -85.3652223,
+    "site_name": "CUMBERLAND RIVER AT BURKESVILLE, KY",
+    "site_type": "ST",
+    "distance_km": 0.62
+   },
+   {
+    "site_no": "03414170",
+    "site_lat": 36.81513889,
+    "site_lon": -85.4588333,
+    "site_name": "MARROWBONE CK AT MUD CAMP RD AT WATERVIEW, KY",
+    "site_type": "ST",
+    "distance_km": 8.33
+   },
+   {
+    "site_no": "03414078",
+    "site_lat": 36.88702778,
+    "site_lon": -85.3302861,
+    "site_name": "CROCUS CREEK NEAR AMANDAVILLE, KY",
+    "site_type": "ST",
+    "distance_km": 11.33
+   },
+   {
+    "site_no": "03414000",
+    "site_lat": 36.88395484,
+    "site_lon": -85.1394008,
+    "site_name": "CUMBERLAND RIVER NEAR ROWENA, KY",
+    "site_type": "ST",
+    "distance_km": 23.05
+   },
+   {
+    "site_no": "03414002",
+    "site_lat": 36.88405556,
+    "site_lon": -85.12963889,
+    "site_name": "CUMBERLAND RIVER AT LONG BOTTOM NEAR ROWENA, KY",
+    "site_type": "ST",
+    "distance_km": 23.84
+   }
+  ]
+ },
+ "43.8488,-73.4232": {
+  "location": "Ticonderoga, NY",
+  "lat": 43.8487795,
+  "lon": -73.4232317,
+  "sites": []
+ },
+ "39.6994,-78.1821": {
+  "location": "Hancock, MD",
+  "lat": 39.6994024,
+  "lon": -78.1820972,
+  "sites": []
+ },
+ "31.9657,-94.0538": {
+  "location": "Joaquin, TX",
+  "lat": 31.9657232,
+  "lon": -94.0538028,
+  "sites": [
+   {
+    "site_no": "08022500",
+    "site_lat": 31.97238949,
+    "site_lon": -94.0063014,
+    "site_name": "Sabine Rv at Logansport, LA",
+    "site_type": "ST",
+    "distance_km": 4.54
+   },
+   {
+    "site_no": "08023000",
+    "site_lat": 31.97377803,
+    "site_lon": -93.9696338,
+    "site_name": "BYU CASTOR NR LOGANSPORT, LA",
+    "site_type": "ST",
+    "distance_km": 7.99
+   },
+   {
+    "site_no": "08023050",
+    "site_lat": 31.8806861,
+    "site_lon": -94.0985528,
+    "site_name": "Flat Fork Ck at SH 7 nr Center, TX",
+    "site_type": "ST",
+    "distance_km": 10.36
+   },
+   {
+    "site_no": "08022765",
+    "site_lat": 32.01599906,
+    "site_lon": -93.9599109,
+    "site_name": "BAYOU CASTOR NEAR FUNSTON, LA.",
+    "site_type": "ST",
+    "distance_km": 10.47
+   },
+   {
+    "site_no": "08023080",
+    "site_lat": 31.9627248,
+    "site_lon": -93.9411723,
+    "site_name": "Bayou Grand Cane near Stanley, LA",
+    "site_type": "ST",
+    "distance_km": 10.63
+   }
+  ]
+ },
+ "39.8304,-79.2725": {
+  "location": "Fort Hill, PA",
+  "lat": 39.8303553,
+  "lon": -79.2725324,
+  "sites": []
+ },
+ "31.2696,-92.6929": {
+  "location": "Gardner, LA",
+  "lat": 31.269626,
+  "lon": -92.692924,
+  "sites": []
+ },
+ "43.5655,-88.9065": {
+  "location": "Fox Lake, WI",
+  "lat": 43.565543,
+  "lon": -88.9064984,
+  "sites": []
+ },
+ "35.8293,-100.2565": {
+  "location": "Hemphill, TX",
+  "lat": 35.8293476,
+  "lon": -100.2564532,
+  "sites": []
+ },
+ "39.5131,-80.1006": {
+  "location": "viola, WV",
+  "lat": 39.5131397,
+  "lon": -80.1006305,
+  "sites": []
+ },
+ "43.0519,-91.1410": {
+  "location": "Prairie Du Chien, WI",
+  "lat": 43.05194,
+  "lon": -91.1409933,
+  "sites": []
+ },
+ "44.6516,-73.7437": {
+  "location": "Saranac, NY",
+  "lat": 44.651559,
+  "lon": -73.743668,
+  "sites": []
+ },
+ "37.8400,-94.7083": {
+  "location": "Fort Scott, KS",
+  "lat": 37.8399791,
+  "lon": -94.7082882,
+  "sites": []
+ },
+ "30.3952,-91.1170": {
+  "location": "Baton Rouge, LA",
+  "lat": 30.3952319,
+  "lon": -91.1169876,
+  "sites": []
+ },
+ "39.0319,-122.7995": {
+  "location": "Clear lake, CA",
+  "lat": 39.0319478,
+  "lon": -122.7994776,
+  "sites": []
+ },
+ "44.6956,-73.6168": {
+  "location": "Plattsburgh, NY",
+  "lat": 44.6955711,
+  "lon": -73.6167694,
+  "sites": []
+ },
+ "34.5038,-93.0552": {
+  "location": "Hot Springs, AR",
+  "lat": 34.5038393,
+  "lon": -93.0552437,
+  "sites": []
+ },
+ "40.6420,-73.9698": {
+  "location": "Statewide, NY",
+  "lat": 40.6420307,
+  "lon": -73.9697963,
+  "sites": [
+   {
+    "site_no": "404028073384601",
+    "site_lat": 40.67444444,
+    "site_lon": -73.6461111,
+    "site_name": "Hempstead Lake Buoy at Lakeview, NY",
+    "site_type": "LK",
+    "distance_km": 27.54
+   },
+   {
+    "site_no": "01387998",
+    "site_lat": 40.99277778,
+    "site_lon": -74.27888889,
+    "site_name": "Ramapo River above dam at Pompton Lakes NJ",
+    "site_type": "LK",
+    "distance_km": 46.88
+   },
+   {
+    "site_no": "01376520",
+    "site_lat": 40.72152778,
+    "site_lon": -74.0156111,
+    "site_name": "HUDSON RIVER AT PIER 25 AT NEW YORK NY",
+    "site_type": "ST",
+    "distance_km": 9.65
+   },
+   {
+    "site_no": "01376515",
+    "site_lat": 40.76463889,
+    "site_lon": -74.0031944,
+    "site_name": "HUDSON RIVER AT PIER 84 AT NEW YORK NY",
+    "site_type": "ST",
+    "distance_km": 13.92
+   },
+   {
+    "site_no": "01376534",
+    "site_lat": 40.57372222,
+    "site_lon": -74.14130556,
+    "site_name": "RICHMOND CREEK AT LIGHTHOUSE AVE AT RICHMOND NY",
+    "site_type": "ST",
+    "distance_km": 16.35
+   }
+  ]
+ },
+ "35.6667,-84.6647": {
+  "location": "Ten Mile, TN",
+  "lat": 35.6667394,
+  "lon": -84.6646604,
+  "sites": []
+ },
+ "41.5002,-109.4555": {
+  "location": "Alabama to, WY",
+  "lat": 41.5001819,
+  "lon": -109.455478,
+  "sites": []
+ },
+ "45.2523,-94.9053": {
+  "location": "New and Greenbrier Rivers and Bluestone Lake, WV",
+  "lat": 45.25231609,
+  "lon": -94.90529161,
+  "sites": []
+ },
+ "38.4302,-81.7511": {
+  "location": "Statewide, WV",
+  "lat": 38.4301915,
+  "lon": -81.751097,
+  "sites": [
+   {
+    "site_no": "03200650",
+    "site_lat": 38.4748136,
+    "site_lon": -81.8190201,
+    "site_name": "KANAWHA RIVER AT POCA, WV",
+    "site_type": "ST",
+    "distance_km": 7.72
+   },
+   {
+    "site_no": "03198000",
+    "site_lat": 38.37148448,
+    "site_lon": -81.7020701,
+    "site_name": "KANAWHA RIVER AT CHARLESTON, WV",
+    "site_type": "ST",
+    "distance_km": 7.8
+   },
+   {
+    "site_no": "03200500",
+    "site_lat": 38.33898309,
+    "site_lon": -81.841518,
+    "site_name": "COAL RIVER AT TORNADO, WV",
+    "site_type": "ST",
+    "distance_km": 12.84
+   },
+   {
+    "site_no": "03198022",
+    "site_lat": 38.31537429,
+    "site_lon": -81.7281806,
+    "site_name": "TRACE FK D/S DRYDEN HOLLOW AT RUTH, WV",
+    "site_type": "ST",
+    "distance_km": 12.92
+   },
+   {
+    "site_no": "03197950",
+    "site_lat": 38.3581527,
+    "site_lon": -81.627068,
+    "site_name": "ELK RIVER AT CHARLESTON, WV",
+    "site_type": "ST",
+    "distance_km": 13.45
+   }
+  ]
+ },
+ "29.7028,-98.1257": {
+  "location": "New Braunfels, TX",
+  "lat": 29.7028266,
+  "lon": -98.1257348,
+  "sites": []
+ },
+ "43.0232,-83.6520": {
+  "location": "Statewide, MI",
+  "lat": 43.0232438,
+  "lon": -83.6519654,
+  "sites": []
+ },
+ "41.7572,-88.3148": {
+  "location": "Aurora, IL",
+  "lat": 41.7571701,
+  "lon": -88.3147539,
+  "sites": []
+ },
+ "42.9047,-76.8628": {
+  "location": "Waterloo, NY",
+  "lat": 42.9046933,
+  "lon": -76.8627887,
+  "sites": []
+ },
+ "38.1436,-121.6845": {
+  "location": "Sacramento, CA",
+  "lat": 38.1436132,
+  "lon": -121.6844521,
+  "sites": []
+ },
+ "36.7874,-76.3535": {
+  "location": "Statewide, VA",
+  "lat": 36.7873687,
+  "lon": -76.3535375,
+  "sites": []
+ },
+ "42.4999,-87.8226": {
+  "location": "WI, IL",
+  "lat": 42.4999359,
+  "lon": -87.8226246,
+  "sites": []
+ },
+ "39.9985,-75.1302": {
+  "location": "Statewide, PA",
+  "lat": 39.99849,
+  "lon": -75.1302356,
+  "sites": []
+ },
+ "36.1623,-86.7743": {
+  "location": "Nashville, TN",
+  "lat": 36.1622767,
+  "lon": -86.7742984,
+  "sites": []
+ },
+ "34.7110,-87.6673": {
+  "location": "Muscle Shoals, AL, TN",
+  "lat": 34.7109741,
+  "lon": -87.6673139,
+  "sites": []
+ },
+ "41.1664,-104.8241": {
+  "location": "Wyoming, AL",
+  "lat": 41.1663959,
+  "lon": -104.824083,
+  "sites": []
+ },
+ "36.3049,-86.6214": {
+  "location": "Hendersonville, TN",
+  "lat": 36.3049177,
+  "lon": -86.621443,
+  "sites": []
+ },
+ "30.3298,-82.7590": {
+  "location": "White Springs, FL",
+  "lat": 30.329837,
+  "lon": -82.7589877,
+  "sites": []
+ },
+ "26.0062,-80.2872": {
+  "location": "Pembroke Pines, FL",
+  "lat": 26.0061943,
+  "lon": -80.2872086,
+  "sites": [
+   {
+    "site_no": "02286300",
+    "site_lat": 25.92842674,
+    "site_lon": -80.15587938,
+    "site_name": "SNAKE CREEK CA AT S-29 AT NORTH MIAMI BEACH, FL",
+    "site_type": "ST",
+    "distance_km": 15.72
+   },
+   {
+    "site_no": "02287400",
+    "site_lat": 25.93370499,
+    "site_lon": -80.4303317,
+    "site_name": "MIAMI CA AT BROKEN DAM NR MIAMI FLA",
+    "site_type": "ST",
+    "distance_km": 16.42
+   },
+   {
+    "site_no": "260810080222001",
+    "site_lat": 26.13644444,
+    "site_lon": -80.3670833,
+    "site_name": "SITE 99 NR L-35A IN CONS AREA 2B NR SUNRISE, FL",
+    "site_type": "ST",
+    "distance_km": 16.54
+   },
+   {
+    "site_no": "02283200",
+    "site_lat": 26.13508588,
+    "site_lon": -80.1947691,
+    "site_name": "PLANTATION RD CA AT S-33 NR FT LAUDERDALE, FL",
+    "site_type": "ST",
+    "distance_km": 17.05
+   },
+   {
+    "site_no": "260037080303401",
+    "site_lat": 26.00783333,
+    "site_lon": -80.4827222,
+    "site_name": "SITE 76 IN CONSERVATION AREA 3B NR ANDYTOWN, FL",
+    "site_type": "ST",
+    "distance_km": 19.54
+   }
+  ]
+ },
+ "47.3916,-122.2300": {
+  "location": "Statewide, TN",
+  "lat": 47.3915543,
+  "lon": -122.2300249,
+  "sites": []
+ },
+ "45.5323,-122.8962": {
+  "location": "Statewide, OR",
+  "lat": 45.5323202,
+  "lon": -122.8962131,
+  "sites": []
+ },
+ "38.1464,-121.2944": {
+  "location": "lodi, CA",
+  "lat": 38.1464196,
+  "lon": -121.2943823,
+  "sites": []
+ },
+ "36.7534,-86.1905": {
+  "location": "Scottsville, KY",
+  "lat": 36.7533781,
+  "lon": -86.1905424,
+  "sites": []
+ },
+ "44.5522,-68.4296": {
+  "location": "Statewide, ME",
+  "lat": 44.5522019,
+  "lon": -68.4296447,
+  "sites": [
+   {
+    "site_no": "01026000",
+    "site_lat": 44.56701667,
+    "site_lon": -68.5061944,
+    "site_name": "BRANCH LAKE STREAM NEAR ELLSWORTH, ME (S2)",
+    "site_type": "ST",
+    "distance_km": 6.28
+   },
+   {
+    "site_no": "01025000",
+    "site_lat": 44.6246583,
+    "site_lon": -68.4354111,
+    "site_name": "GREEN LAKE STREAM AT LAKEWOOD, ME",
+    "site_type": "ST",
+    "distance_km": 8.07
+   },
+   {
+    "site_no": "01022805",
+    "site_lat": 44.41416667,
+    "site_lon": -68.29527778,
+    "site_name": "Old Mill Brk bl Crooked Rd nr Bar Harbor, Maine",
+    "site_type": "ST",
+    "distance_km": 18.69
+   },
+   {
+    "site_no": "01024200",
+    "site_lat": 44.7214361,
+    "site_lon": -68.41096389,
+    "site_name": "GARLAND BROOK NEAR MARIAVILLE, ME",
+    "site_type": "ST",
+    "distance_km": 18.88
+   },
+   {
+    "site_no": "01022800",
+    "site_lat": 44.39850278,
+    "site_lon": -68.28772778,
+    "site_name": "Old Mill Brook at Old Norway Dr nr Bar Harbor, ME",
+    "site_type": "ST",
+    "distance_km": 20.47
+   }
+  ]
+ },
+ "36.6612,-80.9240": {
+  "location": "Galax, VA",
+  "lat": 36.6612387,
+  "lon": -80.9239671,
+  "sites": []
+ },
+ "38.3527,-120.9327": {
+  "location": "Ione, CA",
+  "lat": 38.3526913,
+  "lon": -120.932717,
+  "sites": []
+ },
+ "35.4965,-119.2591": {
+  "location": "Statewide, CA",
+  "lat": 35.4965366,
+  "lon": -119.2591463,
+  "sites": []
+ },
+ "33.5720,-111.8883": {
+  "location": "Statewide, AZ",
+  "lat": 33.5719703,
+  "lon": -111.888273,
+  "sites": []
+ },
+ "41.0390,-81.5448": {
+  "location": "Statewide, OH",
+  "lat": 41.0389634,
+  "lon": -81.5447967,
+  "sites": []
+ },
+ "40.3274,-76.9791": {
+  "location": "Marysville, PA",
+  "lat": 40.3274103,
+  "lon": -76.9791101,
+  "sites": []
+ },
+ "32.8882,-84.3266": {
+  "location": "Thomaston, GA",
+  "lat": 32.8881879,
+  "lon": -84.3265855,
+  "sites": []
+ },
+ "28.6275,-81.3656": {
+  "location": "Maitland, FL",
+  "lat": 28.6275253,
+  "lon": -81.3656419,
+  "sites": []
+ },
+ "40.1286,-83.9591": {
+  "location": "Saint Paris, OH",
+  "lat": 40.1285533,
+  "lon": -83.9591444,
+  "sites": [
+   {
+    "site_no": "03267000",
+    "site_lat": 40.1075575,
+    "site_lon": -83.7990978,
+    "site_name": "Mad River near Urbana OH",
+    "site_type": "ST",
+    "distance_km": 13.81
+   },
+   {
+    "site_no": "03267600",
+    "site_lat": 40.0106151,
+    "site_lon": -83.8354859,
+    "site_name": "Chapman Creek at Tremont City OH",
+    "site_type": "ST",
+    "distance_km": 16.81
+   },
+   {
+    "site_no": "03267500",
+    "site_lat": 40.0070041,
+    "site_lon": -83.8232632,
+    "site_name": "Mad River at Tremont City OH",
+    "site_type": "ST",
+    "distance_km": 17.79
+   },
+   {
+    "site_no": "03260800",
+    "site_lat": 40.2908857,
+    "site_lon": -83.9099368,
+    "site_name": "Stony Creek near De Graff OH",
+    "site_type": "ST",
+    "distance_km": 18.53
+   },
+   {
+    "site_no": "03261000",
+    "site_lat": 40.30282925,
+    "site_lon": -83.96938288,
+    "site_name": "Great Miami River at Quincy OH",
+    "site_type": "ST",
+    "distance_km": 19.4
+   }
+  ]
+ },
+ "30.2711,-97.7437": {
+  "location": "Austin, TX",
+  "lat": 30.2711286,
+  "lon": -97.7436995,
+  "sites": []
+ },
+ "32.8746,-95.7655": {
+  "location": "Emory, TX",
+  "lat": 32.874566,
+  "lon": -95.7655183,
+  "sites": []
+ },
+ "35.4704,-97.5410": {
+  "location": "Statewide, LA",
+  "lat": 35.470449,
+  "lon": -97.5409814,
+  "sites": []
+ },
+ "35.2438,-81.0377": {
+  "location": "Belmont, NC",
+  "lat": 35.2438272,
+  "lon": -81.0377322,
+  "sites": []
+ },
+ "33.1960,-80.0131": {
+  "location": "Moncks Corner, SC",
+  "lat": 33.1960027,
+  "lon": -80.0131374,
+  "sites": []
+ },
+ "39.9945,-82.9885": {
+  "location": "Columbus , OH",
+  "lat": 39.9944913,
+  "lon": -82.9885307,
+  "sites": [
+   {
+    "site_no": "03228400",
+    "site_lat": 40.10839668,
+    "site_lon": -82.88295639,
+    "site_name": "Hoover Reservoir at Central College OH",
+    "site_type": "LK",
+    "distance_km": 15.53
+   },
+   {
+    "site_no": "03227107",
+    "site_lat": 39.99777778,
+    "site_lon": -83.0236111,
+    "site_name": "Olentangy River at J H Herrick Dr at Columbus OH",
+    "site_type": "ST",
+    "distance_km": 3.01
+   },
+   {
+    "site_no": "03227200",
+    "site_lat": 39.9650643,
+    "site_lon": -83.008239,
+    "site_name": "Scioto River above Broad St at Columbus OH",
+    "site_type": "ST",
+    "distance_km": 3.68
+   },
+   {
+    "site_no": "03221646",
+    "site_lat": 39.98916667,
+    "site_lon": -83.0677778,
+    "site_name": "Scioto River at 5th Ave at Columbus OH",
+    "site_type": "ST",
+    "distance_km": 6.78
+   },
+   {
+    "site_no": "03229000",
+    "site_lat": 39.94506415,
+    "site_lon": -82.9410138,
+    "site_name": "Alum Creek at Columbus OH",
+    "site_type": "ST",
+    "distance_km": 6.83
+   }
+  ]
+ },
+ "42.0366,-71.0574": {
+  "location": "Statewide, MA",
+  "lat": 42.0366022,
+  "lon": -71.057384,
+  "sites": []
+ },
+ "44.6066,-79.4169": {
+  "location": "Orillia, ON",
+  "lat": 44.6066135,
+  "lon": -79.4169256,
+  "sites": []
+ },
+ "40.4663,-111.4699": {
+  "location": "Charleston, UT",
+  "lat": 40.4663446,
+  "lon": -111.469909,
+  "sites": [
+   {
+    "site_no": "10157500",
+    "site_lat": 40.46078909,
+    "site_lon": -111.472687,
+    "site_name": "DANIELS CREEK AT CHARLESTON, UT",
+    "site_type": "ST",
+    "distance_km": 0.66
+   },
+   {
+    "site_no": "10155500",
+    "site_lat": 40.4841221,
+    "site_lon": -111.4635198,
+    "site_name": "PROVO RIVER NEAR CHARLESTON, UT",
+    "site_type": "ST",
+    "distance_km": 2.05
+   },
+   {
+    "site_no": "10156000",
+    "site_lat": 40.4852332,
+    "site_lon": -111.4671312,
+    "site_name": "SNAKE CREEK NEAR CHARLESTON, UT",
+    "site_type": "ST",
+    "distance_km": 2.11
+   },
+   {
+    "site_no": "10155300",
+    "site_lat": 40.5068994,
+    "site_lon": -111.4496303,
+    "site_name": "PROVO RIVER NEAR MIDWAY, UT",
+    "site_type": "ST",
+    "distance_km": 4.82
+   },
+   {
+    "site_no": "10155400",
+    "site_lat": 40.50856597,
+    "site_lon": -111.4393519,
+    "site_name": "SPRING CREEK NEAR HEBER CITY, UT",
+    "site_type": "ST",
+    "distance_km": 5.36
+   }
+  ]
+ },
+ "42.7023,-83.4027": {
+  "location": "Waterford, MI",
+  "lat": 42.7022527,
+  "lon": -83.402718,
+  "sites": []
+ },
+ "41.4958,-111.9438": {
+  "location": "Mantua, UT",
+  "lat": 41.4957692,
+  "lon": -111.943832,
+  "sites": []
+ },
+ "40.5065,-111.4133": {
+  "location": "Heber City, UT",
+  "lat": 40.506463,
+  "lon": -111.4132963,
+  "sites": []
+ },
+ "40.5746,-110.3262": {
+  "location": "Duchesne, UT",
+  "lat": 40.5745766,
+  "lon": -110.3262415,
+  "sites": []
+ },
+ "41.0831,-81.5185": {
+  "location": "Akron, OH",
+  "lat": 41.083064,
+  "lon": -81.518485,
+  "sites": [
+   {
+    "site_no": "04205700",
+    "site_lat": 41.09450025,
+    "site_lon": -81.5215053,
+    "site_name": "Little Cuyahoga River below O&E Canal at Akron OH",
+    "site_type": "ST",
+    "distance_km": 1.3
+   },
+   {
+    "site_no": "04205500",
+    "site_lat": 41.0595005,
+    "site_lon": -81.4753919,
+    "site_name": "Little Cuyahoga River at Akron OH",
+    "site_type": "ST",
+    "distance_km": 4.46
+   },
+   {
+    "site_no": "04204500",
+    "site_lat": 41.0603339,
+    "site_lon": -81.4631691,
+    "site_name": "Little Cuyahoga River at Massillon Rd Akron OH",
+    "site_type": "ST",
+    "distance_km": 5.28
+   },
+   {
+    "site_no": "04205000",
+    "site_lat": 41.05588945,
+    "site_lon": -81.4642803,
+    "site_name": "Springfield Lake outlet at Akron OH",
+    "site_type": "ST",
+    "distance_km": 5.46
+   },
+   {
+    "site_no": "04206000",
+    "site_lat": 41.1356112,
+    "site_lon": -81.5470622,
+    "site_name": "Cuyahoga River at Old Portage OH",
+    "site_type": "ST",
+    "distance_km": 6.31
+   }
+  ]
+ },
+ "33.4712,-95.2145": {
+  "location": "Bogata, TX",
+  "lat": 33.4711597,
+  "lon": -95.2144967,
+  "sites": []
+ },
+ "32.0028,-81.1073": {
+  "location": "Statewide, GA",
+  "lat": 32.0027595,
+  "lon": -81.1072504,
+  "sites": []
+ },
+ "43.3240,-95.1508": {
+  "location": "Milford, IA",
+  "lat": 43.32396,
+  "lon": -95.1508003,
+  "sites": [
+   {
+    "site_no": "06604200",
+    "site_lat": 43.37841667,
+    "site_lon": -95.1812222,
+    "site_name": "West Okoboji Lake at Lakeside Lab near Milford, IA",
+    "site_type": "LK",
+    "distance_km": 6.54
+   },
+   {
+    "site_no": "06604000",
+    "site_lat": 43.46991667,
+    "site_lon": -95.1243333,
+    "site_name": "Spirit Lake near Orleans, IA",
+    "site_type": "LK",
+    "distance_km": 16.37
+   },
+   {
+    "site_no": "06604400",
+    "site_lat": 43.3205196,
+    "site_lon": -95.1449959,
+    "site_name": "Milford Creek at Milford, IA",
+    "site_type": "ST",
+    "distance_km": 0.61
+   },
+   {
+    "site_no": "06604350",
+    "site_lat": 43.34068578,
+    "site_lon": -95.1317732,
+    "site_name": "Milford Creek near Milford, IA",
+    "site_type": "ST",
+    "distance_km": 2.41
+   },
+   {
+    "site_no": "06604100",
+    "site_lat": 43.445795,
+    "site_lon": -95.0961058,
+    "site_name": "Spirit Lake Outlet at Orleans, IA",
+    "site_type": "ST",
+    "distance_km": 14.25
+   }
+  ]
+ },
+ "32.4970,-94.7396": {
+  "location": "Statewide, TX",
+  "lat": 32.4970465,
+  "lon": -94.7396287,
+  "sites": []
+ },
+ "41.4341,-79.7085": {
+  "location": "Oil City, PA",
+  "lat": 41.4341216,
+  "lon": -79.7084738,
+  "sites": []
+ },
+ "33.7473,-90.7311": {
+  "location": "Statewide, MS",
+  "lat": 33.7473105,
+  "lon": -90.7311275,
+  "sites": []
+ },
+ "40.6187,-80.5773": {
+  "location": "East Liverpool, OH",
+  "lat": 40.6186756,
+  "lon": -80.5772928,
+  "sites": []
+ },
+ "37.0434,-93.2987": {
+  "location": "Nixa, MO",
+  "lat": 37.0433856,
+  "lon": -93.2986635,
+  "sites": [
+   {
+    "site_no": "07053600",
+    "site_lat": 36.6173333,
+    "site_lon": -93.24275,
+    "site_name": "Lake Taneycomo at School of the Ozarks, MO",
+    "site_type": "LK",
+    "distance_km": 47.64
+   },
+   {
+    "site_no": "07052250",
+    "site_lat": 37.0065833,
+    "site_lon": -93.3646667,
+    "site_name": "James River near Boaz, MO",
+    "site_type": "ST",
+    "distance_km": 7.15
+   },
+   {
+    "site_no": "07052345",
+    "site_lat": 36.97488889,
+    "site_lon": -93.3278889,
+    "site_name": "Finley Creek below Riverdale, MO",
+    "site_type": "ST",
+    "distance_km": 8.05
+   },
+   {
+    "site_no": "07052160",
+    "site_lat": 37.11775,
+    "site_lon": -93.4038611,
+    "site_name": "Wilson Creek near Battlefield, MO",
+    "site_type": "ST",
+    "distance_km": 12.47
+   },
+   {
+    "site_no": "07052150",
+    "site_lat": 37.1469953,
+    "site_lon": -93.3740792,
+    "site_name": "Wilson Creek below Springfield, MO",
+    "site_type": "ST",
+    "distance_km": 13.32
+   }
+  ]
+ },
+ "40.1735,-88.9004": {
+  "location": "Dewitt, IL",
+  "lat": 40.1734773,
+  "lon": -88.9003733,
+  "sites": []
+ },
+ "45.2956,-87.4379": {
+  "location": "Menominee, MI",
+  "lat": 45.2956175,
+  "lon": -87.4378762,
+  "sites": []
+ },
+ "45.8594,-81.6525": {
+  "location": "Ontario, Ontario",
+  "lat": 45.859417,
+  "lon": -81.652504,
+  "sites": []
+ },
+ "42.7978,-83.7049": {
+  "location": "Fenton, MI",
+  "lat": 42.7978061,
+  "lon": -83.7049498,
+  "sites": []
+ },
+ "38.1260,-92.6723": {
+  "location": "Osage Beach, MO",
+  "lat": 38.1259916,
+  "lon": -92.6723254,
+  "sites": []
+ },
+ "32.9138,-80.0092": {
+  "location": "Hanahan, SC",
+  "lat": 32.9138275,
+  "lon": -80.0091615,
+  "sites": []
+ },
+ "29.9052,-96.6751": {
+  "location": "Fayetteville, TX",
+  "lat": 29.9052013,
+  "lon": -96.6751391,
+  "sites": []
+ },
+ "41.0784,-111.6509": {
+  "location": "Morgan, UT",
+  "lat": 41.0784068,
+  "lon": -111.6509149,
+  "sites": []
+ },
+ "41.7313,-111.8349": {
+  "location": "Logan, UT",
+  "lat": 41.7313063,
+  "lon": -111.834914,
+  "sites": [
+   {
+    "site_no": "10108500",
+    "site_lat": 41.7457643,
+    "site_lon": -111.7854979,
+    "site_name": "LOGAN HYD P AN SM CA N LOGAN UTAH",
+    "site_type": "ST",
+    "distance_km": 4.4
+   },
+   {
+    "site_no": "10115200",
+    "site_lat": 41.72076375,
+    "site_lon": -111.8863337,
+    "site_name": "LOGAN RIVER BLW BLACKSMITH FORK NR LOGAN, UTAH",
+    "site_type": "ST",
+    "distance_km": 4.43
+   },
+   {
+    "site_no": "10109000",
+    "site_lat": 41.74355,
+    "site_lon": -111.7839806,
+    "site_name": "LOGAN RIVER ABOVE STATE DAM, NEAR LOGAN, UT",
+    "site_type": "ST",
+    "distance_km": 4.44
+   },
+   {
+    "site_no": "10109001",
+    "site_lat": 41.74437546,
+    "site_lon": -111.7843867,
+    "site_name": "COM F LOGAN R AB ST D AND CACHE HL CAN NR LOGAN UT",
+    "site_type": "ST",
+    "distance_km": 4.44
+   },
+   {
+    "site_no": "10108000",
+    "site_lat": 41.74437546,
+    "site_lon": -111.7841089,
+    "site_name": "UTAH POWER AND LIGHT TAILRACE NR LOGAN UTAH",
+    "site_type": "ST",
+    "distance_km": 4.46
+   }
+  ]
+ },
+ "47.1569,-68.5644": {
+  "location": "4 county, CA",
+  "lat": 47.1568951,
+  "lon": -68.5643889,
+  "sites": [
+   {
+    "site_no": "01012960",
+    "site_lat": 47.15597778,
+    "site_lon": -68.5743667,
+    "site_name": "Fish River at Soldier Pond, Maine",
+    "site_type": "ST",
+    "distance_km": 0.76
+   },
+   {
+    "site_no": "01013500",
+    "site_lat": 47.2375,
+    "site_lon": -68.58277778,
+    "site_name": "Fish River near Fort Kent, Maine",
+    "site_type": "ST",
+    "distance_km": 9.07
+   },
+   {
+    "site_no": "01012500",
+    "site_lat": 47.2486222,
+    "site_lon": -68.6050111,
+    "site_name": "ST. JOHN RIVER ABOVE FISH R, AT FORT KENT, ME",
+    "site_type": "ST",
+    "distance_km": 10.65
+   },
+   {
+    "site_no": "01014000",
+    "site_lat": 47.2833333,
+    "site_lon": -68.58527778,
+    "site_name": "St. John River below Fish R, nr Fort Kent, Maine",
+    "site_type": "ST",
+    "distance_km": 14.15
+   },
+   {
+    "site_no": "01012570",
+    "site_lat": 46.7894861,
+    "site_lon": -68.773225,
+    "site_name": "FISH RIVER AT INLET FISH RIVER LAKE ME SITE 4",
+    "site_type": "ST",
+    "distance_km": 43.82
+   }
+  ]
+ },
+ "35.4940,-85.0125": {
+  "location": "Dayton, TN",
+  "lat": 35.4939587,
+  "lon": -85.0124535,
+  "sites": []
+ },
+ "35.0892,-92.4398": {
+  "location": "Conway, AR",
+  "lat": 35.0891932,
+  "lon": -92.4398402,
+  "sites": []
+ },
+ "43.9406,-69.9232": {
+  "location": "Topsham, ME",
+  "lat": 43.9406325,
+  "lon": -69.9232146,
+  "sites": []
+ },
+ "32.6308,-90.0041": {
+  "location": "Madison, MS",
+  "lat": 32.6308318,
+  "lon": -90.0040817,
+  "sites": []
+ },
+ "43.8798,-78.9422": {
+  "location": "Whitby, Ontario",
+  "lat": 43.87982,
+  "lon": -78.9421751,
+  "sites": []
+ },
+ "40.4848,-83.9230": {
+  "location": "Lakeview, OH",
+  "lat": 40.4847717,
+  "lon": -83.9229952,
+  "sites": []
+ },
+ "38.9904,-88.1620": {
+  "location": "Newton, IL",
+  "lat": 38.9904382,
+  "lon": -88.161961,
+  "sites": []
+ },
+ "35.2450,-92.9376": {
+  "location": "Atkins, AR",
+  "lat": 35.2450217,
+  "lon": -92.937615,
+  "sites": []
+ },
+ "35.1540,-92.7429": {
+  "location": "Morrilton, AR",
+  "lat": 35.154026,
+  "lon": -92.7429266,
+  "sites": []
+ },
+ "38.5998,-77.1648": {
+  "location": "Indian Head, MD",
+  "lat": 38.5997628,
+  "lon": -77.1647714,
+  "sites": []
+ },
+ "35.1603,-92.6412": {
+  "location": "Plumerville, AR",
+  "lat": 35.1603066,
+  "lon": -92.6412343,
+  "sites": []
+ },
+ "38.8566,-78.5891": {
+  "location": "Shenandoah, VA",
+  "lat": 38.856559,
+  "lon": -78.5890893,
+  "sites": []
+ },
+ "41.7001,-71.6828": {
+  "location": "Coventry, RI",
+  "lat": 41.7000996,
+  "lon": -71.6828444,
+  "sites": []
+ },
+ "45.0592,-83.9011": {
+  "location": "Hillman, MI",
+  "lat": 45.059177,
+  "lon": -83.901106,
+  "sites": []
+ },
+ "42.6825,-88.1104": {
+  "location": "Kansasville, WI",
+  "lat": 42.6825181,
+  "lon": -88.1103639,
+  "sites": []
+ },
+ "31.5971,-94.5927": {
+  "location": "Nacogdoches, TX",
+  "lat": 31.5970503,
+  "lon": -94.5927451,
+  "sites": [
+   {
+    "site_no": "08037050",
+    "site_lat": 31.6176793,
+    "site_lon": -94.6415983,
+    "site_name": "Bayou Lanana at Nacogdoches, TX",
+    "site_type": "ST",
+    "distance_km": 5.16
+   },
+   {
+    "site_no": "08037000",
+    "site_lat": 31.45740447,
+    "site_lon": -94.7263206,
+    "site_name": "Angelina Rv nr Lufkin, TX",
+    "site_type": "ST",
+    "distance_km": 20.04
+   },
+   {
+    "site_no": "08037180",
+    "site_lat": 31.45718333,
+    "site_lon": -94.7263278,
+    "site_name": "Angelina Rv at Hwy 59 nr Lufkin, TX",
+    "site_type": "ST",
+    "distance_km": 20.05
+   },
+   {
+    "site_no": "08038000",
+    "site_lat": 31.50434957,
+    "site_lon": -94.3043677,
+    "site_name": "Attoyac Bayou nr Chireno, TX",
+    "site_type": "ST",
+    "distance_km": 29.21
+   },
+   {
+    "site_no": "08037500",
+    "site_lat": 31.59684679,
+    "site_lon": -94.2685335,
+    "site_name": "Arenoso Ck nr San Augustine, TX",
+    "site_type": "ST",
+    "distance_km": 30.71
+   }
+  ]
+ },
+ "35.2333,-82.4012": {
+  "location": "Henderson, NC, VA",
+  "lat": 35.2333244,
+  "lon": -82.4012496,
+  "sites": []
+ },
+ "36.7162,-80.9787": {
+  "location": "Fries, VA",
+  "lat": 36.7162368,
+  "lon": -80.9786923,
+  "sites": []
+ },
+ "39.0984,-76.8485": {
+  "location": "Laurel, MD",
+  "lat": 39.0984317,
+  "lon": -76.8485094,
+  "sites": []
+ },
+ "42.2048,-83.4852": {
+  "location": "Belleville, MI",
+  "lat": 42.2048414,
+  "lon": -83.4852106,
+  "sites": [
+   {
+    "site_no": "04170490",
+    "site_lat": 42.51308879,
+    "site_lon": -83.67577389,
+    "site_name": "KENT LAKE NEAR NEW HUDSON, MI",
+    "site_type": "LK",
+    "distance_km": 37.68
+   },
+   {
+    "site_no": "04174950",
+    "site_lat": 42.21948378,
+    "site_lon": -83.5366034,
+    "site_name": "WILLOW RUN NEAR RAWSONVILLE, MI",
+    "site_type": "ST",
+    "distance_km": 4.53
+   },
+   {
+    "site_no": "04167625",
+    "site_lat": 42.28445341,
+    "site_lon": -83.42737432,
+    "site_name": "LOWER RIVER ROUGE AT WAYNE, MI",
+    "site_type": "ST",
+    "distance_km": 10.05
+   },
+   {
+    "site_no": "04174800",
+    "site_lat": 42.2492053,
+    "site_lon": -83.6124383,
+    "site_name": "HURON RIVER AT YPSILANTI, MI",
+    "site_type": "ST",
+    "distance_km": 11.58
+   },
+   {
+    "site_no": "04175340",
+    "site_lat": 42.08476489,
+    "site_lon": -83.5785477,
+    "site_name": "STONY CREEK AT TUTTLE HILL RD AT OAKVILLE, MI",
+    "site_type": "ST",
+    "distance_km": 15.41
+   }
+  ]
+ },
+ "35.7708,-91.6531": {
+  "location": "Batesville, AR",
+  "lat": 35.7708144,
+  "lon": -91.6531128,
+  "sites": []
+ },
+ "41.4373,-71.5014": {
+  "location": "Wakefield, RI",
+  "lat": 41.437324,
+  "lon": -71.5014469,
+  "sites": []
+ },
+ "41.9269,-71.7188": {
+  "location": "Glocester, RI",
+  "lat": 41.9269077,
+  "lon": -71.7188366,
+  "sites": []
+ },
+ "39.4800,-79.0752": {
+  "location": "Bloomington, MD",
+  "lat": 39.4800058,
+  "lon": -79.0752329,
+  "sites": [
+   {
+    "site_no": "03075871",
+    "site_lat": 39.51125,
+    "site_lon": -79.29838889,
+    "site_name": "DEEP CREEK LAKE NEAR THAYERVILLE, MD",
+    "site_type": "LK",
+    "distance_km": 19.46
+   },
+   {
+    "site_no": "01598000",
+    "site_lat": 39.48342605,
+    "site_lon": -79.073086,
+    "site_name": "SAVAGE RIVER AT BLOOMINGTON, MD",
+    "site_type": "ST",
+    "distance_km": 0.42
+   },
+   {
+    "site_no": "01596000",
+    "site_lat": 39.48009286,
+    "site_lon": -79.0686415,
+    "site_name": "NORTH BRANCH POTOMAC RIVER AT BLOOMINGTON, MD",
+    "site_type": "ST",
+    "distance_km": 0.57
+   },
+   {
+    "site_no": "01598500",
+    "site_lat": 39.47897222,
+    "site_lon": -79.06377778,
+    "site_name": "NORTH BRANCH POTOMAC RIVER AT LUKE, MD",
+    "site_type": "ST",
+    "distance_km": 0.99
+   },
+   {
+    "site_no": "01599000",
+    "site_lat": 39.50091389,
+    "site_lon": -79.04881944,
+    "site_name": "GEORGES CREEK AT FRANKLIN, MD",
+    "site_type": "ST",
+    "distance_km": 3.25
+   }
+  ]
+ },
+ "30.3442,-96.5291": {
+  "location": "Somerville, TX",
+  "lat": 30.3441909,
+  "lon": -96.5291263,
+  "sites": [
+   {
+    "site_no": "08110000",
+    "site_lat": 30.3218773,
+    "site_lon": -96.5074683,
+    "site_name": "Yegua Ck nr Somerville, TX",
+    "site_type": "ST",
+    "distance_km": 3.24
+   },
+   {
+    "site_no": "08110100",
+    "site_lat": 30.41965196,
+    "site_lon": -96.5402466,
+    "site_name": "Davidson Ck nr Lyons, TX",
+    "site_type": "ST",
+    "distance_km": 8.46
+   },
+   {
+    "site_no": "08110075",
+    "site_lat": 30.54027778,
+    "site_lon": -96.6902778,
+    "site_name": "Davidson Ck at SH 21 nr Caldwell, TX",
+    "site_type": "ST",
+    "distance_km": 26.72
+   },
+   {
+    "site_no": "08109800",
+    "site_lat": 30.40743105,
+    "site_lon": -96.8174791,
+    "site_name": "E Yegua Ck nr Dime Box, TX",
+    "site_type": "ST",
+    "distance_km": 28.54
+   },
+   {
+    "site_no": "08109000",
+    "site_lat": 30.61408925,
+    "site_lon": -96.4866328,
+    "site_name": "Brazos Rv nr Bryan, TX",
+    "site_type": "ST",
+    "distance_km": 30.29
+   }
+  ]
+ },
+ "36.8577,-76.4532": {
+  "location": "Suffolk, VA",
+  "lat": 36.8577398,
+  "lon": -76.4531717,
+  "sites": []
+ },
+ "44.2956,-73.2917": {
+  "location": "Charlotte, NC",
+  "lat": 44.2955914,
+  "lon": -73.2917494,
+  "sites": []
+ },
+ "29.5541,-81.2208": {
+  "location": "Palm Coast, FL",
+  "lat": 29.5541432,
+  "lon": -81.2207673,
+  "sites": []
+ },
+ "40.5336,-74.2986": {
+  "location": "Statewide, NJ",
+  "lat": 40.5335967,
+  "lon": -74.2986399,
+  "sites": []
+ },
+ "39.1841,-77.3122": {
+  "location": "Boyds, MD",
+  "lat": 39.1840886,
+  "lon": -77.3122325,
+  "sites": []
+ },
+ "40.8620,-76.7936": {
+  "location": "Sunbury, PA",
+  "lat": 40.8619754,
+  "lon": -76.7936252,
+  "sites": []
+ },
+ "34.1209,-93.0538": {
+  "location": "Arkadelphia, AR",
+  "lat": 34.1209292,
+  "lon": -93.053784,
+  "sites": []
+ },
+ "44.3818,-77.9798": {
+  "location": "Norwood, Ontario",
+  "lat": 44.3818091,
+  "lon": -77.9798045,
+  "sites": []
+ },
+ "38.2593,-104.6872": {
+  "location": "Pueblo, CO",
+  "lat": 38.2592609,
+  "lon": -104.687197,
+  "sites": []
+ },
+ "41.7335,-71.4120": {
+  "location": "Statewide, RI",
+  "lat": 41.7334999,
+  "lon": -71.4120021,
+  "sites": []
+ },
+ "41.5664,-72.7751": {
+  "location": "Statewide, CT",
+  "lat": 41.5664264,
+  "lon": -72.7750502,
+  "sites": []
+ },
+ "43.0434,-71.6825": {
+  "location": "Statewide, NH",
+  "lat": 43.0434015,
+  "lon": -71.6824929,
+  "sites": []
+ },
+ "43.5759,-124.1748": {
+  "location": "Lakeside, OR",
+  "lat": 43.575891,
+  "lon": -124.174763,
+  "sites": []
+ },
+ "32.6016,-96.3375": {
+  "location": "Kaufman, TX",
+  "lat": 32.601641,
+  "lon": -96.3375126,
+  "sites": []
+ },
+ "43.0329,-87.9062": {
+  "location": "Various, CO",
+  "lat": 43.0329102,
+  "lon": -87.9062427,
+  "sites": []
+ },
+ "44.2190,-93.5680": {
+  "location": "Waterville, MN",
+  "lat": 44.2189914,
+  "lon": -93.56797,
+  "sites": [
+   {
+    "site_no": "05353800",
+    "site_lat": 44.257882,
+    "site_lon": -93.231121,
+    "site_name": "STRAIGHT RIVER NEAR FARIBAULT, MN",
+    "site_type": "ST",
+    "distance_km": 27.18
+   },
+   {
+    "site_no": "05354500",
+    "site_lat": 44.3597222,
+    "site_lon": -93.2566667,
+    "site_name": "CANNON RIVER AT CO. HWY. 29 BELOW FARIBAULT, MN",
+    "site_type": "ST",
+    "distance_km": 29.31
+   },
+   {
+    "site_no": "05325000",
+    "site_lat": 44.17002549,
+    "site_lon": -94.0023121,
+    "site_name": "MINNESOTA RIVER AT MANKATO, MN",
+    "site_type": "ST",
+    "distance_km": 35.05
+   },
+   {
+    "site_no": "05330470",
+    "site_lat": 44.5757967,
+    "site_lon": -93.6449569,
+    "site_name": "W. BR. RAVEN STREAM AT CO. RD. 61 NR ST. BENEDICT",
+    "site_type": "ST",
+    "distance_km": 40.14
+   },
+   {
+    "site_no": "05355024",
+    "site_lat": 44.4585833,
+    "site_lon": -93.1596667,
+    "site_name": "CANNON RIVER AT NORTHFIELD MN",
+    "site_type": "ST",
+    "distance_km": 42.0
+   }
+  ]
+ },
+ "39.1670,-86.5343": {
+  "location": "Bloomington, IN",
+  "lat": 39.1670396,
+  "lon": -86.5342881,
+  "sites": []
+ },
+ "41.4052,-71.7484": {
+  "location": "Hopkinton, RI",
+  "lat": 41.405231,
+  "lon": -71.7483682,
+  "sites": [
+   {
+    "site_no": "01118010",
+    "site_lat": 41.4162111,
+    "site_lon": -71.7289551,
+    "site_name": "PAWCATUCK RIVER AT BURDICKVILLE, RI",
+    "site_type": "ST",
+    "distance_km": 2.03
+   },
+   {
+    "site_no": "01118360",
+    "site_lat": 41.42343288,
+    "site_lon": -71.7917351,
+    "site_name": "ASHAWAY RIVER AT ASHAWAY, RI",
+    "site_type": "ST",
+    "distance_km": 4.14
+   },
+   {
+    "site_no": "01117500",
+    "site_lat": 41.44498329,
+    "site_lon": -71.68087799,
+    "site_name": "PAWCATUCK RIVER AT WOOD RIVER JUNCTION, RI",
+    "site_type": "ST",
+    "distance_km": 7.16
+   },
+   {
+    "site_no": "01118400",
+    "site_lat": 41.40998435,
+    "site_lon": -71.84477244,
+    "site_name": "SHUNOCK RIVER NEAR NORTH STONINGTON, CT",
+    "site_type": "ST",
+    "distance_km": 8.06
+   },
+   {
+    "site_no": "01117600",
+    "site_lat": 41.4664889,
+    "site_lon": -71.69006567,
+    "site_name": "MEADOW BROOK NEAR CAROLINA, RI",
+    "site_type": "ST",
+    "distance_km": 8.37
+   }
+  ]
+ },
+ "41.9538,-71.7014": {
+  "location": "Pascoag, RI",
+  "lat": 41.9537775,
+  "lon": -71.7013505,
+  "sites": []
+ },
+ "41.7061,-71.5221": {
+  "location": "West Warwick, RI",
+  "lat": 41.7061296,
+  "lon": -71.5221451,
+  "sites": []
+ },
+ "41.6257,-71.1663": {
+  "location": "Tiverton, RI",
+  "lat": 41.6257406,
+  "lon": -71.166333,
+  "sites": []
+ },
+ "41.9098,-71.6657": {
+  "location": "Chepachet, RI",
+  "lat": 41.9097635,
+  "lon": -71.6656667,
+  "sites": []
+ },
+ "41.4687,-71.5127": {
+  "location": "South Kingston, RI",
+  "lat": 41.4686864,
+  "lon": -71.5127205,
+  "sites": []
+ },
+ "41.9871,-71.6010": {
+  "location": "North Smithfield, RI",
+  "lat": 41.9870896,
+  "lon": -71.6009834,
+  "sites": []
+ },
+ "41.6341,-111.8552": {
+  "location": "Hyrum, UT",
+  "lat": 41.63412,
+  "lon": -111.8551944,
+  "sites": []
+ },
+ "37.4645,-84.5066": {
+  "location": "Crab Orchard, KY",
+  "lat": 37.4645267,
+  "lon": -84.5066044,
+  "sites": [
+   {
+    "site_no": "03304500",
+    "site_lat": 37.44396689,
+    "site_lon": -84.6977225,
+    "site_name": "MCGILLS CREEK NEAR MCKINNEY, KY",
+    "site_type": "ST",
+    "distance_km": 17.02
+   },
+   {
+    "site_no": "03305000",
+    "site_lat": 37.42202127,
+    "site_lon": -84.7502243,
+    "site_name": "GREEN RIVER NEAR MCKINNEY, KY",
+    "site_type": "ST",
+    "distance_km": 22.02
+   },
+   {
+    "site_no": "03305500",
+    "site_lat": 37.41118786,
+    "site_lon": -84.7530022,
+    "site_name": "GREEN RIVER NEAR MOUNT SALEM, KY",
+    "site_type": "ST",
+    "distance_km": 22.55
+   },
+   {
+    "site_no": "03285000",
+    "site_lat": 37.6420234,
+    "site_lon": -84.6607768,
+    "site_name": "DIX RIVER NEAR DANVILLE, KY",
+    "site_type": "ST",
+    "distance_km": 23.96
+   },
+   {
+    "site_no": "03285200",
+    "site_lat": 37.63896704,
+    "site_lon": -84.7210569,
+    "site_name": "CLARKS RUN NEAR DANVILLE, KY",
+    "site_type": "ST",
+    "distance_km": 27.09
+   }
+  ]
+ },
+ "30.5078,-88.5754": {
+  "location": "Jackson, MS",
+  "lat": 30.5078332,
+  "lon": -88.5754137,
+  "sites": [
+   {
+    "site_no": "02479330",
+    "site_lat": 30.58388889,
+    "site_lon": -88.57,
+    "site_name": "PASCAGOULA RIVER AT CUMBEST BLUFF, MS",
+    "site_type": "ST",
+    "distance_km": 8.47
+   },
+   {
+    "site_no": "02480254",
+    "site_lat": 30.53083333,
+    "site_lon": -88.6875,
+    "site_name": "BLUFF CREEK AT VANCLEAVE, MS",
+    "site_type": "ST",
+    "distance_km": 11.04
+   },
+   {
+    "site_no": "02479310",
+    "site_lat": 30.61055556,
+    "site_lon": -88.64138889,
+    "site_name": "PASCAGOULA RIVER AT GRAHAM FERRY, MS",
+    "site_type": "ST",
+    "distance_km": 13.05
+   },
+   {
+    "site_no": "02480250",
+    "site_lat": 30.54797418,
+    "site_lon": -88.7155805,
+    "site_name": "BLUFF CREEK NR VANCLEVE, MS",
+    "site_type": "ST",
+    "distance_km": 14.15
+   },
+   {
+    "site_no": "02480285",
+    "site_lat": 30.38269444,
+    "site_lon": -88.6084444,
+    "site_name": "WEST PASCAGOULA RIVER AT HWY 90 AT GAUTIER, MS",
+    "site_type": "ST",
+    "distance_km": 14.27
+   }
+  ]
+ },
+ "34.6336,-86.5891": {
+  "location": "Huntsville, AL",
+  "lat": 34.6336469,
+  "lon": -86.5890617,
+  "sites": []
+ },
+ "33.9778,-118.4691": {
+  "location": "Los Angeles, CA",
+  "lat": 33.9777562,
+  "lon": -118.4691093,
+  "sites": []
+ },
+ "42.2849,-73.2395": {
+  "location": "Berkshire, MA",
+  "lat": 42.2849388,
+  "lon": -73.2394537,
+  "sites": []
+ },
+ "42.6112,-71.5745": {
+  "location": "Groton, MA",
+  "lat": 42.6112242,
+  "lon": -71.5745402,
+  "sites": []
+ },
+ "45.0505,-93.2009": {
+  "location": "Statewide, MN",
+  "lat": 45.050455,
+  "lon": -93.200937,
+  "sites": [
+   {
+    "site_no": "05289000",
+    "site_lat": 44.9533333,
+    "site_lon": -93.4872222,
+    "site_name": "LAKE MINNETONKA ABV GRAYS BAY OTLT IN MINNETONKA",
+    "site_type": "LK",
+    "distance_km": 24.97
+   },
+   {
+    "site_no": "05288580",
+    "site_lat": 45.092413,
+    "site_lon": -93.200369,
+    "site_name": "RICE CREEK BLW OLD HWY. 8 IN MOUNDS VIEW, MN",
+    "site_type": "ST",
+    "distance_km": 4.67
+   },
+   {
+    "site_no": "05288550",
+    "site_lat": 45.1033129,
+    "site_lon": -93.2771614,
+    "site_name": "MISSISSIPPI RIVER AT FRIDLEY, MN",
+    "site_type": "ST",
+    "distance_km": 8.39
+   },
+   {
+    "site_no": "450149093054501",
+    "site_lat": 45.0302578,
+    "site_lon": -93.0960437,
+    "site_name": "COUNTY RD. B-2 IN LITTLE CANADA,MN - MUNI. ST. AID",
+    "site_type": "ST",
+    "distance_km": 8.54
+   },
+   {
+    "site_no": "05288705",
+    "site_lat": 45.049798,
+    "site_lon": -93.310445,
+    "site_name": "SHINGLE CREEK AT QUEEN AVE IN MINNEAPOLIS, MN",
+    "site_type": "ST",
+    "distance_km": 8.6
+   }
+  ]
+ },
+ "42.1333,-76.3309": {
+  "location": "Tioga county, NY",
+  "lat": 42.1333395,
+  "lon": -76.3309339,
+  "sites": []
+ },
+ "37.4793,-82.5188": {
+  "location": "Pikeville, KY",
+  "lat": 37.4792672,
+  "lon": -82.5187629,
+  "sites": []
+ },
+ "42.4297,-91.3309": {
+  "location": "Delhi, IA",
+  "lat": 42.4297057,
+  "lon": -91.3309112,
+  "sites": [
+   {
+    "site_no": "05417500",
+    "site_lat": 42.40832567,
+    "site_lon": -91.3459807,
+    "site_name": "Maquoketa River near Delhi, IA",
+    "site_type": "ST",
+    "distance_km": 2.68
+   },
+   {
+    "site_no": "05417000",
+    "site_lat": 42.45609978,
+    "site_lon": -91.4323704,
+    "site_name": "Maquoketa River near Manchester, IA",
+    "site_type": "ST",
+    "distance_km": 8.83
+   },
+   {
+    "site_no": "05416900",
+    "site_lat": 42.4699878,
+    "site_lon": -91.4487147,
+    "site_name": "Maquoketa River at Manchester, IA",
+    "site_type": "ST",
+    "distance_km": 10.65
+   },
+   {
+    "site_no": "05418110",
+    "site_lat": 42.4703333,
+    "site_lon": -91.1245556,
+    "site_name": "NF Maquoketa River below Bear Cr at Dyersville, IA",
+    "site_type": "ST",
+    "distance_km": 17.52
+   },
+   {
+    "site_no": "05421682",
+    "site_lat": 42.1958333,
+    "site_lon": -91.4227778,
+    "site_name": "Buffalo Creek South of Prairieburg, IA",
+    "site_type": "ST",
+    "distance_km": 27.08
+   }
+  ]
+ },
+ "37.6740,-80.8893": {
+  "location": "Hinton, WV",
+  "lat": 37.674008,
+  "lon": -80.889254,
+  "sites": []
+ },
+ "42.4485,-73.2541": {
+  "location": "Pittsfield, MA",
+  "lat": 42.4484778,
+  "lon": -73.2541069,
+  "sites": []
+ },
+ "40.6430,-111.2805": {
+  "location": "Kamas, UT",
+  "lat": 40.6429578,
+  "lon": -111.280518,
+  "sites": []
+ },
+ "43.0770,-86.1970": {
+  "location": "Spring Lake, MI",
+  "lat": 43.076963,
+  "lon": -86.196997,
+  "sites": []
+ },
+ "44.8353,-69.2739": {
+  "location": "Newport, ME",
+  "lat": 44.8353424,
+  "lon": -69.2739365,
+  "sites": []
+ },
+ "40.8350,-96.6643": {
+  "location": "Statewide, NE",
+  "lat": 40.8349506,
+  "lon": -96.6642997,
+  "sites": []
+ },
+ "37.5304,-77.4532": {
+  "location": "Richmond, MA",
+  "lat": 37.5303757,
+  "lon": -77.4531804,
+  "sites": []
+ },
+ "42.5407,-83.6303": {
+  "location": "Milford, MI",
+  "lat": 42.54071,
+  "lon": -83.6302698,
+  "sites": []
+ },
+ "44.3148,-69.7744": {
+  "location": "Augusta , ME",
+  "lat": 44.3148027,
+  "lon": -69.7743945,
+  "sites": []
+ },
+ "43.5121,-85.7945": {
+  "location": "Newaygo, MI",
+  "lat": 43.5121225,
+  "lon": -85.7944976,
+  "sites": []
+ },
+ "42.8340,-88.7307": {
+  "location": "Whitewater, WI",
+  "lat": 42.8339562,
+  "lon": -88.7306517,
+  "sites": []
+ },
+ "44.1054,-78.9425": {
+  "location": "Port Perry, Ontario",
+  "lat": 44.1054151,
+  "lon": -78.9425076,
+  "sites": []
+ },
+ "40.3978,-105.0750": {
+  "location": "Loveland, CO",
+  "lat": 40.3977612,
+  "lon": -105.07498,
+  "sites": []
+ },
+ "44.3597,-78.7422": {
+  "location": "Kawartha Lakes, Ontario",
+  "lat": 44.3596825,
+  "lon": -78.7421729,
+  "sites": []
+ },
+ "40.3581,-76.8850": {
+  "location": "Susquehanna , PA",
+  "lat": 40.3581072,
+  "lon": -76.8849878,
+  "sites": []
+ },
+ "42.8248,-83.2647": {
+  "location": "Oxford, MI",
+  "lat": 42.8247524,
+  "lon": -83.2646624,
+  "sites": []
+ },
+ "31.4724,-90.8968": {
+  "location": "Meadville, MS",
+  "lat": 31.4723928,
+  "lon": -90.8967682,
+  "sites": []
+ },
+ "36.6045,-121.8926": {
+  "location": "Monterey, MA",
+  "lat": 36.6044689,
+  "lon": -121.8926128,
+  "sites": []
+ },
+ "36.7471,-90.7358": {
+  "location": "Greenville, MI",
+  "lat": 36.7470795,
+  "lon": -90.7358351,
+  "sites": []
+ },
+ "32.8472,-96.8858": {
+  "location": "Dallas, TX",
+  "lat": 32.8472158,
+  "lon": -96.8857734,
+  "sites": []
+ },
+ "43.1560,-75.9647": {
+  "location": "Bridgeport, NY",
+  "lat": 43.1559678,
+  "lon": -75.964729,
+  "sites": []
+ },
+ "42.8203,-88.1587": {
+  "location": "wind lake, WI",
+  "lat": 42.820317,
+  "lon": -88.1587102,
+  "sites": []
+ },
+ "40.7584,-82.5154": {
+  "location": "Mansfield, OH",
+  "lat": 40.75839,
+  "lon": -82.5154471,
+  "sites": []
+ },
+ "43.7972,-89.0403": {
+  "location": "Green Lake, WI",
+  "lat": 43.7971612,
+  "lon": -89.0402508,
+  "sites": []
+ },
+ "42.1723,-88.4269": {
+  "location": "Huntley, IL",
+  "lat": 42.1722503,
+  "lon": -88.42692,
+  "sites": []
+ },
+ "33.3267,-83.3885": {
+  "location": "Eatonton , GA",
+  "lat": 33.3267128,
+  "lon": -83.388485,
+  "sites": []
+ },
+ "37.6082,-77.4130": {
+  "location": "Chickahominy, VA",
+  "lat": 37.6082008,
+  "lon": -77.4130375,
+  "sites": []
+ },
+ "42.1941,-73.0927": {
+  "location": "Otis, MA",
+  "lat": 42.1940912,
+  "lon": -73.0927371,
+  "sites": []
+ },
+ "29.8826,-97.9406": {
+  "location": "San Marcos, TX",
+  "lat": 29.8826436,
+  "lon": -97.9405828,
+  "sites": []
+ },
+ "41.6613,-91.5299": {
+  "location": "Iowa City, IA",
+  "lat": 41.6612561,
+  "lon": -91.5299106,
+  "sites": []
+ },
+ "32.3093,-90.1387": {
+  "location": "Flowood, MS",
+  "lat": 32.3092861,
+  "lon": -90.1386811,
+  "sites": []
+ },
+ "44.7129,-79.3827": {
+  "location": "Severn, Ontario",
+  "lat": 44.7128996,
+  "lon": -79.3826868,
+  "sites": []
+ },
+ "41.0923,-81.3878": {
+  "location": "Brimfield, MA",
+  "lat": 41.092303,
+  "lon": -81.3877646,
+  "sites": []
+ },
+ "35.0048,-92.8027": {
+  "location": "Perryville, AR",
+  "lat": 35.0048188,
+  "lon": -92.802693,
+  "sites": []
+ },
+ "38.8562,-80.6548": {
+  "location": "Burnsville, WV",
+  "lat": 38.8562069,
+  "lon": -80.6548179,
+  "sites": []
+ },
+ "43.0846,-88.2139": {
+  "location": "Pewaukee, WI",
+  "lat": 43.0846017,
+  "lon": -88.2139452,
+  "sites": [
+   {
+    "site_no": "431006088191000",
+    "site_lat": 43.1683398,
+    "site_lon": -88.3195396,
+    "site_name": "LAKE KEESUS NORTH BAY NEAR MERTON, WI",
+    "site_type": "LK",
+    "distance_km": 12.65
+   },
+   {
+    "site_no": "05424500",
+    "site_lat": 43.1236164,
+    "site_lon": -88.3614309,
+    "site_name": "BEAVER LAKE NEAR HARTLAND, WI",
+    "site_type": "LK",
+    "distance_km": 12.74
+   },
+   {
+    "site_no": "05425000",
+    "site_lat": 43.1250053,
+    "site_lon": -88.3903208,
+    "site_name": "PINE LAKE NEAR HARTLAND, WI",
+    "site_type": "LK",
+    "distance_km": 15.01
+   },
+   {
+    "site_no": "430347088240800",
+    "site_lat": 43.0630612,
+    "site_lon": -88.4022656,
+    "site_name": "NAGAWICKA LAKE AT DELAFIELD, WI",
+    "site_type": "LK",
+    "distance_km": 15.48
+   },
+   {
+    "site_no": "430844088233300",
+    "site_lat": 43.145562,
+    "site_lon": -88.3925968,
+    "site_name": "NORTH LAKE NEAR NORTH LAKE, WI",
+    "site_type": "LK",
+    "distance_km": 16.01
+   }
+  ]
+ },
+ "39.7248,-89.5825": {
+  "location": "Springfield, IL",
+  "lat": 39.7247538,
+  "lon": -89.5824899,
+  "sites": []
+ },
+ "44.4233,-78.2722": {
+  "location": "Lakefield, Ontario",
+  "lat": 44.4233365,
+  "lon": -78.2721953,
+  "sites": []
+ },
+ "37.2625,-77.6489": {
+  "location": "Lake Chesdin, VA",
+  "lat": 37.2624838,
+  "lon": -77.6489331,
+  "sites": []
+ },
+ "41.6305,-71.4535": {
+  "location": "South Kingstown, RI",
+  "lat": 41.6304952,
+  "lon": -71.4535458,
+  "sites": []
+ },
+ "44.3353,-76.1647": {
+  "location": "Gananoque, Ontario",
+  "lat": 44.3352722,
+  "lon": -76.1646638,
+  "sites": []
+ },
+ "42.1084,-72.0808": {
+  "location": "Sturbridge, MA",
+  "lat": 42.1084385,
+  "lon": -72.0807772,
+  "sites": []
+ },
+ "36.4349,-77.9120": {
+  "location": "Littleton, NC",
+  "lat": 36.4348946,
+  "lon": -77.9119615,
+  "sites": [
+   {
+    "site_no": "02080500",
+    "site_lat": 36.46,
+    "site_lon": -77.6336111,
+    "site_name": "ROANOKE RIVER AT ROANOKE RAPIDS, NC",
+    "site_type": "ST",
+    "distance_km": 25.05
+   },
+   {
+    "site_no": "02052500",
+    "site_lat": 36.6154269,
+    "site_lon": -77.699707,
+    "site_name": "FOUNTAINS CREEK NEAR BRINK, VA",
+    "site_type": "ST",
+    "distance_km": 27.62
+   },
+   {
+    "site_no": "02082950",
+    "site_lat": 36.1833333,
+    "site_lon": -77.8761111,
+    "site_name": "LITTLE FISHING CREEK NEAR WHITE OAK, NC",
+    "site_type": "ST",
+    "distance_km": 28.16
+   },
+   {
+    "site_no": "0208062765",
+    "site_lat": 36.3311111,
+    "site_lon": -77.58027778,
+    "site_name": "ROANOKE RIVER AT HALIFAX, NC",
+    "site_type": "ST",
+    "distance_km": 31.86
+   },
+   {
+    "site_no": "02051500",
+    "site_lat": 36.71681395,
+    "site_lon": -77.8316582,
+    "site_name": "MEHERRIN RIVER NEAR LAWRENCEVILLE, VA",
+    "site_type": "ST",
+    "distance_km": 32.16
+   }
+  ]
+ },
+ "35.6677,-95.9690": {
+  "location": "Okmulgee, OK",
+  "lat": 35.6677078,
+  "lon": -95.9690122,
+  "sites": []
+ },
+ "44.4753,-78.4793": {
+  "location": "Peterborough, ON",
+  "lat": 44.4752944,
+  "lon": -78.4792577,
+  "sites": []
+ },
+ "44.6489,-79.3502": {
+  "location": "Rama, ON",
+  "lat": 44.6489484,
+  "lon": -79.3502086,
+  "sites": []
+ },
+ "44.2396,-79.4687": {
+  "location": "Keswick, ON",
+  "lat": 44.2396166,
+  "lon": -79.4686558,
+  "sites": []
+ },
+ "34.2504,-93.6418": {
+  "location": "Kirby , AR",
+  "lat": 34.2504407,
+  "lon": -93.6418289,
+  "sites": []
+ },
+ "29.8867,-98.2366": {
+  "location": "Canyon Lake, TX",
+  "lat": 29.886735,
+  "lon": -98.2365606,
+  "sites": []
+ },
+ "32.8086,-97.4609": {
+  "location": "Dallas FtWorth , TX",
+  "lat": 32.80857063,
+  "lon": -97.46085603,
+  "sites": []
+ },
+ "36.0787,-114.9778": {
+  "location": "Las Vegas, NV",
+  "lat": 36.0786886,
+  "lon": -114.9777601,
+  "sites": [
+   {
+    "site_no": "09419745",
+    "site_lat": 36.085,
+    "site_lon": -114.9683333,
+    "site_name": "C-1 CHANNEL ABV MOUTH NR HENDERSON, NV",
+    "site_type": "ST",
+    "distance_km": 1.1
+   },
+   {
+    "site_no": "09419700",
+    "site_lat": 36.08747539,
+    "site_lon": -114.9858276,
+    "site_name": "LAS VEGAS WASH AT PABCO RD NR HENDERSON, NV",
+    "site_type": "ST",
+    "distance_km": 1.22
+   },
+   {
+    "site_no": "09419747",
+    "site_lat": 36.08978889,
+    "site_lon": -114.972225,
+    "site_name": "LV WASH ABV BOSTICK WEIR NR HENDERSON, NV",
+    "site_type": "ST",
+    "distance_km": 1.33
+   },
+   {
+    "site_no": "09419698",
+    "site_lat": 36.09152507,
+    "site_lon": -115.0000505,
+    "site_name": "LV WASH BLW DUCK CK CONF NR HENDERSON, NV",
+    "site_type": "ST",
+    "distance_km": 2.46
+   },
+   {
+    "site_no": "09419749",
+    "site_lat": 36.09420556,
+    "site_lon": -114.9551833,
+    "site_name": "LV WASH ABV HOMESTEAD WEIR NR HENDERSON, NV",
+    "site_type": "ST",
+    "distance_km": 2.66
+   }
+  ]
+ },
+ "39.6065,-104.9970": {
+  "location": "Littleton, CO",
+  "lat": 39.6065061,
+  "lon": -104.9969893,
+  "sites": []
+ },
+ "37.1694,-104.5005": {
+  "location": "Trinidad, CO",
+  "lat": 37.169397,
+  "lon": -104.500541,
+  "sites": []
+ },
+ "40.4617,-75.2279": {
+  "location": "Tohickon, PA",
+  "lat": 40.4617056,
+  "lon": -75.2278891,
+  "sites": []
+ },
+ "38.8971,-98.7980": {
+  "location": "Russell, KS",
+  "lat": 38.8970508,
+  "lon": -98.7980433,
+  "sites": []
+ },
+ "47.9663,-116.8685": {
+  "location": "Spirit Lake, ID",
+  "lat": 47.9662924,
+  "lon": -116.868531,
+  "sites": []
+ },
+ "42.6331,-88.6461": {
+  "location": "Delavan, WI",
+  "lat": 42.633102,
+  "lon": -88.6460554,
+  "sites": []
+ },
+ "36.3948,-85.2169": {
+  "location": "Alpine, TN",
+  "lat": 36.3947865,
+  "lon": -85.2169065,
+  "sites": []
+ },
+ "41.2610,-111.7688": {
+  "location": "Huntsville, UT",
+  "lat": 41.2610084,
+  "lon": -111.7688329,
+  "sites": []
+ },
+ "41.6562,-80.4240": {
+  "location": "Linesville , PA",
+  "lat": 41.6561656,
+  "lon": -80.4239562,
+  "sites": []
+ },
+ "47.7591,-116.7867": {
+  "location": "Hayden, ID",
+  "lat": 47.7590638,
+  "lon": -116.7866807,
+  "sites": []
+ },
+ "43.7151,-80.3553": {
+  "location": "Wellington, ON",
+  "lat": 43.7151333,
+  "lon": -80.355318,
+  "sites": []
+ },
+ "39.0597,-94.8838": {
+  "location": "Bonner Springs, KS",
+  "lat": 39.0597129,
+  "lon": -94.8837597,
+  "sites": []
+ },
+ "41.2345,-79.5373": {
+  "location": "Knox , PA",
+  "lat": 41.2345058,
+  "lon": -79.5372696,
+  "sites": []
+ },
+ "44.8040,-79.7205": {
+  "location": "Port Severn, ON",
+  "lat": 44.8040275,
+  "lon": -79.7204607,
+  "sites": []
+ },
+ "43.1319,-115.6940": {
+  "location": "Mountain Home, ID",
+  "lat": 43.1318937,
+  "lon": -115.6939827,
+  "sites": []
+ },
+ "44.4828,-77.6823": {
+  "location": "Marmora, ON",
+  "lat": 44.4827759,
+  "lon": -77.6823297,
+  "sites": []
+ },
+ "40.2493,-80.2111": {
+  "location": "Western Pa, PA",
+  "lat": 40.2492883,
+  "lon": -80.2111265,
+  "sites": []
+ },
+ "42.0965,-79.2380": {
+  "location": "Jamestown, NY",
+  "lat": 42.0965167,
+  "lon": -79.2380322,
+  "sites": []
+ },
+ "36.3361,-92.3801": {
+  "location": "Mountain Home, AR",
+  "lat": 36.3361391,
+  "lon": -92.3801187,
+  "sites": []
+ },
+ "41.6034,-80.3053": {
+  "location": "Conneaut, PA",
+  "lat": 41.6033875,
+  "lon": -80.3053416,
+  "sites": []
+ },
+ "39.7683,-86.1584": {
+  "location": "Indianapolis, IN",
+  "lat": 39.7683331,
+  "lon": -86.1583502,
+  "sites": [
+   {
+    "site_no": "03352695",
+    "site_lat": 39.84726319,
+    "site_lon": -86.1135974,
+    "site_name": "HERON LAKE AT INDIANAPOLIS, IN",
+    "site_type": "LK",
+    "distance_km": 9.57
+   },
+   {
+    "site_no": "03352690",
+    "site_lat": 39.85337414,
+    "site_lon": -86.1122085,
+    "site_name": "LAKE MAXINHALL AT INDIANAPOLIS, IN",
+    "site_type": "LK",
+    "distance_km": 10.24
+   },
+   {
+    "site_no": "03352988",
+    "site_lat": 39.77225756,
+    "site_lon": -86.1394119,
+    "site_name": "POGUES RUN AT VERMONT STREET AT INDIANAPOLIS, IN",
+    "site_type": "ST",
+    "distance_km": 1.68
+   },
+   {
+    "site_no": "03352953",
+    "site_lat": 39.77475754,
+    "site_lon": -86.18969129,
+    "site_name": "WHITE RIVER AT MICHIGAN STREET AT INDIANAPOLIS, IN",
+    "site_type": "ST",
+    "distance_km": 2.77
+   },
+   {
+    "site_no": "03352875",
+    "site_lat": 39.78877778,
+    "site_lon": -86.1774722,
+    "site_name": "FALL CREEK AT 16TH STREET AT INDIANAPOLIS, IN",
+    "site_type": "ST",
+    "distance_km": 2.8
+   }
+  ]
+ },
+ "34.1850,-86.6753": {
+  "location": "Cullman, AL",
+  "lat": 34.1849553,
+  "lon": -86.6752926,
+  "sites": []
+ },
+ "44.4319,-75.8853": {
+  "location": "1000 Islands, ON",
+  "lat": 44.4318712,
+  "lon": -75.8853212,
+  "sites": []
+ },
+ "45.1307,-79.3840": {
+  "location": "Muskoka, ON",
+  "lat": 45.1307013,
+  "lon": -79.3839611,
+  "sites": []
+ },
+ "42.1972,-122.7154": {
+  "location": "Ashland, OR",
+  "lat": 42.1972487,
+  "lon": -122.7153995,
+  "sites": []
+ },
+ "45.9345,-119.3509": {
+  "location": "Plymouth, WA",
+  "lat": 45.934517,
+  "lon": -119.350916,
+  "sites": [
+   {
+    "site_no": "14019250",
+    "site_lat": 45.93235486,
+    "site_lon": -119.3291842,
+    "site_name": "COLUMBIA RIVER AT UMATILLA,OREG.",
+    "site_type": "ST",
+    "distance_km": 1.7
+   },
+   {
+    "site_no": "14019240",
+    "site_lat": 45.93345486,
+    "site_lon": -119.3263758,
+    "site_name": "COLUMBIA RIVER BELOW MCNARY DAM NEAR UMATILLA, OR",
+    "site_type": "ST",
+    "distance_km": 1.9
+   },
+   {
+    "site_no": "14033500",
+    "site_lat": 45.9026944,
+    "site_lon": -119.3270833,
+    "site_name": "UMATILLA RIVER NEAR UMATILLA, OR",
+    "site_type": "ST",
+    "distance_km": 3.99
+   },
+   {
+    "site_no": "14019200",
+    "site_lat": 45.93268257,
+    "site_lon": -119.2965915,
+    "site_name": "COLUMBIA RIVER AT MCNARY DAM,NEAR UMATILLA, OR",
+    "site_type": "ST",
+    "distance_km": 4.21
+   },
+   {
+    "site_no": "14019220",
+    "site_lat": 45.9412437,
+    "site_lon": -119.2930719,
+    "site_name": "COLUMBIA RIVER AT MCNARY DAM LOCK NR UMATILLA, OR",
+    "site_type": "ST",
+    "distance_km": 4.54
+   }
+  ]
+ },
+ "34.2274,-80.6892": {
+  "location": "Lugoff, SC",
+  "lat": 34.2273712,
+  "lon": -80.6892487,
+  "sites": []
+ },
+ "37.1118,-79.2856": {
+  "location": "Altavista, VA",
+  "lat": 37.1118094,
+  "lon": -79.285579,
+  "sites": []
+ },
+ "36.7618,-79.7111": {
+  "location": "Henry, VA",
+  "lat": 36.761759,
+  "lon": -79.7111277,
+  "sites": []
+ },
+ "37.1343,-80.5749": {
+  "location": "Radford, VA",
+  "lat": 37.1343148,
+  "lon": -80.5749169,
+  "sites": []
+ },
+ "37.7840,-79.4428": {
+  "location": "Lexington, VA",
+  "lat": 37.7840208,
+  "lon": -79.4428157,
+  "sites": [
+   {
+    "site_no": "02023000",
+    "site_lat": 37.81374257,
+    "site_lon": -79.4447604,
+    "site_name": "MAURY RIVER NEAR LEXINGTON, VA",
+    "site_type": "ST",
+    "distance_km": 3.31
+   },
+   {
+    "site_no": "02022500",
+    "site_lat": 37.82568687,
+    "site_lon": -79.4430938,
+    "site_name": "KERRS CREEK NEAR LEXINGTON, VA",
+    "site_type": "ST",
+    "distance_km": 4.63
+   },
+   {
+    "site_no": "0202306395",
+    "site_lat": 37.8163222,
+    "site_lon": -79.40255,
+    "site_name": "MILL CREEK NEAR LEXINGTON, VA",
+    "site_type": "ST",
+    "distance_km": 5.04
+   },
+   {
+    "site_no": "02024000",
+    "site_lat": 37.76263275,
+    "site_lon": -79.3914251,
+    "site_name": "MAURY RIVER NEAR BUENA VISTA, VA",
+    "site_type": "ST",
+    "distance_km": 5.1
+   },
+   {
+    "site_no": "02023500",
+    "site_lat": 37.78346616,
+    "site_lon": -79.3594799,
+    "site_name": "SOUTH RIVER NEAR RIVERSIDE, VA",
+    "site_type": "ST",
+    "distance_km": 7.32
+   }
+  ]
+ },
+ "44.7548,-78.0864": {
+  "location": "Apsley, ON",
+  "lat": 44.7548031,
+  "lon": -78.0863813,
+  "sites": []
+ },
+ "34.5959,-92.4883": {
+  "location": "Bryant, AR",
+  "lat": 34.5959045,
+  "lon": -92.488348,
+  "sites": []
+ },
+ "38.4899,-122.3218": {
+  "location": "Napa, CA",
+  "lat": 38.4898675,
+  "lon": -122.3218414,
+  "sites": []
+ },
+ "40.2663,-76.8861": {
+  "location": "Harrisburg, PA",
+  "lat": 40.2663107,
+  "lon": -76.8861122,
+  "sites": []
+ },
+ "47.1301,-119.2781": {
+  "location": "Moses Lake, WA",
+  "lat": 47.1301417,
+  "lon": -119.278077,
+  "sites": []
+ },
+ "41.3045,-111.8263": {
+  "location": "Eden, UT",
+  "lat": 41.3044739,
+  "lon": -111.826295,
+  "sites": []
+ },
+ "40.9295,-109.3913": {
+  "location": "Dutch John, UT",
+  "lat": 40.9295478,
+  "lon": -109.391282,
+  "sites": []
+ },
+ "36.7104,-81.9752": {
+  "location": "Abingdon, VA",
+  "lat": 36.7104018,
+  "lon": -81.975249,
+  "sites": []
+ },
+ "39.6598,-104.8619": {
+  "location": "Statewide, CO",
+  "lat": 39.6597868,
+  "lon": -104.861882,
+  "sites": []
+ },
+ "42.6997,-88.1286": {
+  "location": "Eagle Lake , WI",
+  "lat": 42.6997095,
+  "lon": -88.1286107,
+  "sites": []
+ },
+ "42.8473,-88.3512": {
+  "location": "East Troy, WI",
+  "lat": 42.8472833,
+  "lon": -88.3512205,
+  "sites": []
+ },
+ "38.1724,-92.9047": {
+  "location": "Camden, SC",
+  "lat": 38.1723747,
+  "lon": -92.9046815,
+  "sites": []
+ },
+ "40.4261,-75.1391": {
+  "location": "Pipersville, PA",
+  "lat": 40.4260533,
+  "lon": -75.1390969,
+  "sites": [
+   {
+    "site_no": "01459500",
+    "site_lat": 40.4337151,
+    "site_lon": -75.1165609,
+    "site_name": "Tohickon Creek near Pipersville, PA",
+    "site_type": "ST",
+    "distance_km": 2.09
+   },
+   {
+    "site_no": "01458900",
+    "site_lat": 40.4706587,
+    "site_lon": -75.1365616,
+    "site_name": "Tinicum Creek near Ottsville, PA",
+    "site_type": "ST",
+    "distance_km": 4.96
+   },
+   {
+    "site_no": "01460000",
+    "site_lat": 40.4237156,
+    "site_lon": -75.0662818,
+    "site_name": "Tohickon Creek at Point Pleasant, PA",
+    "site_type": "ST",
+    "distance_km": 6.17
+   },
+   {
+    "site_no": "01460200",
+    "site_lat": 40.41843797,
+    "site_lon": -75.0612817,
+    "site_name": "Delaware R below Tohickon Cr at Point Pleasant, PA",
+    "site_type": "ST",
+    "distance_km": 6.64
+   },
+   {
+    "site_no": "01460800",
+    "site_lat": 40.38816075,
+    "site_lon": -75.0615593,
+    "site_name": "Paunnacussing Creek at Carversville, PA",
+    "site_type": "ST",
+    "distance_km": 7.8
+   }
+  ]
+ },
+ "40.6070,-76.9678": {
+  "location": "Perry, KS",
+  "lat": 40.6069939,
+  "lon": -76.9677748,
+  "sites": []
+ },
+ "33.8360,-79.0478": {
+  "location": "Conway, SC",
+  "lat": 33.8360035,
+  "lon": -79.0478143,
+  "sites": []
+ },
+ "39.1015,-84.5125": {
+  "location": "Cincinnati, OH",
+  "lat": 39.1014537,
+  "lon": -84.5124602,
+  "sites": []
+ },
+ "42.2790,-123.6159": {
+  "location": "Selma, OR",
+  "lat": 42.2790023,
+  "lon": -123.615901,
+  "sites": []
+ },
+ "40.8062,-76.8607": {
+  "location": "Selinsgrove, PA",
+  "lat": 40.8062437,
+  "lon": -76.8607084,
+  "sites": []
+ },
+ "41.8072,-91.4941": {
+  "location": "Solon, IA",
+  "lat": 41.8072344,
+  "lon": -91.4940604,
+  "sites": []
+ },
+ "42.0661,-91.7964": {
+  "location": "Palo, IA",
+  "lat": 42.0660787,
+  "lon": -91.7963843,
+  "sites": []
+ },
+ "41.8678,-77.5253": {
+  "location": "Sabinsville, PA",
+  "lat": 41.8678482,
+  "lon": -77.525262,
+  "sites": []
+ },
+ "39.0173,-94.2823": {
+  "location": "Blue Springs, MO",
+  "lat": 39.017316,
+  "lon": -94.282265,
+  "sites": []
+ },
+ "38.6597,-94.8502": {
+  "location": "Hillsdale, KS",
+  "lat": 38.6597333,
+  "lon": -94.8502396,
+  "sites": []
+ },
+ "36.6240,-78.5569": {
+  "location": "Clarksville, VA",
+  "lat": 36.6240321,
+  "lon": -78.5569437,
+  "sites": []
+ },
+ "37.4330,-77.5371": {
+  "location": "VA",
+  "lat": 37.4329677,
+  "lon": -77.5371193,
+  "sites": []
+ },
+ "37.5442,-94.6969": {
+  "location": "Arma, KS",
+  "lat": 37.5441621,
+  "lon": -94.6968781,
+  "sites": []
+ },
+ "34.0903,-96.7716": {
+  "location": "Madill, OK",
+  "lat": 34.0902508,
+  "lon": -96.7715618,
+  "sites": [
+   {
+    "site_no": "07331455",
+    "site_lat": 34.09691389,
+    "site_lon": -96.5532694,
+    "site_name": "Lake Texoma at Cumberland Cut nr Cumberland, OK",
+    "site_type": "LK",
+    "distance_km": 20.11
+   },
+   {
+    "site_no": "07331290",
+    "site_lat": 34.21926148,
+    "site_lon": -96.701669,
+    "site_name": "Washita River near Tishomingo, OK",
+    "site_type": "ST",
+    "distance_km": 15.72
+   },
+   {
+    "site_no": "07331383",
+    "site_lat": 34.2347222,
+    "site_lon": -96.6825,
+    "site_name": "Pennington Creek at Capitol Ave at Tishomingo, OK",
+    "site_type": "ST",
+    "distance_km": 18.03
+   },
+   {
+    "site_no": "07331250",
+    "site_lat": 34.25981628,
+    "site_lon": -96.8105619,
+    "site_name": "Mill Creek near Ravia, OK",
+    "site_type": "ST",
+    "distance_km": 19.19
+   },
+   {
+    "site_no": "07331000",
+    "site_lat": 34.23342725,
+    "site_lon": -96.9758447,
+    "site_name": "Washita River near Dickson, OK",
+    "site_type": "ST",
+    "distance_km": 24.63
+   }
+  ]
+ },
+ "28.7852,-82.1326": {
+  "location": "Lake Panasoffkee, FL",
+  "lat": 28.785203,
+  "lon": -82.1325817,
+  "sites": [
+   {
+    "site_no": "02312700",
+    "site_lat": 28.8002651,
+    "site_lon": -82.1528658,
+    "site_name": "OUTLET RIVER AT PANACOOCHEE RETREATS, FL",
+    "site_type": "ST",
+    "distance_km": 2.59
+   },
+   {
+    "site_no": "02312675",
+    "site_lat": 28.8425,
+    "site_lon": -82.1302778,
+    "site_name": "LITTLE JONES CREEK NEAR RUTLAND, FL.",
+    "site_type": "ST",
+    "distance_km": 6.38
+   },
+   {
+    "site_no": "02312719",
+    "site_lat": 28.82304179,
+    "site_lon": -82.1825892,
+    "site_name": "WITHLACOOCHEE RI AB WYSONG DAM, AT CARLSON, FLA.",
+    "site_type": "ST",
+    "distance_km": 6.44
+   },
+   {
+    "site_no": "02312720",
+    "site_lat": 28.82331955,
+    "site_lon": -82.1831448,
+    "site_name": "WITHLACOOCHEE RIVER AT WYSONG DAM, AT CARLSON, FL",
+    "site_type": "ST",
+    "distance_km": 6.5
+   },
+   {
+    "site_no": "02312667",
+    "site_lat": 28.77026704,
+    "site_lon": -82.0636961,
+    "site_name": "SHADY BROOK NEAR SUMTERVILLE, FL",
+    "site_type": "ST",
+    "distance_km": 6.92
+   }
+  ]
+ },
+ "36.9356,-90.2709": {
+  "location": "Wappapello, MO",
+  "lat": 36.9356086,
+  "lon": -90.270939,
+  "sites": []
+ },
+ "43.4193,-88.2162": {
+  "location": "West Bend, WI",
+  "lat": 43.4193159,
+  "lon": -88.2161531,
+  "sites": []
+ },
+ "29.0491,-82.4609": {
+  "location": "Dunnellon, FL",
+  "lat": 29.0491426,
+  "lon": -82.4609331,
+  "sites": []
+ },
+ "27.9014,-81.5859": {
+  "location": "Lake Wales, FL",
+  "lat": 27.9014133,
+  "lon": -81.5859099,
+  "sites": []
+ },
+ "33.5672,-111.5236": {
+  "location": "Saguaro Lake, AZ",
+  "lat": 33.5671984,
+  "lon": -111.5235893,
+  "sites": []
+ },
+ "33.6558,-96.9069": {
+  "location": "Whitesboro, TX",
+  "lat": 33.6558015,
+  "lon": -96.9068601,
+  "sites": []
+ },
+ "34.6865,-82.9527": {
+  "location": "Seneca, SC",
+  "lat": 34.6865321,
+  "lon": -82.9527288,
+  "sites": []
+ },
+ "37.9589,-120.4044": {
+  "location": "Jamestown, CA",
+  "lat": 37.9588565,
+  "lon": -120.4044312,
+  "sites": []
+ },
+ "45.6417,-118.7671": {
+  "location": "Umatilla, OR",
+  "lat": 45.6416995,
+  "lon": -118.7671122,
+  "sites": []
+ },
+ "30.4369,-84.1800": {
+  "location": "Tallahassee, FL",
+  "lat": 30.4369461,
+  "lon": -84.179952,
+  "sites": [
+   {
+    "site_no": "02326845",
+    "site_lat": 30.45547844,
+    "site_lon": -84.2223976,
+    "site_name": "LAFAYETTE CRK AT WEEMS RD TALLAHASSEE FL",
+    "site_type": "ST",
+    "distance_km": 4.56
+   },
+   {
+    "site_no": "02326828",
+    "site_lat": 30.47853365,
+    "site_lon": -84.23656509,
+    "site_name": "NORTHEAST DD AT CAPITAL CIR TALLAHASSEE,FL",
+    "site_type": "ST",
+    "distance_km": 7.13
+   },
+   {
+    "site_no": "0232683603",
+    "site_lat": 30.4688114,
+    "site_lon": -84.2493432,
+    "site_name": "MCCORD PARK DD BL CENTERVILLE RD TALLAHASSEE,FLA",
+    "site_type": "ST",
+    "distance_km": 7.54
+   },
+   {
+    "site_no": "02326836",
+    "site_lat": 30.46936696,
+    "site_lon": -84.2501766,
+    "site_name": "MCCORD PK POND DD AT CNTVL RD TALLAHASSEE,FLA",
+    "site_type": "ST",
+    "distance_km": 7.64
+   },
+   {
+    "site_no": "02326835",
+    "site_lat": 30.47158907,
+    "site_lon": -84.260177,
+    "site_name": "MCCORD PARK POND OUTLET AT TALLAHASSEE, FL",
+    "site_type": "ST",
+    "distance_km": 8.6
+   }
+  ]
+ },
+ "39.3544,-76.6043": {
+  "location": "Statewide, MO",
+  "lat": 39.3544105,
+  "lon": -76.6042999,
+  "sites": [
+   {
+    "site_no": "01594418",
+    "site_lat": 39.09494444,
+    "site_lon": -76.7367222,
+    "site_name": "KELLY POOL NEAR OUTFALL NEAR ODENTON, MD",
+    "site_type": "LK",
+    "distance_km": 31.02
+   },
+   {
+    "site_no": "01579920",
+    "site_lat": 39.64063889,
+    "site_lon": -76.52758333,
+    "site_name": "Little Deer Creek Reservoir near Shawsville, MD",
+    "site_type": "LK",
+    "distance_km": 32.5
+   },
+   {
+    "site_no": "01589464",
+    "site_lat": 39.3395,
+    "site_lon": -76.6256944,
+    "site_name": "STONY RUN AT RIDGEMEDE ROAD AT BALTIMORE, MD",
+    "site_type": "ST",
+    "distance_km": 2.48
+   },
+   {
+    "site_no": "01585200",
+    "site_lat": 39.37363889,
+    "site_lon": -76.5843333,
+    "site_name": "WEST BRANCH HERRING RUN AT IDLEWYLDE, MD",
+    "site_type": "ST",
+    "distance_km": 2.74
+   },
+   {
+    "site_no": "01589478",
+    "site_lat": 39.30930556,
+    "site_lon": -76.6194167,
+    "site_name": "JONES FALLS AT MARYLAND AVE AT BALTIMORE, MD",
+    "site_type": "ST",
+    "distance_km": 5.18
+   }
+  ]
+ },
+ "32.9375,-98.2486": {
+  "location": "Graford, TX",
+  "lat": 32.9374587,
+  "lon": -98.2485621,
+  "sites": [
+   {
+    "site_no": "08089200",
+    "site_lat": 32.88253889,
+    "site_lon": -98.2032972,
+    "site_name": "Keechi Ck at SH 337 nr Graford, TX",
+    "site_type": "ST",
+    "distance_km": 7.43
+   },
+   {
+    "site_no": "08089000",
+    "site_lat": 32.8626236,
+    "site_lon": -98.3025492,
+    "site_name": "Brazos Rv nr Palo Pinto, TX",
+    "site_type": "ST",
+    "distance_km": 9.73
+   },
+   {
+    "site_no": "08088610",
+    "site_lat": 32.85817854,
+    "site_lon": -98.411719,
+    "site_name": "Brazos Rv nr Graford, TX",
+    "site_type": "ST",
+    "distance_km": 17.6
+   },
+   {
+    "site_no": "08088600",
+    "site_lat": 32.87206697,
+    "site_lon": -98.425886,
+    "site_name": "Brazos Rv at Morris Sheppard Dam nr Graford, TX",
+    "site_type": "ST",
+    "distance_km": 18.08
+   },
+   {
+    "site_no": "08088430",
+    "site_lat": 33.04351667,
+    "site_lon": -98.4084083,
+    "site_name": "Rock Ck at Rock Ck Rd nr Bryson, TX",
+    "site_type": "ST",
+    "distance_km": 19.01
+   }
+  ]
+ },
+ "40.9645,-76.8848": {
+  "location": "Lewisburg, PA",
+  "lat": 40.9645337,
+  "lon": -76.8847639,
+  "sites": []
+ },
+ "41.7978,-87.8448": {
+  "location": "McCook, CO",
+  "lat": 41.7978095,
+  "lon": -87.8447798,
+  "sites": [
+   {
+    "site_no": "04087440",
+    "site_lat": 41.88927778,
+    "site_lon": -87.6079444,
+    "site_name": "LAKE MICHIGAN AT CHICAGO LOCK AT CHICAGO, IL",
+    "site_type": "LK",
+    "distance_km": 22.1
+   },
+   {
+    "site_no": "04092440",
+    "site_lat": 41.78444444,
+    "site_lon": -87.5675,
+    "site_name": "LAKE MICHIGAN AT JACKSON PARK AT HYDE PARK, IL",
+    "site_type": "LK",
+    "distance_km": 23.04
+   },
+   {
+    "site_no": "04092788",
+    "site_lat": 41.65194444,
+    "site_lon": -87.43138889,
+    "site_name": "LAKE MICHIGAN AT JEORSE PARK AT GARY, IN",
+    "site_type": "LK",
+    "distance_km": 37.95
+   },
+   {
+    "site_no": "414757087490401",
+    "site_lat": 41.79916667,
+    "site_lon": -87.8177778,
+    "site_name": "SUMMIT CONDUIT AT SUMMIT, IL",
+    "site_type": "ST",
+    "distance_km": 2.24
+   },
+   {
+    "site_no": "414745087484901",
+    "site_lat": 41.7958333,
+    "site_lon": -87.8136111,
+    "site_name": "SUMMIT CONDUIT OUTFALL AT SUMMIT, IL",
+    "site_type": "ST",
+    "distance_km": 2.59
+   }
+  ]
+ },
+ "37.0869,-76.4799": {
+  "location": "Center, ND",
+  "lat": 37.0869422,
+  "lon": -76.4798615,
+  "sites": []
+ },
+ "43.4344,-73.6875": {
+  "location": "Lake George, NY",
+  "lat": 43.4343699,
+  "lon": -73.6875093,
+  "sites": [
+   {
+    "site_no": "04276920",
+    "site_lat": 43.43166667,
+    "site_lon": -73.7066667,
+    "site_name": "ENGLISH BROOK AT LAKE GEORGE NY",
+    "site_type": "ST",
+    "distance_km": 1.58
+   },
+   {
+    "site_no": "04276895",
+    "site_lat": 43.4172222,
+    "site_lon": -73.7116667,
+    "site_name": "WEST BROOK AT LAKE GEORGE NY",
+    "site_type": "ST",
+    "distance_km": 2.73
+   },
+   {
+    "site_no": "01318000",
+    "site_lat": 43.4797222,
+    "site_lon": -73.8183333,
+    "site_name": "HUDSON RIVER AT THURMAN NY",
+    "site_type": "ST",
+    "distance_km": 11.7
+   },
+   {
+    "site_no": "01327000",
+    "site_lat": 43.29173889,
+    "site_lon": -73.66483979,
+    "site_name": "GLENS FALLS FEEDER AT GLENS FALLS NY",
+    "site_type": "ST",
+    "distance_km": 15.97
+   },
+   {
+    "site_no": "04279125",
+    "site_lat": 43.52194444,
+    "site_lon": -73.5069444,
+    "site_name": "MOUNT HOPE BROOK AT SOUTH BAY NEAR WHITEHALL NY",
+    "site_type": "ST",
+    "distance_km": 17.52
+   }
+  ]
+ },
+ "29.5061,-81.9454": {
+  "location": "Orange Springs, FL",
+  "lat": 29.5060816,
+  "lon": -81.9453664,
+  "sites": []
+ },
+ "40.4732,-75.1610": {
+  "location": "Ottsville, PA",
+  "lat": 40.4731586,
+  "lon": -75.1610067,
+  "sites": []
+ },
+ "45.3657,-122.6123": {
+  "location": "West Linn, OR",
+  "lat": 45.3656761,
+  "lon": -122.612314,
+  "sites": []
+ },
+ "44.9174,-79.3731": {
+  "location": "Gravenhurst, ON",
+  "lat": 44.91741,
+  "lon": -79.373131,
+  "sites": []
+ },
+ "30.1587,-85.6603": {
+  "location": "Panama City, FL",
+  "lat": 30.1586518,
+  "lon": -85.6602936,
+  "sites": []
+ },
+ "34.3065,-82.6637": {
+  "location": "Iva, SC",
+  "lat": 34.3064967,
+  "lon": -82.663743,
+  "sites": []
+ },
+ "37.2895,-86.2847": {
+  "location": "Bee Spring, KY",
+  "lat": 37.2894937,
+  "lon": -86.2846965,
+  "sites": []
+ },
+ "38.4040,-96.1816": {
+  "location": "Emporia, KS",
+  "lat": 38.4040054,
+  "lon": -96.181623,
+  "sites": []
+ },
+ "27.7678,-80.6014": {
+  "location": "Fellsmere, FL",
+  "lat": 27.7677894,
+  "lon": -80.6013691,
+  "sites": []
+ },
+ "28.1067,-81.6287": {
+  "location": "Haines City, FL",
+  "lat": 28.1067315,
+  "lon": -81.6287423,
+  "sites": []
+ },
+ "39.6932,-76.2636": {
+  "location": "Conowingo, MD",
+  "lat": 39.6931826,
+  "lon": -76.2635825,
+  "sites": [
+   {
+    "site_no": "01579920",
+    "site_lat": 39.64063889,
+    "site_lon": -76.52758333,
+    "site_name": "Little Deer Creek Reservoir near Shawsville, MD",
+    "site_type": "LK",
+    "distance_km": 23.34
+   },
+   {
+    "site_no": "01495965",
+    "site_lat": 39.4354722,
+    "site_lon": -75.9779722,
+    "site_name": "PEARCE CREEK AT CRYSTAL BEACH, MD",
+    "site_type": "LK",
+    "distance_km": 37.69
+   },
+   {
+    "site_no": "01578000",
+    "site_lat": 39.66427219,
+    "site_lon": -76.3252366,
+    "site_name": "BROAD CREEK AT MILL GREEN, MD",
+    "site_type": "ST",
+    "distance_km": 6.18
+   },
+   {
+    "site_no": "01580200",
+    "site_lat": 39.6212174,
+    "site_lon": -76.29884679,
+    "site_name": "DEER CREEK NEAR KALMIA, MD",
+    "site_type": "ST",
+    "distance_km": 8.55
+   },
+   {
+    "site_no": "01578310",
+    "site_lat": 39.65788889,
+    "site_lon": -76.17444444,
+    "site_name": "SUSQUEHANNA RIVER AT CONOWINGO, MD",
+    "site_type": "ST",
+    "distance_km": 8.58
+   }
+  ]
+ },
+ "40.5864,-122.3917": {
+  "location": "Redding, CA",
+  "lat": 40.5863563,
+  "lon": -122.391675,
+  "sites": []
+ },
+ "32.9839,-97.3867": {
+  "location": "Ft. Worth, TX, US, TX",
+  "lat": 32.9839322,
+  "lon": -97.3867039,
+  "sites": []
+ },
+ "29.5919,-82.0870": {
+  "location": "Hawthorne, FL",
+  "lat": 29.5918856,
+  "lon": -82.0869578,
+  "sites": []
+ },
+ "36.8917,-86.0375": {
+  "location": "Lucas, KY",
+  "lat": 36.8917157,
+  "lon": -86.0374815,
+  "sites": []
+ },
+ "32.9005,-94.5575": {
+  "location": "Avinger, TX, US, TX",
+  "lat": 32.900522,
+  "lon": -94.5574706,
+  "sites": []
+ },
+ "30.5946,-84.0413": {
+  "location": "Miccosukee , FL",
+  "lat": 30.5946435,
+  "lon": -84.041281,
+  "sites": [
+   {
+    "site_no": "02326598",
+    "site_lat": 30.51464675,
+    "site_lon": -83.939888,
+    "site_name": "CANEY CREEK NR MONTICELLO FLA",
+    "site_type": "ST",
+    "distance_km": 13.17
+   },
+   {
+    "site_no": "02326372",
+    "site_lat": 30.54381365,
+    "site_lon": -83.844885,
+    "site_name": "PALMER MILL BRANCH AT MONTICELLO,FL",
+    "site_type": "ST",
+    "distance_km": 19.63
+   },
+   {
+    "site_no": "02326825",
+    "site_lat": 30.50353335,
+    "site_lon": -84.2379543,
+    "site_name": "NORTHEAST DD AT HADLEY RD TALLAHASSEE,FL",
+    "site_type": "ST",
+    "distance_km": 21.39
+   },
+   {
+    "site_no": "02326828",
+    "site_lat": 30.47853365,
+    "site_lon": -84.23656509,
+    "site_name": "NORTHEAST DD AT CAPITAL CIR TALLAHASSEE,FL",
+    "site_type": "ST",
+    "distance_km": 22.73
+   },
+   {
+    "site_no": "02326845",
+    "site_lat": 30.45547844,
+    "site_lon": -84.2223976,
+    "site_name": "LAFAYETTE CRK AT WEEMS RD TALLAHASSEE FL",
+    "site_type": "ST",
+    "distance_km": 23.25
+   }
+  ]
+ },
+ "37.3025,-78.3924": {
+  "location": "Farmville, VA",
+  "lat": 37.3024713,
+  "lon": -78.3923813,
+  "sites": [
+   {
+    "site_no": "02039500",
+    "site_lat": 37.3070965,
+    "site_lon": -78.388607,
+    "site_name": "APPOMATTOX RIVER AT FARMVILLE, VA",
+    "site_type": "ST",
+    "distance_km": 0.61
+   },
+   {
+    "site_no": "02039000",
+    "site_lat": 37.25709664,
+    "site_lon": -78.4863841,
+    "site_name": "BUFFALO CREEK NEAR HAMPDEN SYDNEY, VA",
+    "site_type": "ST",
+    "distance_km": 9.73
+   },
+   {
+    "site_no": "02038880",
+    "site_lat": 37.35237064,
+    "site_lon": -78.5988915,
+    "site_name": "VAUGHANS CREEK NEAR HIXBURG, VA",
+    "site_type": "ST",
+    "distance_km": 19.08
+   },
+   {
+    "site_no": "02038830",
+    "site_lat": 37.36931388,
+    "site_lon": -78.6455609,
+    "site_name": "FISHPOND CREEK NEAR HIXBURG, VA",
+    "site_type": "ST",
+    "distance_km": 23.59
+   },
+   {
+    "site_no": "02038850",
+    "site_lat": 37.41542434,
+    "site_lon": -78.6358392,
+    "site_name": "HOLIDAY CREEK NEAR ANDERSONVILLE, VA",
+    "site_type": "ST",
+    "distance_km": 24.91
+   }
+  ]
+ },
+ "41.2111,-96.6198": {
+  "location": "Wahoo, NE",
+  "lat": 41.2111084,
+  "lon": -96.6197985,
+  "sites": [
+   {
+    "site_no": "06804500",
+    "site_lat": 41.1622222,
+    "site_lon": -96.5275,
+    "site_name": "SILVER CREEK AT ITHACA, NEBR.",
+    "site_type": "ST",
+    "distance_km": 9.44
+   },
+   {
+    "site_no": "06804000",
+    "site_lat": 41.147747,
+    "site_lon": -96.53835,
+    "site_name": "Wahoo Creek at Ithaca, Nebr.",
+    "site_type": "ST",
+    "distance_km": 9.8
+   },
+   {
+    "site_no": "06804900",
+    "site_lat": 41.14638889,
+    "site_lon": -96.3869444,
+    "site_name": "Johnson Creek near Memphis, Nebr.",
+    "site_type": "ST",
+    "distance_km": 20.77
+   },
+   {
+    "site_no": "06796500",
+    "site_lat": 41.32,
+    "site_lon": -96.4038889,
+    "site_name": "Platte River near Leshara, Nebr.",
+    "site_type": "ST",
+    "distance_km": 21.73
+   },
+   {
+    "site_no": "06803530",
+    "site_lat": 41.015853,
+    "site_lon": -96.544561,
+    "site_name": "Rock Creek near Ceresco, Nebr.",
+    "site_type": "ST",
+    "distance_km": 22.61
+   }
+  ]
+ },
+ "42.2249,-121.7817": {
+  "location": "Klamath Falls, OR",
+  "lat": 42.224867,
+  "lon": -121.78167,
+  "sites": []
+ },
+ "32.7958,-95.4518": {
+  "location": "Quitman, TX",
+  "lat": 32.7957722,
+  "lon": -95.4518285,
+  "sites": []
+ },
+ "32.2371,-80.8604": {
+  "location": "Bluffton, SC",
+  "lat": 32.2371465,
+  "lon": -80.8603868,
+  "sites": []
+ },
+ "30.0541,-97.3888": {
+  "location": "Bastrop, TX",
+  "lat": 30.0541116,
+  "lon": -97.3887764,
+  "sites": []
+ },
+ "27.9870,-82.0316": {
+  "location": "Lakeland, FL",
+  "lat": 27.9870053,
+  "lon": -82.0316107,
+  "sites": [
+   {
+    "site_no": "275656082172000",
+    "site_lat": 27.94888889,
+    "site_lon": -82.28888889,
+    "site_name": "BROWN POND NEAR BRANDON FL",
+    "site_type": "LK",
+    "distance_km": 25.62
+   },
+   {
+    "site_no": "280102082202000",
+    "site_lat": 28.01751986,
+    "site_lon": -82.3387033,
+    "site_name": "EUREKA SPRINGS LF OXIDATION POND",
+    "site_type": "LK",
+    "distance_km": 30.34
+   },
+   {
+    "site_no": "280311082282601",
+    "site_lat": 28.053175,
+    "site_lon": -82.4740111,
+    "site_name": "LAKE ECKLES NEAR CARROLLWOOD FL",
+    "site_type": "LK",
+    "distance_km": 44.05
+   },
+   {
+    "site_no": "02300930",
+    "site_lat": 27.92336389,
+    "site_lon": -82.03031389,
+    "site_name": "POLEY CREEK NEAR MULBERRY FL",
+    "site_type": "ST",
+    "distance_km": 7.08
+   },
+   {
+    "site_no": "02300978",
+    "site_lat": 27.92694167,
+    "site_lon": -82.06524722,
+    "site_name": "ENGLISH CREEK NEAR MULBERRY FL",
+    "site_type": "ST",
+    "distance_km": 7.45
+   }
+  ]
+ },
+ "42.9615,-83.2582": {
+  "location": "Lapeer, MI",
+  "lat": 42.9614817,
+  "lon": -83.2581612,
+  "sites": [
+   {
+    "site_no": "04161790",
+    "site_lat": 42.71669836,
+    "site_lon": -83.0874322,
+    "site_name": "STONY LAKE NEAR WASHINGTON, MI",
+    "site_type": "LK",
+    "distance_km": 30.57
+   },
+   {
+    "site_no": "04146000",
+    "site_lat": 43.0447494,
+    "site_lon": -83.33716779,
+    "site_name": "FARMERS CREEK NEAR LAPEER, MI",
+    "site_type": "ST",
+    "distance_km": 11.27
+   },
+   {
+    "site_no": "04160570",
+    "site_lat": 43.03030518,
+    "site_lon": -83.0671595,
+    "site_name": "NORTH BRANCH BELLE RIVER AT M-21 AT IMLAY CITY, MI",
+    "site_type": "ST",
+    "distance_km": 17.32
+   },
+   {
+    "site_no": "04164010",
+    "site_lat": 42.91641759,
+    "site_lon": -83.0449347,
+    "site_name": "NORTH BRANCH CLINTON RIVER AT ALMONT, MI",
+    "site_type": "ST",
+    "distance_km": 18.07
+   },
+   {
+    "site_no": "04161500",
+    "site_lat": 42.7675054,
+    "site_lon": -83.2198663,
+    "site_name": "PAINT CREEK NEAR LAKE ORION, MI",
+    "site_type": "ST",
+    "distance_km": 21.79
+   }
+  ]
+ },
+ "27.2931,-81.3629": {
+  "location": "Lake Placid, FL",
+  "lat": 27.2930999,
+  "lon": -81.3628502,
+  "sites": []
+ },
+ "29.7094,-82.0498": {
+  "location": "Melrose, FL",
+  "lat": 29.7094116,
+  "lon": -82.0498207,
+  "sites": [
+   {
+    "site_no": "02244690",
+    "site_lat": 29.80913209,
+    "site_lon": -82.0331564,
+    "site_name": "ALLIGATOR CREEK NR KEYSTONE HEIGHTS,FL",
+    "site_type": "ST",
+    "distance_km": 11.2
+   },
+   {
+    "site_no": "02244651",
+    "site_lat": 29.81746526,
+    "site_lon": -82.022323,
+    "site_name": "MAGNOLIA LAKE OUTLET NR KEYSTONE HEIGHTS, FLA.",
+    "site_type": "ST",
+    "distance_km": 12.3
+   },
+   {
+    "site_no": "02244601",
+    "site_lat": 29.8382982,
+    "site_lon": -82.0092677,
+    "site_name": "SAND HILL LAKE OUTLET NR KEYSTONE HEIGHTS, FL",
+    "site_type": "ST",
+    "distance_km": 14.86
+   },
+   {
+    "site_no": "02241900",
+    "site_lat": 29.60024669,
+    "site_lon": -82.14482,
+    "site_name": "LOCHLOOSA CREEK AT GROVE PARK, FLA.",
+    "site_type": "ST",
+    "distance_km": 15.22
+   },
+   {
+    "site_no": "02240783",
+    "site_lat": 29.72302278,
+    "site_lon": -82.2151018,
+    "site_name": "HATCHET CREEK NR FAIRBANKS,FL",
+    "site_type": "ST",
+    "distance_km": 16.03
+   }
+  ]
+ },
+ "45.2791,-92.9852": {
+  "location": "FOREST LAKE, MN",
+  "lat": 45.279106,
+  "lon": -92.9851629,
+  "sites": []
+ },
+ "45.8261,-92.9685": {
+  "location": "PINE CITY, MN",
+  "lat": 45.8260672,
+  "lon": -92.9685423,
+  "sites": []
+ },
+ "34.2806,-82.2846": {
+  "location": "Greenwood, SC",
+  "lat": 34.2806017,
+  "lon": -82.2845598,
+  "sites": []
+ },
+ "39.5889,-89.4562": {
+  "location": "Tovey, IL",
+  "lat": 39.5889391,
+  "lon": -89.4562045,
+  "sites": []
+ },
+ "31.0560,-97.4645": {
+  "location": "Belton, TX",
+  "lat": 31.0560132,
+  "lon": -97.464453,
+  "sites": []
+ },
+ "29.9444,-82.1101": {
+  "location": "Starke, FL",
+  "lat": 29.9443549,
+  "lon": -82.1101114,
+  "sites": []
+ },
+ "27.8764,-80.9878": {
+  "location": "Kenansville, FL",
+  "lat": 27.8764138,
+  "lon": -80.9878408,
+  "sites": []
+ },
+ "33.0810,-83.2572": {
+  "location": "Milledgeville, GA",
+  "lat": 33.0810314,
+  "lon": -83.2572073,
+  "sites": []
+ },
+ "43.8358,-79.0906": {
+  "location": "Pickering , ON",
+  "lat": 43.835765,
+  "lon": -79.090576,
+  "sites": []
+ },
+ "39.0432,-122.9141": {
+  "location": "Lakeport, CA",
+  "lat": 39.0431586,
+  "lon": -122.9140838,
+  "sites": []
+ },
+ "38.5082,-94.6744": {
+  "location": "Louisburg, KS",
+  "lat": 38.5081977,
+  "lon": -94.6744388,
+  "sites": []
+ },
+ "45.3144,-91.6513": {
+  "location": "Chetek, WI",
+  "lat": 45.3144409,
+  "lon": -91.6513048,
+  "sites": []
+ },
+ "33.6221,-111.2071": {
+  "location": "Apache Lake, AZ",
+  "lat": 33.6220999,
+  "lon": -111.2070941,
+  "sites": []
+ },
+ "40.7247,-111.3419": {
+  "location": "Peoa, UT",
+  "lat": 40.7246718,
+  "lon": -111.3418577,
+  "sites": []
+ },
+ "36.3934,-87.6364": {
+  "location": "Cumberland City, TN",
+  "lat": 36.3933859,
+  "lon": -87.6364056,
+  "sites": []
+ },
+ "46.1656,-90.0633": {
+  "location": "Mercer, WI",
+  "lat": 46.165642,
+  "lon": -90.0633148,
+  "sites": []
+ },
+ "33.8685,-111.6137": {
+  "location": "Bartlett Lake, AZ",
+  "lat": 33.8684709,
+  "lon": -111.6136691,
+  "sites": []
+ },
+ "37.0334,-88.3500": {
+  "location": "Calvert City, KY",
+  "lat": 37.0333896,
+  "lon": -88.3500362,
+  "sites": []
+ },
+ "39.0490,-95.6776": {
+  "location": "Topeka, KS",
+  "lat": 39.049011,
+  "lon": -95.677556,
+  "sites": []
+ },
+ "38.7767,-99.8073": {
+  "location": "Cedar Bluff, KS",
+  "lat": 38.7766795,
+  "lon": -99.8073408,
+  "sites": []
+ },
+ "37.7107,-89.2232": {
+  "location": "Carbondale, IL",
+  "lat": 37.7107312,
+  "lon": -89.2231565,
+  "sites": []
+ },
+ "38.5070,-95.6378": {
+  "location": "Melvern, KS",
+  "lat": 38.5069575,
+  "lon": -95.6377619,
+  "sites": []
+ },
+ "32.7288,-94.9446": {
+  "location": "Gilmer, TX",
+  "lat": 32.728803,
+  "lon": -94.9445572,
+  "sites": []
+ },
+ "38.0114,-92.7449": {
+  "location": "Camdenton , MO",
+  "lat": 38.011448,
+  "lon": -92.7448759,
+  "sites": []
+ },
+ "36.7563,-90.3945": {
+  "location": "Poplar Bluff, MO",
+  "lat": 36.7563166,
+  "lon": -90.3944869,
+  "sites": []
+ },
+ "38.5503,-86.6200": {
+  "location": "French Lick, IN",
+  "lat": 38.5502547,
+  "lon": -86.6199659,
+  "sites": []
+ },
+ "39.0493,-87.4173": {
+  "location": "Sullivan, IN",
+  "lat": 39.0492722,
+  "lon": -87.4172644,
+  "sites": []
+ },
+ "40.0361,-86.9007": {
+  "location": "Montgomery , IN",
+  "lat": 40.0361447,
+  "lon": -86.9007083,
+  "sites": []
+ },
+ "32.3513,-95.3011": {
+  "location": "Tyler, TX",
+  "lat": 32.3512601,
+  "lon": -95.3010624,
+  "sites": []
+ },
+ "32.2044,-95.8549": {
+  "location": "Athens, TX",
+  "lat": 32.2044416,
+  "lon": -95.854914,
+  "sites": []
+ },
+ "29.3513,-81.7355": {
+  "location": "Salt Springs, FL",
+  "lat": 29.3512675,
+  "lon": -81.735528,
+  "sites": []
+ },
+ "35.7109,-94.9200": {
+  "location": "Cookson, OK",
+  "lat": 35.7109258,
+  "lon": -94.919952,
+  "sites": []
+ },
+ "28.9025,-82.5926": {
+  "location": "Crystal River, FL",
+  "lat": 28.902479,
+  "lon": -82.5926012,
+  "sites": []
+ },
+ "49.4667,-112.6667": {
+  "location": "Raymond, CA",
+  "lat": 49.466667,
+  "lon": -112.666667,
+  "sites": []
+ },
+ "37.1716,-119.7738": {
+  "location": "Madera, CA",
+  "lat": 37.1716264,
+  "lon": -119.7737991,
+  "sites": []
+ },
+ "35.9154,-94.9700": {
+  "location": "Tahlequah, OK",
+  "lat": 35.91537,
+  "lon": -94.969956,
+  "sites": []
+ },
+ "46.2191,-119.1439": {
+  "location": "Kennewick, WA",
+  "lat": 46.2190762,
+  "lon": -119.1438543,
+  "sites": []
+ },
+ "27.9450,-82.4583": {
+  "location": "Tampa, FL",
+  "lat": 27.9449854,
+  "lon": -82.4583107,
+  "sites": [
+   {
+    "site_no": "280311082282601",
+    "site_lat": 28.053175,
+    "site_lon": -82.4740111,
+    "site_name": "LAKE ECKLES NEAR CARROLLWOOD FL",
+    "site_type": "LK",
+    "distance_km": 12.13
+   },
+   {
+    "site_no": "280102082202000",
+    "site_lat": 28.01751986,
+    "site_lon": -82.3387033,
+    "site_name": "EUREKA SPRINGS LF OXIDATION POND",
+    "site_type": "LK",
+    "distance_km": 14.25
+   },
+   {
+    "site_no": "275656082172000",
+    "site_lat": 27.94888889,
+    "site_lon": -82.28888889,
+    "site_name": "BROWN POND NEAR BRANDON FL",
+    "site_type": "LK",
+    "distance_km": 16.65
+   },
+   {
+    "site_no": "02307836",
+    "site_lat": 27.87138889,
+    "site_lon": -82.69,
+    "site_name": "ROOSEVELT RESERVOIR AT OUTFALL NR PINELLAS PK FL",
+    "site_type": "LK",
+    "distance_km": 24.19
+   },
+   {
+    "site_no": "02308888",
+    "site_lat": 27.83919117,
+    "site_lon": -82.7803798,
+    "site_name": "SEMINOLE LAKE NEAR LARGO FL",
+    "site_type": "LK",
+    "distance_km": 33.77
+   }
+  ]
+ },
+ "34.2368,-84.4908": {
+  "location": "Canton, GA",
+  "lat": 34.2367621,
+  "lon": -84.4907621,
+  "sites": [
+   {
+    "site_no": "02392000",
+    "site_lat": 34.24019444,
+    "site_lon": -84.4945278,
+    "site_name": "ETOWAH RIVER AT CANTON, GA",
+    "site_type": "ST",
+    "distance_km": 0.52
+   },
+   {
+    "site_no": "02391860",
+    "site_lat": 34.2508333,
+    "site_lon": -84.4691667,
+    "site_name": "ETOWAH RIVER DOWNSTREAM OF I-575, AT CANTON, GA",
+    "site_type": "ST",
+    "distance_km": 2.53
+   },
+   {
+    "site_no": "02391840",
+    "site_lat": 34.26505556,
+    "site_lon": -84.4735,
+    "site_name": "HICKORY LOG CREEK NEAR CANTON, GA",
+    "site_type": "ST",
+    "distance_km": 3.52
+   },
+   {
+    "site_no": "02392360",
+    "site_lat": 34.2633333,
+    "site_lon": -84.5954444,
+    "site_name": "SHOAL CREEK AT GA 108, NEAR WALESKA, GA",
+    "site_type": "ST",
+    "distance_km": 10.07
+   },
+   {
+    "site_no": "02391540",
+    "site_lat": 34.31088889,
+    "site_lon": -84.4034722,
+    "site_name": "SHARP MTN CREEK AT OLD GA 5, BELOW BALL GROUND, GA",
+    "site_type": "ST",
+    "distance_km": 11.5
+   }
+  ]
+ },
+ "34.9480,-83.7570": {
+  "location": "Hiawassee, GA",
+  "lat": 34.947959,
+  "lon": -83.7569922,
+  "sites": []
+ },
+ "32.3446,-84.9160": {
+  "location": "Anderson, GA",
+  "lat": 32.3445916,
+  "lon": -84.91604,
+  "sites": []
+ },
+ "30.3585,-83.9871": {
+  "location": "Wacissa, FL",
+  "lat": 30.3585417,
+  "lon": -83.9870742,
+  "sites": []
+ },
+ "41.7674,-76.4429": {
+  "location": "Towanda, PA",
+  "lat": 41.7673567,
+  "lon": -76.44291,
+  "sites": [
+   {
+    "site_no": "01531500",
+    "site_lat": 41.76535278,
+    "site_lon": -76.4407743,
+    "site_name": "Susquehanna River at Towanda, PA",
+    "site_type": "ST",
+    "distance_km": 0.28
+   },
+   {
+    "site_no": "01532000",
+    "site_lat": 41.70757505,
+    "site_lon": -76.4849432,
+    "site_name": "Towanda Creek near Monroeton, PA",
+    "site_type": "ST",
+    "distance_km": 7.51
+   },
+   {
+    "site_no": "01531908",
+    "site_lat": 41.69777778,
+    "site_lon": -76.5786111,
+    "site_name": "Towanda Creek near Franklindale, PA",
+    "site_type": "ST",
+    "distance_km": 13.66
+   },
+   {
+    "site_no": "01531325",
+    "site_lat": 41.76055556,
+    "site_lon": -76.675,
+    "site_name": "Sugar Creek at West Burlington, PA",
+    "site_type": "ST",
+    "distance_km": 19.26
+   },
+   {
+    "site_no": "015319015",
+    "site_lat": 41.71691667,
+    "site_lon": -76.6668056,
+    "site_name": "N Br Towanda Cr, Clark Rd nr Granville Summit PA",
+    "site_type": "ST",
+    "distance_km": 19.4
+   }
+  ]
+ },
+ "46.3265,-80.1702": {
+  "location": "West Nipissing, ON",
+  "lat": 46.3265105,
+  "lon": -80.1701683,
+  "sites": []
+ },
+ "44.6586,-78.7982": {
+  "location": "Coboconk, ON",
+  "lat": 44.658576,
+  "lon": -78.798191,
+  "sites": []
+ },
+ "44.4332,-77.8873": {
+  "location": "Havelock, ON",
+  "lat": 44.4332227,
+  "lon": -77.8872927,
+  "sites": []
+ },
+ "32.5153,-80.3164": {
+  "location": "Charleston, TN",
+  "lat": 32.5152809,
+  "lon": -80.3163942,
+  "sites": []
+ },
+ "35.1223,-84.7188": {
+  "location": "Ocoee, TN",
+  "lat": 35.1222972,
+  "lon": -84.7188272,
+  "sites": []
+ },
+ "38.9179,-78.1918": {
+  "location": "Front Royal, VA",
+  "lat": 38.9179069,
+  "lon": -78.1918077,
+  "sites": []
+ },
+ "37.2297,-80.4137": {
+  "location": "Blacksburg, VA, VA",
+  "lat": 37.2296566,
+  "lon": -80.4136767,
+  "sites": []
+ },
+ "42.6801,-88.2764": {
+  "location": "Burlington , WI",
+  "lat": 42.6801053,
+  "lon": -88.276413,
+  "sites": []
+ },
+ "31.5770,-111.3307": {
+  "location": "Arivaca, AZ",
+  "lat": 31.5769832,
+  "lon": -111.3306751,
+  "sites": []
+ },
+ "46.4811,-116.2558": {
+  "location": "Orofino, ID",
+  "lat": 46.4811378,
+  "lon": -116.255778,
+  "sites": []
+ },
+ "42.7656,-71.4677": {
+  "location": "Nashua, NH",
+  "lat": 42.7656251,
+  "lon": -71.4677032,
+  "sites": []
+ },
+ "39.5417,-76.0844": {
+  "location": "Havre De Grace, MD",
+  "lat": 39.5416675,
+  "lon": -76.0844114,
+  "sites": []
+ },
+ "38.8846,-75.8272": {
+  "location": "Denton, MD",
+  "lat": 38.8845583,
+  "lon": -75.8271564,
+  "sites": []
+ },
+ "36.0280,-95.8340": {
+  "location": "Tulsa, OK",
+  "lat": 36.0279649,
+  "lon": -95.8340202,
+  "sites": [
+   {
+    "site_no": "07165562",
+    "site_lat": 36.01704297,
+    "site_lon": -95.8488777,
+    "site_name": "Haikey Creek at 101st St South at Tulsa, OK",
+    "site_type": "ST",
+    "distance_km": 1.81
+   },
+   {
+    "site_no": "07165565",
+    "site_lat": 36.01759824,
+    "site_lon": -95.8608227,
+    "site_name": "Little Haikey Creek at 101st St South at Tulsa, OK",
+    "site_type": "ST",
+    "distance_km": 2.67
+   },
+   {
+    "site_no": "07165564",
+    "site_lat": 36.03620844,
+    "site_lon": -95.8861018,
+    "site_name": "Little Haikey Tributary at S. Memorial, Tulsa, OK",
+    "site_type": "ST",
+    "distance_km": 4.77
+   },
+   {
+    "site_no": "07164650",
+    "site_lat": 36.05231784,
+    "site_lon": -95.9469381,
+    "site_name": "Fred Creek at Evanston Avenue, at Tulsa, OK",
+    "site_type": "ST",
+    "distance_km": 10.51
+   },
+   {
+    "site_no": "07164600",
+    "site_lat": 36.07565044,
+    "site_lon": -95.9605501,
+    "site_name": "Joe Creek at 61st St at Tulsa, OK",
+    "site_type": "ST",
+    "distance_km": 12.55
+   }
+  ]
+ },
+ "42.7845,-83.2397": {
+  "location": "Lake Orion, MI",
+  "lat": 42.7844752,
+  "lon": -83.2396612,
+  "sites": []
+ },
+ "44.3878,-69.9667": {
+  "location": "Readfield, ME",
+  "lat": 44.3878453,
+  "lon": -69.9667188,
+  "sites": []
+ },
+ "43.0045,-71.3484": {
+  "location": "Auburn, NH",
+  "lat": 43.0045289,
+  "lon": -71.348398,
+  "sites": []
+ },
+ "44.4475,-69.8332": {
+  "location": "Belgrade, ME",
+  "lat": 44.447507,
+  "lon": -69.833221,
+  "sites": []
+ },
+ "43.4893,-71.5828": {
+  "location": "Sanbornton, NH",
+  "lat": 43.489296,
+  "lon": -71.582794,
+  "sites": []
+ },
+ "44.7058,-73.2074": {
+  "location": "Milton, NH",
+  "lat": 44.7057527,
+  "lon": -73.2073998,
+  "sites": []
+ },
+ "43.5279,-71.4704": {
+  "location": "Laconia, NH",
+  "lat": 43.5278546,
+  "lon": -71.470351,
+  "sites": []
+ },
+ "43.6447,-72.1436": {
+  "location": "Enfield, NH",
+  "lat": 43.6446871,
+  "lon": -72.1435861,
+  "sites": []
+ },
+ "44.3073,-69.9713": {
+  "location": "Winthrop, ME",
+  "lat": 44.3072643,
+  "lon": -69.9712542,
+  "sites": [
+   {
+    "site_no": "01056000",
+    "site_lat": 44.1472945,
+    "site_lon": -70.2064432,
+    "site_name": "GULF ISLAND POND NEAR LEWISTON, ME",
+    "site_type": "LK",
+    "distance_km": 25.84
+   },
+   {
+    "site_no": "01049373",
+    "site_lat": 44.30671944,
+    "site_lon": -69.97105278,
+    "site_name": "MILL STREAM AT WINTHROP, ME",
+    "site_type": "ST",
+    "distance_km": 0.06
+   },
+   {
+    "site_no": "01049300",
+    "site_lat": 44.34981667,
+    "site_lon": -69.8514083,
+    "site_name": "North Branch Tanning Brook near Manchester, Maine",
+    "site_type": "ST",
+    "distance_km": 10.64
+   },
+   {
+    "site_no": "01055220",
+    "site_lat": 44.31805556,
+    "site_lon": -70.1222222,
+    "site_name": "Dead River at Leeds, Maine",
+    "site_type": "ST",
+    "distance_km": 12.07
+   },
+   {
+    "site_no": "01049396",
+    "site_lat": 44.184175,
+    "site_lon": -69.9956972,
+    "site_name": "JOCK STREAM AT SOUTH MONMOUTH, ME",
+    "site_type": "ST",
+    "distance_km": 13.82
+   }
+  ]
+ },
+ "36.1624,-85.4997": {
+  "location": "Cookeville, TN",
+  "lat": 36.1623886,
+  "lon": -85.4997057,
+  "sites": []
+ },
+ "37.0716,-84.7480": {
+  "location": "Nancy, KY",
+  "lat": 37.0716278,
+  "lon": -84.7479687,
+  "sites": []
+ },
+ "37.5736,-113.7191": {
+  "location": "Enterprise, UT",
+  "lat": 37.5735867,
+  "lon": -113.719132,
+  "sites": [
+   {
+    "site_no": "10242430",
+    "site_lat": 37.5041437,
+    "site_lon": -113.8480274,
+    "site_name": "GRASSY CREEK NEAR ENTERPRISE, UTAH",
+    "site_type": "ST",
+    "distance_km": 13.74
+   },
+   {
+    "site_no": "09409500",
+    "site_lat": 37.43331116,
+    "site_lon": -113.742466,
+    "site_name": "MOODY WASH NEAR VEYO, UTAH",
+    "site_type": "ST",
+    "distance_km": 15.73
+   },
+   {
+    "site_no": "10242300",
+    "site_lat": 37.625556,
+    "site_lon": -113.515,
+    "site_name": "PINTO CREEK NEAR NEWCASTLE, UTAH",
+    "site_type": "ST",
+    "distance_km": 18.89
+   },
+   {
+    "site_no": "09409000",
+    "site_lat": 37.39997885,
+    "site_lon": -113.6174603,
+    "site_name": "SANTA CLARA RIVER NEAR CENTRAL, UTAH",
+    "site_type": "ST",
+    "distance_km": 21.29
+   },
+   {
+    "site_no": "09409100",
+    "site_lat": 37.38470108,
+    "site_lon": -113.6319052,
+    "site_name": "SANTA CLARA RIVER ABV BAKER RES, NR CENTRAL, UT",
+    "site_type": "ST",
+    "distance_km": 22.37
+   }
+  ]
+ },
+ "42.5918,-88.4345": {
+  "location": "Lake Geneva, WI",
+  "lat": 42.5918039,
+  "lon": -88.4345369,
+  "sites": []
+ },
+ "32.7121,-94.1213": {
+  "location": "Uncertain, TX",
+  "lat": 32.7120883,
+  "lon": -94.1212966,
+  "sites": []
+ },
+ "40.5581,-90.0351": {
+  "location": "Canton, IL",
+  "lat": 40.5580945,
+  "lon": -90.0351167,
+  "sites": []
+ },
+ "42.8653,-83.1427": {
+  "location": "Leonard, MI",
+  "lat": 42.8653073,
+  "lon": -83.1427148,
+  "sites": []
+ },
+ "36.4370,-88.2084": {
+  "location": "Buchanan, TN",
+  "lat": 36.4369999,
+  "lon": -88.2083713,
+  "sites": []
+ },
+ "37.5701,-119.9037": {
+  "location": "Mariposa County, CA",
+  "lat": 37.570148,
+  "lon": -119.9036592,
+  "sites": []
+ },
+ "37.9853,-120.3835": {
+  "location": "Sonora, CA",
+  "lat": 37.985304,
+  "lon": -120.3835349,
+  "sites": [
+   {
+    "site_no": "11299200",
+    "site_lat": 37.94631414,
+    "site_lon": -120.5282548,
+    "site_name": "NEW MELONES PP BL NEW MELONES DAM NR SONORA CA",
+    "site_type": "ST",
+    "distance_km": 13.41
+   },
+   {
+    "site_no": "11299500",
+    "site_lat": 37.94714745,
+    "site_lon": -120.5301993,
+    "site_name": "STANISLAUS R BL MELONES PH NR SONORA CA",
+    "site_type": "ST",
+    "distance_km": 13.54
+   },
+   {
+    "site_no": "11286500",
+    "site_lat": 37.8582606,
+    "site_lon": -120.396861,
+    "site_name": "WOODS C NR JACKSONVILLE CA",
+    "site_type": "ST",
+    "distance_km": 14.17
+   },
+   {
+    "site_no": "11285500",
+    "site_lat": 37.8783333,
+    "site_lon": -120.2947222,
+    "site_name": "TUOLUMNE R A WARDS FERRY BR NR GROVELAND CA",
+    "site_type": "ST",
+    "distance_km": 14.22
+   },
+   {
+    "site_no": "11285000",
+    "site_lat": 37.98131299,
+    "site_lon": -120.2065768,
+    "site_name": "NF TUOLUMNE R AB DYER C NR TUOLUMNE CA",
+    "site_type": "ST",
+    "distance_km": 15.52
+   }
+  ]
+ },
+ "37.3434,-85.3419": {
+  "location": "Campbellsville, KY",
+  "lat": 37.3433974,
+  "lon": -85.3419069,
+  "sites": [
+   {
+    "site_no": "03305990",
+    "site_lat": 37.24784155,
+    "site_lon": -85.3399624,
+    "site_name": "GREEN RIVER LAKE NEAR CAMPBELLSVILLE, KY",
+    "site_type": "LK",
+    "distance_km": 10.63
+   },
+   {
+    "site_no": "03307260",
+    "site_lat": 37.3472854,
+    "site_lon": -85.3902414,
+    "site_name": "LITTLE PITMAN CREEK NEAR CAMPBELLSVILLE, KY",
+    "site_type": "ST",
+    "distance_km": 4.29
+   },
+   {
+    "site_no": "03306000",
+    "site_lat": 37.2403413,
+    "site_lon": -85.3471848,
+    "site_name": "GREEN RIVER NEAR CAMPBELLSVILLE, KY",
+    "site_type": "ST",
+    "distance_km": 11.47
+   },
+   {
+    "site_no": "03306500",
+    "site_lat": 37.2536713,
+    "site_lon": -85.5030215,
+    "site_name": "GREEN RIVER AT GREENSBURG, KY",
+    "site_type": "ST",
+    "distance_km": 17.4
+   },
+   {
+    "site_no": "03307100",
+    "site_lat": 37.16811579,
+    "site_lon": -85.4696874,
+    "site_name": "RUSSELL CREEK NEAR GRESHAM, KY",
+    "site_type": "ST",
+    "distance_km": 22.53
+   }
+  ]
+ },
+ "40.9255,-80.1443": {
+  "location": "Portersville, PA",
+  "lat": 40.9255114,
+  "lon": -80.1442551,
+  "sites": []
+ },
+ "39.9980,-79.0416": {
+  "location": "Somerset, PA",
+  "lat": 39.9980022,
+  "lon": -79.0415528,
+  "sites": []
+ },
+ "40.8586,-80.2896": {
+  "location": "Ellwood City, PA",
+  "lat": 40.858579,
+  "lon": -80.2895502,
+  "sites": []
+ },
+ "40.2222,-79.7633": {
+  "location": "West Newton, PA",
+  "lat": 40.222193,
+  "lon": -79.7632907,
+  "sites": []
+ },
+ "41.1819,-79.4292": {
+  "location": "Clarion, PA",
+  "lat": 41.1818771,
+  "lon": -79.429169,
+  "sites": []
+ },
+ "40.6740,-79.6848": {
+  "location": "Freeport, PA",
+  "lat": 40.6739543,
+  "lon": -79.6847703,
+  "sites": []
+ },
+ "38.6339,-95.8258": {
+  "location": "Osage City, KS",
+  "lat": 38.6338982,
+  "lon": -95.8258206,
+  "sites": []
+ },
+ "31.1693,-88.9200": {
+  "location": "Beaumont , MS",
+  "lat": 31.1693496,
+  "lon": -88.9200444,
+  "sites": []
+ },
+ "40.5904,-99.8612": {
+  "location": "Elwood, NE",
+  "lat": 40.590386,
+  "lon": -99.861212,
+  "sites": []
+ },
+ "40.5757,-76.3566": {
+  "location": "washington, PA",
+  "lat": 40.5757287,
+  "lon": -76.3566061,
+  "sites": []
+ },
+ "36.8623,-87.8374": {
+  "location": "Cadiz, KY",
+  "lat": 36.8623097,
+  "lon": -87.8373777,
+  "sites": []
+ },
+ "40.0640,-80.7209": {
+  "location": "wheeling, WV",
+  "lat": 40.0639616,
+  "lon": -80.7209149,
+  "sites": []
+ },
+ "36.4001,-93.7392": {
+  "location": "Eureka Springs, AR",
+  "lat": 36.4000796,
+  "lon": -93.7392419,
+  "sites": []
+ },
+ "37.9577,-121.2908": {
+  "location": "Stockton, CA",
+  "lat": 37.9577016,
+  "lon": -121.290779,
+  "sites": [
+   {
+    "site_no": "380626121383806",
+    "site_lat": 38.1071408,
+    "site_lon": -121.6449539,
+    "site_name": "TWITCHELL ISL DEMO PROJ E POND E INLET",
+    "site_type": "LK",
+    "distance_km": 35.19
+   },
+   {
+    "site_no": "380626121383807",
+    "site_lat": 38.1071408,
+    "site_lon": -121.6449539,
+    "site_name": "TWITCHELL ISL DEMO PROJ E POND W INLET",
+    "site_type": "LK",
+    "distance_km": 35.19
+   },
+   {
+    "site_no": "380626121383808",
+    "site_lat": 38.1071408,
+    "site_lon": -121.6449539,
+    "site_name": "COMBINED FLOW, W + E INLETS, TWITCHELL ISL E POND",
+    "site_type": "LK",
+    "distance_km": 35.19
+   },
+   {
+    "site_no": "380629121385201",
+    "site_lat": 38.1079741,
+    "site_lon": -121.6488429,
+    "site_name": "TWITCHELL ISL DEMO PROJ W POND W OUTLET",
+    "site_type": "LK",
+    "distance_km": 35.53
+   },
+   {
+    "site_no": "380629121385206",
+    "site_lat": 38.1079741,
+    "site_lon": -121.6488429,
+    "site_name": "TWITCHELL ISL DEMO PROJ W POND E INLET",
+    "site_type": "LK",
+    "distance_km": 35.53
+   }
+  ]
+ },
+ "34.0360,-118.0587": {
+  "location": "Whittier , CA",
+  "lat": 34.0359711,
+  "lon": -118.0587174,
+  "sites": []
+ },
+ "42.7920,-83.6277": {
+  "location": "Holly, MI",
+  "lat": 42.7919727,
+  "lon": -83.6277255,
+  "sites": []
+ },
+ "44.8740,-79.8116": {
+  "location": "Honey Harbour, ON",
+  "lat": 44.8739609,
+  "lon": -79.8116047,
+  "sites": []
+ },
+ "44.3203,-91.9149": {
+  "location": "Alma, WI",
+  "lat": 44.320281,
+  "lon": -91.9149094,
+  "sites": []
+ },
+ "45.9148,-91.1450": {
+  "location": "New Post, WI",
+  "lat": 45.9147995,
+  "lon": -91.1450417,
+  "sites": []
+ },
+ "40.1884,-81.1965": {
+  "location": "piedmont, OH",
+  "lat": 40.1884013,
+  "lon": -81.1964948,
+  "sites": []
+ },
+ "40.0307,-81.0091": {
+  "location": "barkcamp, OH",
+  "lat": 40.0306569,
+  "lon": -81.0091241,
+  "sites": []
+ },
+ "34.2151,-95.1252": {
+  "location": "Ringold, OK",
+  "lat": 34.2151032,
+  "lon": -95.1252314,
+  "sites": []
+ },
+ "32.2731,-89.9868": {
+  "location": "Brandon, MS",
+  "lat": 32.2731475,
+  "lon": -89.9868058,
+  "sites": [
+   {
+    "site_no": "02485600",
+    "site_lat": 32.39777778,
+    "site_lon": -90.065,
+    "site_name": "ROSS BARNETT RESERVOIR NR JACKSON, MS",
+    "site_type": "LK",
+    "distance_km": 15.69
+   },
+   {
+    "site_no": "02485500",
+    "site_lat": 32.38847699,
+    "site_lon": -89.9681377,
+    "site_name": "PELAHATCHIE CREEK NR FANNIN, MS",
+    "site_type": "ST",
+    "distance_km": 12.94
+   },
+   {
+    "site_no": "02485498",
+    "site_lat": 32.38805556,
+    "site_lon": -89.9552778,
+    "site_name": "PELAHATCHIE CREEK AT STATE HWY 25 NR FANNIN, MS",
+    "site_type": "ST",
+    "distance_km": 13.12
+   },
+   {
+    "site_no": "02485735",
+    "site_lat": 32.33153417,
+    "site_lon": -90.1292532,
+    "site_name": "PEARL RIVER AT HWY 25 AT JACKSON, MS",
+    "site_type": "ST",
+    "distance_km": 14.88
+   },
+   {
+    "site_no": "02485601",
+    "site_lat": 32.39777778,
+    "site_lon": -90.0647222,
+    "site_name": "PEARL RIVER AT ROSS BARNETT RESERVOIR, MS",
+    "site_type": "ST",
+    "distance_km": 15.67
+   }
+  ]
+ },
+ "37.6340,-79.4503": {
+  "location": "Glasgow, VA",
+  "lat": 37.6340238,
+  "lon": -79.4503138,
+  "sites": []
+ },
+ "41.2073,-86.6020": {
+  "location": "Bass Lake, IN",
+  "lat": 41.2072635,
+  "lon": -86.6019562,
+  "sites": []
+ },
+ "37.2710,-79.9414": {
+  "location": "Roanoke, VA",
+  "lat": 37.270973,
+  "lon": -79.9414313,
+  "sites": []
+ },
+ "29.6520,-82.3250": {
+  "location": "Gainesville , FL",
+  "lat": 29.6519684,
+  "lon": -82.3249846,
+  "sites": []
+ },
+ "34.7907,-92.3300": {
+  "location": "Little rock, AR",
+  "lat": 34.7907019,
+  "lon": -92.3299976,
+  "sites": []
+ },
+ "40.0058,-81.0098": {
+  "location": "belmont, OH",
+  "lat": 40.0057737,
+  "lon": -81.0097516,
+  "sites": []
+ },
+ "39.4931,-91.7871": {
+  "location": "Florida, MO",
+  "lat": 39.4930958,
+  "lon": -91.7871068,
+  "sites": []
+ },
+ "32.3482,-93.5527": {
+  "location": "Elm Grove, LA",
+  "lat": 32.3482114,
+  "lon": -93.5526756,
+  "sites": []
+ },
+ "35.2784,-93.1338": {
+  "location": "Russellville, AR",
+  "lat": 35.2784173,
+  "lon": -93.1337856,
+  "sites": []
+ },
+ "36.5745,-85.1288": {
+  "location": "Byrdstown, TN",
+  "lat": 36.5745104,
+  "lon": -85.1288435,
+  "sites": []
+ },
+ "29.0428,-81.9293": {
+  "location": "Ocklawaha, FL",
+  "lat": 29.0427592,
+  "lon": -81.9292505,
+  "sites": []
+ },
+ "35.6920,-84.8608": {
+  "location": "Spring City, TN",
+  "lat": 35.692015,
+  "lon": -84.8607801,
+  "sites": []
+ },
+ "36.3554,-85.6589": {
+  "location": "Gainesboro, TN",
+  "lat": 36.355428,
+  "lon": -85.6588652,
+  "sites": []
+ },
+ "33.5578,-87.1142": {
+  "location": "Jefferson City, TN",
+  "lat": 33.5578154,
+  "lon": -87.1142035,
+  "sites": []
+ },
+ "35.0742,-85.6261": {
+  "location": "Jasper, TN",
+  "lat": 35.0742448,
+  "lon": -85.6260789,
+  "sites": []
+ },
+ "35.9604,-83.9210": {
+  "location": "Knoxville, TN",
+  "lat": 35.9603948,
+  "lon": -83.9210261,
+  "sites": []
+ },
+ "36.6987,-78.9014": {
+  "location": "South Boston, VA",
+  "lat": 36.6987494,
+  "lon": -78.9013987,
+  "sites": []
+ },
+ "33.4710,-81.9748": {
+  "location": "Augusta, GA",
+  "lat": 33.4709714,
+  "lon": -81.9748429,
+  "sites": []
+ },
+ "35.1104,-81.0538": {
+  "location": "Lake Wylie, SC",
+  "lat": 35.110422,
+  "lon": -81.0538064,
+  "sites": [
+   {
+    "site_no": "0214678230",
+    "site_lat": 35.09681138,
+    "site_lon": -80.9725755,
+    "site_name": "WALKER BR AT SR1123 NR PINE HARBOR, NC",
+    "site_type": "ST",
+    "distance_km": 7.54
+   },
+   {
+    "site_no": "02145642",
+    "site_lat": 35.1373616,
+    "site_lon": -81.13563159,
+    "site_name": "CROWDERS CREEK RD 1104 NEAR CLOVER, SC",
+    "site_type": "ST",
+    "distance_km": 8.02
+   },
+   {
+    "site_no": "0214297160",
+    "site_lat": 35.1697222,
+    "site_lon": -80.9877778,
+    "site_name": "BEAVERDAM CREEK AB WINDY GAP ROAD NR SHOPTON, NC",
+    "site_type": "ST",
+    "distance_km": 8.92
+   },
+   {
+    "site_no": "0214678175",
+    "site_lat": 35.105,
+    "site_lon": -80.9536111,
+    "site_name": "STEELE CREEK AT SR1441 NR PINEVILLE, NC",
+    "site_type": "ST",
+    "distance_km": 9.13
+   },
+   {
+    "site_no": "021457492",
+    "site_lat": 35.065,
+    "site_lon": -81.1383333,
+    "site_name": "ALLISON CREEK AT RD 114 NEAR YORK, SC",
+    "site_type": "ST",
+    "distance_km": 9.2
+   }
+  ]
+ },
+ "34.8670,-82.2791": {
+  "location": "Creedmoor , SC",
+  "lat": 34.8670142,
+  "lon": -82.2791103,
+  "sites": [
+   {
+    "site_no": "021623961",
+    "site_lat": 35.14166667,
+    "site_lon": -82.4086111,
+    "site_name": "NORTH SALUDA RESERVOIR NEAR TIGERVILLE, SC",
+    "site_type": "LK",
+    "distance_km": 32.74
+   },
+   {
+    "site_no": "02162285",
+    "site_lat": 35.06505,
+    "site_lon": -82.671753,
+    "site_name": "TABLE ROCK RESERVOIR NR CLEVELAND, SC",
+    "site_type": "LK",
+    "distance_km": 42.01
+   },
+   {
+    "site_no": "021603273",
+    "site_lat": 34.855983,
+    "site_lon": -82.268406,
+    "site_name": "ROCKY CREEK NEAR WADE HAMPTON, SC",
+    "site_type": "ST",
+    "distance_km": 1.57
+   },
+   {
+    "site_no": "021603257",
+    "site_lat": 34.86317327,
+    "site_lon": -82.2506702,
+    "site_name": "BRUSHY CREEK NEAR PELHAM, SC",
+    "site_type": "ST",
+    "distance_km": 2.63
+   },
+   {
+    "site_no": "02160325",
+    "site_lat": 34.883503,
+    "site_lon": -82.300794,
+    "site_name": "BRUSHY CREEK NEAR GREENVILLE, SC",
+    "site_type": "ST",
+    "distance_km": 2.7
+   }
+  ]
+ },
+ "34.9437,-81.1752": {
+  "location": "ROCK HILL, SC",
+  "lat": 34.9437277,
+  "lon": -81.1752188,
+  "sites": []
+ },
+ "35.7333,-81.3443": {
+  "location": "Hickory, NC",
+  "lat": 35.7333312,
+  "lon": -81.3442915,
+  "sites": []
+ },
+ "37.2318,-79.8106": {
+  "location": "Hardy, VA",
+  "lat": 37.2318062,
+  "lon": -79.8105908,
+  "sites": []
+ },
+ "31.0290,-83.0768": {
+  "location": "Lanier, GA",
+  "lat": 31.029016,
+  "lon": -83.0768357,
+  "sites": []
+ },
+ "29.0281,-81.3034": {
+  "location": "Deland, FL",
+  "lat": 29.0281051,
+  "lon": -81.3034183,
+  "sites": []
+ },
+ "41.7701,-72.3051": {
+  "location": "Coventry , CT",
+  "lat": 41.7700987,
+  "lon": -72.3050803,
+  "sites": []
+ },
+ "34.1112,-82.8671": {
+  "location": "Elberton, GA",
+  "lat": 34.1112226,
+  "lon": -82.8670839,
+  "sites": []
+ },
+ "34.9958,-84.0736": {
+  "location": "Blairseville, GA",
+  "lat": 34.9958328,
+  "lon": -84.0736091,
+  "sites": []
+ },
+ "44.5567,-78.3484": {
+  "location": "Buckhorn, ON",
+  "lat": 44.5567327,
+  "lon": -78.3484101,
+  "sites": []
+ },
+ "45.5595,-80.5030": {
+  "location": "Pointe au Baril, ON",
+  "lat": 45.5594904,
+  "lon": -80.5029507,
+  "sites": []
+ },
+ "28.2886,-81.4594": {
+  "location": "Kissimmee , FL",
+  "lat": 28.2885979,
+  "lon": -81.4593579,
+  "sites": [
+   {
+    "site_no": "02263800",
+    "site_lat": 28.3041775,
+    "site_lon": -81.450905,
+    "site_name": "SHINGLE CREEK AT AIRPORT NEAR KISSIMMEE, FL",
+    "site_type": "ST",
+    "distance_km": 1.92
+   },
+   {
+    "site_no": "02264495",
+    "site_lat": 28.26723444,
+    "site_lon": -81.4478495,
+    "site_name": "SHINGLE CREEK AT CAMPBELL, FL",
+    "site_type": "ST",
+    "distance_km": 2.63
+   },
+   {
+    "site_no": "02264140",
+    "site_lat": 28.30806625,
+    "site_lon": -81.5245174,
+    "site_name": "BONNET CREEK NEAR KISSIMMEE, FL",
+    "site_type": "ST",
+    "distance_km": 6.74
+   },
+   {
+    "site_no": "02264141",
+    "site_lat": 28.30806625,
+    "site_lon": -81.5245174,
+    "site_name": "BONNET CREEK BELOW CULVERTS NEAR KISSIMMEE, FL",
+    "site_type": "ST",
+    "distance_km": 6.74
+   },
+   {
+    "site_no": "02264100",
+    "site_lat": 28.32528785,
+    "site_lon": -81.5206284,
+    "site_name": "BONNET CREEK NEAR VINELAND, FL",
+    "site_type": "ST",
+    "distance_km": 7.25
+   }
+  ]
+ },
+ "42.0544,-104.9527": {
+  "location": "Wheatland, WY",
+  "lat": 42.054424,
+  "lon": -104.952726,
+  "sites": []
+ },
+ "33.1857,-94.8544": {
+  "location": "Cookville, TX",
+  "lat": 33.1856757,
+  "lon": -94.8543771,
+  "sites": []
+ },
+ "37.7862,-82.7935": {
+  "location": "Hagerhill, KY",
+  "lat": 37.7862059,
+  "lon": -82.7934938,
+  "sites": []
+ },
+ "29.7861,-82.0315": {
+  "location": "Keystone Heights, FL",
+  "lat": 29.7860769,
+  "lon": -82.0314892,
+  "sites": []
+ },
+ "41.6388,-80.1533": {
+  "location": "Meadville, PA",
+  "lat": 41.6387569,
+  "lon": -80.1532563,
+  "sites": []
+ },
+ "34.3626,-92.8093": {
+  "location": "Malvern, AR",
+  "lat": 34.3625823,
+  "lon": -92.8092694,
+  "sites": []
+ },
+ "27.4957,-81.4410": {
+  "location": "Sebring, FL",
+  "lat": 27.4957453,
+  "lon": -81.4410425,
+  "sites": []
+ },
+ "28.5657,-81.5857": {
+  "location": "Winter Garden, FL",
+  "lat": 28.5656649,
+  "lon": -81.5856742,
+  "sites": []
+ },
+ "45.2166,-67.2408": {
+  "location": "Saint-Stephen, NB",
+  "lat": 45.2166401,
+  "lon": -67.2408473,
+  "sites": [
+   {
+    "site_no": "01019300",
+    "site_lat": 45.2256833,
+    "site_lon": -67.57705278,
+    "site_name": "Lewy Lake at Princeton, Maine",
+    "site_type": "LK",
+    "distance_km": 26.35
+   },
+   {
+    "site_no": "01021050",
+    "site_lat": 45.17,
+    "site_lon": -67.2966667,
+    "site_name": "St. Croix River at Milltown, Maine",
+    "site_type": "ST",
+    "distance_km": 6.78
+   },
+   {
+    "site_no": "01021000",
+    "site_lat": 45.1369444,
+    "site_lon": -67.3180556,
+    "site_name": "St. Croix River at Baring, Maine",
+    "site_type": "ST",
+    "distance_km": 10.73
+   },
+   {
+    "site_no": "01020000",
+    "site_lat": 45.2653472,
+    "site_lon": -67.4757306,
+    "site_name": "ST. CROIX RIVER NEAR BAILEYVILLE, ME",
+    "site_type": "ST",
+    "distance_km": 19.17
+   },
+   {
+    "site_no": "01021200",
+    "site_lat": 44.90138889,
+    "site_lon": -67.2475,
+    "site_name": "Dennys River at Dennysville, Maine",
+    "site_type": "ST",
+    "distance_km": 35.06
+   }
+  ]
+ },
+ "45.9401,-66.9005": {
+  "location": "Mactaquac, NB",
+  "lat": 45.9401073,
+  "lon": -66.9005201,
+  "sites": []
+ },
+ "45.5938,-67.3265": {
+  "location": "McAdam, NB",
+  "lat": 45.593776,
+  "lon": -67.3265021,
+  "sites": []
+ },
+ "31.2436,-90.4536": {
+  "location": "McComb , MS",
+  "lat": 31.2435782,
+  "lon": -90.4535887,
+  "sites": []
+ },
+ "31.6750,-88.6461": {
+  "location": "Waynesboro , MS",
+  "lat": 31.6749854,
+  "lon": -88.6461237,
+  "sites": [
+   {
+    "site_no": "02477500",
+    "site_lat": 31.68254959,
+    "site_lon": -88.68351,
+    "site_name": "CHICKASAWHAY RIVER NR WAYNESBORO, MS",
+    "site_type": "ST",
+    "distance_km": 3.64
+   },
+   {
+    "site_no": "02478000",
+    "site_lat": 31.65349438,
+    "site_lon": -88.5216938,
+    "site_name": "BUCKATUNNA CREEK AT DENHAM, MS",
+    "site_type": "ST",
+    "distance_km": 12.02
+   },
+   {
+    "site_no": "02477990",
+    "site_lat": 31.69416667,
+    "site_lon": -88.5191667,
+    "site_name": "BUCKATUNNA CREEK NR DENHAM, MS",
+    "site_type": "ST",
+    "distance_km": 12.2
+   },
+   {
+    "site_no": "02477350",
+    "site_lat": 31.8487668,
+    "site_lon": -88.69004,
+    "site_name": "CHICKASAWHAY RIVER AT SHUBUTA, MS",
+    "site_type": "ST",
+    "distance_km": 19.76
+   },
+   {
+    "site_no": "02477045",
+    "site_lat": 32.04240686,
+    "site_lon": -88.7442142,
+    "site_name": "CHICKASAWHAY RIVER AT QUITMAN, MS",
+    "site_type": "ST",
+    "distance_km": 41.89
+   }
+  ]
+ },
+ "40.9880,-109.7226": {
+  "location": "Manila, UT",
+  "lat": 40.9880142,
+  "lon": -109.722649,
+  "sites": []
+ },
+ "39.7945,-99.9100": {
+  "location": "Norton, KS",
+  "lat": 39.7944702,
+  "lon": -99.9100033,
+  "sites": []
+ },
+ "41.1248,-101.7190": {
+  "location": "Ogallala, NE",
+  "lat": 41.1248328,
+  "lon": -101.7189583,
+  "sites": [
+   {
+    "site_no": "06764880",
+    "site_lat": 41.1261111,
+    "site_lon": -101.5766667,
+    "site_name": "South Platte River at Roscoe, Nebr.",
+    "site_type": "ST",
+    "distance_km": 11.92
+   },
+   {
+    "site_no": "06690500",
+    "site_lat": 41.2108333,
+    "site_lon": -101.6322222,
+    "site_name": "NORTH PLATTE RIVER NEAR KEYSTONE, NEBR.",
+    "site_type": "ST",
+    "distance_km": 12.01
+   },
+   {
+    "site_no": "06765000",
+    "site_lat": 41.11666667,
+    "site_lon": -101.3561111,
+    "site_name": "SOUTH PLATTE RIVER AT PAXTON, NEBR.",
+    "site_type": "ST",
+    "distance_km": 30.41
+   },
+   {
+    "site_no": "06687500",
+    "site_lat": 41.31666667,
+    "site_lon": -102.1258333,
+    "site_name": "NORTH PLATTE RIVER AT LEWELLEN NEBR",
+    "site_type": "ST",
+    "distance_km": 40.16
+   },
+   {
+    "site_no": "06687499",
+    "site_lat": 41.3166308,
+    "site_lon": -102.1264696,
+    "site_name": "North Platte River at Lewellen, Nebr. (N. Channel)",
+    "site_type": "ST",
+    "distance_km": 40.21
+   }
+  ]
+ },
+ "34.1609,-94.7596": {
+  "location": "Broken Bow, OK",
+  "lat": 34.1608809,
+  "lon": -94.7596065,
+  "sites": []
+ },
+ "32.3695,-98.7117": {
+  "location": "SANTIAGO NUEVO LEON, NEWL",
+  "lat": 32.36948944,
+  "lon": -98.7117474,
+  "sites": []
+ },
+ "44.2240,-74.4643": {
+  "location": "Tupper Lake, NY",
+  "lat": 44.224044,
+  "lon": -74.464302,
+  "sites": []
+ },
+ "43.0822,-73.7854": {
+  "location": "Saratoga Springs , NY",
+  "lat": 43.0821793,
+  "lon": -73.7853915,
+  "sites": [
+   {
+    "site_no": "01330500",
+    "site_lat": 43.0383333,
+    "site_lon": -73.9091667,
+    "site_name": "KAYADEROSSERAS CREEK NR WEST MILTON NY",
+    "site_type": "ST",
+    "distance_km": 11.18
+   },
+   {
+    "site_no": "01330000",
+    "site_lat": 43.03080556,
+    "site_lon": -73.9275833,
+    "site_name": "GLOWEGEE CREEK AT WEST MILTON NY",
+    "site_type": "ST",
+    "distance_km": 12.89
+   },
+   {
+    "site_no": "01328770",
+    "site_lat": 43.12538889,
+    "site_lon": -73.5849167,
+    "site_name": "HUDSON RIVER AT THOMSON NY",
+    "site_type": "ST",
+    "distance_km": 16.97
+   },
+   {
+    "site_no": "01329650",
+    "site_lat": 43.09840888,
+    "site_lon": -73.57317119,
+    "site_name": "HUDSON RIVER AT SCHUYLERVILLE NY",
+    "site_type": "ST",
+    "distance_km": 17.33
+   },
+   {
+    "site_no": "01326500",
+    "site_lat": 43.2426111,
+    "site_lon": -73.7445833,
+    "site_name": "HUDSON RIVER AT SPIER FALLS NY",
+    "site_type": "ST",
+    "distance_km": 18.14
+   }
+  ]
+ },
+ "40.5992,-77.5714": {
+  "location": "Lewistown, PA",
+  "lat": 40.5992395,
+  "lon": -77.571382,
+  "sites": []
+ },
+ "29.4236,-82.2168": {
+  "location": "Orange Lake, FL",
+  "lat": 29.4235826,
+  "lon": -82.2167642,
+  "sites": [
+   {
+    "site_no": "022409424",
+    "site_lat": 29.46719239,
+    "site_lon": -82.3142677,
+    "site_name": "MOORES POND TRIB. NEAR MICANOPY, FL.",
+    "site_type": "ST",
+    "distance_km": 10.61
+   },
+   {
+    "site_no": "02242451",
+    "site_lat": 29.44191603,
+    "site_lon": -82.1087047,
+    "site_name": "ORANGE LAKE OUTLET NEAR CITRA, FL",
+    "site_type": "ST",
+    "distance_km": 10.66
+   },
+   {
+    "site_no": "02242500",
+    "site_lat": 29.48830407,
+    "site_lon": -82.1017604,
+    "site_name": "LOCHLOOSA SLOUGH NR LOCHLOOSA, FLA.",
+    "site_type": "ST",
+    "distance_km": 13.26
+   },
+   {
+    "site_no": "02242460",
+    "site_lat": 29.45830477,
+    "site_lon": -82.0609253,
+    "site_name": "ORANGE CREEK NEAR ISLAND GROVE, FL",
+    "site_type": "ST",
+    "distance_km": 15.58
+   },
+   {
+    "site_no": "02241000",
+    "site_lat": 29.57608027,
+    "site_lon": -82.24982278,
+    "site_name": "CAMPS CANAL NEAR ROCHELLE, FL",
+    "site_type": "ST",
+    "distance_km": 17.26
+   }
+  ]
+ },
+ "40.8515,-73.0994": {
+  "location": "Long Island, NY",
+  "lat": 40.8514971,
+  "lon": -73.0994297,
+  "sites": []
+ },
+ "27.6082,-80.3943": {
+  "location": "Vero Beach, FL",
+  "lat": 27.6082405,
+  "lon": -80.394252,
+  "sites": []
+ },
+ "43.0980,-88.4027": {
+  "location": "Nashotah, WI",
+  "lat": 43.0979818,
+  "lon": -88.4026935,
+  "sites": [
+   {
+    "site_no": "05425000",
+    "site_lat": 43.1250053,
+    "site_lon": -88.3903208,
+    "site_name": "PINE LAKE NEAR HARTLAND, WI",
+    "site_type": "LK",
+    "distance_km": 3.17
+   },
+   {
+    "site_no": "430723088252100",
+    "site_lat": 43.12306235,
+    "site_lon": -88.4225974,
+    "site_name": "OKAUCHEE LAKE AT OKAUCHEE, WI",
+    "site_type": "LK",
+    "distance_km": 3.22
+   },
+   {
+    "site_no": "430347088240800",
+    "site_lat": 43.0630612,
+    "site_lon": -88.4022656,
+    "site_name": "NAGAWICKA LAKE AT DELAFIELD, WI",
+    "site_type": "LK",
+    "distance_km": 3.88
+   },
+   {
+    "site_no": "05424500",
+    "site_lat": 43.1236164,
+    "site_lon": -88.3614309,
+    "site_name": "BEAVER LAKE NEAR HARTLAND, WI",
+    "site_type": "LK",
+    "distance_km": 4.4
+   },
+   {
+    "site_no": "430551088273500",
+    "site_lat": 43.09750715,
+    "site_lon": -88.4598204,
+    "site_name": "OCONOMOWOC LAKE NO. 1 (CENTER) AT OCONOMOWOC, WI",
+    "site_type": "LK",
+    "distance_km": 4.64
+   }
+  ]
+ },
+ "37.5695,-80.0549": {
+  "location": "Craig , CO",
+  "lat": 37.5695168,
+  "lon": -80.0549251,
+  "sites": []
+ },
+ "37.6671,-82.7752": {
+  "location": "Prestonsburg, KY",
+  "lat": 37.6670772,
+  "lon": -82.7751769,
+  "sites": []
+ },
+ "38.1771,-75.3927": {
+  "location": "Snow Hill, MD",
+  "lat": 38.1770634,
+  "lon": -75.3926959,
+  "sites": []
+ },
+ "38.3660,-75.6010": {
+  "location": "Salisbury, MD",
+  "lat": 38.366027,
+  "lon": -75.6009964,
+  "sites": []
+ },
+ "29.6219,-81.8914": {
+  "location": "Interlachen, FL",
+  "lat": 29.6218649,
+  "lon": -81.891421,
+  "sites": []
+ },
+ "39.4459,-89.7782": {
+  "location": "Girard, IL",
+  "lat": 39.4458825,
+  "lon": -89.7782498,
+  "sites": []
+ },
+ "40.8075,-73.1360": {
+  "location": "Ronkonkoma, NY",
+  "lat": 40.8075225,
+  "lon": -73.1359924,
+  "sites": []
+ },
+ "30.6174,-92.0035": {
+  "location": "St. Landry, LA",
+  "lat": 30.6174002,
+  "lon": -92.0035057,
+  "sites": []
+ },
+ "37.0518,-84.6787": {
+  "location": "Pulaski , VA",
+  "lat": 37.0517915,
+  "lon": -84.6787075,
+  "sites": [
+   {
+    "site_no": "03411500",
+    "site_lat": 36.99118799,
+    "site_lon": -84.61966309,
+    "site_name": "CUMBERLAND RIVER AT BURNSIDE, KY",
+    "site_type": "ST",
+    "distance_km": 8.54
+   },
+   {
+    "site_no": "03412500",
+    "site_lat": 37.1170226,
+    "site_lon": -84.5918862,
+    "site_name": "PITMAN CREEK AT SOMERSET, KY",
+    "site_type": "ST",
+    "distance_km": 10.58
+   },
+   {
+    "site_no": "03412000",
+    "site_lat": 37.1348006,
+    "site_lon": -84.5874418,
+    "site_name": "PITMAN CREK NEAR SOMERSET, KY",
+    "site_type": "ST",
+    "distance_km": 12.28
+   },
+   {
+    "site_no": "03411000",
+    "site_lat": 36.84035447,
+    "site_lon": -84.5832734,
+    "site_name": "SOUTH FORK CUMBERLAND RIVER AT NEVELSVILLE, KY",
+    "site_type": "ST",
+    "distance_km": 24.99
+   },
+   {
+    "site_no": "03407300",
+    "site_lat": 36.8853566,
+    "site_lon": -84.4818831,
+    "site_name": "HELTON BRANCH AT GREENWOOD, KY",
+    "site_type": "ST",
+    "distance_km": 25.46
+   }
+  ]
+ },
+ "29.0303,-82.6687": {
+  "location": "Inglis, FL",
+  "lat": 29.0302514,
+  "lon": -82.6687161,
+  "sites": [
+   {
+    "site_no": "02313250",
+    "site_lat": 29.02108538,
+    "site_lon": -82.6378818,
+    "site_name": "WITHLACOOCHEE R BYPASS CHANNEL NR INGLIS FLA",
+    "site_type": "ST",
+    "distance_km": 3.17
+   },
+   {
+    "site_no": "02313237",
+    "site_lat": 29.02525223,
+    "site_lon": -82.61649239,
+    "site_name": "BARGE CANAL AT INGLIS LOCK NR INGLIS, FLA.",
+    "site_type": "ST",
+    "distance_km": 5.11
+   },
+   {
+    "site_no": "02313230",
+    "site_lat": 29.00997485,
+    "site_lon": -82.6167699,
+    "site_name": "WITHLACOOCHEE R AT INGLIS DAM NEAR DUNNELLON, FL",
+    "site_type": "ST",
+    "distance_km": 5.53
+   },
+   {
+    "site_no": "02313231",
+    "site_lat": 29.00997485,
+    "site_lon": -82.6167699,
+    "site_name": "WITHLACOOCHEE R BL INGLIS DAM NR DUNNELLON, FLA.",
+    "site_type": "ST",
+    "distance_km": 5.53
+   },
+   {
+    "site_no": "02313272",
+    "site_lat": 29.00112873,
+    "site_lon": -82.76583301,
+    "site_name": "WITHLACOOCHEE R AT CHAMBERS IS NEAR YANKEETOWN FL",
+    "site_type": "ST",
+    "distance_km": 9.98
+   }
+  ]
+ },
+ "40.0891,-109.6774": {
+  "location": "Ouray, UT",
+  "lat": 40.0891304,
+  "lon": -109.6773608,
+  "sites": []
+ },
+ "36.3834,-85.3230": {
+  "location": "Livingston , TN",
+  "lat": 36.3833961,
+  "lon": -85.3230221,
+  "sites": []
+ },
+ "43.7854,-89.3260": {
+  "location": "Marquette, WI, WI",
+  "lat": 43.7853887,
+  "lon": -89.3260481,
+  "sites": []
+ },
+ "37.8145,-82.8071": {
+  "location": "Paintsville, KY",
+  "lat": 37.8145384,
+  "lon": -82.8071054,
+  "sites": []
+ },
+ "39.7077,-80.5679": {
+  "location": "fish creek, WV",
+  "lat": 39.7077248,
+  "lon": -80.5679251,
+  "sites": []
+ },
+ "28.8530,-82.2134": {
+  "location": "Rutland, FL",
+  "lat": 28.8530405,
+  "lon": -82.2134239,
+  "sites": []
+ },
+ "46.3580,-94.2008": {
+  "location": "Brainerd, MN",
+  "lat": 46.3580221,
+  "lon": -94.2008288,
+  "sites": [
+   {
+    "site_no": "05284000",
+    "site_lat": 46.30731096,
+    "site_lon": -93.8119353,
+    "site_name": "MILLE LACS LAKE NR GARRISON, MN",
+    "site_type": "LK",
+    "distance_km": 30.39
+   },
+   {
+    "site_no": "05242300",
+    "site_lat": 46.37769,
+    "site_lon": -94.182648,
+    "site_name": "MISSISSIPPI RIVER AT BRAINERD, MN",
+    "site_type": "ST",
+    "distance_km": 2.59
+   },
+   {
+    "site_no": "05247500",
+    "site_lat": 46.304779,
+    "site_lon": -94.377525,
+    "site_name": "CROW WING RIVER NEAR PILLAGER, MN",
+    "site_type": "ST",
+    "distance_km": 14.8
+   },
+   {
+    "site_no": "05261000",
+    "site_lat": 46.1805222,
+    "site_lon": -94.3658366,
+    "site_name": "MISSISSIPPI RIVER NEAR FORT RIPLEY, MN",
+    "site_type": "ST",
+    "distance_km": 23.46
+   },
+   {
+    "site_no": "05284305",
+    "site_lat": 46.2519038,
+    "site_lon": -93.8274771,
+    "site_name": "SEGUCHIE CREEK AT HOLT LAKE OUTLET, NEAR GARRISON",
+    "site_type": "ST",
+    "distance_km": 31.01
+   }
+  ]
+ },
+ "41.4159,-80.1217": {
+  "location": "New Vernon, PA",
+  "lat": 41.4158882,
+  "lon": -80.1217276,
+  "sites": []
+ },
+ "40.7548,-79.2664": {
+  "location": "Atwood, PA",
+  "lat": 40.7547867,
+  "lon": -79.2664279,
+  "sites": []
+ },
+ "39.7374,-77.5064": {
+  "location": "Franklin, PA",
+  "lat": 39.7374265,
+  "lon": -77.506392,
+  "sites": []
+ },
+ "40.9901,-76.4774": {
+  "location": "Bloomsburg, PA",
+  "lat": 40.9900564,
+  "lon": -76.4774045,
+  "sites": []
+ },
+ "39.9881,-80.7315": {
+  "location": "mcmechen, WV",
+  "lat": 39.9881293,
+  "lon": -80.7314718,
+  "sites": []
+ },
+ "43.3372,-71.5656": {
+  "location": "Canterbury, NH",
+  "lat": 43.337165,
+  "lon": -71.565628,
+  "sites": []
+ },
+ "31.5537,-90.1073": {
+  "location": "Monticello , MS",
+  "lat": 31.5536678,
+  "lon": -90.1072865,
+  "sites": [
+   {
+    "site_no": "02488500",
+    "site_lat": 31.55333333,
+    "site_lon": -90.0880556,
+    "site_name": "PEARL RIVER NR MONTICELLO, MS",
+    "site_type": "ST",
+    "distance_km": 1.82
+   },
+   {
+    "site_no": "02488700",
+    "site_lat": 31.47055556,
+    "site_lon": -89.9736111,
+    "site_name": "WHITESAND CREEK NR OAKVALE, MS",
+    "site_type": "ST",
+    "distance_km": 15.68
+   },
+   {
+    "site_no": "02488100",
+    "site_lat": 31.7007208,
+    "site_lon": -90.14314139,
+    "site_name": "BAHALA CREEK NR OMA, MS",
+    "site_type": "ST",
+    "distance_km": 16.7
+   },
+   {
+    "site_no": "02488000",
+    "site_lat": 31.79083333,
+    "site_lon": -90.1425,
+    "site_name": "PEARL RIVER AT ROCKPORT, MS",
+    "site_type": "ST",
+    "distance_km": 26.58
+   },
+   {
+    "site_no": "02488850",
+    "site_lat": 31.34573025,
+    "site_lon": -89.879525,
+    "site_name": "HOLIDAY CREEK AT GOSS, MS",
+    "site_type": "ST",
+    "distance_km": 31.64
+   }
+  ]
+ },
+ "46.7311,-93.9580": {
+  "location": "Emily, MN",
+  "lat": 46.7310714,
+  "lon": -93.9580296,
+  "sites": []
+ },
+ "43.5137,-79.8828": {
+  "location": "Milton, ON",
+  "lat": 43.513671,
+  "lon": -79.882817,
+  "sites": []
+ },
+ "41.1901,-74.5077": {
+  "location": "Vernon Township, NJ",
+  "lat": 41.1900732,
+  "lon": -74.5077359,
+  "sites": [
+   {
+    "site_no": "01383000",
+    "site_lat": 41.16166667,
+    "site_lon": -74.33333333,
+    "site_name": "Greenwood Lake at Awosting NJ",
+    "site_type": "LK",
+    "distance_km": 14.93
+   },
+   {
+    "site_no": "01387998",
+    "site_lat": 40.99277778,
+    "site_lon": -74.27888889,
+    "site_name": "Ramapo River above dam at Pompton Lakes NJ",
+    "site_type": "LK",
+    "distance_km": 29.14
+   },
+   {
+    "site_no": "01455400",
+    "site_lat": 40.9175,
+    "site_lon": -74.66416667,
+    "site_name": "Lake Hopatcong at Landing NJ",
+    "site_type": "LK",
+    "distance_km": 33.03
+   },
+   {
+    "site_no": "01367770",
+    "site_lat": 41.19388889,
+    "site_lon": -74.57527778,
+    "site_name": "Wallkill River near Sussex NJ",
+    "site_type": "ST",
+    "distance_km": 5.67
+   },
+   {
+    "site_no": "01368820",
+    "site_lat": 41.18694444,
+    "site_lon": -74.42,
+    "site_name": "Double Kill at Wawayanda NJ",
+    "site_type": "ST",
+    "distance_km": 7.35
+   }
+  ]
+ },
+ "31.3271,-89.2903": {
+  "location": "Hattiesburg , MS",
+  "lat": 31.3271189,
+  "lon": -89.2903392,
+  "sites": []
+ },
+ "43.3719,-89.6204": {
+  "location": "Merrimac, WI",
+  "lat": 43.3718669,
+  "lon": -89.6204301,
+  "sites": []
+ },
+ "33.3796,-86.9621": {
+  "location": "Thomason , CT",
+  "lat": 33.37959,
+  "lon": -86.9620505,
+  "sites": [
+   {
+    "site_no": "02461630",
+    "site_lat": 33.3995546,
+    "site_lon": -86.9836043,
+    "site_name": "HALLS CREEK AT BESSEMER, AL.",
+    "site_type": "ST",
+    "distance_km": 2.99
+   },
+   {
+    "site_no": "02461640",
+    "site_lat": 33.39983244,
+    "site_lon": -86.9933268,
+    "site_name": "VALLEY CREEK BELOW BESSEMER, AL.",
+    "site_type": "ST",
+    "distance_km": 3.67
+   },
+   {
+    "site_no": "02461500",
+    "site_lat": 33.4192762,
+    "site_lon": -86.9827711,
+    "site_name": "VALLEY CREEK NEAR BESSEMER, AL",
+    "site_type": "ST",
+    "distance_km": 4.81
+   },
+   {
+    "site_no": "02461405",
+    "site_lat": 33.4256647,
+    "site_lon": -86.9527705,
+    "site_name": "VALLEY CREEK BELOW BRIGHTON, ALA",
+    "site_type": "ST",
+    "distance_km": 5.2
+   },
+   {
+    "site_no": "02423630",
+    "site_lat": 33.3262234,
+    "site_lon": -86.9497141,
+    "site_name": "SHADES CREEK NEAR GREENWOOD AL",
+    "site_type": "ST",
+    "distance_km": 6.04
+   }
+  ]
+ },
+ "38.8186,-95.6891": {
+  "location": "Carbondale, KS",
+  "lat": 38.8186156,
+  "lon": -95.6891498,
+  "sites": []
+ },
+ "38.1428,-94.8127": {
+  "location": "Mound City, KS",
+  "lat": 38.142773,
+  "lon": -94.8127444,
+  "sites": []
+ },
+ "45.2702,-94.1356": {
+  "location": "Lakeshore, MN",
+  "lat": 45.2701663,
+  "lon": -94.135577,
+  "sites": [
+   {
+    "site_no": "05272951",
+    "site_lat": 45.2897222,
+    "site_lon": -94.2516667,
+    "site_name": "CLEARWATER RIVER ABOVE LAKE LOUISA NR SOUTH HAVEN",
+    "site_type": "ST",
+    "distance_km": 9.34
+   },
+   {
+    "site_no": "05270700",
+    "site_lat": 45.547239,
+    "site_lon": -94.145662,
+    "site_name": "MISSISSIPPI RIVER AT ST. CLOUD, MN",
+    "site_type": "ST",
+    "distance_km": 30.82
+   },
+   {
+    "site_no": "05274900",
+    "site_lat": 45.38525599,
+    "site_lon": -93.734123,
+    "site_name": "ST. FRANCIS RIVER NEAR BIG LAKE, MN",
+    "site_type": "ST",
+    "distance_km": 33.89
+   },
+   {
+    "site_no": "05280000",
+    "site_lat": 45.086781,
+    "site_lon": -93.73515,
+    "site_name": "CROW RIVER AT ROCKFORD, MN",
+    "site_type": "ST",
+    "distance_km": 37.43
+   },
+   {
+    "site_no": "05274700",
+    "site_lat": 45.5416445,
+    "site_lon": -93.8141265,
+    "site_name": "ST. FRANCIS RIVER AT SANTIAGO, MN",
+    "site_type": "ST",
+    "distance_km": 39.26
+   }
+  ]
+ },
+ "35.0151,-85.1971": {
+  "location": "Guild, TN",
+  "lat": 35.0150612,
+  "lon": -85.1970563,
+  "sites": []
+ },
+ "44.3609,-75.6491": {
+  "location": "Lawrence, KS",
+  "lat": 44.3608754,
+  "lon": -75.6491486,
+  "sites": []
+ },
+ "41.7197,-72.7557": {
+  "location": "Grissom , CT",
+  "lat": 41.719716,
+  "lon": -72.7557407,
+  "sites": []
+ },
+ "33.0462,-96.9942": {
+  "location": "Lewisville, TX",
+  "lat": 33.046233,
+  "lon": -96.994174,
+  "sites": []
+ },
+ "46.3264,-94.4749": {
+  "location": "Pillager, MN",
+  "lat": 46.3263819,
+  "lon": -94.4749228,
+  "sites": []
+ },
+ "35.2359,-85.1908": {
+  "location": "Soddy Daisy, TN",
+  "lat": 35.2359025,
+  "lon": -85.1907904,
+  "sites": []
+ },
+ "37.8048,-93.5013": {
+  "location": "Flemington, MO",
+  "lat": 37.8047581,
+  "lon": -93.5013125,
+  "sites": []
+ },
+ "38.6609,-96.4920": {
+  "location": "Council Grove, KS",
+  "lat": 38.6609239,
+  "lon": -96.491958,
+  "sites": [
+   {
+    "site_no": "07179500",
+    "site_lat": 38.66584085,
+    "site_lon": -96.493614,
+    "site_name": "NEOSHO R AT COUNCIL GROVE, KS",
+    "site_type": "ST",
+    "distance_km": 0.57
+   },
+   {
+    "site_no": "07179600",
+    "site_lat": 38.60061758,
+    "site_lon": -96.5002451,
+    "site_name": "FOUR MILE C NR COUNCIL GROVE, KS",
+    "site_type": "ST",
+    "distance_km": 6.74
+   },
+   {
+    "site_no": "07179330",
+    "site_lat": 38.72866944,
+    "site_lon": -96.57296111,
+    "site_name": "NEOSHO R AB COUNCIL GROVE LK, KS",
+    "site_type": "ST",
+    "distance_km": 10.3
+   },
+   {
+    "site_no": "07179700",
+    "site_lat": 38.61055556,
+    "site_lon": -96.3702778,
+    "site_name": "ROCK C NR DUNLAP, KS",
+    "site_type": "ST",
+    "distance_km": 11.96
+   },
+   {
+    "site_no": "07179710",
+    "site_lat": 38.55473265,
+    "site_lon": -96.3713894,
+    "site_name": "NEOSHO R NR DUNLAP, KS",
+    "site_type": "ST",
+    "distance_km": 15.79
+   }
+  ]
+ },
+ "33.4255,-111.9400": {
+  "location": "Tempe, AZ",
+  "lat": 33.4255117,
+  "lon": -111.940016,
+  "sites": []
+ },
+ "46.6030,-94.3094": {
+  "location": "Pequot Lakes, MN",
+  "lat": 46.6030198,
+  "lon": -94.3094399,
+  "sites": []
+ },
+ "46.4822,-93.9578": {
+  "location": "Crosby, MN",
+  "lat": 46.4821848,
+  "lon": -93.9577612,
+  "sites": []
+ },
+ "30.7627,-96.9982": {
+  "location": "Milam, TX",
+  "lat": 30.7626867,
+  "lon": -96.9981706,
+  "sites": []
+ },
+ "29.6488,-81.6372": {
+  "location": "Palatka, FL",
+  "lat": 29.6487882,
+  "lon": -81.6372111,
+  "sites": []
+ },
+ "38.9153,-99.3173": {
+  "location": "Ellis, KS",
+  "lat": 38.915304,
+  "lon": -99.3172531,
+  "sites": []
+ },
+ "40.4898,-81.4457": {
+  "location": "NEW PHILADELPHIA, OH",
+  "lat": 40.4897871,
+  "lon": -81.4456706,
+  "sites": []
+ },
+ "44.5126,-88.0126": {
+  "location": "Green Bay, WI",
+  "lat": 44.5126379,
+  "lon": -88.0125794,
+  "sites": []
+ },
+ "36.0045,-80.0524": {
+  "location": "Laurel, MS",
+  "lat": 36.004473,
+  "lon": -80.0524131,
+  "sites": []
+ },
+ "33.5231,-80.3195": {
+  "location": "Clarendon County , SC",
+  "lat": 33.5231254,
+  "lon": -80.3194739,
+  "sites": []
+ },
+ "32.5357,-93.4110": {
+  "location": "Doyline, LA",
+  "lat": 32.5357073,
+  "lon": -93.4110049,
+  "sites": []
+ },
+ "27.7459,-81.5306": {
+  "location": "Frostproof, FL",
+  "lat": 27.7458626,
+  "lon": -81.5306313,
+  "sites": []
+ },
+ "34.2073,-84.1402": {
+  "location": "Cumming, GA",
+  "lat": 34.2073196,
+  "lon": -84.1401926,
+  "sites": []
+ },
+ "34.9977,-83.1842": {
+  "location": "Dyer, GA",
+  "lat": 34.9977288,
+  "lon": -83.1842272,
+  "sites": []
+ },
+ "27.2449,-80.9801": {
+  "location": "Okeechobee, FL",
+  "lat": 27.2448764,
+  "lon": -80.9800521,
+  "sites": []
+ },
+ "31.9879,-91.2562": {
+  "location": "Lake Bruin, LA",
+  "lat": 31.9879351,
+  "lon": -91.256224,
+  "sites": []
+ },
+ "30.8582,-89.1353": {
+  "location": "Wiggins, MS",
+  "lat": 30.858244,
+  "lon": -89.1353283,
+  "sites": [
+   {
+    "site_no": "02479200",
+    "site_lat": 30.84463366,
+    "site_lon": -89.0750474,
+    "site_name": "FLINT CREEK NR WIGGINS, MS",
+    "site_type": "ST",
+    "distance_km": 5.95
+   },
+   {
+    "site_no": "02479191",
+    "site_lat": 30.7923611,
+    "site_lon": -89.1360833,
+    "site_name": "RED CREEK AT PERKINSTON, MS",
+    "site_type": "ST",
+    "distance_km": 7.33
+   },
+   {
+    "site_no": "024791834",
+    "site_lat": 30.91796344,
+    "site_lon": -89.3195037,
+    "site_name": "RED CREEK NR CARNES, MS",
+    "site_type": "ST",
+    "distance_km": 18.79
+   },
+   {
+    "site_no": "02479160",
+    "site_lat": 30.85333333,
+    "site_lon": -88.9136111,
+    "site_name": "BLACK CREEK NR WIGGINS, MS",
+    "site_type": "ST",
+    "distance_km": 21.17
+   },
+   {
+    "site_no": "02479155",
+    "site_lat": 31.02527778,
+    "site_lon": -89.0166667,
+    "site_name": "CYPRESS CREEK NR JANICE, MS",
+    "site_type": "ST",
+    "distance_km": 21.75
+   }
+  ]
+ },
+ "28.8219,-81.8711": {
+  "location": "Lake County, FL",
+  "lat": 28.8219135,
+  "lon": -81.8710751,
+  "sites": [
+   {
+    "site_no": "02237293",
+    "site_lat": 28.7444364,
+    "site_lon": -81.8725798,
+    "site_name": "PALATLAKAHA R AT STRUCTURE M-1, NR OKAHUMPKA, FL",
+    "site_type": "ST",
+    "distance_km": 8.62
+   },
+   {
+    "site_no": "02237522",
+    "site_lat": 28.81165724,
+    "site_lon": -81.7709109,
+    "site_name": "DEAD RIVER NR TAVARES, FLA.",
+    "site_type": "ST",
+    "distance_km": 9.82
+   },
+   {
+    "site_no": "02238001",
+    "site_lat": 28.8711111,
+    "site_lon": -81.7844444,
+    "site_name": "HAYNES CREEK BELOW BURRELL DAM AT LISBON, FL",
+    "site_type": "ST",
+    "distance_km": 10.06
+   },
+   {
+    "site_no": "02238000",
+    "site_lat": 28.87082178,
+    "site_lon": -81.7836894,
+    "site_name": "HAYNES CREEK AT LISBON, FL",
+    "site_type": "ST",
+    "distance_km": 10.1
+   },
+   {
+    "site_no": "02312690",
+    "site_lat": 28.80943313,
+    "site_lon": -81.9828609,
+    "site_name": "CHITTY CHATTY CREEK NR WILDWOOD, FLA.",
+    "site_type": "ST",
+    "distance_km": 10.98
+   }
+  ]
+ },
+ "32.3151,-94.5164": {
+  "location": "Tatum, TX",
+  "lat": 32.315053,
+  "lon": -94.5163729,
+  "sites": []
+ },
+ "41.1354,-76.3208": {
+  "location": "Columbia, MS",
+  "lat": 41.1354063,
+  "lon": -76.3208026,
+  "sites": []
+ },
+ "30.4044,-90.1570": {
+  "location": "Madisonville, LA",
+  "lat": 30.4043607,
+  "lon": -90.1570232,
+  "sites": []
+ }
+}

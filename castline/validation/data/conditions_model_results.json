@@ -1,0 +1,351 @@
+{
+  "feature_cols": [
+    "w_temp_max",
+    "w_temp_min",
+    "w_temp_mean",
+    "w_precip_mm",
+    "w_wind_max_kph",
+    "w_wind_avg_kph",
+    "w_pressure_hpa",
+    "w_humidity_pct",
+    "w_cloud_cover",
+    "pressure_change_1d",
+    "pressure_change_2d",
+    "pressure_change_3d",
+    "prefrontal",
+    "postfrontal",
+    "pressure_stability_3d",
+    "temp_delta_1d",
+    "temp_delta_2d",
+    "temp_range_today",
+    "temp_trend_3d",
+    "bass_thermal_comfort",
+    "spawn_proximity",
+    "wind_comfort",
+    "rain_today",
+    "rain_yesterday",
+    "rain_3d_total",
+    "dry_days_before",
+    "is_storm",
+    "is_rain",
+    "moon_phase_sin",
+    "moon_phase_cos",
+    "moon_illumination",
+    "solunar_quality",
+    "gdd_3d",
+    "conditions_stability",
+    "lat",
+    "lon",
+    "is_river",
+    "is_multiday",
+    "month",
+    "season_sin",
+    "season_cos",
+    "day_of_year",
+    "day_length",
+    "season",
+    "baseline_signal"
+  ],
+  "weather_features": [
+    "w_temp_max",
+    "w_temp_min",
+    "w_temp_mean",
+    "w_precip_mm",
+    "w_wind_max_kph",
+    "w_wind_avg_kph",
+    "w_pressure_hpa",
+    "w_humidity_pct",
+    "w_cloud_cover",
+    "pressure_change_1d",
+    "pressure_change_2d",
+    "pressure_change_3d",
+    "prefrontal",
+    "postfrontal",
+    "pressure_stability_3d",
+    "temp_delta_1d",
+    "temp_delta_2d",
+    "temp_range_today",
+    "temp_trend_3d",
+    "bass_thermal_comfort",
+    "spawn_proximity",
+    "wind_comfort",
+    "rain_today",
+    "rain_yesterday",
+    "rain_3d_total",
+    "dry_days_before",
+    "is_storm",
+    "is_rain",
+    "moon_phase_sin",
+    "moon_phase_cos",
+    "moon_illumination",
+    "solunar_quality",
+    "gdd_3d",
+    "conditions_stability"
+  ],
+  "location_features": [
+    "lat",
+    "lon",
+    "is_river",
+    "is_multiday",
+    "month",
+    "season_sin",
+    "season_cos",
+    "day_of_year",
+    "day_length",
+    "season",
+    "baseline_signal"
+  ],
+  "n_folds": 5,
+  "training_samples": 954,
+  "training_date": "2026-03-17T15:18:43.836136",
+  "metrics": {
+    "ensemble_r2": 0.020946343681509938,
+    "ensemble_mae_lb": 15.264883996736415,
+    "weather_only_r2": 0.0033814754592756957,
+    "weather_only_mae_lb": 15.94080951605859
+  },
+  "feature_importance": [
+    {
+      "feature": "lon",
+      "importance": 12.935
+    },
+    {
+      "feature": "lat",
+      "importance": 12.222
+    },
+    {
+      "feature": "baseline_signal",
+      "importance": 4.334
+    },
+    {
+      "feature": "w_wind_avg_kph",
+      "importance": 3.866
+    },
+    {
+      "feature": "season_sin",
+      "importance": 3.787
+    },
+    {
+      "feature": "temp_range_today",
+      "importance": 3.737
+    },
+    {
+      "feature": "conditions_stability",
+      "importance": 3.398
+    },
+    {
+      "feature": "month",
+      "importance": 3.024
+    },
+    {
+      "feature": "day_of_year",
+      "importance": 3.014
+    },
+    {
+      "feature": "pressure_change_2d",
+      "importance": 2.837
+    },
+    {
+      "feature": "w_temp_min",
+      "importance": 2.717
+    },
+    {
+      "feature": "w_cloud_cover",
+      "importance": 2.686
+    },
+    {
+      "feature": "bass_thermal_comfort",
+      "importance": 2.628
+    },
+    {
+      "feature": "w_humidity_pct",
+      "importance": 2.411
+    },
+    {
+      "feature": "w_temp_mean",
+      "importance": 2.35
+    },
+    {
+      "feature": "moon_phase_sin",
+      "importance": 2.344
+    },
+    {
+      "feature": "w_pressure_hpa",
+      "importance": 2.251
+    },
+    {
+      "feature": "season",
+      "importance": 2.231
+    },
+    {
+      "feature": "dry_days_before",
+      "importance": 2.225
+    },
+    {
+      "feature": "is_river",
+      "importance": 1.982
+    },
+    {
+      "feature": "day_length",
+      "importance": 1.92
+    },
+    {
+      "feature": "moon_illumination",
+      "importance": 1.905
+    },
+    {
+      "feature": "temp_delta_2d",
+      "importance": 1.746
+    },
+    {
+      "feature": "w_temp_max",
+      "importance": 1.742
+    },
+    {
+      "feature": "moon_phase_cos",
+      "importance": 1.588
+    },
+    {
+      "feature": "solunar_quality",
+      "importance": 1.579
+    },
+    {
+      "feature": "pressure_change_3d",
+      "importance": 1.535
+    },
+    {
+      "feature": "rain_3d_total",
+      "importance": 1.483
+    },
+    {
+      "feature": "pressure_stability_3d",
+      "importance": 1.322
+    },
+    {
+      "feature": "temp_delta_1d",
+      "importance": 1.311
+    },
+    {
+      "feature": "spawn_proximity",
+      "importance": 1.269
+    },
+    {
+      "feature": "temp_trend_3d",
+      "importance": 1.234
+    },
+    {
+      "feature": "season_cos",
+      "importance": 1.205
+    },
+    {
+      "feature": "pressure_change_1d",
+      "importance": 1.022
+    },
+    {
+      "feature": "gdd_3d",
+      "importance": 1.004
+    },
+    {
+      "feature": "rain_yesterday",
+      "importance": 0.375
+    },
+    {
+      "feature": "postfrontal",
+      "importance": 0.345
+    },
+    {
+      "feature": "prefrontal",
+      "importance": 0.145
+    },
+    {
+      "feature": "w_precip_mm",
+      "importance": 0.137
+    },
+    {
+      "feature": "rain_today",
+      "importance": 0.08
+    },
+    {
+      "feature": "is_rain",
+      "importance": 0.071
+    },
+    {
+      "feature": "is_storm",
+      "importance": 0.002
+    },
+    {
+      "feature": "w_wind_max_kph",
+      "importance": 0.0
+    },
+    {
+      "feature": "wind_comfort",
+      "importance": 0.0
+    },
+    {
+      "feature": "is_multiday",
+      "importance": 0.0
+    }
+  ],
+  "top_weather_features": [
+    {
+      "feature": "w_wind_avg_kph",
+      "importance": 3.866
+    },
+    {
+      "feature": "temp_range_today",
+      "importance": 3.737
+    },
+    {
+      "feature": "conditions_stability",
+      "importance": 3.398
+    },
+    {
+      "feature": "pressure_change_2d",
+      "importance": 2.837
+    },
+    {
+      "feature": "w_temp_min",
+      "importance": 2.717
+    },
+    {
+      "feature": "w_cloud_cover",
+      "importance": 2.686
+    },
+    {
+      "feature": "bass_thermal_comfort",
+      "importance": 2.628
+    },
+    {
+      "feature": "w_humidity_pct",
+      "importance": 2.411
+    },
+    {
+      "feature": "w_temp_mean",
+      "importance": 2.35
+    },
+    {
+      "feature": "moon_phase_sin",
+      "importance": 2.344
+    },
+    {
+      "feature": "w_pressure_hpa",
+      "importance": 2.251
+    },
+    {
+      "feature": "dry_days_before",
+      "importance": 2.225
+    },
+    {
+      "feature": "moon_illumination",
+      "importance": 1.905
+    },
+    {
+      "feature": "temp_delta_2d",
+      "importance": 1.746
+    },
+    {
+      "feature": "w_temp_max",
+      "importance": 1.742
+    }
+  ]
+}

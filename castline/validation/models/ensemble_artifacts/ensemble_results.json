@@ -1,0 +1,114 @@
+{
+  "weighted": {
+    "ensemble_metrics": {
+      "r2": 0.5875385471574368,
+      "rmse": 3.218754541943501,
+      "mae": 2.3694173381395456
+    },
+    "individual_metrics": {
+      "lgb": {
+        "r2": 0.4630956117070574,
+        "rmse": 3.67235496103072,
+        "mae": 2.656436272815492
+      },
+      "xgb": {
+        "r2": 0.5659681622990868,
+        "rmse": 3.3018471844242034,
+        "mae": 2.4160279653421264
+      },
+      "mlp": {
+        "r2": 0.34225727331822553,
+        "rmse": 4.064659804763715,
+        "mae": 2.662962337144991
+      },
+      "rf": {
+        "r2": 0.43761274254432425,
+        "rmse": 3.7584944351903506,
+        "mae": 2.717946777671147
+      }
+    },
+    "weights": {
+      "lgb": 0.0,
+      "xgb": 0.75,
+      "mlp": 0.25,
+      "rf": 0.0
+    }
+  },
+  "stacking": {
+    "metrics": {
+      "r2": 0.47134166775502284,
+      "rmse": 3.644044874141546,
+      "mae": 2.590373402011491
+    }
+  },
+  "cv_scores": {
+    "lgb": {
+      "mean": 0.8443866986195436,
+      "std": 0.01752941388016805
+    },
+    "xgb": {
+      "mean": 0.8410622459655108,
+      "std": 0.021118385758938395
+    },
+    "hgb": {
+      "mean": 0.8376031219231027,
+      "std": 0.023642680689581832
+    },
+    "mlp": {
+      "mean": 0.31419358454379553,
+      "std": 0.5737083616088184
+    },
+    "rf": {
+      "mean": 0.8390133998803109,
+      "std": 0.023004829973049184
+    }
+  },
+  "best_method": "weighted",
+  "train_rows": 947,
+  "test_rows": 328,
+  "features": [
+    "loc_enc",
+    "trail_mean_weight",
+    "location_mean_weight",
+    "loc_rolling_3",
+    "area_acres",
+    "max_depth_ft",
+    "shore_dev",
+    "lat",
+    "baseline_signal",
+    "air_temp_c",
+    "pressure_mb",
+    "wind_speed_kph",
+    "cloud_cover_pct",
+    "precip_24h_mm",
+    "water_temp_c",
+    "discharge_cfs",
+    "gage_height_ft",
+    "temp_delta_24h_c",
+    "flow_delta_24h_pct",
+    "dissolved_oxygen_mgL",
+    "specific_conductance_us_cm",
+    "ph",
+    "water_temp_7d_mean",
+    "discharge_7d_mean",
+    "gage_height_7d_mean",
+    "pressure_delta_6h",
+    "pressure_delta_12h",
+    "wind_dir_cos",
+    "discharge_pct_of_30d",
+    "gage_stability_7d",
+    "cumulative_degree_days",
+    "water_temp_x_flow",
+    "water_temp_estimated",
+    "water_temp_anomaly",
+    "solunar_score",
+    "moon_illumination_pct",
+    "spawn_phase_score",
+    "day_length_hours",
+    "season_sin",
+    "season_cos",
+    "front_pre_frontal",
+    "front_post_frontal",
+    "year"
+  ]
+}

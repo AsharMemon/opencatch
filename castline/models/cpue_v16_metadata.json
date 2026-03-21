@@ -1,0 +1,41 @@
+{
+  "version": "v16-tuned",
+  "architecture": "hurdle (classifier + regression) with seen/unseen routing",
+  "trained_at": "2026-03-20T01:37:00",
+  "dataset": "/root/validation_dataset_v18.csv",
+  "n_rows": 6084,
+  "n_locations": 2001,
+  "hurdle_threshold": 1.5,
+  "seen_model": {
+    "n_features": 419,
+    "hp_regression": {
+      "iterations": 1578,
+      "depth": 3,
+      "learning_rate": 0.0403,
+      "l2_leaf_reg": 7.31,
+      "subsample": 0.771
+    },
+    "oof_r2": 0.7436,
+    "ridge_weights": {
+      "catboost": 0.602,
+      "xgboost": 2.865,
+      "lightgbm": 1.37
+    }
+  },
+  "unseen_model": {
+    "n_features": 410,
+    "hp_regression": {
+      "iterations": 1627,
+      "depth": 7,
+      "learning_rate": 0.022,
+      "l2_leaf_reg": 1.03,
+      "subsample": 0.583
+    },
+    "oof_r2": 0.4989,
+    "ridge_weights": {}
+  },
+  "min_loc_history": 3,
+  "optuna_trials": 15,
+  "optuna_best_seen_r2": 0.5451,
+  "optuna_best_unseen_r2": 0.4989
+}

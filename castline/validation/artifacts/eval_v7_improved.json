@@ -1,0 +1,151 @@
+{
+  "temporal": {
+    "r2": 0.7891
+  },
+  "spatial": {
+    "r2": 0.7085
+  },
+  "spatiotemporal": {
+    "r2": 0.8385
+  },
+  "loo": {
+    "r2": 0.3866,
+    "per_location": [
+      {
+        "location": "St. Johns River, Palatka, FL",
+        "r2": -1.3369,
+        "n": 50,
+        "actual_mean": 12.69,
+        "pred_mean": 9.94,
+        "enc_local": 6.99,
+        "enc_lat_band": 7.1
+      },
+      {
+        "location": "Lake Champlain, Plattsburgh, NY",
+        "r2": -10.8062,
+        "n": 47,
+        "actual_mean": 17.53,
+        "pred_mean": 12.52,
+        "enc_local": 11.79,
+        "enc_lat_band": 12.51
+      },
+      {
+        "location": "St. Lawrence River, Waddington, NY",
+        "r2": 0.4312,
+        "n": 47,
+        "actual_mean": 18.12,
+        "pred_mean": 17.1,
+        "enc_local": 19.1,
+        "enc_lat_band": 18.41
+      },
+      {
+        "location": "Mississippi River, La Crosse, WI",
+        "r2": -2.1318,
+        "n": 36,
+        "actual_mean": 12.97,
+        "pred_mean": 11.14,
+        "enc_local": 11.46,
+        "enc_lat_band": 11.32
+      },
+      {
+        "location": "Sabine River, Orange, TX",
+        "r2": -8.5602,
+        "n": 36,
+        "actual_mean": 7.01,
+        "pred_mean": 9.53,
+        "enc_local": 6.06,
+        "enc_lat_band": 6.62
+      },
+      {
+        "location": "Lake Hartwell, Anderson, SC",
+        "r2": 0.4247,
+        "n": 34,
+        "actual_mean": 11.06,
+        "pred_mean": 10.99,
+        "enc_local": 11.03,
+        "enc_lat_band": 11.59
+      },
+      {
+        "location": "Lake St. Clair, Macomb County, MI",
+        "r2": -17.1492,
+        "n": 31,
+        "actual_mean": 19.22,
+        "pred_mean": 14.41,
+        "enc_local": 14.8,
+        "enc_lat_band": 14.81
+      },
+      {
+        "location": "Harris Chain of Lakes, Leesburg, FL",
+        "r2": -0.1955,
+        "n": 29,
+        "actual_mean": 10.89,
+        "pred_mean": 8.96,
+        "enc_local": 6.9,
+        "enc_lat_band": 7.3
+      },
+      {
+        "location": "St. Lawrence River, Clayton, NY",
+        "r2": -0.5481,
+        "n": 24,
+        "actual_mean": 20.36,
+        "pred_mean": 17.56,
+        "enc_local": 17.19,
+        "enc_lat_band": 16.59
+      },
+      {
+        "location": "Toledo Bend Reservoir, Many, LA",
+        "r2": -0.7254,
+        "n": 22,
+        "actual_mean": 13.84,
+        "pred_mean": 11.15,
+        "enc_local": 6.09,
+        "enc_lat_band": 6.56
+      },
+      {
+        "location": "Lake Okeechobee, Okeechobee, FL",
+        "r2": -1.0521,
+        "n": 22,
+        "actual_mean": 13.56,
+        "pred_mean": 12.06,
+        "enc_local": 10.61,
+        "enc_lat_band": 10.25
+      },
+      {
+        "location": "Santee Cooper Lakes, Clarendon County, SC",
+        "r2": -1.2058,
+        "n": 19,
+        "actual_mean": 15.27,
+        "pred_mean": 11.93,
+        "enc_local": 4.51,
+        "enc_lat_band": 5.17
+      },
+      {
+        "location": "Lake Guntersville, Scottsboro, AL",
+        "r2": -0.9698,
+        "n": 18,
+        "actual_mean": 13.61,
+        "pred_mean": 11.59,
+        "enc_local": 11.17,
+        "enc_lat_band": 11.02
+      },
+      {
+        "location": "Cayuga Lake, Union Springs, NY",
+        "r2": -3.5752,
+        "n": 18,
+        "actual_mean": 15.14,
+        "pred_mean": 13.3,
+        "enc_local": 13.95,
+        "enc_lat_band": 12.72
+      },
+      {
+        "location": "Winyah Bay, Georgetown, SC",
+        "r2": -1.8025,
+        "n": 17,
+        "actual_mean": 8.47,
+        "pred_mean": 11.1,
+        "enc_local": 8.62,
+        "enc_lat_band": 8.7
+      }
+    ]
+  }
+}

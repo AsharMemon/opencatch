@@ -9,10 +9,16 @@ import pandas as pd
 import requests
 
 USGS_DV_URL = 'https://waterservices.usgs.gov/nwis/dv/'
+USGS_IV_URL = 'https://waterservices.usgs.gov/nwis/iv/'
 PARAMETER_CODES = {
     '00010': 'water_temp_c',
     '00060': 'discharge_cfs',
     '00065': 'gage_height_ft',
+    '00095': 'specific_conductance_us_cm',
+    '00300': 'dissolved_oxygen_mgL',
+    '00400': 'ph',
+    '63680': 'turbidity_fnu',
+    '62614': 'reservoir_elevation_ft',
 }
 
 SAMPLE_USGS = [
@@ -101,6 +107,131 @@ def fetch_usgs_daily_values(
     return _parse_usgs_json(response.json(), site_id=site_id)
 
 
+def fetch_usgs_instantaneous_values(
+    site_id: str,
+    start_date: str,
+    end_date: str,
+    *,
+    session: requests.Session | None = None,
+    timeout: int = 60,
+) -> pd.DataFrame:
+    """Fetch USGS instantaneous values (typically 15-min or hourly intervals).
+
+    Returns a DataFrame with sub-daily timestamps for finer temporal resolution.
+    """
+    requester = session or requests.Session()
+    response = requester.get(
+        USGS_IV_URL,
+        params={
+            'format': 'json',
+            'sites': site_id,
+            'startDT': start_date,
+            'endDT': end_date,
+            'parameterCd': ','.join(PARAMETER_CODES.keys()),
+            'siteStatus': 'all',
+        },
+        headers={'Accept': 'application/json'},
+        timeout=timeout,
+    )
+    response.raise_for_status()
+    return _parse_usgs_iv_json(response.json(), site_id=site_id)
+
+
+def _parse_usgs_iv_json(payload: dict, *, site_id: str) -> pd.DataFrame:
+    """Parse USGS instantaneous values JSON into a DataFrame with sub-daily timestamps."""
+    rows: list[dict] = []
+    series_items = payload.get('value', {}).get('timeSeries', [])
+    for series in series_items:
+        variable = series.get('variable', {})
+        variable_code = None
+        for code_item in variable.get('variableCode', []):
+            code = code_item.get('value')
+            if code in PARAMETER_CODES:
+                variable_code = code
+                break
+        if variable_code is None:
+            continue
+
+        target_column = PARAMETER_CODES[variable_code]
+        for values_group in series.get('values', []):
+            for item in values_group.get('value', []):
+                timestamp = pd.to_datetime(item.get('dateTime'))
+                if timestamp.tzinfo:
+                    timestamp = timestamp.tz_convert('UTC').tz_localize(None)
+                value_text = item.get('value')
+                if value_text in (None, '', '-999999'):
+                    continue
+                try:
+                    val = float(value_text)
+                except (ValueError, TypeError):
+                    continue
+                rows.append({
+                    'timestamp': timestamp,
+                    'parameter': target_column,
+                    'value': val,
+                    'site_id': site_id,
+                })
+
+    if not rows:
+        return pd.DataFrame(columns=['timestamp', 'parameter', 'value', 'site_id'])
+    return pd.DataFrame(rows)
+
+
+def compute_intraday_features(iv_df: pd.DataFrame, event_date: pd.Timestamp) -> dict[str, float]:
+    """Compute intra-day features from instantaneous USGS data.
+
+    Features extracted:
+    - 6-hour deltas (dawn-to-midday changes)
+    - Daily min/max range
+    - Rate of change (derivative)
+    - Dawn window values (5-8 AM when fish feed)
+    """
+    import numpy as np
+
+    result: dict[str, float] = {}
+    if iv_df.empty:
+        return result
+
+    event_start = event_date
+    event_end = event_date + pd.Timedelta(days=1)
+    prev_start = event_date - pd.Timedelta(days=1)
+
+    # Filter to event day and previous day
+    day_data = iv_df.loc[
+        (iv_df['timestamp'] >= event_start) & (iv_df['timestamp'] < event_end)
+    ]
+    prev_data = iv_df.loc[
+        (iv_df['timestamp'] >= prev_start) & (iv_df['timestamp'] < event_start)
+    ]
+
+    for param in ['water_temp_c', 'discharge_cfs', 'gage_height_ft']:
+        param_day = day_data.loc[day_data['parameter'] == param, 'value']
+        param_prev = prev_data.loc[prev_data['parameter'] == param, 'value']
+
+        if len(param_day) >= 2:
+            result[f'{param}_daily_range'] = float(param_day.max() - param_day.min())
+            result[f'{param}_daily_mean'] = float(param_day.mean())
+
+            # Dawn window (5-8 AM UTC, roughly 12-3 AM local for Eastern US)
+            # Adjust: use 10-14 UTC for ~5-9 AM Eastern
+            dawn_mask = day_data['timestamp'].dt.hour.between(10, 14)
+            dawn_vals = day_data.loc[dawn_mask & (day_data['parameter'] == param), 'value']
+            if len(dawn_vals) > 0:
+                result[f'{param}_dawn'] = float(dawn_vals.mean())
+
+            # Rate of change (per hour)
+            if len(param_day) >= 4:
+                hourly = param_day.values
+                diffs = np.diff(hourly)
+                result[f'{param}_rate_of_change'] = float(np.mean(np.abs(diffs)))
+
+        # 6-hour delta: compare morning to previous evening
+        if len(param_day) > 0 and len(param_prev) > 0:
+            result[f'{param}_6h_delta'] = float(param_day.iloc[0] - param_prev.iloc[-1])
+
+    return result
+
+
 def _load_events(outcomes_path: Path) -> list[UsgsEvent]:
     outcomes = pd.read_csv(outcomes_path, dtype={'event_id': str, 'usgs_site_id': str, 'date': str})
     missing = {'event_id', 'date', 'usgs_site_id'}.difference(outcomes.columns)
@@ -108,14 +239,21 @@ def _load_events(outcomes_path: Path) -> list[UsgsEvent]:
         raise ValueError(f'outcomes file missing required columns for USGS collection: {sorted(missing)}')
 
     events: list[UsgsEvent] = []
+    skipped = 0
     for _, row in outcomes.iterrows():
+        site_id = str(row['usgs_site_id']).replace('USGS-', '').strip()
+        if not site_id or site_id in ('nan', 'None', ''):
+            skipped += 1
+            continue
         events.append(
             UsgsEvent(
                 event_id=str(row['event_id']).strip(),
-                site_id=str(row['usgs_site_id']).replace('USGS-', '').strip(),
+                site_id=site_id,
                 event_date=pd.to_datetime(row['date']).normalize(),
             )
         )
+    if skipped:
+        print(f"usgs: skipped {skipped} events with missing site IDs", file=sys.stderr)
     return events
 
 
@@ -154,21 +292,125 @@ def _build_event_feature_row(event: UsgsEvent, history: pd.DataFrame) -> dict[st
     current_index = history.index[history['date'] == current['date']][-1]
     previous = history.iloc[current_index - 1] if current_index > 0 else current
 
-    current_discharge = float(current.get('discharge_cfs') or 0.0)
-    previous_discharge = float(previous.get('discharge_cfs') or 0.0)
-    flow_delta_pct = 0.0
-    if previous_discharge:
+    def _get_float(series_row, col):
+        """Return float value or NaN if missing — never silently convert None to 0.0."""
+        val = series_row.get(col)
+        if val is None or (isinstance(val, float) and pd.isna(val)):
+            return float('nan')
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return float('nan')
+
+    current_discharge = _get_float(current, 'discharge_cfs')
+    previous_discharge = _get_float(previous, 'discharge_cfs')
+    flow_delta_pct = float('nan')
+    if pd.notna(current_discharge) and pd.notna(previous_discharge) and previous_discharge != 0.0:
         flow_delta_pct = ((current_discharge - previous_discharge) / previous_discharge) * 100.0
+
+    # Gage height delta for water level change detection
+    current_gage = _get_float(current, 'gage_height_ft')
+    previous_gage = _get_float(previous, 'gage_height_ft')
+    gage_delta_ft = float('nan')
+    if pd.notna(current_gage) and pd.notna(previous_gage):
+        gage_delta_ft = current_gage - previous_gage
+
+    # Temperature delta
+    current_temp = _get_float(current, 'water_temp_c')
+    previous_temp = _get_float(previous, 'water_temp_c')
+    temp_delta = float('nan')
+    if pd.notna(current_temp) and pd.notna(previous_temp):
+        temp_delta = current_temp - previous_temp
+
+    # Rolling summary statistics
+    prior = history.loc[history['date'] <= event.event_date].copy()
+
+    prior_7d = prior.tail(7)
+    prior_30d = prior.tail(30)
+
+    water_temp_7d_mean = float(prior_7d['water_temp_c'].mean()) if 'water_temp_c' in prior_7d.columns and prior_7d['water_temp_c'].notna().any() else float('nan')
+
+    water_temp_30d_trend = float('nan')
+    if 'water_temp_c' in prior_30d.columns and prior_30d['water_temp_c'].notna().sum() >= 2:
+        temps_30d = prior_30d['water_temp_c'].dropna()
+        n_days = max((temps_30d.index[-1] - temps_30d.index[0]), 1)
+        water_temp_30d_trend = float((temps_30d.iloc[-1] - temps_30d.iloc[0]) / n_days)
+
+    discharge_7d_mean = float(prior_7d['discharge_cfs'].mean()) if 'discharge_cfs' in prior_7d.columns and prior_7d['discharge_cfs'].notna().any() else float('nan')
+    gage_height_7d_mean = float(prior_7d['gage_height_ft'].mean()) if 'gage_height_ft' in prior_7d.columns and prior_7d['gage_height_ft'].notna().any() else float('nan')
+
+    # --- Research-backed features ---
+
+    # Gage stability index: std deviation of gage height over past 7 days
+    # Low stability (high variance) = unstable conditions = suppressed feeding
+    gage_stability_7d = float('nan')
+    if 'gage_height_ft' in prior_7d.columns and prior_7d['gage_height_ft'].notna().sum() >= 3:
+        gage_stability_7d = float(prior_7d['gage_height_ft'].std())
+
+    # Gage delta 7-day (multi-day water level trend)
+    gage_delta_7d_ft = float('nan')
+    if 'gage_height_ft' in prior_7d.columns and prior_7d['gage_height_ft'].notna().sum() >= 2:
+        gage_vals = prior_7d['gage_height_ft'].dropna()
+        gage_delta_7d_ft = float(gage_vals.iloc[-1] - gage_vals.iloc[0])
+
+    # Discharge percentile for season: how current flow compares to historical norms
+    # Uses the 30-day window as proxy for "seasonal normal"
+    discharge_pct_of_30d = float('nan')
+    if pd.notna(current_discharge) and 'discharge_cfs' in prior_30d.columns:
+        discharge_30d_vals = prior_30d['discharge_cfs'].dropna()
+        if len(discharge_30d_vals) >= 5:
+            mean_30d = discharge_30d_vals.mean()
+            if mean_30d > 0:
+                discharge_pct_of_30d = (current_discharge / mean_30d) * 100.0
+
+    # Cumulative degree-days above bass spawn threshold (15°C)
+    # Strong predictor of spawn timing and feeding activity
+    SPAWN_THRESHOLD_C = 15.0
+    cumulative_degree_days = float('nan')
+    if 'water_temp_c' in prior_30d.columns:
+        temps_30d = prior_30d['water_temp_c'].dropna()
+        if len(temps_30d) >= 5:
+            above_threshold = temps_30d.clip(lower=SPAWN_THRESHOLD_C) - SPAWN_THRESHOLD_C
+            cumulative_degree_days = float(above_threshold.sum())
+
+    # Temperature stability: variance in daily temps over 7 days
+    # Unstable temps suppress feeding
+    temp_stability_7d = float('nan')
+    if 'water_temp_c' in prior_7d.columns and prior_7d['water_temp_c'].notna().sum() >= 3:
+        temp_stability_7d = float(prior_7d['water_temp_c'].std())
+
+    # DO-temperature interaction (thermal squeeze proxy)
+    # When DO is low and temp is high, bass are compressed into narrow bands
+    do_temp_ratio = float('nan')
+    current_do = _get_float(current, 'dissolved_oxygen_mgL')
+    if pd.notna(current_do) and pd.notna(current_temp) and current_temp > 0:
+        do_temp_ratio = current_do / current_temp
 
     return {
         'event_id': event.event_id,
         'site_id': f'USGS-{event.site_id}',
         'observation_date': pd.Timestamp(current['date']).strftime('%Y-%m-%d'),
-        'water_temp_c': float(current.get('water_temp_c') or 0.0),
+        'water_temp_c': current_temp,
         'discharge_cfs': current_discharge,
-        'gage_height_ft': float(current.get('gage_height_ft') or 0.0),
-        'temp_delta_24h_c': float((current.get('water_temp_c') or 0.0) - (previous.get('water_temp_c') or 0.0)),
+        'gage_height_ft': current_gage,
+        'dissolved_oxygen_mgL': current_do,
+        'turbidity_fnu': _get_float(current, 'turbidity_fnu'),
+        'specific_conductance_us_cm': _get_float(current, 'specific_conductance_us_cm'),
+        'ph': _get_float(current, 'ph'),
+        'reservoir_elevation_ft': _get_float(current, 'reservoir_elevation_ft'),
+        'temp_delta_24h_c': temp_delta,
         'flow_delta_24h_pct': flow_delta_pct,
+        'gage_delta_24h_ft': gage_delta_ft,
+        'water_temp_7d_mean': water_temp_7d_mean,
+        'water_temp_30d_trend': water_temp_30d_trend,
+        'discharge_7d_mean': discharge_7d_mean,
+        'gage_height_7d_mean': gage_height_7d_mean,
+        'gage_stability_7d': gage_stability_7d,
+        'gage_delta_7d_ft': gage_delta_7d_ft,
+        'discharge_pct_of_30d': discharge_pct_of_30d,
+        'cumulative_degree_days': cumulative_degree_days,
+        'temp_stability_7d': temp_stability_7d,
+        'do_temp_ratio': do_temp_ratio,
         'source_mode': 'usgs_daily_values',
     }
 
@@ -218,7 +460,7 @@ def evaluate_usgs_mapping_candidates(
     outcomes_path: Path,
     suggestions_path: Path,
     output_path: Path,
-    lookback_days: int = 7,
+    lookback_days: int = 30,
     session: requests.Session | None = None,
 ) -> pd.DataFrame:
     events = _load_candidate_evaluation_events(outcomes_path)
@@ -349,7 +591,7 @@ def collect_usgs_history(
     output_path: Path,
     sample: bool = False,
     outcomes_path: Path | None = None,
-    lookback_days: int = 7,
+    lookback_days: int = 30,
     session: requests.Session | None = None,
 ) -> pd.DataFrame:
     if sample:

@@ -1,0 +1,28 @@
+{
+  "version": "v13",
+  "trained_at": "2026-03-18T21:51:20.670531",
+  "dataset": "validation_dataset_v16.csv",
+  "n_rows": 6084,
+  "n_features": 130,
+  "n_locations": 2001,
+  "best_hp": {
+    "depth": 5,
+    "lr": 0.03,
+    "l2": 8,
+    "sub": 0.7
+  },
+  "ridge_weights": {
+    "catboost": 0.4330299994811996,
+    "xgboost": 0.006986730135384869,
+    "lightgbm": 0.6142686219240983
+  },
+  "metrics": {
+    "cv_r2_catboost": 0.6893230110579706,
+    "cv_r2_xgboost": 0.6851214245746051,
+    "cv_r2_lightgbm": 0.6944170684706623,
+    "cv_r2_stacked": 0.7053107302392259,
+    "temporal_r2": 0.32882064419677415,
+    "walkforward_r2": 0.42888374509560157,
+    "spatial_r2": 0.5389685016568165
+  }
+}

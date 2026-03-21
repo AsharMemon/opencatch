@@ -24,6 +24,16 @@ FULL_FEATURES = [
     'gage_height_ft',
     'temp_delta_24h_c',
     'flow_delta_24h_pct',
+    'dissolved_oxygen_mgL',
+    'turbidity_fnu',
+    'gage_delta_24h_ft',
+    'specific_conductance_us_cm',
+    'ph',
+    'reservoir_elevation_ft',
+    'water_temp_7d_mean',
+    'water_temp_30d_trend',
+    'discharge_7d_mean',
+    'gage_height_7d_mean',
     'env_signal',
     'water_temp_x_flow',
     'weather_stability_index',
@@ -85,9 +95,18 @@ def compare_models(dataset_path: Path, output_path: Path) -> ComparisonSummary:
     required_columns = list(dict.fromkeys(BASELINE_FEATURES + FULL_FEATURES + [TARGET]))
     for column in required_columns:
         if column not in df.columns:
-            df[column] = 0.0
+            df[column] = float('nan')
 
-    usable = df.dropna(subset=required_columns).copy()
+    # Only require target + baseline features to be non-null.
+    # Sparse sensor columns get median-imputed so we don't discard rows.
+    core_columns = [TARGET] + BASELINE_FEATURES
+    usable = df.dropna(subset=core_columns).copy()
+    for col in FULL_FEATURES:
+        if col not in core_columns and col in usable.columns:
+            median_val = usable[col].median()
+            # If entire column is NaN (no data at all), fill with 0 (neutral)
+            fill_val = median_val if pd.notna(median_val) else 0.0
+            usable[col] = usable[col].fillna(fill_val)
     usable_row_count = len(usable)
     if usable_row_count < MIN_COMPARISON_ROWS:
         return _insufficient_summary(

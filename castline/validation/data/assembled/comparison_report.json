@@ -1,0 +1,53 @@
+{
+  "baseline": {
+    "r2": 0.054130612904239706,
+    "rmse": 4.261588155387988,
+    "mae": 3.2921650095917947,
+    "coefficients": {
+      "baseline_signal": -4.860912132391732
+    },
+    "intercept": 16.575023772317007
+  },
+  "full": {
+    "r2": 0.25525117317168333,
+    "rmse": 3.781471274452638,
+    "mae": 2.9050203822270544,
+    "coefficients": {
+      "baseline_signal": -1.0585218323966226,
+      "air_temp_c": 0.026038956144440555,
+      "pressure_mb": 0.12600450117729975,
+      "wind_speed_kph": -0.054759854756969144,
+      "cloud_cover_pct": -0.011694014851621902,
+      "precip_24h_mm": 0.004220916598257249,
+      "water_temp_c": -0.2679299921975892,
+      "discharge_cfs": -3.96693686932902e-05,
+      "gage_height_ft": -0.048480401996816545,
+      "temp_delta_24h_c": -0.4495988656924801,
+      "flow_delta_24h_pct": -0.0029993237510548593,
+      "dissolved_oxygen_mgL": 0.5994034831095781,
+      "turbidity_fnu": 6.473834588737435,
+      "gage_delta_24h_ft": 0.07253838101991222,
+      "specific_conductance_us_cm": -0.0012788576119331981,
+      "ph": 6.447012526638776,
+      "reservoir_elevation_ft": -0.07224575001148797,
+      "water_temp_7d_mean": 0.24106590718813106,
+      "water_temp_30d_trend": -1.0664682163607568,
+      "discharge_7d_mean": 5.595833086323639e-05,
+      "gage_height_7d_mean": -0.010906072516958399,
+      "env_signal": 0.031819591248977486,
+      "water_temp_x_flow": 8.479696466351494e-06,
+      "weather_stability_index": -0.02354680725128136
+    },
+    "intercept": -189.1053335783315
+  },
+  "improvement_pct": 371.5468003719779,
+  "thesis_rating": "strong",
+  "decision_rule": {
+    "weak_lt": 5,
+    "viable_lte": 15,
+    "strong_gt": 15
+  },
+  "row_count": 328,
+  "usable_row_count": 328,
+  "withheld_reason": null
+}

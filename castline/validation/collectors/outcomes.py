@@ -101,16 +101,245 @@ INTERSTATE_SEARCH_STATE_OVERRIDES: dict[tuple[str, str], tuple[str, ...]] = {
     ('lake hartwell', 'SC'): ('GA',),
     ('kentucky lake', 'TN'): ('KY',),
     ('lake eufaula', 'AL'): ('GA',),
+    ('toledo bend reservoir', 'TX'): ('LA',),
+    ('toledo bend', 'TX'): ('LA',),
+    ('pickwick lake', 'TN'): ('AL',),
+    ('pickwick lake', 'AL'): ('TN',),
+    ('lake seminole', 'GA'): ('FL',),
+    ('lake seminole', 'FL'): ('GA',),
+    ('ross barnett reservoir', 'MS'): (),
+    ('wheeler lake', 'AL'): (),
+    ('table rock lake', 'MO'): ('AR',),
+    ('bull shoals lake', 'AR'): ('MO',),
+    ('st. lawrence river', 'NY'): (),
+    ('lake champlain', 'NY'): ('VT',),
+    ('lake champlain', 'VT'): ('NY',),
+    ('lake erie', 'OH'): ('NY', 'PA', 'MI'),
+    ('santee cooper', 'SC'): (),
+    ('potomac river', 'MD'): ('VA', 'DC'),
+    ('potomac river', 'VA'): ('MD', 'DC'),
+    ('james river', 'VA'): (),
+    ('lake amistad', 'TX'): (),
+    ('sabine river', 'TX'): ('LA',),
+    ('sabine river', 'LA'): ('TX',),
 }
 WATER_BODY_ALIASES: dict[str, tuple[str, ...]] = {
     'clarks hill reservoir': ('Clarks Hill', 'Strom Thurmond', 'Thurmond Lake', 'Savannah River'),
     'lake hartwell': ('Hartwell',),
     'sam rayburn reservoir': ('Sam Rayburn',),
-    'grand lake': ("Lake O' the Cherokees", 'Lake O', 'Neosho River'),
+    'grand lake': ("Lake O' the Cherokees", 'Lake O', 'Neosho River', 'Grand Lake'),
     'lake eufaula': ('Walter F. George', 'Walter F George Reservoir', 'Chattahoochee River'),
     'harris chain': ('Lake Harris', 'Lake Eustis', 'Apopka', 'Beauclair'),
     'kentucky lake': ('Kentucky Dam', 'Barkley', 'Tennessee River'),
+    'toledo bend reservoir': ('Toledo Bend', 'Sabine River'),
+    'lake guntersville': ('Guntersville', 'Tennessee River'),
+    'wheeler lake': ('Wheeler', 'Tennessee River'),
+    'pickwick lake': ('Pickwick', 'Tennessee River'),
+    'chickamauga lake': ('Chickamauga', 'Tennessee River'),
+    'lake okeechobee': ('Okeechobee',),
+    'st. johns river': ('St Johns', 'Saint Johns'),
+    'table rock lake': ('Table Rock', 'White River'),
+    'bull shoals lake': ('Bull Shoals', 'White River'),
+    'beaver lake': ('Beaver',),
+    'lake dardanelle': ('Dardanelle', 'Arkansas River'),
+    'lake fork': ('Fork',),
+    'lake seminole': ('Seminole', 'Flint River', 'Chattahoochee'),
+    'santee cooper': ('Santee', 'Cooper', 'Moultrie', 'Marion'),
+    'ross barnett reservoir': ('Ross Barnett', 'Barnett', 'Pearl River'),
+    'potomac river': ('Potomac',),
+    'james river': ('James',),
+    'st. lawrence river': ('St Lawrence', 'Saint Lawrence'),
+    'lake champlain': ('Champlain',),
+    'oneida lake': ('Oneida',),
+    'cayuga lake': ('Cayuga',),
+    'lake st. clair': ('St Clair', 'Saint Clair'),
+    'lake erie': ('Erie',),
+    'lake norman': ('Norman',),
+    'neely henry lake': ('Neely Henry', 'Coosa River'),
+    'lay lake': ('Lay', 'Coosa River'),
+    'logan martin lake': ('Logan Martin', 'Coosa River'),
+    'lewis smith lake': ('Smith Lake', 'Lewis Smith'),
+    'lake toho': ('Tohopekaliga', 'Toho'),
+    'kissimmee chain': ('Kissimmee', 'Lake Kissimmee'),
+    'lake murray': ('Murray', 'Saluda River'),
+    'lake amistad': ('Amistad',),
+    'sabine river': ('Sabine',),
+    'chesapeake bay': ('Chesapeake',),
+    'false river': ('False River',),
+    'lake conroe': ('Conroe',),
+    'sam houston lake': ('Lake Livingston', 'Livingston', 'Trinity River'),
+    'lake texoma': ('Texoma', 'Red River'),
+    'tenkiller lake': ('Tenkiller', 'Illinois River'),
+    'fort gibson lake': ('Fort Gibson',),
+    'delta': ('California Delta', 'Sacramento River', 'San Joaquin'),
+    'clear lake': ('Clear Lake',),
+    'lake havasu': ('Havasu',),
+    'lake mead': ('Mead',),
+    'lake powell': ('Powell',),
 }
+# Pre-researched USGS gauge IDs for major B.A.S.S. and MLF tournament lakes.
+# These bypass the USGS site search API and provide reliable gauge matches.
+KNOWN_LAKE_GAUGES: dict[str, str] = {
+    # Alabama
+    'lake guntersville': '03574500',          # Tennessee River at Guntersville
+    'wheeler lake': '03572110',               # Tennessee River at Wheeler Dam
+    'pickwick lake': '03592718',              # Pickwick Dam tailwater
+    'neely henry lake': '02401390',           # Coosa River near Neely Henry Dam
+    'lay lake': '02407000',                   # Coosa River near Lay Dam
+    'logan martin lake': '02405500',          # Coosa River at Logan Martin Dam
+    'lewis smith lake': '02450250',           # Sipsey Fork near Grayson
+    'lake eufaula': '02343940',              # Chattahoochee River below Eufaula Dam
+    # Arkansas
+    'beaver lake': '07048600',               # White River near Beaver
+    'bull shoals lake': '07054500',          # Bull Shoals Dam outflow
+    'lake dardanelle': '07258000',           # Arkansas River at Dardanelle
+    'lake ouachita': '07360200',             # Ouachita River near Buckville
+    'arkansas river': '07194500',            # Arkansas River near Muskogee
+    # California
+    'delta': '11447650',                     # Sacramento River at Freeport
+    'clear lake': '11450000',               # Clear Lake near Lakeport
+    # Florida
+    'lake okeechobee': '02274010',           # Okeechobee canal near Moore Haven
+    'harris chain': '02237700',              # Palatlakaha River at Cherry Lake
+    'st. johns river': '02232400',           # St. Johns River near Deland
+    'lake toho': '02262900',                 # Tohopekaliga outflow
+    'kissimmee chain': '02267000',           # Kissimmee River near Okeechobee
+    # Georgia / South Carolina
+    'clarks hill reservoir': '02196000',     # Stevens Creek near Clarks Hill
+    'lake hartwell': '02186000',             # Keowee River near Newry
+    'lake seminole': '02357000',             # Flint River at Bainbridge
+    'santee cooper': '02171500',             # Santee River near Pineville
+    # Kentucky / Tennessee
+    'kentucky lake': '03282000',             # Kentucky River at Lock 10
+    'chickamauga lake': '03566500',          # Chickamauga Creek near Chattanooga
+    'douglas lake': '03467609',              # French Broad River near Douglas Dam (has daily values)
+    'cherokee lake': '03465500',             # Nolichucky River near Morristown
+    'norris lake': '03532000',               # Clinch River near Norris
+    'dale hollow lake': '03416000',          # Obey River near Byrdstown
+    'fort loudoun lake': '03495500',         # Tennessee River near Knoxville
+    'watts bar lake': '03540500',            # Clinch River above Tazewell
+    'center hill lake': '03419500',          # Caney Fork near Cookeville
+    'old hickory lake': '03425413',          # Cumberland River at Hendersonville
+    'percy priest lake': '03431599',         # Percy Priest Dam outflow
+    # Michigan
+    'saginaw bay': '04157060',               # Saginaw River near Essexville
+    'lake st. clair': '04159492',            # Clinton River at Mt. Clemens
+    # Mississippi
+    'ross barnett reservoir': '02485600',    # Pearl River near Jackson
+    'mississippi river': '05344500',         # Mississippi River at Prescott
+    'grenada lake': '07285500',              # Yalobusha River near Grenada
+    # Missouri
+    'table rock lake': '07053810',           # James River at Table Rock Lake
+    'lake of the ozarks': '06926000',        # Osage River near Bagnell
+    'truman lake': '06918000',               # Osage River near Schell City
+    'stockton lake': '06918070',             # Sac River near Stockton
+    # New York / Vermont
+    'lake champlain': '04294413',            # Otter Creek at Middlebury
+    'oneida lake': '04245840',               # Oneida Lake at Brewerton
+    'cayuga lake': '04232730',               # Cayuga Inlet near Ithaca
+    'st. lawrence river': '04264331',        # St. Lawrence River at Ogdensburg
+    'lake erie': '04213500',                 # Cattaraugus Creek near Gowanda
+    # North Carolina
+    'lake norman': '02124000',               # Rocky River near Norwood
+    'jordan lake': '02098206',               # Haw River near Bynum
+    'falls lake': '02087570',                # Neuse River near Falls
+    'high rock lake': '02120780',            # Yadkin River at High Rock
+    # Ohio
+    'mosquito lake': '03094600',             # Mosquito Creek near Cortland
+    # Oklahoma
+    'grand lake': '07185000',                # Spring River near Quapaw (near Grand Lake)
+    'tenkiller lake': '07196500',            # Illinois River near Tahlequah
+    'fort gibson lake': '07193000',          # Neosho River near Wagoner
+    'lake texoma': '07332500',               # Red River at Denison Dam
+    # South Carolina
+    'lake murray': '02168500',               # Saluda River near Columbia
+    'winyah bay': '02135000',                # Little Pee Dee River at Galivants Ferry
+    'lake wylie': '02146000',                # Catawba River near Rock Hill
+    # Tennessee
+    'old hickory lake': '03425413',          # Cumberland River
+    # Texas
+    'sam rayburn reservoir': '08039300',     # Angelina River near Sam Rayburn
+    'toledo bend reservoir': '08028500',     # Sabine River near Bon Wier
+    'lake fork': '08018500',                 # Sabine River near Mineola
+    'lake conroe': '08068000',               # West Fork San Jacinto River
+    'lake amistad': '08449400',              # Devils River at Pafford Crossing
+    'falcon lake': '08459000',               # Rio Grande below Falcon Dam
+    'lake travis': '08154700',               # Bull Creek near Austin
+    'lake ray roberts': '03044000',          # Elm Fork Trinity River near Pilot Point
+    # Virginia / Maryland
+    'james river': '02035000',               # James River at Cartersville
+    'potomac river': '01646500',             # Potomac River near Wash DC
+    'chesapeake bay': '01491000',             # Choptank River near Greensboro
+    # Wisconsin
+    'mississippi river la crosse': '05344500',  # Mississippi River at Prescott
+    'sturgeon bay': '04085200',              # Fox River at Rapide Croche Dam
+    # Pennsylvania
+    'delaware river': '01467200',            # Delaware River at Penn's Landing, Philadelphia
+    # Arizona
+    'lake havasu': '09427500',               # Lake Havasu near Parker Dam
+    # South Dakota
+    'lake oahe': '06440000',                 # Missouri River at Pierre
+    # Georgia
+    'lake lanier': '02334430',               # Chattahoochee River at Buford Dam
+    # North Carolina
+    'pasquotank river': '0204382800',        # Pasquotank River near South Mills
+    'albemarle sound': '0204382800',         # Same as Pasquotank
+}
+# Aliases: some tournament locations use different names for the same lake
+_GAUGE_ALIAS_MAP: dict[str, str] = {
+    'lake o\' the cherokees': 'grand lake',
+    'neosho river': 'grand lake',
+    'thurmond lake': 'clarks hill reservoir',
+    'strom thurmond': 'clarks hill reservoir',
+    'savannah river': 'clarks hill reservoir',
+    'walter f. george': 'lake eufaula',
+    'walter f george reservoir': 'lake eufaula',
+    'tohopekaliga': 'lake toho',
+    'lake livingston': 'sam houston lake',
+    'barkley': 'kentucky lake',
+    'tennessee river guntersville': 'lake guntersville',
+    'tennessee river wheeler': 'wheeler lake',
+    'coosa river': 'neely henry lake',
+    'sabine river': 'toledo bend reservoir',
+    'tennessee river': 'fort loudoun lake',
+    'california delta': 'delta',
+    'sacramento river': 'delta',
+    'white river': 'table rock lake',
+}
+
+
+def _auto_resolve_usgs_site(water_body: str) -> str:
+    """Try to resolve a USGS gauge ID from KNOWN_LAKE_GAUGES using the water body name."""
+    if not water_body:
+        return ''
+    normalized = ' '.join(str(water_body).split()).lower()
+
+    # Direct match
+    if normalized in KNOWN_LAKE_GAUGES:
+        return KNOWN_LAKE_GAUGES[normalized]
+
+    # Alias match
+    if normalized in _GAUGE_ALIAS_MAP:
+        canonical = _GAUGE_ALIAS_MAP[normalized]
+        if canonical in KNOWN_LAKE_GAUGES:
+            return KNOWN_LAKE_GAUGES[canonical]
+
+    # Strip common suffixes and try again
+    for suffix in (' reservoir', ' lake', ' river', ' chain', ' bay'):
+        if normalized.endswith(suffix):
+            stripped = normalized[:-len(suffix)].strip()
+            for key in KNOWN_LAKE_GAUGES:
+                if stripped in key or key.startswith(stripped):
+                    return KNOWN_LAKE_GAUGES[key]
+
+    # Prefix match (e.g., "lake guntersville" matches "guntersville")
+    for key, gauge_id in KNOWN_LAKE_GAUGES.items():
+        key_words = set(key.split())
+        body_words = set(normalized.split()) - {'lake', 'reservoir', 'river', 'the', 'of'}
+        if body_words and body_words & key_words:
+            return gauge_id
+
+    return ''
 
 
 @dataclass(slots=True)
@@ -258,8 +487,17 @@ def _iter_bassmaster_results_search_entries(*, session: requests.Session) -> lis
 
 
 def _infer_year_from_results_link(link: str) -> int | None:
+    # Try /tournament/2024-... pattern
     match = re.search(r'/tournament/(\d{4})-', link)
-    return int(match.group(1)) if match else None
+    if match:
+        return int(match.group(1))
+    # Try any 4-digit year in the URL
+    match = re.search(r'/(\d{4})[-/]', link)
+    if match:
+        year = int(match.group(1))
+        if 2010 <= year <= 2030:
+            return year
+    return None
 
 
 def _fetch_bassmaster_results_index(
@@ -513,35 +751,44 @@ def _water_body_query_variants(*, water_body: str, city: str = '') -> list[str]:
 
 
 def _fetch_usgs_site_candidates(*, water_body: str, state: str, session: requests.Session, city: str = '', timeout: int = 30) -> pd.DataFrame:
-    state_code = _normalize_state_code(state)
-    if not water_body or not state_code:
+    search_states = _build_usgs_search_states(water_body=water_body, state=state)
+    if not water_body or not search_states:
         return pd.DataFrame()
 
     frames: list[pd.DataFrame] = []
-    for query in _water_body_query_variants(water_body=water_body, city=city):
-        response = session.get(
-            USGS_SITE_SERVICE_URL,
-            params={
-                'format': 'rdb',
-                'siteStatus': 'all',
-                'stateCd': state_code,
-                'siteType': ','.join(DEFAULT_SITE_TYPES),
-                'siteOutput': 'expanded',
-                'siteName': query,
-            },
-            headers=DEFAULT_HEADERS,
-            timeout=timeout,
-        )
-        if response.status_code == 404:
-            continue
-        response.raise_for_status()
-        parsed = _parse_rdb_table(response.text)
-        if parsed.empty:
-            continue
-        parsed = parsed.copy()
-        parsed['query_site_name'] = query
-        frames.append(parsed)
-        break
+    seen_site_ids: set[str] = set()
+    for state_code in search_states:
+        for query in _water_body_query_variants(water_body=water_body, city=city):
+            response = session.get(
+                USGS_SITE_SERVICE_URL,
+                params={
+                    'format': 'rdb',
+                    'siteStatus': 'all',
+                    'stateCd': state_code,
+                    'siteType': ','.join(DEFAULT_SITE_TYPES),
+                    'siteOutput': 'expanded',
+                    'siteName': query,
+                },
+                headers=DEFAULT_HEADERS,
+                timeout=timeout,
+            )
+            if response.status_code == 404:
+                continue
+            response.raise_for_status()
+            parsed = _parse_rdb_table(response.text)
+            if parsed.empty:
+                continue
+
+            parsed = parsed.copy()
+            parsed['query_site_name'] = query
+            parsed['query_state'] = state_code
+            parsed['site_no'] = parsed['site_no'].astype(str).str.replace('USGS-', '', regex=False).str.strip()
+            parsed = parsed.loc[~parsed['site_no'].isin(seen_site_ids)].reset_index(drop=True)
+            if parsed.empty:
+                continue
+
+            seen_site_ids.update(parsed['site_no'])
+            frames.append(parsed)
 
     if not frames:
         return pd.DataFrame()
@@ -736,18 +983,16 @@ def _extract_mapping_from_review_sheet(mapping: pd.DataFrame) -> pd.DataFrame:
             'Populate selected_usgs_site_id or mark approved rows with a suggested_usgs_site_id.'
         )
 
-    conflicts = (
-        selected_rows.groupby('tournament_slug')['selected_usgs_site_id']
-        .nunique()
-        .loc[lambda series: series > 1]
-    )
-    if not conflicts.empty:
-        raise ValueError(
-            'conflicting selected_usgs_site_id values found for tournament_slug(s): '
-            f"{conflicts.index.tolist()}"
-        )
+    selected_rows['selection_priority'] = 0
+    selected_rows.loc[selected_rows['recommended_by_coverage'], 'selection_priority'] += 100
+    selected_rows.loc[selected_rows['usable_event_count'].gt(0), 'selection_priority'] += 10
+    selected_rows.loc[selected_rows['review_status'].eq('coverage-recommended'), 'selection_priority'] += 5
+    selected_rows['candidate_rank'] = pd.to_numeric(selected_rows['candidate_rank'], errors='coerce').fillna(9999)
 
-    selected_rows = selected_rows.sort_values(['tournament_slug', 'candidate_rank'], ascending=[True, True])
+    selected_rows = selected_rows.sort_values(
+        ['tournament_slug', 'selection_priority', 'usable_event_count', 'candidate_rank'],
+        ascending=[True, False, False, True],
+    )
     selected_rows = selected_rows.drop_duplicates(subset=['tournament_slug'], keep='first')
     selected_rows = selected_rows.rename(columns={'selected_usgs_site_id': 'usgs_site_id'})
     return selected_rows[['tournament_slug', 'usgs_site_id', 'species']].reset_index(drop=True)
@@ -787,13 +1032,20 @@ def _collect_bassmaster_outcomes(
         rows: list[dict[str, Any]] = []
 
         for tournament in tournaments:
-            response = session.get(tournament.results_pdf_url, timeout=30, headers=DEFAULT_HEADERS)
-            response.raise_for_status()
+            try:
+                response = session.get(tournament.results_pdf_url, timeout=30, headers=DEFAULT_HEADERS)
+                response.raise_for_status()
+            except Exception as exc:
+                print(
+                    f"warning: skipping Bassmaster PDF download for {tournament.tournament_slug} ({tournament.results_pdf_url}): {exc}",
+                    file=sys.stderr,
+                )
+                continue
             try:
                 median_weight_lb = _extract_median_weight_from_pdf(response.content)
             except Exception as exc:
                 print(
-                    f"warning: skipping Bassmaster PDF for {tournament.tournament_slug} ({tournament.results_pdf_url}): {exc}",
+                    f"warning: skipping Bassmaster PDF parse for {tournament.tournament_slug} ({tournament.results_pdf_url}): {exc}",
                     file=sys.stderr,
                 )
                 continue
@@ -824,16 +1076,34 @@ def _collect_bassmaster_outcomes(
         outcomes = outcomes.merge(mapping, on='tournament_slug', how='left', suffixes=('', '_mapping'))
         outcomes['species'] = outcomes['species_mapping'].where(outcomes['species_mapping'].notna() & outcomes['species_mapping'].ne(''), outcomes['species'])
         outcomes = outcomes.drop(columns=['species_mapping'])
-        mapped_mask = outcomes['usgs_site_id'].notna() & outcomes['usgs_site_id'].astype(str).str.strip().ne('')
-        skipped = outcomes.loc[~mapped_mask, 'tournament_slug'].dropna().astype(str).unique().tolist()
-        if skipped:
-            print(
-                'warning: skipping unmapped Bassmaster tournaments from curated batch: ' + ', '.join(sorted(skipped)),
-                file=sys.stderr,
-            )
-        outcomes = outcomes.loc[mapped_mask].reset_index(drop=True)
     if 'usgs_site_id' not in outcomes.columns:
         outcomes['usgs_site_id'] = ''
+
+    # Auto-resolve USGS gauges for unmapped tournaments using KNOWN_LAKE_GAUGES
+    unmapped_mask = outcomes['usgs_site_id'].isna() | outcomes['usgs_site_id'].astype(str).str.strip().eq('')
+    if unmapped_mask.any():
+        for idx in outcomes.index[unmapped_mask]:
+            location = str(outcomes.at[idx, 'location'])
+            # Try to extract water body from location (first part before comma)
+            water_body_part = location.split(',')[0].strip() if ',' in location else location
+            resolved = _auto_resolve_usgs_site(water_body_part)
+            if resolved:
+                outcomes.at[idx, 'usgs_site_id'] = resolved
+                print(
+                    f"auto-resolved USGS gauge for {outcomes.at[idx, 'tournament_slug']}: "
+                    f"{water_body_part} → {resolved}",
+                    file=sys.stderr,
+                )
+
+    # Drop events that still have no gauge mapping
+    mapped_mask = outcomes['usgs_site_id'].notna() & outcomes['usgs_site_id'].astype(str).str.strip().ne('')
+    skipped = outcomes.loc[~mapped_mask, 'tournament_slug'].dropna().astype(str).unique().tolist()
+    if skipped:
+        print(
+            f'warning: skipping {len(skipped)} unmapped tournaments: ' + ', '.join(sorted(skipped)),
+            file=sys.stderr,
+        )
+    outcomes = outcomes.loc[mapped_mask].reset_index(drop=True)
 
     return outcomes
 

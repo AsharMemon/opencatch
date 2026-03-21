@@ -1,0 +1,44 @@
+{
+  "version": "v14",
+  "architecture": "two-model (seen + unseen location routing)",
+  "trained_at": "2026-03-19T16:58:10.535624",
+  "dataset": "validation_dataset_v16.csv + enhanced temporal features",
+  "n_rows": 6084,
+  "n_locations": 2001,
+  "seen_model": {
+    "n_features": 30,
+    "hp": {
+      "depth": 6,
+      "lr": 0.02,
+      "l2": 5,
+      "sub": 0.7
+    },
+    "ridge_weights": {
+      "catboost": 0.34442787738709113,
+      "xgboost": 0.2426329553383039,
+      "lightgbm": 0.4597434352367993
+    }
+  },
+  "unseen_model": {
+    "n_features": 30,
+    "hp": {
+      "depth": 3,
+      "lr": 0.02,
+      "l2": 20,
+      "sub": 0.5
+    },
+    "ridge_weights": {
+      "catboost": 0.36436964761746027,
+      "xgboost": -0.0710497341463252,
+      "lightgbm": 0.7278779108596423
+    }
+  },
+  "min_loc_history": 3,
+  "metrics": {
+    "seen_cv_r2": 0.7109475571540965,
+    "unseen_cv_r2": 0.6874974179313285,
+    "temporal_r2_combined": 0.3209460086452933,
+    "walkforward_r2": 0.4252420954313294,
+    "spatial_r2": 0.5401492389643062
+  }
+}

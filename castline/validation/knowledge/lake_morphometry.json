@@ -1,0 +1,555 @@
+{
+  "Lake Guntersville": {
+    "area_acres": 69100,
+    "max_depth_ft": 60,
+    "shore_dev": 4.2,
+    "lat": 34.37,
+    "lon": -86.3
+  },
+  "Lake Eufaula": {
+    "area_acres": 45181,
+    "max_depth_ft": 82,
+    "shore_dev": 5.8,
+    "lat": 31.97,
+    "lon": -85.15
+  },
+  "Lake Fork": {
+    "area_acres": 27690,
+    "max_depth_ft": 70,
+    "shore_dev": 3.5,
+    "lat": 32.86,
+    "lon": -95.72
+  },
+  "Lake Okeechobee": {
+    "area_acres": 467200,
+    "max_depth_ft": 12,
+    "shore_dev": 1.2,
+    "lat": 26.95,
+    "lon": -80.8
+  },
+  "St. Lawrence River": {
+    "area_acres": 0,
+    "max_depth_ft": 250,
+    "shore_dev": 1.0,
+    "lat": 44.32,
+    "lon": -76.07
+  },
+  "Lake Champlain": {
+    "area_acres": 271300,
+    "max_depth_ft": 400,
+    "shore_dev": 2.8,
+    "lat": 44.53,
+    "lon": -73.33
+  },
+  "Kentucky Lake": {
+    "area_acres": 160300,
+    "max_depth_ft": 75,
+    "shore_dev": 5.1,
+    "lat": 36.78,
+    "lon": -88.05
+  },
+  "Toledo Bend": {
+    "area_acres": 181600,
+    "max_depth_ft": 110,
+    "shore_dev": 4.6,
+    "lat": 31.45,
+    "lon": -93.55
+  },
+  "Table Rock Lake": {
+    "area_acres": 43100,
+    "max_depth_ft": 220,
+    "shore_dev": 8.3,
+    "lat": 36.58,
+    "lon": -93.35
+  },
+  "Sam Rayburn": {
+    "area_acres": 114500,
+    "max_depth_ft": 80,
+    "shore_dev": 4.2,
+    "lat": 31.08,
+    "lon": -94.15
+  },
+  "Lake Hartwell": {
+    "area_acres": 56000,
+    "max_depth_ft": 185,
+    "shore_dev": 4.0,
+    "lat": 34.5,
+    "lon": -82.85
+  },
+  "Lay Lake": {
+    "area_acres": 12000,
+    "max_depth_ft": 55,
+    "shore_dev": 5.5,
+    "lat": 33.23,
+    "lon": -86.52
+  },
+  "Lake Murray": {
+    "area_acres": 50000,
+    "max_depth_ft": 200,
+    "shore_dev": 3.6,
+    "lat": 34.07,
+    "lon": -81.25
+  },
+  "Lake St. Clair": {
+    "area_acres": 275000,
+    "max_depth_ft": 27,
+    "shore_dev": 1.5,
+    "lat": 42.45,
+    "lon": -82.68
+  },
+  "Santee Cooper": {
+    "area_acres": 110600,
+    "max_depth_ft": 75,
+    "shore_dev": 6.2,
+    "lat": 33.55,
+    "lon": -80.15
+  },
+  "Lake Seminole": {
+    "area_acres": 37500,
+    "max_depth_ft": 35,
+    "shore_dev": 3.8,
+    "lat": 30.75,
+    "lon": -84.85
+  },
+  "Ross Barnett": {
+    "area_acres": 33000,
+    "max_depth_ft": 22,
+    "shore_dev": 2.5,
+    "lat": 32.42,
+    "lon": -89.95
+  },
+  "Grand Lake": {
+    "area_acres": 46500,
+    "max_depth_ft": 110,
+    "shore_dev": 5.9,
+    "lat": 36.78,
+    "lon": -95.1
+  },
+  "Harris Chain": {
+    "area_acres": 13788,
+    "max_depth_ft": 20,
+    "shore_dev": 3.1,
+    "lat": 28.8,
+    "lon": -81.78
+  },
+  "Lake Oahe": {
+    "area_acres": 374000,
+    "max_depth_ft": 205,
+    "shore_dev": 2.1,
+    "lat": 44.45,
+    "lon": -100.4
+  },
+  "Lewis Smith Lake": {
+    "area_acres": 21200,
+    "max_depth_ft": 264,
+    "shore_dev": 7.6,
+    "lat": 34.08,
+    "lon": -87.07
+  },
+  "Neely Henry Lake": {
+    "area_acres": 11200,
+    "max_depth_ft": 40,
+    "shore_dev": 3.8,
+    "lat": 33.83,
+    "lon": -86.07
+  },
+  "Oneida Lake": {
+    "area_acres": 51000,
+    "max_depth_ft": 55,
+    "shore_dev": 1.8,
+    "lat": 43.18,
+    "lon": -75.9
+  },
+  "Lake Havasu": {
+    "area_acres": 19300,
+    "max_depth_ft": 90,
+    "shore_dev": 2.4,
+    "lat": 34.47,
+    "lon": -114.35
+  },
+  "Cayuga Lake": {
+    "area_acres": 42561,
+    "max_depth_ft": 435,
+    "shore_dev": 1.9,
+    "lat": 42.68,
+    "lon": -76.72
+  },
+  "Cherokee Lake": {
+    "area_acres": 28780,
+    "max_depth_ft": 270,
+    "shore_dev": 5.2,
+    "lat": 36.18,
+    "lon": -83.52
+  },
+  "Douglas Lake": {
+    "area_acres": 28420,
+    "max_depth_ft": 160,
+    "shore_dev": 4.8,
+    "lat": 36.03,
+    "lon": -83.35
+  },
+  "Lake Lanier": {
+    "area_acres": 38000,
+    "max_depth_ft": 160,
+    "shore_dev": 4.5,
+    "lat": 34.28,
+    "lon": -83.95
+  },
+  "Lake Martin": {
+    "area_acres": 39000,
+    "max_depth_ft": 155,
+    "shore_dev": 3.9,
+    "lat": 32.7,
+    "lon": -85.9
+  },
+  "Sabine River": {
+    "area_acres": 0,
+    "max_depth_ft": 30,
+    "shore_dev": 1.0,
+    "lat": 30.08,
+    "lon": -93.73
+  },
+  "Sacramento River": {
+    "area_acres": 0,
+    "max_depth_ft": 35,
+    "shore_dev": 1.0,
+    "lat": 38.58,
+    "lon": -121.5
+  },
+  "Lake Tenkiller": {
+    "area_acres": 12900,
+    "max_depth_ft": 165,
+    "shore_dev": 5.1,
+    "lat": 35.68,
+    "lon": -94.95
+  },
+  "Delaware River": {
+    "area_acres": 0,
+    "max_depth_ft": 25,
+    "shore_dev": 1.0,
+    "lat": 40.02,
+    "lon": -75.12
+  },
+  "Mississippi River": {
+    "area_acres": 0,
+    "max_depth_ft": 200,
+    "shore_dev": 1.0,
+    "lat": 43.8,
+    "lon": -91.23
+  },
+  "Potomac River": {
+    "area_acres": 0,
+    "max_depth_ft": 107,
+    "shore_dev": 1.0,
+    "lat": 38.57,
+    "lon": -77.22
+  },
+  "Winyah Bay": {
+    "area_acres": 15000,
+    "max_depth_ft": 30,
+    "shore_dev": 3.5,
+    "lat": 33.37,
+    "lon": -79.27
+  },
+  "Chesapeake Bay": {
+    "area_acres": 4480000,
+    "max_depth_ft": 174,
+    "shore_dev": 1.0,
+    "lat": 39.47,
+    "lon": -76.08
+  },
+  "Lake Conroe": {
+    "area_acres": 20168,
+    "max_depth_ft": 70,
+    "shore_dev": 3.2,
+    "lat": 30.42,
+    "lon": -95.57
+  },
+  "Lake Erie": {
+    "area_acres": 6387200,
+    "max_depth_ft": 210,
+    "shore_dev": 1.0,
+    "lat": 41.5,
+    "lon": -82.6
+  },
+  "Lake Texoma": {
+    "area_acres": 89000,
+    "max_depth_ft": 106,
+    "shore_dev": 4.8,
+    "lat": 33.87,
+    "lon": -96.58
+  },
+  "Lake Travis": {
+    "area_acres": 18622,
+    "max_depth_ft": 210,
+    "shore_dev": 6.8,
+    "lat": 30.45,
+    "lon": -97.95
+  },
+  "Wheeler Lake": {
+    "area_acres": 67100,
+    "max_depth_ft": 70,
+    "shore_dev": 3.5,
+    "lat": 34.57,
+    "lon": -87.03
+  },
+  "Logan Martin Lake": {
+    "area_acres": 15263,
+    "max_depth_ft": 60,
+    "shore_dev": 4.2,
+    "lat": 33.6,
+    "lon": -86.33
+  },
+  "Norfork Lake": {
+    "area_acres": 22000,
+    "max_depth_ft": 177,
+    "shore_dev": 5.5,
+    "lat": 36.38,
+    "lon": -92.22
+  },
+  "Lake Winnebago": {
+    "area_acres": 131939,
+    "max_depth_ft": 21,
+    "shore_dev": 1.4,
+    "lat": 44.0,
+    "lon": -88.37
+  },
+  "Mille Lacs Lake": {
+    "area_acres": 132516,
+    "max_depth_ft": 42,
+    "shore_dev": 1.6,
+    "lat": 46.2,
+    "lon": -93.6
+  },
+  "St. Johns River": {
+    "area_acres": 0,
+    "max_depth_ft": 12,
+    "shore_dev": 1.0,
+    "lat": 29.65,
+    "lon": -81.63
+  },
+  "James River": {
+    "area_acres": 0,
+    "max_depth_ft": 25,
+    "shore_dev": 1.0,
+    "lat": 37.53,
+    "lon": -77.43
+  },
+  "Arkansas River": {
+    "area_acres": 0,
+    "max_depth_ft": 30,
+    "shore_dev": 1.0,
+    "lat": 35.75,
+    "lon": -95.37
+  },
+  "Red River": {
+    "area_acres": 0,
+    "max_depth_ft": 40,
+    "shore_dev": 1.0,
+    "lat": 32.51,
+    "lon": -93.75
+  },
+  "Kissimmee Chain": {
+    "area_acres": 34948,
+    "max_depth_ft": 12,
+    "shore_dev": 2.1,
+    "lat": 28.3,
+    "lon": -81.42
+  },
+  "Buggs Island": {
+    "area_acres": 48900,
+    "max_depth_ft": 108,
+    "shore_dev": 4.5,
+    "lat": 36.6,
+    "lon": -78.32
+  },
+  "Clarks Hill": {
+    "area_acres": 71100,
+    "max_depth_ft": 165,
+    "shore_dev": 5.2,
+    "lat": 33.66,
+    "lon": -82.2
+  },
+  "Lake Powell": {
+    "area_acres": 161390,
+    "max_depth_ft": 560,
+    "shore_dev": 7.0,
+    "lat": 37.07,
+    "lon": -111.25
+  },
+  "Lake Chatuge": {
+    "area_acres": 7050,
+    "max_depth_ft": 125,
+    "shore_dev": 3.2,
+    "lat": 34.93,
+    "lon": -83.83
+  },
+  "Lake of the Ozarks": {
+    "area_acres": 54000,
+    "max_depth_ft": 130,
+    "shore_dev": 8.5,
+    "lat": 38.13,
+    "lon": -92.62
+  },
+  "Saginaw Bay": {
+    "area_acres": 700000,
+    "max_depth_ft": 50,
+    "shore_dev": 1.5,
+    "lat": 43.83,
+    "lon": -83.83
+  },
+  "Bays de Noc": {
+    "area_acres": 125000,
+    "max_depth_ft": 80,
+    "shore_dev": 2.0,
+    "lat": 45.72,
+    "lon": -86.95
+  },
+  "Watts Bar": {
+    "area_acres": 39090,
+    "max_depth_ft": 72,
+    "shore_dev": 4.1,
+    "lat": 35.73,
+    "lon": -84.78
+  },
+  "Lake Ray Roberts": {
+    "area_acres": 29350,
+    "max_depth_ft": 110,
+    "shore_dev": 3.0,
+    "lat": 33.37,
+    "lon": -97.03
+  },
+  "Lewisville Lake": {
+    "area_acres": 29592,
+    "max_depth_ft": 67,
+    "shore_dev": 3.8,
+    "lat": 33.1,
+    "lon": -96.98
+  },
+  "Milford Lake": {
+    "area_acres": 15700,
+    "max_depth_ft": 65,
+    "shore_dev": 4.0,
+    "lat": 39.1,
+    "lon": -96.93
+  },
+  "Pokegama Lake": {
+    "area_acres": 6585,
+    "max_depth_ft": 105,
+    "shore_dev": 3.5,
+    "lat": 47.23,
+    "lon": -93.53
+  },
+  "Saranac Lake": {
+    "area_acres": 4284,
+    "max_depth_ft": 62,
+    "shore_dev": 3.0,
+    "lat": 44.32,
+    "lon": -74.13
+  },
+  "Stockton Lake": {
+    "area_acres": 24900,
+    "max_depth_ft": 142,
+    "shore_dev": 4.5,
+    "lat": 37.63,
+    "lon": -93.73
+  },
+  "Lake Ouachita": {
+    "area_acres": 40100,
+    "max_depth_ft": 200,
+    "shore_dev": 5.0,
+    "lat": 34.57,
+    "lon": -93.22
+  },
+  "Tims Ford Lake": {
+    "area_acres": 10700,
+    "max_depth_ft": 155,
+    "shore_dev": 4.2,
+    "lat": 35.18,
+    "lon": -86.25
+  },
+  "Sturgeon Bay": {
+    "area_acres": 320000,
+    "max_depth_ft": 100,
+    "shore_dev": 2.5,
+    "lat": 44.83,
+    "lon": -87.37
+  },
+  "Apalachicola Bay": {
+    "area_acres": 155000,
+    "max_depth_ft": 15,
+    "shore_dev": 1.8,
+    "lat": 29.67,
+    "lon": -85.02
+  },
+  "Aransas Bay": {
+    "area_acres": 58000,
+    "max_depth_ft": 8,
+    "shore_dev": 1.5,
+    "lat": 28.03,
+    "lon": -96.98
+  },
+  "Tombigbee River": {
+    "area_acres": 0,
+    "max_depth_ft": 35,
+    "shore_dev": 1.0,
+    "lat": 33.5,
+    "lon": -88.42
+  },
+  "Pewaukee Lake": {
+    "area_acres": 2498,
+    "max_depth_ft": 45,
+    "shore_dev": 2.0,
+    "lat": 43.08,
+    "lon": -88.27
+  },
+  "Rock Lake": {
+    "area_acres": 1371,
+    "max_depth_ft": 55,
+    "shore_dev": 1.8,
+    "lat": 43.08,
+    "lon": -88.92
+  },
+  "Atchafalaya Basin": {
+    "area_acres": 595000,
+    "max_depth_ft": 20,
+    "shore_dev": 1.0,
+    "lat": 30.28,
+    "lon": -91.55
+  },
+  "Cherryvale": {
+    "area_acres": 4400,
+    "max_depth_ft": 20,
+    "shore_dev": 2.0,
+    "lat": 37.27,
+    "lon": -95.55
+  },
+  "Hurricane": {
+    "area_acres": 1300,
+    "max_depth_ft": 80,
+    "shore_dev": 2.5,
+    "lat": 37.17,
+    "lon": -113.3
+  },
+  "Enid": {
+    "area_acres": 6200,
+    "max_depth_ft": 45,
+    "shore_dev": 2.0,
+    "lat": 34.14,
+    "lon": -89.85
+  },
+  "La Grange": {
+    "area_acres": 0,
+    "max_depth_ft": 20,
+    "shore_dev": 1.0,
+    "lat": 29.91,
+    "lon": -96.88
+  },
+  "Alabama River": {
+    "area_acres": 0,
+    "max_depth_ft": 30,
+    "shore_dev": 1.0,
+    "lat": 32.46,
+    "lon": -86.47
+  }
+}

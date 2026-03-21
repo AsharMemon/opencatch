@@ -735,12 +735,12 @@ USGS\t08039300\tSam Rayburn Res nr Jasper, TX\tLK
 
     class FakeSession:
         def get(self, url, params=None, timeout=30, headers=None):
-            calls.append(params['siteName'])
+            calls.append((params['stateCd'], params['siteName']))
             if params['siteName'] == 'Sam Rayburn Reservoir':
                 return FakeResponse(text='')
             if params['siteName'] == 'Sam Rayburn':
                 return FakeResponse(text=usgs_rdb)
-            raise AssertionError(f"unexpected siteName {params['siteName']}")
+            return FakeResponse(text='')
 
     df = _fetch_usgs_site_candidates(
         water_body='Sam Rayburn Reservoir',
@@ -749,10 +749,59 @@ USGS\t08039300\tSam Rayburn Res nr Jasper, TX\tLK
         session=FakeSession(),
     )
 
-    assert calls[:2] == ['Sam Rayburn Reservoir', 'Sam Rayburn']
+    assert calls[:2] == [('TX', 'Sam Rayburn Reservoir'), ('TX', 'Sam Rayburn')]
+    assert len(calls) >= 2
     assert len(df) == 2
     assert df.iloc[0]['query_site_name'] == 'Sam Rayburn'
+    assert df.iloc[0]['query_state'] == 'TX'
     assert set(df['site_no']) == {'08038490', '08039300'}
+
+
+
+def test_usgs_site_candidate_fetch_merges_interstate_and_alias_results_without_duplicates():
+    class FakeResponse:
+        def __init__(self, text: str = '', status_code: int = 200):
+            self.text = text
+            self.status_code = status_code
+
+        def raise_for_status(self):
+            return None
+
+    calls: list[tuple[str, str]] = []
+    ga_rdb = """# ----------------------------------
+# Data provided for test
+agency_cd\tsite_no\tstation_nm\tsite_tp_cd
+5s\t15s\t50s\t7s
+USGS\t02195000\tSAVANNAH RIVER NEAR CLARKS HILL, S.C.\tST
+"""
+    sc_rdb = """# ----------------------------------
+# Data provided for test
+agency_cd\tsite_no\tstation_nm\tsite_tp_cd
+5s\t15s\t50s\t7s
+USGS\t02195000\tSAVANNAH RIVER NEAR CLARKS HILL, S.C.\tST
+USGS\t02197000\tCLARK HILL LAKE NEAR CLARKS HILL, SC\tLK
+"""
+
+    class FakeSession:
+        def get(self, url, params=None, timeout=30, headers=None):
+            calls.append((params['stateCd'], params['siteName']))
+            if params['stateCd'] == 'GA' and params['siteName'] == 'Clarks Hill Reservoir':
+                return FakeResponse(text=ga_rdb)
+            if params['stateCd'] == 'SC' and params['siteName'] == 'Clarks Hill Reservoir':
+                return FakeResponse(text=sc_rdb)
+            return FakeResponse(text='')
+
+    df = _fetch_usgs_site_candidates(
+        water_body='Clarks Hill Reservoir',
+        city='Columbia County',
+        state='GA',
+        session=FakeSession(),
+    )
+
+    assert ('GA', 'Clarks Hill Reservoir') in calls
+    assert ('SC', 'Clarks Hill Reservoir') in calls
+    assert set(df['site_no']) == {'02195000', '02197000'}
+    assert set(df['query_state']) == {'GA', 'SC'}
 
 
 
@@ -871,6 +920,46 @@ def test_export_curated_bassmaster_mappings_prefers_coverage_backed_candidate(tm
         {
             'tournament_slug': '2024-douglas-lake',
             'usgs_site_id': '03467609',
+            'species': 'black_bass',
+        }
+    ]
+
+
+
+def test_export_curated_bassmaster_mappings_prefers_coverage_backed_candidate_over_selected_conflict(tmp_path):
+    review_sheet_path = tmp_path / 'mapping_conflict.csv'
+    pd.DataFrame(
+        [
+            {
+                'tournament_slug': '2025-harris-chain',
+                'candidate_rank': 1,
+                'suggested_usgs_site_id': '02237520',
+                'selected_usgs_site_id': '02237520',
+                'review_status': 'suggested',
+                'recommended_by_coverage': False,
+                'usable_event_count': 0,
+                'species': 'black_bass',
+            },
+            {
+                'tournament_slug': '2025-harris-chain',
+                'candidate_rank': 3,
+                'suggested_usgs_site_id': '02237700',
+                'selected_usgs_site_id': '',
+                'review_status': 'coverage-recommended',
+                'recommended_by_coverage': True,
+                'usable_event_count': 1,
+                'species': 'black_bass',
+            },
+        ]
+    ).to_csv(review_sheet_path, index=False)
+
+    output_path = tmp_path / 'bassmaster_mapping.csv'
+    df = export_curated_bassmaster_mappings(review_sheet_path=review_sheet_path, output_path=output_path)
+
+    assert df.to_dict(orient='records') == [
+        {
+            'tournament_slug': '2025-harris-chain',
+            'usgs_site_id': '02237700',
             'species': 'black_bass',
         }
     ]

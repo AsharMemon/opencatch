@@ -1,0 +1,38 @@
+# FastAPI + server
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.0
+pydantic-settings>=2.0
+
+# Database
+sqlalchemy[asyncio]>=2.0
+asyncpg>=0.29
+alembic>=1.13
+
+# Cache
+redis>=5.0
+
+# HTTP client (async)
+httpx>=0.27
+
+# ML model deps
+catboost>=1.2
+xgboost>=2.0
+lightgbm>=4.0
+scikit-learn>=1.4
+numpy>=1.26
+pandas>=2.1
+
+# SHAP explanations (optional — graceful degradation if missing)
+shap>=0.44
+
+# Geospatial
+shapely>=2.0
+
+# Auth
+PyJWT>=2.8
+pydantic[email]>=2.0
+
+# Utilities
+python-dotenv>=1.0
+orjson>=3.9

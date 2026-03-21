@@ -26,16 +26,15 @@ export function SpotCard({ spot, onPress }: SpotCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: palette.surface,
-    borderRadius: 20,
-    padding: 18,
-    gap: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 16,
+    gap: 8,
     borderWidth: 1,
     borderColor: palette.border,
   },
   cardPressed: {
     opacity: 0.9,
-    transform: [{ scale: 0.99 }],
   },
   row: {
     flexDirection: 'row',
@@ -65,8 +64,6 @@ const styles = StyleSheet.create({
   metricLabel: {
     color: palette.textMuted,
     fontSize: 13,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
   },
   metricValue: {
     color: palette.success,

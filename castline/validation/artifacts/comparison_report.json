@@ -1,0 +1,43 @@
+{
+  "baseline": {
+    "r2": 0.014261765084373268,
+    "rmse": 4.306455605151479,
+    "mae": 3.565820727861419,
+    "coefficients": {
+      "baseline_signal": -3.228302819597515
+    },
+    "intercept": 10.751096173168108
+  },
+  "full": {
+    "r2": 0.659855349568482,
+    "rmse": 2.5297115045642484,
+    "mae": 2.0713369534839923,
+    "coefficients": {
+      "baseline_signal": 9.74220943910842,
+      "air_temp_c": -0.007203217744448479,
+      "pressure_mb": -0.11488975575311211,
+      "wind_speed_kph": -0.2681053764051589,
+      "cloud_cover_pct": -0.013784827350774772,
+      "precip_24h_mm": 2.130312761061875,
+      "water_temp_c": -6.9083428892968985,
+      "discharge_cfs": 4.075155315233596e-05,
+      "gage_height_ft": -1.8901978520614722,
+      "temp_delta_24h_c": 24.14018312004601,
+      "flow_delta_24h_pct": 0.9682083885395688,
+      "env_signal": 12.098651373909615,
+      "water_temp_x_flow": 0.0,
+      "weather_stability_index": -0.21758167170813622
+    },
+    "intercept": 6.267373549763937
+  },
+  "improvement_pct": 4526.743924505466,
+  "thesis_rating": "strong",
+  "decision_rule": {
+    "weak_lt": 5,
+    "viable_lte": 15,
+    "strong_gt": 15
+  },
+  "row_count": 27,
+  "usable_row_count": 26,
+  "withheld_reason": null
+}

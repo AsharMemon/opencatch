@@ -1,0 +1,26 @@
+# t-PatchGNN prototype for CASTLINE
+# Install: pip install -r scripts/tpatchgnn_requirements.txt
+#
+# Tested with Python 3.10+ and CUDA 12.x on Vast.ai RTX 3060
+
+# Core deep learning
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Data
+numpy>=1.24.0
+pandas>=1.5.0
+scipy>=1.11.0
+scikit-learn>=1.3.0
+
+# Progress bars
+tqdm>=4.65.0
+
+# Optional: for advanced graph operations (not required for prototype)
+# torch-geometric>=2.4.0
+# torch-scatter
+# torch-sparse
+
+# Optional: experiment tracking
+# tensorboard>=2.14.0
+# wandb>=0.15.0

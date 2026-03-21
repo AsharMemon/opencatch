@@ -37,11 +37,21 @@ BASELINE_FEATURES = [
 
 ENRICHED_EXTRA_FEATURES = [
     "water_temp_c",
-    "water_temp_6h_delta",
+    "temp_delta_24h_c",
     "discharge_cfs",
-    "discharge_6h_pct_change",
+    "flow_delta_24h_pct",
     "gage_height_ft",
     "precip_24h_mm",
+    "dissolved_oxygen_mgL",
+    "turbidity_fnu",
+    "gage_delta_24h_ft",
+    "specific_conductance_us_cm",
+    "ph",
+    "reservoir_elevation_ft",
+    "water_temp_7d_mean",
+    "water_temp_30d_trend",
+    "discharge_7d_mean",
+    "gage_height_7d_mean",
 ]
 
 

@@ -1,0 +1,35 @@
+{
+  "42": {
+    "status": "trained",
+    "train_rows": 228,
+    "test_rows": 57,
+    "model_params": 14099,
+    "best_epoch": 10,
+    "r2": 0.40098845958709717,
+    "mae": 2.8341329097747803,
+    "rmse": 3.225279619973152,
+    "best_model_path": "castline/validation/data/models/tft_full/seed_42/lightning_logs/version_0/checkpoints/epoch=9-step=60.ckpt"
+  },
+  "123": {
+    "status": "trained",
+    "train_rows": 228,
+    "test_rows": 57,
+    "model_params": 14099,
+    "best_epoch": 10,
+    "r2": 0.4732574224472046,
+    "mae": 2.7293484210968018,
+    "rmse": 3.0244679826481824,
+    "best_model_path": "castline/validation/data/models/tft_full/seed_123/lightning_logs/version_0/checkpoints/epoch=9-step=60.ckpt"
+  },
+  "456": {
+    "status": "trained",
+    "train_rows": 228,
+    "test_rows": 57,
+    "model_params": 14099,
+    "best_epoch": 9,
+    "r2": 0.5766282677650452,
+    "mae": 2.3440470695495605,
+    "rmse": 2.711506808523345,
+    "best_model_path": "castline/validation/data/models/tft_full/seed_456/lightning_logs/version_0/checkpoints/epoch=8-step=54.ckpt"
+  }
+}

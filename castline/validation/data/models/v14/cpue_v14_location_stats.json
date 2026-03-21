@@ -1,0 +1,8006 @@
+{
+  "1000 Islands, ON": {
+    "mean_weight": 15.575,
+    "n_events": 1
+  },
+  "4 county, CA": {
+    "mean_weight": 3.3885,
+    "n_events": 1
+  },
+  "Abingdon, VA": {
+    "mean_weight": 7.390171428571429,
+    "n_events": 7
+  },
+  "Ada, Minnesota": {
+    "mean_weight": 18.9271283176,
+    "n_events": 1
+  },
+  "Akers, LA": {
+    "mean_weight": 2.2697333333333334,
+    "n_events": 3
+  },
+  "Akron, OH": {
+    "mean_weight": 3.8466,
+    "n_events": 1
+  },
+  "Alabama River, Prattville, AL": {
+    "mean_weight": 8.2656,
+    "n_events": 2
+  },
+  "Alabama to, WY": {
+    "mean_weight": 10.8169,
+    "n_events": 1
+  },
+  "Alabama, WY": {
+    "mean_weight": 16.201933333333333,
+    "n_events": 3
+  },
+  "Alan Henry, Texas": {
+    "mean_weight": 13.494762603542856,
+    "n_events": 7
+  },
+  "Alder Lake, Wisconsin": {
+    "mean_weight": 3.2971101957333335,
+    "n_events": 3
+  },
+  "Allequash Lake, Wisconsin": {
+    "mean_weight": 7.47402305,
+    "n_events": 1
+  },
+  "Alma, WI": {
+    "mean_weight": 11.7383,
+    "n_events": 1
+  },
+  "Alpine, TN": {
+    "mean_weight": 2.8657,
+    "n_events": 1
+  },
+  "Alstead Pit, Minnesota": {
+    "mean_weight": 3.8629758664,
+    "n_events": 1
+  },
+  "Altavista, VA": {
+    "mean_weight": 5.3828000000000005,
+    "n_events": 3
+  },
+  "Alvarado Park, Texas": {
+    "mean_weight": 7.8715422552,
+    "n_events": 1
+  },
+  "Amacoy Lake, Wisconsin": {
+    "mean_weight": 7.1100604176,
+    "n_events": 1
+  },
+  "Amik Lake, Wisconsin": {
+    "mean_weight": 3.7468477386,
+    "n_events": 4
+  },
+  "Amistad, Texas": {
+    "mean_weight": 20.7115112107,
+    "n_events": 4
+  },
+  "Amnicon Lake, Wisconsin": {
+    "mean_weight": 6.145423575000001,
+    "n_events": 2
+  },
+  "Amon G. Carter, Texas": {
+    "mean_weight": 13.160847050666668,
+    "n_events": 3
+  },
+  "Amos Lake, Connecticut": {
+    "mean_weight": 10.7302849296,
+    "n_events": 1
+  },
+  "Anacoco, LA": {
+    "mean_weight": 6.9103,
+    "n_events": 4
+  },
+  "Anderson , SC": {
+    "mean_weight": 13.0253,
+    "n_events": 2
+  },
+  "Anderson, GA": {
+    "mean_weight": 6.5999,
+    "n_events": 1
+  },
+  "Anderson, SC": {
+    "mean_weight": 8.430925,
+    "n_events": 4
+  },
+  "Andrew, Minnesota": {
+    "mean_weight": 4.6157868432,
+    "n_events": 2
+  },
+  "Andrews, Minnesota": {
+    "mean_weight": 5.4124436856,
+    "n_events": 1
+  },
+  "Angostura Reservoir, South Dakota": {
+    "mean_weight": 6.4679714408,
+    "n_events": 1
+  },
+  "Ann, Minnesota": {
+    "mean_weight": 3.603926396088889,
+    "n_events": 9
+  },
+  "Annabelle Lake, Wisconsin": {
+    "mean_weight": 6.226562750399999,
+    "n_events": 2
+  },
+  "Antelope Lake, Kansas": {
+    "mean_weight": 7.3187200576,
+    "n_events": 1
+  },
+  "Anvil Lake, Wisconsin": {
+    "mean_weight": 6.8583869336,
+    "n_events": 1
+  },
+  "Apache Lake, AZ": {
+    "mean_weight": 3.2222,
+    "n_events": 1
+  },
+  "Apalachicola Bay, Apalachicola, FL": {
+    "mean_weight": 8.083333333333334,
+    "n_events": 3
+  },
+  "Apex, NC": {
+    "mean_weight": 3.4918,
+    "n_events": 1
+  },
+  "Apple Canyon Lake, Illinois": {
+    "mean_weight": 25.0,
+    "n_events": 2
+  },
+  "Appling, GA": {
+    "mean_weight": 8.78565,
+    "n_events": 2
+  },
+  "Apsley, ON": {
+    "mean_weight": 9.306149999999999,
+    "n_events": 2
+  },
+  "Aquilla, Texas": {
+    "mean_weight": 4.2257365648,
+    "n_events": 1
+  },
+  "Aransas Bay, Port Aransas, TX": {
+    "mean_weight": 11.604166666666666,
+    "n_events": 3
+  },
+  "Arcadia Lake, Michigan": {
+    "mean_weight": 11.6111688268,
+    "n_events": 1
+  },
+  "Archibald Lake, Wisconsin": {
+    "mean_weight": 15.8920273632,
+    "n_events": 1
+  },
+  "Arco Pit, Minnesota": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Argyle Lake, Illinois": {
+    "mean_weight": 8.6762208456,
+    "n_events": 1
+  },
+  "Arivaca, AZ": {
+    "mean_weight": 9.1451,
+    "n_events": 1
+  },
+  "Arkadelphia, AR": {
+    "mean_weight": 2.9543,
+    "n_events": 1
+  },
+  "Arkansas River, Muskogee, OK": {
+    "mean_weight": 7.6182928571428565,
+    "n_events": 14
+  },
+  "Arlington, Texas": {
+    "mean_weight": 5.306193358,
+    "n_events": 1
+  },
+  "Arma, KS": {
+    "mean_weight": 4.68045,
+    "n_events": 2
+  },
+  "Arrowhead, Minnesota": {
+    "mean_weight": 6.4746846508,
+    "n_events": 2
+  },
+  "Arrowhead, Texas": {
+    "mean_weight": 7.2585678284,
+    "n_events": 2
+  },
+  "Artichoke, Minnesota": {
+    "mean_weight": 2.9572981408000003,
+    "n_events": 1
+  },
+  "Ash, Minnesota": {
+    "mean_weight": 4.9888897884,
+    "n_events": 2
+  },
+  "Ashland, OR": {
+    "mean_weight": 3.9012,
+    "n_events": 1
+  },
+  "Aspen, Minnesota": {
+    "mean_weight": 12.1409942912,
+    "n_events": 2
+  },
+  "Aspinook Pond, Connecticut": {
+    "mean_weight": 11.0466886872,
+    "n_events": 2
+  },
+  "Atchafalaya Basin, Morgan City, LA": {
+    "mean_weight": 8.4375,
+    "n_events": 2
+  },
+  "Atchison State Fishing Lake, Kansas": {
+    "mean_weight": 8.0726624984,
+    "n_events": 1
+  },
+  "Athens, TX": {
+    "mean_weight": 13.274000000000001,
+    "n_events": 2
+  },
+  "Athens, Texas": {
+    "mean_weight": 22.780754491600003,
+    "n_events": 3
+  },
+  "Atkins, AR": {
+    "mean_weight": 5.210875,
+    "n_events": 4
+  },
+  "Atkins, Arkansas": {
+    "mean_weight": 5.5132548776,
+    "n_events": 1
+  },
+  "Atwood, PA": {
+    "mean_weight": 5.0572,
+    "n_events": 1
+  },
+  "Au Sable River, Michigan": {
+    "mean_weight": 3.1685942288,
+    "n_events": 1
+  },
+  "Au Train Lake, Michigan": {
+    "mean_weight": 3.4422338904000003,
+    "n_events": 2
+  },
+  "Auburn, NH": {
+    "mean_weight": 8.7708,
+    "n_events": 1
+  },
+  "Auburn, NY": {
+    "mean_weight": 7.3459,
+    "n_events": 1
+  },
+  "Augusta , ME": {
+    "mean_weight": 4.8081,
+    "n_events": 1
+  },
+  "Augusta, GA": {
+    "mean_weight": 8.89,
+    "n_events": 2
+  },
+  "Augusta, ME": {
+    "mean_weight": 7.1684,
+    "n_events": 2
+  },
+  "Aurora, IL": {
+    "mean_weight": 7.506600000000001,
+    "n_events": 2
+  },
+  "Austin, TX": {
+    "mean_weight": 4.628128571428571,
+    "n_events": 7
+  },
+  "Averill Lake, Wisconsin": {
+    "mean_weight": 13.6738963824,
+    "n_events": 1
+  },
+  "Avinger, TX, US, TX": {
+    "mean_weight": 8.5266,
+    "n_events": 1
+  },
+  "Baby, Minnesota": {
+    "mean_weight": 7.4931752416,
+    "n_events": 2
+  },
+  "Bad Medicine, Minnesota": {
+    "mean_weight": 4.950611714,
+    "n_events": 1
+  },
+  "Bainbridge , GA": {
+    "mean_weight": 7.4779,
+    "n_events": 1
+  },
+  "Bainbridge, GA": {
+    "mean_weight": 6.51295,
+    "n_events": 2
+  },
+  "Bald Eagle, Minnesota": {
+    "mean_weight": 3.9198504808,
+    "n_events": 1
+  },
+  "Ballard Lake, Wisconsin": {
+    "mean_weight": 6.32571788,
+    "n_events": 3
+  },
+  "Balsam Lake, Wisconsin": {
+    "mean_weight": 24.216140386545455,
+    "n_events": 11
+  },
+  "Banner Creek Reservoir, Kansas": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Bantam Lake, Connecticut": {
+    "mean_weight": 5.335603008133333,
+    "n_events": 3
+  },
+  "Barber Lake, Wisconsin": {
+    "mean_weight": 8.7182666928,
+    "n_events": 1
+  },
+  "Bardwell, Texas": {
+    "mean_weight": 3.1177492596,
+    "n_events": 1
+  },
+  "Barnette Lake, Arkansas": {
+    "mean_weight": 9.3346051776,
+    "n_events": 1
+  },
+  "Barren River Lake, Kentucky": {
+    "mean_weight": 10.0678509912,
+    "n_events": 2
+  },
+  "Bartlett Lake, AZ": {
+    "mean_weight": 8.2454,
+    "n_events": 2
+  },
+  "Baseline Lake, Michigan": {
+    "mean_weight": 20.0528438216,
+    "n_events": 1
+  },
+  "Bashan Lake, Connecticut": {
+    "mean_weight": 18.0613335264,
+    "n_events": 1
+  },
+  "Bass Lake, IN": {
+    "mean_weight": 4.1584,
+    "n_events": 1
+  },
+  "Bass Lake, Wisconsin": {
+    "mean_weight": 15.88105808512,
+    "n_events": 5
+  },
+  "Bastrop, LA": {
+    "mean_weight": 3.7383,
+    "n_events": 1
+  },
+  "Bastrop, TX": {
+    "mean_weight": 8.880099999999999,
+    "n_events": 2
+  },
+  "Batesville, AR": {
+    "mean_weight": 3.6409,
+    "n_events": 1
+  },
+  "Baton Rouge, LA": {
+    "mean_weight": 11.1184,
+    "n_events": 1
+  },
+  "Batterson Lake, Connecticut": {
+    "mean_weight": 5.8056999372,
+    "n_events": 2
+  },
+  "Bay City, MI": {
+    "mean_weight": 11.0161,
+    "n_events": 2
+  },
+  "Bays de Noc, Escanaba, MI": {
+    "mean_weight": 16.9844,
+    "n_events": 2
+  },
+  "Beach Pond, Connecticut": {
+    "mean_weight": 6.03423962704,
+    "n_events": 5
+  },
+  "Bear Creek Reservoir, Minnesota": {
+    "mean_weight": 10.1389078352,
+    "n_events": 2
+  },
+  "Bear Lake, Wisconsin": {
+    "mean_weight": 11.001911272000001,
+    "n_events": 4
+  },
+  "Bear Trap Lake, Wisconsin": {
+    "mean_weight": 24.0053496492,
+    "n_events": 1
+  },
+  "Bearskin Lake, Wisconsin": {
+    "mean_weight": 7.811804220240001,
+    "n_events": 5
+  },
+  "Beaumont , MS": {
+    "mean_weight": 3.2803,
+    "n_events": 1
+  },
+  "Beaver Dam Lake, Illinois": {
+    "mean_weight": 6.8495776384,
+    "n_events": 1
+  },
+  "Beaver Dam Lake, Wisconsin": {
+    "mean_weight": 21.3826737376,
+    "n_events": 1
+  },
+  "Beaver, Minnesota": {
+    "mean_weight": 4.6617214396,
+    "n_events": 2
+  },
+  "Bee Spring, KY": {
+    "mean_weight": 5.935233333333334,
+    "n_events": 3
+  },
+  "Belgrade, ME": {
+    "mean_weight": 11.6384,
+    "n_events": 1
+  },
+  "Belle Taine, Minnesota": {
+    "mean_weight": 10.9518405216,
+    "n_events": 1
+  },
+  "Belleville Lake, Michigan": {
+    "mean_weight": 8.53953844,
+    "n_events": 1
+  },
+  "Belleville, MI": {
+    "mean_weight": 5.7452,
+    "n_events": 1
+  },
+  "Belleville, Ontario": {
+    "mean_weight": 13.19,
+    "n_events": 1
+  },
+  "Belmont, NC": {
+    "mean_weight": 6.0882000000000005,
+    "n_events": 2
+  },
+  "Belton, TX": {
+    "mean_weight": 3.8817,
+    "n_events": 1
+  },
+  "Belton, Texas": {
+    "mean_weight": 17.0261809012,
+    "n_events": 4
+  },
+  "Benbrook, Texas": {
+    "mean_weight": 8.8914722436,
+    "n_events": 1
+  },
+  "Bennett, Minnesota": {
+    "mean_weight": 4.4438328628,
+    "n_events": 2
+  },
+  "Benton, Minnesota": {
+    "mean_weight": 3.3384385404,
+    "n_events": 2
+  },
+  "Bergen, Minnesota": {
+    "mean_weight": 9.8379749396,
+    "n_events": 2
+  },
+  "Berkshire, MA": {
+    "mean_weight": 8.5148,
+    "n_events": 1
+  },
+  "Bertha, Minnesota": {
+    "mean_weight": 10.241708624400001,
+    "n_events": 2
+  },
+  "Big Arbor Vitae Lake, Wisconsin": {
+    "mean_weight": 8.282543864577779,
+    "n_events": 9
+  },
+  "Big Butternut Lake, Wisconsin": {
+    "mean_weight": 9.025189782,
+    "n_events": 2
+  },
+  "Big Carr Lake, Wisconsin": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Big Eau Pleine Reservoir, Wisconsin": {
+    "mean_weight": 2.9990684880000003,
+    "n_events": 1
+  },
+  "Big Fork Lake, Wisconsin": {
+    "mean_weight": 5.227676322,
+    "n_events": 2
+  },
+  "Big Lake (WI_Vil)_1, Wisconsin": {
+    "mean_weight": 12.444971833,
+    "n_events": 2
+  },
+  "Big Lake, Wisconsin": {
+    "mean_weight": 6.147299672,
+    "n_events": 4
+  },
+  "Big Manistique Lake, Michigan": {
+    "mean_weight": 3.2279788976,
+    "n_events": 2
+  },
+  "Big Marine, Minnesota": {
+    "mean_weight": 7.2225862408,
+    "n_events": 2
+  },
+  "Big Muskellunge Lake, Wisconsin": {
+    "mean_weight": 4.9007068977333335,
+    "n_events": 3
+  },
+  "Big Pine Lakes, Minnesota": {
+    "mean_weight": 3.9560151512,
+    "n_events": 2
+  },
+  "Big Pine, Minnesota": {
+    "mean_weight": 3.0665356192,
+    "n_events": 1
+  },
+  "Big Portage Lake, Wisconsin": {
+    "mean_weight": 7.682249611733333,
+    "n_events": 3
+  },
+  "Big Round Lake, Wisconsin": {
+    "mean_weight": 19.600147274933335,
+    "n_events": 3
+  },
+  "Big Saint Germain Lake, Wisconsin": {
+    "mean_weight": 5.692189339733335,
+    "n_events": 3
+  },
+  "Big Sand Lake, Wisconsin": {
+    "mean_weight": 14.628342781,
+    "n_events": 2
+  },
+  "Big Sand, Minnesota": {
+    "mean_weight": 4.06396423848,
+    "n_events": 5
+  },
+  "Big Sandy, Minnesota": {
+    "mean_weight": 3.1469115726000005,
+    "n_events": 2
+  },
+  "Big Stone Lake, Wisconsin": {
+    "mean_weight": 4.502850438,
+    "n_events": 2
+  },
+  "Big Stone, Minnesota": {
+    "mean_weight": 3.2410509932800005,
+    "n_events": 5
+  },
+  "Big Trout, Minnesota": {
+    "mean_weight": 8.440144056533333,
+    "n_events": 3
+  },
+  "Big Watab, Minnesota": {
+    "mean_weight": 3.9806449208,
+    "n_events": 1
+  },
+  "Bigelow Pond, Connecticut": {
+    "mean_weight": 4.9922848764,
+    "n_events": 3
+  },
+  "Birch Lake, Michigan": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Birch Lake, Wisconsin": {
+    "mean_weight": 8.881527258133334,
+    "n_events": 3
+  },
+  "Birch, Minnesota": {
+    "mean_weight": 3.9970343868000002,
+    "n_events": 2
+  },
+  "Bismarck, AR": {
+    "mean_weight": 6.76595,
+    "n_events": 2
+  },
+  "Bismark Lake, South Dakota": {
+    "mean_weight": 3.7337506368,
+    "n_events": 2
+  },
+  "Bitter Lake, South Dakota": {
+    "mean_weight": 2.9463796408,
+    "n_events": 1
+  },
+  "Black Hawk Lake, Iowa": {
+    "mean_weight": 8.1301411886,
+    "n_events": 4
+  },
+  "Black Lake, Michigan": {
+    "mean_weight": 3.954931142800001,
+    "n_events": 1
+  },
+  "Black Oak Lake, Wisconsin": {
+    "mean_weight": 18.1231778128,
+    "n_events": 1
+  },
+  "Black Pond, Connecticut": {
+    "mean_weight": 4.7460462050666665,
+    "n_events": 3
+  },
+  "Blackduck, Minnesota": {
+    "mean_weight": 13.4082495384,
+    "n_events": 2
+  },
+  "Blacksburg, VA, VA": {
+    "mean_weight": 6.7846,
+    "n_events": 1
+  },
+  "Blackwater, Minnesota": {
+    "mean_weight": 23.8242043908,
+    "n_events": 2
+  },
+  "Blairseville, GA": {
+    "mean_weight": 6.4226,
+    "n_events": 1
+  },
+  "Bledsoe Creek State Park, Gallatin, TN": {
+    "mean_weight": 2.0079,
+    "n_events": 1
+  },
+  "Bloomington Lake, Illinois": {
+    "mean_weight": 16.158125702400003,
+    "n_events": 1
+  },
+  "Bloomington, IN": {
+    "mean_weight": 3.939025,
+    "n_events": 4
+  },
+  "Bloomington, MD": {
+    "mean_weight": 4.1711,
+    "n_events": 1
+  },
+  "Bloomsburg, PA": {
+    "mean_weight": 8.6846,
+    "n_events": 1
+  },
+  "Blue Springs, MO": {
+    "mean_weight": 4.672175,
+    "n_events": 4
+  },
+  "Blueberry Lake, Wisconsin": {
+    "mean_weight": 22.23497462,
+    "n_events": 1
+  },
+  "Bluffton, SC": {
+    "mean_weight": 7.2533,
+    "n_events": 3
+  },
+  "Boardman River, Michigan": {
+    "mean_weight": 7.5360674828,
+    "n_events": 2
+  },
+  "Bogata, TX": {
+    "mean_weight": 4.81,
+    "n_events": 1
+  },
+  "Bolger Lake, Wisconsin": {
+    "mean_weight": 21.3640201424,
+    "n_events": 2
+  },
+  "Bolivar, MO": {
+    "mean_weight": 6.0776,
+    "n_events": 1
+  },
+  "Bond Falls, Michigan": {
+    "mean_weight": 4.7812695896,
+    "n_events": 1
+  },
+  "Bond Lake, Wisconsin": {
+    "mean_weight": 17.325051872533333,
+    "n_events": 3
+  },
+  "Bone Creek Lake, Kansas": {
+    "mean_weight": 23.4954899888,
+    "n_events": 1
+  },
+  "Bone, Minnesota": {
+    "mean_weight": 8.1540375076,
+    "n_events": 1
+  },
+  "Bonner Springs, KS": {
+    "mean_weight": 1.5735000000000001,
+    "n_events": 2
+  },
+  "Bony Lake, Wisconsin": {
+    "mean_weight": 4.691939196000001,
+    "n_events": 3
+  },
+  "Boone Reservoir, Tennessee": {
+    "mean_weight": 10.9530746456,
+    "n_events": 1
+  },
+  "Boot Lake, Wisconsin": {
+    "mean_weight": 12.1392237136,
+    "n_events": 2
+  },
+  "Booth Lake, Wisconsin": {
+    "mean_weight": 7.3694644664,
+    "n_events": 1
+  },
+  "Borden, Minnesota": {
+    "mean_weight": 11.2940557176,
+    "n_events": 1
+  },
+  "Boulder Lake, Wisconsin": {
+    "mean_weight": 3.636392092,
+    "n_events": 3
+  },
+  "Bourbon County Lake, Kansas": {
+    "mean_weight": 6.7929606136,
+    "n_events": 1
+  },
+  "Bowman-Haley Lake, North Dakota": {
+    "mean_weight": 3.8502166784,
+    "n_events": 1
+  },
+  "Boyds, MD": {
+    "mean_weight": 3.7211,
+    "n_events": 1
+  },
+  "Brady Creek, Texas": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Braidwood Lake, Illinois": {
+    "mean_weight": 4.3422765912,
+    "n_events": 1
+  },
+  "Brainerd, MN": {
+    "mean_weight": 12.93,
+    "n_events": 1
+  },
+  "Branched Oak Reservoir, Nebraska": {
+    "mean_weight": 3.8837317696,
+    "n_events": 4
+  },
+  "Brandon, MS": {
+    "mean_weight": 5.8444,
+    "n_events": 2
+  },
+  "Brandy Branch, Texas": {
+    "mean_weight": 20.3415251104,
+    "n_events": 2
+  },
+  "Branson, MO": {
+    "mean_weight": 12.280100000000001,
+    "n_events": 2
+  },
+  "Breaux Bridge, LA": {
+    "mean_weight": 4.43248,
+    "n_events": 5
+  },
+  "Brevort Lake, Michigan": {
+    "mean_weight": 4.2863584664,
+    "n_events": 1
+  },
+  "Brewer Lake, Arkansas": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Brewerton, NY": {
+    "mean_weight": 9.676,
+    "n_events": 1
+  },
+  "Bridge Lake, Wisconsin": {
+    "mean_weight": 7.6163275783,
+    "n_events": 4
+  },
+  "Bridgeport, NY": {
+    "mean_weight": 5.4343,
+    "n_events": 1
+  },
+  "Bridgeport, Texas": {
+    "mean_weight": 12.105968607400001,
+    "n_events": 2
+  },
+  "Brimfield, MA": {
+    "mean_weight": 1.9791,
+    "n_events": 1
+  },
+  "Broken Bow, OK": {
+    "mean_weight": 3.7383,
+    "n_events": 1
+  },
+  "Brown State Fishing Lake, Kansas": {
+    "mean_weight": 9.1831138872,
+    "n_events": 1
+  },
+  "Brunswick, MD": {
+    "mean_weight": 7.831287499999999,
+    "n_events": 8
+  },
+  "Bryan, Texas": {
+    "mean_weight": 14.622755206,
+    "n_events": 2
+  },
+  "Bryant, AR": {
+    "mean_weight": 4.5646,
+    "n_events": 1
+  },
+  "Buchanan, TN": {
+    "mean_weight": 4.61495,
+    "n_events": 2
+  },
+  "Buchanan, Texas": {
+    "mean_weight": 8.5137812606,
+    "n_events": 2
+  },
+  "Buchanan, VA": {
+    "mean_weight": 8.4748,
+    "n_events": 1
+  },
+  "Buchner Lake, South Dakota": {
+    "mean_weight": 3.6659409808000003,
+    "n_events": 2
+  },
+  "Buckhorn Lake, Kentucky": {
+    "mean_weight": 12.6616781784,
+    "n_events": 1
+  },
+  "Buckhorn, ON": {
+    "mean_weight": 6.2424,
+    "n_events": 2
+  },
+  "Buckskin Lake, Wisconsin": {
+    "mean_weight": 3.7797906192,
+    "n_events": 3
+  },
+  "Budd, Minnesota": {
+    "mean_weight": 3.2191475624000003,
+    "n_events": 1
+  },
+  "Bude , MS": {
+    "mean_weight": 5.4355,
+    "n_events": 1
+  },
+  "Bude, MS": {
+    "mean_weight": 4.2644,
+    "n_events": 1
+  },
+  "Buffalo Creek, Texas": {
+    "mean_weight": 12.4329083724,
+    "n_events": 1
+  },
+  "Buffalo South Lake, South Dakota": {
+    "mean_weight": 3.0511883784,
+    "n_events": 1
+  },
+  "Buffalo Springs, Texas": {
+    "mean_weight": 5.279819772,
+    "n_events": 1
+  },
+  "Buffalo, Minnesota": {
+    "mean_weight": 3.9770859789333333,
+    "n_events": 3
+  },
+  "Buggs Island Reservoir, Clarksville, VA": {
+    "mean_weight": 10.916666666666666,
+    "n_events": 3
+  },
+  "Buggs Island, Mecklenburg County, VA": {
+    "mean_weight": 10.906266666666667,
+    "n_events": 3
+  },
+  "Bullfrog Lake, Illinois": {
+    "mean_weight": 10.9236267696,
+    "n_events": 1
+  },
+  "Burkesville, KY": {
+    "mean_weight": 7.3546000000000005,
+    "n_events": 2
+  },
+  "Burlington , WI": {
+    "mean_weight": 8.915,
+    "n_events": 1
+  },
+  "Burnsville, WV": {
+    "mean_weight": 2.0834,
+    "n_events": 1
+  },
+  "Burntside, Minnesota": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Burt Lake, Michigan": {
+    "mean_weight": 3.1479554856000003,
+    "n_events": 1
+  },
+  "Bush, Minnesota": {
+    "mean_weight": 6.2480180176,
+    "n_events": 1
+  },
+  "Buskey Bay, Wisconsin": {
+    "mean_weight": 8.455658318,
+    "n_events": 3
+  },
+  "Busse Lake, Illinois": {
+    "mean_weight": 4.8831827584,
+    "n_events": 1
+  },
+  "Butternut Lake, Wisconsin": {
+    "mean_weight": 11.583133307511112,
+    "n_events": 9
+  },
+  "Byrdstown, TN": {
+    "mean_weight": 11.880833333333333,
+    "n_events": 3
+  },
+  "CHINA NUEVO LEON, NEWL": {
+    "mean_weight": 7.4391,
+    "n_events": 2
+  },
+  "CONWAY, AR": {
+    "mean_weight": 3.1418,
+    "n_events": 1
+  },
+  "Caddo, Texas": {
+    "mean_weight": 13.492540157333332,
+    "n_events": 3
+  },
+  "Cadiz, KY": {
+    "mean_weight": 4.5527,
+    "n_events": 1
+  },
+  "Calamus Reservoir, Nebraska": {
+    "mean_weight": 2.9403147664,
+    "n_events": 1
+  },
+  "Calaveras, Texas": {
+    "mean_weight": 2.9442174704000004,
+    "n_events": 1
+  },
+  "Calhoun, Minnesota": {
+    "mean_weight": 5.512968659199999,
+    "n_events": 3
+  },
+  "Calvert City, KY": {
+    "mean_weight": 8.4792,
+    "n_events": 2
+  },
+  "Camden, SC": {
+    "mean_weight": 5.2107,
+    "n_events": 1
+  },
+  "Camdenton , MO": {
+    "mean_weight": 7.7738,
+    "n_events": 1
+  },
+  "Camdenton, MO": {
+    "mean_weight": 6.442425,
+    "n_events": 4
+  },
+  "Camp, Minnesota": {
+    "mean_weight": 3.95879443,
+    "n_events": 2
+  },
+  "Campau Lake, Michigan": {
+    "mean_weight": 7.851596495999999,
+    "n_events": 1
+  },
+  "Campbellsville, KY": {
+    "mean_weight": 3.0502,
+    "n_events": 1
+  },
+  "Candlewood Lake, Connecticut": {
+    "mean_weight": 16.565875922000004,
+    "n_events": 1
+  },
+  "Canterbury, NH": {
+    "mean_weight": 12.1991,
+    "n_events": 1
+  },
+  "Canton, GA": {
+    "mean_weight": 8.651966666666667,
+    "n_events": 3
+  },
+  "Canton, IL": {
+    "mean_weight": 6.5228,
+    "n_events": 1
+  },
+  "Canyon Lake, TX": {
+    "mean_weight": 8.0109,
+    "n_events": 2
+  },
+  "Carbondale, IL": {
+    "mean_weight": 15.0775,
+    "n_events": 1
+  },
+  "Carbondale, KS": {
+    "mean_weight": 9.0472,
+    "n_events": 1
+  },
+  "Caribou, Minnesota": {
+    "mean_weight": 11.1806874328,
+    "n_events": 3
+  },
+  "Carlyle Lake, Illinois": {
+    "mean_weight": 5.2565027859999995,
+    "n_events": 2
+  },
+  "Carr Creek Lake, Kentucky": {
+    "mean_weight": 10.4676466384,
+    "n_events": 2
+  },
+  "Carrol Lake, Wisconsin": {
+    "mean_weight": 14.843399914399999,
+    "n_events": 2
+  },
+  "Carver, Minnesota": {
+    "mean_weight": 3.50979584,
+    "n_events": 1
+  },
+  "Cass Lake, Michigan": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Cass, Minnesota": {
+    "mean_weight": 3.0469319362666667,
+    "n_events": 6
+  },
+  "Catfish Lake, Wisconsin": {
+    "mean_weight": 3.2784899569333334,
+    "n_events": 3
+  },
+  "Cave Run Lake, Kentucky": {
+    "mean_weight": 6.804907952400001,
+    "n_events": 2
+  },
+  "Cayuga Lake, Union Springs, NY": {
+    "mean_weight": 15.135422222222221,
+    "n_events": 9
+  },
+  "Cedar Bluff Reservoir, Kansas": {
+    "mean_weight": 3.7413419049333334,
+    "n_events": 3
+  },
+  "Cedar Bluff, KS": {
+    "mean_weight": 9.5733,
+    "n_events": 1
+  },
+  "Cedar Creek, Texas": {
+    "mean_weight": 16.578930298666666,
+    "n_events": 3
+  },
+  "Cedar Island, Minnesota": {
+    "mean_weight": 6.6710069368000005,
+    "n_events": 1
+  },
+  "Cedar Lake, Wisconsin": {
+    "mean_weight": 6.1606234552,
+    "n_events": 2
+  },
+  "Cedar, Minnesota": {
+    "mean_weight": 4.47608250304,
+    "n_events": 5
+  },
+  "Cenaiko, Minnesota": {
+    "mean_weight": 14.4088255184,
+    "n_events": 1
+  },
+  "Center Hill Reservoir, Tennessee": {
+    "mean_weight": 13.111615069199999,
+    "n_events": 3
+  },
+  "Center, ND": {
+    "mean_weight": 9.842025,
+    "n_events": 4
+  },
+  "Centerville, Minnesota": {
+    "mean_weight": 5.049237187599999,
+    "n_events": 2
+  },
+  "Chain Lake, Wisconsin": {
+    "mean_weight": 10.809761060933333,
+    "n_events": 3
+  },
+  "Chalmette, LA": {
+    "mean_weight": 5.906750000000001,
+    "n_events": 2
+  },
+  "Chanhassen, MN": {
+    "mean_weight": 5.677099999999999,
+    "n_events": 2
+  },
+  "Charleston Side Channel, Illinois": {
+    "mean_weight": 3.7130060784,
+    "n_events": 1
+  },
+  "Charleston, TN": {
+    "mean_weight": 9.3046,
+    "n_events": 2
+  },
+  "Charleston, UT": {
+    "mean_weight": 2.5588,
+    "n_events": 1
+  },
+  "Charlotte, NC": {
+    "mean_weight": 5.972657142857143,
+    "n_events": 7
+  },
+  "Chatham, LA": {
+    "mean_weight": 5.44835,
+    "n_events": 2
+  },
+  "Chattanooga, TN": {
+    "mean_weight": 11.299900000000001,
+    "n_events": 2
+  },
+  "Cheney Reservoir, Kansas": {
+    "mean_weight": 3.0005283712,
+    "n_events": 1
+  },
+  "Chepachet, RI": {
+    "mean_weight": 2.7561,
+    "n_events": 1
+  },
+  "Cherokee Lake, Jefferson City, TN": {
+    "mean_weight": 9.71875,
+    "n_events": 4
+  },
+  "Cherokee Lake, Jefferson County, TN": {
+    "mean_weight": 8.46875,
+    "n_events": 4
+  },
+  "Cherokee Lake, Knoxville and Jefferson County, TN": {
+    "mean_weight": 12.979166666666666,
+    "n_events": 3
+  },
+  "Cherokee Reservoir, Tennessee": {
+    "mean_weight": 11.659843929,
+    "n_events": 2
+  },
+  "Cherryvale, KS": {
+    "mean_weight": 6.9913,
+    "n_events": 6
+  },
+  "Chesapeake Bay, Cecil County, MD": {
+    "mean_weight": 8.041666666666666,
+    "n_events": 3
+  },
+  "Chetek, WI": {
+    "mean_weight": 8.278,
+    "n_events": 1
+  },
+  "Chickahominy, VA": {
+    "mean_weight": 5.2972,
+    "n_events": 1
+  },
+  "Chickamauga Reservoir, Tennessee": {
+    "mean_weight": 14.074593260666667,
+    "n_events": 3
+  },
+  "Chicot, Arkansas": {
+    "mean_weight": 6.1781276464,
+    "n_events": 1
+  },
+  "Child, Minnesota": {
+    "mean_weight": 3.7501831852,
+    "n_events": 1
+  },
+  "Chilhowee Reservoir, Tennessee": {
+    "mean_weight": 17.914790825,
+    "n_events": 2
+  },
+  "Chipley , FL": {
+    "mean_weight": 6.0173,
+    "n_events": 2
+  },
+  "Chisago, Minnesota": {
+    "mean_weight": 5.784396494666666,
+    "n_events": 6
+  },
+  "Chisago-South Lindstrom, Minnesota": {
+    "mean_weight": 12.044580226133334,
+    "n_events": 3
+  },
+  "Choke Canyon, Texas": {
+    "mean_weight": 12.95325141668,
+    "n_events": 10
+  },
+  "Cincinnati, OH": {
+    "mean_weight": 1.3402,
+    "n_events": 1
+  },
+  "Cisco, Texas": {
+    "mean_weight": 20.3541575336,
+    "n_events": 1
+  },
+  "Clam Lake, Wisconsin": {
+    "mean_weight": 5.7566969088,
+    "n_events": 1
+  },
+  "Clam River Flowage, Wisconsin": {
+    "mean_weight": 6.7016802368,
+    "n_events": 1
+  },
+  "Clam River, Wisconsin": {
+    "mean_weight": 17.847450104800004,
+    "n_events": 1
+  },
+  "Clamshell, Minnesota": {
+    "mean_weight": 10.695571686000001,
+    "n_events": 2
+  },
+  "Clarendon County , SC": {
+    "mean_weight": 14.068,
+    "n_events": 1
+  },
+  "Clarendon County, SC": {
+    "mean_weight": 7.0807,
+    "n_events": 1
+  },
+  "Clarion, PA": {
+    "mean_weight": 6.0101,
+    "n_events": 1
+  },
+  "Clark State Fishing Lake, Kansas": {
+    "mean_weight": 6.5174204544,
+    "n_events": 1
+  },
+  "Clarks Hill Lake, Evans, GA": {
+    "mean_weight": 6.65,
+    "n_events": 5
+  },
+  "Clarks Hill Reservoir, Columbia County, GA": {
+    "mean_weight": 7.614566666666666,
+    "n_events": 3
+  },
+  "Clarks Hill Reservoir, Evans, GA": {
+    "mean_weight": 13.375,
+    "n_events": 2
+  },
+  "Clarks Hill, SC": {
+    "mean_weight": 13.9859,
+    "n_events": 1
+  },
+  "Clarksville, VA": {
+    "mean_weight": 4.5442,
+    "n_events": 1
+  },
+  "Clear (MN_Was)_1, Minnesota": {
+    "mean_weight": 3.8882051472,
+    "n_events": 1
+  },
+  "Clear Lake, Michigan": {
+    "mean_weight": 10.6218607968,
+    "n_events": 1
+  },
+  "Clear Lake, South Dakota": {
+    "mean_weight": 15.7274041996,
+    "n_events": 3
+  },
+  "Clear Lake, Wisconsin": {
+    "mean_weight": 15.215050460699999,
+    "n_events": 8
+  },
+  "Clear lake, CA": {
+    "mean_weight": 18.807949999999998,
+    "n_events": 2
+  },
+  "Clear, Minnesota": {
+    "mean_weight": 7.9370114140000005,
+    "n_events": 2
+  },
+  "Clearlake, CA": {
+    "mean_weight": 6.206,
+    "n_events": 1
+  },
+  "Clearwater, Minnesota": {
+    "mean_weight": 8.485382710933335,
+    "n_events": 3
+  },
+  "Clewiston, FL": {
+    "mean_weight": 6.7034666666666665,
+    "n_events": 3
+  },
+  "Clinton Lake, Illinois": {
+    "mean_weight": 8.199291624799999,
+    "n_events": 1
+  },
+  "Clinton Reservoir Stilling Basin, Kansas": {
+    "mean_weight": 3.1295831388,
+    "n_events": 2
+  },
+  "Clinton Reservoir, Kansas": {
+    "mean_weight": 3.6698132406,
+    "n_events": 4
+  },
+  "Clinton, MO": {
+    "mean_weight": 5.721800000000001,
+    "n_events": 3
+  },
+  "Clitherall, Minnesota": {
+    "mean_weight": 7.4354872352,
+    "n_events": 1
+  },
+  "Coboconk, ON": {
+    "mean_weight": 5.2364,
+    "n_events": 1
+  },
+  "Coffeen Lake, Illinois": {
+    "mean_weight": 16.8691487864,
+    "n_events": 2
+  },
+  "Coldwater River, Michigan": {
+    "mean_weight": 4.271421796,
+    "n_events": 1
+  },
+  "Coleto Creek, Texas": {
+    "mean_weight": 21.3495849832,
+    "n_events": 4
+  },
+  "Columbia, MS": {
+    "mean_weight": 5.4464,
+    "n_events": 1
+  },
+  "Columbia, SC": {
+    "mean_weight": 11.322733333333332,
+    "n_events": 3
+  },
+  "Columbus , OH": {
+    "mean_weight": 1.8962,
+    "n_events": 1
+  },
+  "Columbus, OH": {
+    "mean_weight": 6.765000000000001,
+    "n_events": 2
+  },
+  "Como, Minnesota": {
+    "mean_weight": 19.4947015392,
+    "n_events": 1
+  },
+  "Conneaut, PA": {
+    "mean_weight": 4.6218,
+    "n_events": 1
+  },
+  "Connors Lake, Wisconsin": {
+    "mean_weight": 6.079781286199999,
+    "n_events": 2
+  },
+  "Conowingo, MD": {
+    "mean_weight": 5.5052666666666665,
+    "n_events": 12
+  },
+  "Conroe, Texas": {
+    "mean_weight": 10.0178744096,
+    "n_events": 6
+  },
+  "Conway Chain, Florida": {
+    "mean_weight": 20.3177894688,
+    "n_events": 1
+  },
+  "Conway, AR": {
+    "mean_weight": 4.749750000000001,
+    "n_events": 4
+  },
+  "Conway, SC": {
+    "mean_weight": 3.5392,
+    "n_events": 1
+  },
+  "Cookeville, TN": {
+    "mean_weight": 1.9702,
+    "n_events": 1
+  },
+  "Cookson, OK": {
+    "mean_weight": 11.74295,
+    "n_events": 2
+  },
+  "Cookville, TX": {
+    "mean_weight": 10.0396,
+    "n_events": 1
+  },
+  "Coon - Sandwick, Minnesota": {
+    "mean_weight": 4.259573092,
+    "n_events": 1
+  },
+  "Cordell Hull Reservoir, Tennessee": {
+    "mean_weight": 10.00082321,
+    "n_events": 1
+  },
+  "Corey Lake, Michigan": {
+    "mean_weight": 11.0569461032,
+    "n_events": 1
+  },
+  "Corinth Lake, Kentucky": {
+    "mean_weight": 9.2692949968,
+    "n_events": 1
+  },
+  "Corpus Christi, Texas": {
+    "mean_weight": 3.0290158368,
+    "n_events": 1
+  },
+  "Counce, TN": {
+    "mean_weight": 8.467400000000001,
+    "n_events": 2
+  },
+  "Council Grove Reservoir, Kansas": {
+    "mean_weight": 3.3425232136000003,
+    "n_events": 1
+  },
+  "Council Grove, KS": {
+    "mean_weight": 7.6141,
+    "n_events": 1
+  },
+  "Coventry , CT": {
+    "mean_weight": 3.8115,
+    "n_events": 1
+  },
+  "Coventry Lake, Connecticut": {
+    "mean_weight": 9.988431693942857,
+    "n_events": 7
+  },
+  "Coventry, RI": {
+    "mean_weight": 5.9036,
+    "n_events": 1
+  },
+  "Covington, LA": {
+    "mean_weight": 3.3438,
+    "n_events": 1
+  },
+  "Crab Lake, Wisconsin": {
+    "mean_weight": 13.6424703236,
+    "n_events": 3
+  },
+  "Crab Orchard, Illinois": {
+    "mean_weight": 8.5495378024,
+    "n_events": 1
+  },
+  "Crab Orchard, KY": {
+    "mean_weight": 8.14945,
+    "n_events": 2
+  },
+  "Craig , CO": {
+    "mean_weight": 1.951,
+    "n_events": 1
+  },
+  "Cranberry Lake, Wisconsin": {
+    "mean_weight": 5.6130162696,
+    "n_events": 6
+  },
+  "Crane, Minnesota": {
+    "mean_weight": 5.670230348057143,
+    "n_events": 7
+  },
+  "Creedmoor , SC": {
+    "mean_weight": 6.119,
+    "n_events": 1
+  },
+  "Crescent Lake, Florida": {
+    "mean_weight": 5.255950945,
+    "n_events": 4
+  },
+  "Crescent Lake, Wisconsin": {
+    "mean_weight": 4.589926650000001,
+    "n_events": 2
+  },
+  "Crescent, Minnesota": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Critzer Lake, Kansas": {
+    "mean_weight": 18.104675894,
+    "n_events": 1
+  },
+  "Crooked Lake, Michigan": {
+    "mean_weight": 3.7398328416,
+    "n_events": 1
+  },
+  "Crooked, Minnesota": {
+    "mean_weight": 11.719766456933334,
+    "n_events": 3
+  },
+  "Crosby, MN": {
+    "mean_weight": 12.41,
+    "n_events": 1
+  },
+  "Cross, Minnesota": {
+    "mean_weight": 4.6138126392,
+    "n_events": 6
+  },
+  "Croton Pond, Michigan": {
+    "mean_weight": 7.1561179624,
+    "n_events": 1
+  },
+  "Crown Point, NY": {
+    "mean_weight": 10.2351,
+    "n_events": 1
+  },
+  "Crystal Lake, Connecticut": {
+    "mean_weight": 5.6931891592,
+    "n_events": 4
+  },
+  "Crystal Lake, Wisconsin": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Crystal River, FL": {
+    "mean_weight": 4.7412,
+    "n_events": 1
+  },
+  "Crystal springs , AR": {
+    "mean_weight": 3.3047,
+    "n_events": 1
+  },
+  "Crystal, Minnesota": {
+    "mean_weight": 5.6313116736,
+    "n_events": 2
+  },
+  "Cullman, AL": {
+    "mean_weight": 8.2219,
+    "n_events": 1
+  },
+  "Cumberland City, TN": {
+    "mean_weight": 3.3885,
+    "n_events": 1
+  },
+  "Cumming, GA": {
+    "mean_weight": 9.1078,
+    "n_events": 1
+  },
+  "Cypress Springs, Texas": {
+    "mean_weight": 21.687770876000002,
+    "n_events": 2
+  },
+  "Daggett, Minnesota": {
+    "mean_weight": 10.802770186,
+    "n_events": 2
+  },
+  "Dale Hollow Reservoir, KY": {
+    "mean_weight": 2.576,
+    "n_events": 1
+  },
+  "Dale Hollow Reservoir, Tennessee": {
+    "mean_weight": 10.1852588397,
+    "n_events": 4
+  },
+  "Dallas FtWorth , TX": {
+    "mean_weight": 11.0173,
+    "n_events": 1
+  },
+  "Dallas, TX": {
+    "mean_weight": 2.6735800000000003,
+    "n_events": 5
+  },
+  "Dam Lake, Wisconsin": {
+    "mean_weight": 3.9123102372000003,
+    "n_events": 2
+  },
+  "Dardanelle, Arkansas": {
+    "mean_weight": 13.406685429200001,
+    "n_events": 3
+  },
+  "Davy Crockett, Texas": {
+    "mean_weight": 14.6185859288,
+    "n_events": 1
+  },
+  "Dawson Lake, Illinois": {
+    "mean_weight": 6.467123364800001,
+    "n_events": 1
+  },
+  "Dayton , TN": {
+    "mean_weight": 9.9165,
+    "n_events": 1
+  },
+  "Dayton, TN": {
+    "mean_weight": 6.49342,
+    "n_events": 5
+  },
+  "DeGray Lake, Arkansas": {
+    "mean_weight": 15.0481692972,
+    "n_events": 3
+  },
+  "Dead Lakes, Florida": {
+    "mean_weight": 5.2267392624,
+    "n_events": 3
+  },
+  "Dead Pike Lake, Wisconsin": {
+    "mean_weight": 4.524229702,
+    "n_events": 1
+  },
+  "Deer Lake, Wisconsin": {
+    "mean_weight": 6.9813585405600005,
+    "n_events": 5
+  },
+  "Deer Point Lake, Florida": {
+    "mean_weight": 8.44943487856,
+    "n_events": 5
+  },
+  "Del Clark, Minnesota": {
+    "mean_weight": 8.6502931752,
+    "n_events": 1
+  },
+  "Del Rio, TX": {
+    "mean_weight": 5.6609,
+    "n_events": 1
+  },
+  "Deland, FL": {
+    "mean_weight": 3.466,
+    "n_events": 1
+  },
+  "Delavan Lake, Wisconsin": {
+    "mean_weight": 9.5700480576,
+    "n_events": 1
+  },
+  "Delavan, WI": {
+    "mean_weight": 4.8227,
+    "n_events": 1
+  },
+  "Delaware River, Philadelphia, PA": {
+    "mean_weight": 5.093766666666666,
+    "n_events": 3
+  },
+  "Delhi, IA": {
+    "mean_weight": 2.0154,
+    "n_events": 1
+  },
+  "Demontreville, Minnesota": {
+    "mean_weight": 10.801253458933333,
+    "n_events": 3
+  },
+  "Denton, MD": {
+    "mean_weight": 2.724266666666667,
+    "n_events": 3
+  },
+  "Detroit, Minnesota": {
+    "mean_weight": 3.1598957252,
+    "n_events": 2
+  },
+  "Devil's Kitchen, Illinois": {
+    "mean_weight": 15.019319627399998,
+    "n_events": 2
+  },
+  "Deville, LA": {
+    "mean_weight": 4.0542,
+    "n_events": 1
+  },
+  "Devils Lake, Michigan": {
+    "mean_weight": 20.560713444,
+    "n_events": 1
+  },
+  "Devils Lake, Wisconsin": {
+    "mean_weight": 22.28010301946667,
+    "n_events": 3
+  },
+  "Dewey Lake, Kentucky": {
+    "mean_weight": 10.742408948000001,
+    "n_events": 2
+  },
+  "Dewitt, IL": {
+    "mean_weight": 3.2417,
+    "n_events": 1
+  },
+  "Diamond Lake, Wisconsin": {
+    "mean_weight": 20.79390787945,
+    "n_events": 8
+  },
+  "Dierks, Arkansas": {
+    "mean_weight": 14.683843434,
+    "n_events": 1
+  },
+  "Dog Lake, Wisconsin": {
+    "mean_weight": 4.0177844378,
+    "n_events": 2
+  },
+  "Dolan Lake, Illinois": {
+    "mean_weight": 4.81248048,
+    "n_events": 1
+  },
+  "Dollarville Flooding, Michigan": {
+    "mean_weight": 3.2779378704,
+    "n_events": 1
+  },
+  "Donalsonville, GA": {
+    "mean_weight": 7.784533333333333,
+    "n_events": 3
+  },
+  "Douglas Lake, Dandridge, TN": {
+    "mean_weight": 8.80937,
+    "n_events": 10
+  },
+  "Douglas Lake, Jefferson County, TN": {
+    "mean_weight": 9.114600000000001,
+    "n_events": 3
+  },
+  "Douglas Lake, Jefferson, TN": {
+    "mean_weight": 7.6146,
+    "n_events": 3
+  },
+  "Douglas Reservoir, Tennessee": {
+    "mean_weight": 13.798778525600001,
+    "n_events": 2
+  },
+  "Douglas Tailwater, Tennessee": {
+    "mean_weight": 8.8249683184,
+    "n_events": 1
+  },
+  "Doyline, LA": {
+    "mean_weight": 13.2927,
+    "n_events": 1
+  },
+  "Duchesne , UT": {
+    "mean_weight": 3.6557,
+    "n_events": 1
+  },
+  "Duchesne, UT": {
+    "mean_weight": 3.6163000000000003,
+    "n_events": 6
+  },
+  "Duck Lake, Wisconsin": {
+    "mean_weight": 3.2063274512,
+    "n_events": 2
+  },
+  "Dudley-Kelly, Minnesota": {
+    "mean_weight": 5.1842574176,
+    "n_events": 1
+  },
+  "Dumbbell, Minnesota": {
+    "mean_weight": 9.7794013312,
+    "n_events": 1
+  },
+  "Dunnellon, FL": {
+    "mean_weight": 6.1259,
+    "n_events": 2
+  },
+  "Dutch John, UT": {
+    "mean_weight": 2.4997,
+    "n_events": 1
+  },
+  "Dyer, GA": {
+    "mean_weight": 8.2617,
+    "n_events": 1
+  },
+  "E.V. Spence, Texas": {
+    "mean_weight": 12.093553284,
+    "n_events": 1
+  },
+  "EATONTON , GA": {
+    "mean_weight": 5.082,
+    "n_events": 1
+  },
+  "Eagle Lake , WI": {
+    "mean_weight": 5.7452,
+    "n_events": 1
+  },
+  "Eagle Lake, Wisconsin": {
+    "mean_weight": 9.385100234285714,
+    "n_events": 7
+  },
+  "Eagle Mountain, Texas": {
+    "mean_weight": 24.8934574116,
+    "n_events": 1
+  },
+  "Eagle, Minnesota": {
+    "mean_weight": 3.5494416588,
+    "n_events": 1
+  },
+  "East Bearskin, Minnesota": {
+    "mean_weight": 14.591144628533334,
+    "n_events": 3
+  },
+  "East Borrow Pit KDOT, Kansas": {
+    "mean_weight": 3.5949596528,
+    "n_events": 1
+  },
+  "East Canyon Reservoir, Utah": {
+    "mean_weight": 4.3637678184,
+    "n_events": 1
+  },
+  "East Coon, Minnesota": {
+    "mean_weight": 6.459228938400001,
+    "n_events": 1
+  },
+  "East Fork Lake, Illinois": {
+    "mean_weight": 12.1533539984,
+    "n_events": 1
+  },
+  "East Horsehead Lake, Wisconsin": {
+    "mean_weight": 14.1891474328,
+    "n_events": 2
+  },
+  "East Liverpool, OH": {
+    "mean_weight": 8.322,
+    "n_events": 1
+  },
+  "East Moore, Minnesota": {
+    "mean_weight": 6.4320694176,
+    "n_events": 1
+  },
+  "East Rush, Minnesota": {
+    "mean_weight": 4.34528301888,
+    "n_events": 5
+  },
+  "East Troy, WI": {
+    "mean_weight": 5.178,
+    "n_events": 1
+  },
+  "East Twin Lake, Connecticut": {
+    "mean_weight": 6.1687329108,
+    "n_events": 1
+  },
+  "East Twin Lake, Michigan": {
+    "mean_weight": 3.6832700700000003,
+    "n_events": 2
+  },
+  "East Vadnais, Minnesota": {
+    "mean_weight": 3.9439984328,
+    "n_events": 1
+  },
+  "Easter Lake, Iowa": {
+    "mean_weight": 4.881417493600001,
+    "n_events": 2
+  },
+  "Eatonton , GA": {
+    "mean_weight": 4.6318,
+    "n_events": 1
+  },
+  "Eau Claire Lake, Wisconsin": {
+    "mean_weight": 6.773731896799999,
+    "n_events": 1
+  },
+  "Echo Lake, Vermont": {
+    "mean_weight": 3.3101723912,
+    "n_events": 2
+  },
+  "Echo Lake, Wisconsin": {
+    "mean_weight": 4.185071628,
+    "n_events": 1
+  },
+  "Eden, UT": {
+    "mean_weight": 3.5366,
+    "n_events": 1
+  },
+  "Edward, Minnesota": {
+    "mean_weight": 6.3956783384,
+    "n_events": 1
+  },
+  "El Dorado Reservoir Stilling Basin, Kansas": {
+    "mean_weight": 3.773737136,
+    "n_events": 1
+  },
+  "El Dorado Reservoir, Kansas": {
+    "mean_weight": 4.617766058400001,
+    "n_events": 2
+  },
+  "Elberton, GA": {
+    "mean_weight": 5.7407,
+    "n_events": 1
+  },
+  "Elephant, Minnesota": {
+    "mean_weight": 12.6130983064,
+    "n_events": 2
+  },
+  "Eleven, Minnesota": {
+    "mean_weight": 3.3023335636,
+    "n_events": 2
+  },
+  "Elk City Reservoir, Kansas": {
+    "mean_weight": 3.1396832008,
+    "n_events": 3
+  },
+  "Elk Lake, Michigan": {
+    "mean_weight": 9.7757964688,
+    "n_events": 1
+  },
+  "Elk, Minnesota": {
+    "mean_weight": 4.2308034448,
+    "n_events": 2
+  },
+  "Elkhart Lake, Wisconsin": {
+    "mean_weight": 17.1043441752,
+    "n_events": 1
+  },
+  "Ellis, KS": {
+    "mean_weight": 11.3053,
+    "n_events": 1
+  },
+  "Ellwood City, PA": {
+    "mean_weight": 8.6434,
+    "n_events": 1
+  },
+  "Elm Grove, LA": {
+    "mean_weight": 15.6918,
+    "n_events": 1
+  },
+  "Elmo, Minnesota": {
+    "mean_weight": 4.7409288728,
+    "n_events": 1
+  },
+  "Elwood, NE": {
+    "mean_weight": 5.7064,
+    "n_events": 4
+  },
+  "Elysian, Minnesota": {
+    "mean_weight": 3.0833188008000003,
+    "n_events": 1
+  },
+  "Emily, MN": {
+    "mean_weight": 13.79,
+    "n_events": 1
+  },
+  "Emory, TX": {
+    "mean_weight": 6.119940000000001,
+    "n_events": 5
+  },
+  "Emporia, KS": {
+    "mean_weight": 8.3877,
+    "n_events": 1
+  },
+  "Enemy Swim Lake, South Dakota": {
+    "mean_weight": 6.56460066025,
+    "n_events": 8
+  },
+  "Enfield, NH": {
+    "mean_weight": 7.4453,
+    "n_events": 1
+  },
+  "English Lake, Wisconsin": {
+    "mean_weight": 4.355947458,
+    "n_events": 2
+  },
+  "Enid, MS": {
+    "mean_weight": 5.44955,
+    "n_events": 2
+  },
+  "Enterprise Lake, Wisconsin": {
+    "mean_weight": 3.9215171456,
+    "n_events": 1
+  },
+  "Enterprise, UT": {
+    "mean_weight": 5.2107,
+    "n_events": 1
+  },
+  "Erie , PA": {
+    "mean_weight": 12.3737,
+    "n_events": 6
+  },
+  "Erie, PA": {
+    "mean_weight": 8.9209,
+    "n_events": 8
+  },
+  "Erieau, ON": {
+    "mean_weight": 10.8181,
+    "n_events": 1
+  },
+  "Escanaba River, Michigan": {
+    "mean_weight": 3.129414788,
+    "n_events": 1
+  },
+  "Eufala, AL": {
+    "mean_weight": 7.9601,
+    "n_events": 1
+  },
+  "Eufala, GA": {
+    "mean_weight": 6.418,
+    "n_events": 2
+  },
+  "Eureka Springs, AR": {
+    "mean_weight": 2.5886500000000003,
+    "n_events": 2
+  },
+  "FAYETTEVILLE, AR": {
+    "mean_weight": 11.5557,
+    "n_events": 1
+  },
+  "FOREST LAKE, MN": {
+    "mean_weight": 5.7362,
+    "n_events": 1
+  },
+  "Fairfield, Texas": {
+    "mean_weight": 8.757458464399999,
+    "n_events": 2
+  },
+  "Falcon, Texas": {
+    "mean_weight": 20.441203640559998,
+    "n_events": 5
+  },
+  "Falls of Rough, KY": {
+    "mean_weight": 6.4931,
+    "n_events": 1
+  },
+  "Fannie, Minnesota": {
+    "mean_weight": 3.1016097272,
+    "n_events": 1
+  },
+  "Farm 13 Stick Marsh, Florida": {
+    "mean_weight": 19.541761086276924,
+    "n_events": 13
+  },
+  "Farm Island, Minnesota": {
+    "mean_weight": 6.243598247466667,
+    "n_events": 3
+  },
+  "Farmville, VA": {
+    "mean_weight": 5.8362,
+    "n_events": 1
+  },
+  "Fawn Lake, Wisconsin": {
+    "mean_weight": 7.0073757096,
+    "n_events": 1
+  },
+  "Fay Lake, Wisconsin": {
+    "mean_weight": 3.6912571224,
+    "n_events": 1
+  },
+  "Fayette County, Texas": {
+    "mean_weight": 22.742403662199997,
+    "n_events": 2
+  },
+  "Fayetteville, AR": {
+    "mean_weight": 3.0502,
+    "n_events": 1
+  },
+  "Fayetteville, TX": {
+    "mean_weight": 5.17442,
+    "n_events": 5
+  },
+  "Fellsmere, FL": {
+    "mean_weight": 6.5401,
+    "n_events": 3
+  },
+  "Fellsmere, FL, FL": {
+    "mean_weight": 10.183,
+    "n_events": 1
+  },
+  "Fenton, MI": {
+    "mean_weight": 4.83434,
+    "n_events": 5
+  },
+  "Ferriday, LA": {
+    "mean_weight": 7.293116666666667,
+    "n_events": 6
+  },
+  "Fish Trap, Minnesota": {
+    "mean_weight": 6.0719809416,
+    "n_events": 1
+  },
+  "Fish, Minnesota": {
+    "mean_weight": 3.8663596250666665,
+    "n_events": 3
+  },
+  "Fisher Lake, Michigan": {
+    "mean_weight": 7.0433208152,
+    "n_events": 1
+  },
+  "Fishtrap Lake, Kentucky": {
+    "mean_weight": 15.0722062256,
+    "n_events": 1
+  },
+  "Fishtrap Lake, Wisconsin": {
+    "mean_weight": 4.1261245112000005,
+    "n_events": 1
+  },
+  "Flaming Gorge Reservoir, Utah": {
+    "mean_weight": 5.364422632,
+    "n_events": 1
+  },
+  "Flemington, MO": {
+    "mean_weight": 5.7779,
+    "n_events": 1
+  },
+  "Fletcher Floodwater, Michigan": {
+    "mean_weight": 7.887850219600001,
+    "n_events": 2
+  },
+  "Florence, AL": {
+    "mean_weight": 8.8577,
+    "n_events": 1
+  },
+  "Florida, MO": {
+    "mean_weight": 5.6802,
+    "n_events": 1
+  },
+  "Flour, Minnesota": {
+    "mean_weight": 15.654883080266666,
+    "n_events": 3
+  },
+  "Flowood, MS": {
+    "mean_weight": 6.13245,
+    "n_events": 4
+  },
+  "Flynn Lake (WI_Bay)_1, Wisconsin": {
+    "mean_weight": 11.3189872032,
+    "n_events": 1
+  },
+  "Flynn Lake, Wisconsin": {
+    "mean_weight": 21.1568696688,
+    "n_events": 1
+  },
+  "Forbes Lake, Illinois": {
+    "mean_weight": 17.224276447599998,
+    "n_events": 2
+  },
+  "Ford Lake, Michigan": {
+    "mean_weight": 9.4348424944,
+    "n_events": 1
+  },
+  "Forest, Minnesota": {
+    "mean_weight": 5.9165421016,
+    "n_events": 2
+  },
+  "Fork, Texas": {
+    "mean_weight": 16.020190207493332,
+    "n_events": 15
+  },
+  "Forsyth, MO": {
+    "mean_weight": 4.909825,
+    "n_events": 4
+  },
+  "Fort Collins, CO": {
+    "mean_weight": 5.24775,
+    "n_events": 4
+  },
+  "Fort Gibson Lake, Wagoner, OK": {
+    "mean_weight": 6.3281,
+    "n_events": 2
+  },
+  "Fort Hill, PA": {
+    "mean_weight": 8.046,
+    "n_events": 1
+  },
+  "Fort Loudoun Reservoir, Tennessee": {
+    "mean_weight": 18.475946497400002,
+    "n_events": 2
+  },
+  "Fort Loudoun Tailwater, Tennessee": {
+    "mean_weight": 9.4611908968,
+    "n_events": 1
+  },
+  "Fort Lyon, CO": {
+    "mean_weight": 3.5605,
+    "n_events": 1
+  },
+  "Fort Phantom Hill, Texas": {
+    "mean_weight": 8.771188011733335,
+    "n_events": 3
+  },
+  "Fort Scott, KS": {
+    "mean_weight": 6.8845,
+    "n_events": 1
+  },
+  "Fort Smith, AR": {
+    "mean_weight": 3.6487,
+    "n_events": 1
+  },
+  "Fourmile Lake, Wisconsin": {
+    "mean_weight": 3.929718635600001,
+    "n_events": 1
+  },
+  "Fourth Lake, Wisconsin": {
+    "mean_weight": 4.2338806116,
+    "n_events": 1
+  },
+  "Fox Chain, Illinois": {
+    "mean_weight": 6.807533554399999,
+    "n_events": 2
+  },
+  "Fox Lake, WI": {
+    "mean_weight": 8.942571428571428,
+    "n_events": 7
+  },
+  "Fox, Minnesota": {
+    "mean_weight": 3.2528885442666664,
+    "n_events": 3
+  },
+  "Francis, Minnesota": {
+    "mean_weight": 4.4523201536000006,
+    "n_events": 2
+  },
+  "Franklin Lake, Wisconsin": {
+    "mean_weight": 9.490854180933333,
+    "n_events": 3
+  },
+  "Franklin, PA": {
+    "mean_weight": 11.785033333333333,
+    "n_events": 3
+  },
+  "Freeman Pond, South Dakota": {
+    "mean_weight": 13.233269964799998,
+    "n_events": 1
+  },
+  "Freeport, PA": {
+    "mean_weight": 6.5136,
+    "n_events": 2
+  },
+  "French Lick, IN": {
+    "mean_weight": 4.235799999999999,
+    "n_events": 2
+  },
+  "French, Minnesota": {
+    "mean_weight": 4.7944502578,
+    "n_events": 4
+  },
+  "Fries, VA": {
+    "mean_weight": 7.232307692307692,
+    "n_events": 13
+  },
+  "Front Royal, VA": {
+    "mean_weight": 6.929500000000001,
+    "n_events": 2
+  },
+  "Frostproof, FL": {
+    "mean_weight": 5.4666,
+    "n_events": 1
+  },
+  "Ft. Worth, TX, US, TX": {
+    "mean_weight": 3.665,
+    "n_events": 1
+  },
+  "Ft.Collins, CO": {
+    "mean_weight": 4.2457,
+    "n_events": 1
+  },
+  "Gages Lake, Illinois": {
+    "mean_weight": 7.249675628,
+    "n_events": 1
+  },
+  "Gainesboro, TN": {
+    "mean_weight": 4.3069,
+    "n_events": 1
+  },
+  "Gainesville , FL": {
+    "mean_weight": 7.4384999999999994,
+    "n_events": 2
+  },
+  "Gainesville, GA": {
+    "mean_weight": 18.4682,
+    "n_events": 1
+  },
+  "Galax, VA": {
+    "mean_weight": 4.901692307692308,
+    "n_events": 13
+  },
+  "Gallagher Lake, Michigan": {
+    "mean_weight": 16.604259684000002,
+    "n_events": 1
+  },
+  "Gallatin, TN": {
+    "mean_weight": 4.9244,
+    "n_events": 1
+  },
+  "Games, Minnesota": {
+    "mean_weight": 5.176100738400001,
+    "n_events": 1
+  },
+  "Gananoque, ON": {
+    "mean_weight": 11.35,
+    "n_events": 1
+  },
+  "Gananoque, Ontario": {
+    "mean_weight": 16.27,
+    "n_events": 2
+  },
+  "Gardner   , WI": {
+    "mean_weight": 11.5292,
+    "n_events": 1
+  },
+  "Gardner , WI": {
+    "mean_weight": 6.6093,
+    "n_events": 1
+  },
+  "Gardner Lake, Connecticut": {
+    "mean_weight": 7.533064424103704,
+    "n_events": 27
+  },
+  "Gardner, LA": {
+    "mean_weight": 3.9218,
+    "n_events": 1
+  },
+  "Geary State Fishing Lake, Kansas": {
+    "mean_weight": 6.3679151072,
+    "n_events": 1
+  },
+  "George Lake, Wisconsin": {
+    "mean_weight": 3.8064040236000003,
+    "n_events": 3
+  },
+  "George, Minnesota": {
+    "mean_weight": 3.2178968504000003,
+    "n_events": 1
+  },
+  "Gervais Mill, Minnesota": {
+    "mean_weight": 6.2555021752,
+    "n_events": 1
+  },
+  "Gervais, Minnesota": {
+    "mean_weight": 8.006051145599999,
+    "n_events": 1
+  },
+  "Gibbons Creek, Texas": {
+    "mean_weight": 9.049131551733334,
+    "n_events": 3
+  },
+  "Gilbert, SC": {
+    "mean_weight": 3.5605,
+    "n_events": 1
+  },
+  "Gile Flowage, Wisconsin": {
+    "mean_weight": 17.976951118,
+    "n_events": 2
+  },
+  "Gilmer, TX": {
+    "mean_weight": 10.3593,
+    "n_events": 3
+  },
+  "Gilmer, Texas": {
+    "mean_weight": 15.108714364266666,
+    "n_events": 3
+  },
+  "Gilmore Lake, Wisconsin": {
+    "mean_weight": 6.475450254666666,
+    "n_events": 3
+  },
+  "Girard, IL": {
+    "mean_weight": 3.9172,
+    "n_events": 1
+  },
+  "Girl, Minnesota": {
+    "mean_weight": 7.6954552644,
+    "n_events": 1
+  },
+  "Gladewater City, Texas": {
+    "mean_weight": 16.273299654800002,
+    "n_events": 1
+  },
+  "Glasgow, VA": {
+    "mean_weight": 10.0417,
+    "n_events": 1
+  },
+  "Glen Elder Reservoir, Kansas": {
+    "mean_weight": 3.3309310668000003,
+    "n_events": 1
+  },
+  "Glen Elder Stilling Basin, Kansas": {
+    "mean_weight": 3.4997261120000003,
+    "n_events": 1
+  },
+  "Glen Lake, Michigan": {
+    "mean_weight": 4.2119269968,
+    "n_events": 1
+  },
+  "Glendale Lake, Illinois": {
+    "mean_weight": 11.2985760984,
+    "n_events": 2
+  },
+  "Glocester, RI": {
+    "mean_weight": 2.9254,
+    "n_events": 1
+  },
+  "Golden, Minnesota": {
+    "mean_weight": 8.0144623752,
+    "n_events": 2
+  },
+  "Goose, Minnesota": {
+    "mean_weight": 6.5161830012,
+    "n_events": 2
+  },
+  "Graford, TX": {
+    "mean_weight": 12.68365,
+    "n_events": 2
+  },
+  "Graham, Texas": {
+    "mean_weight": 13.099606404100001,
+    "n_events": 4
+  },
+  "Grand Lake O the Cherokees, Tulsa, OK": {
+    "mean_weight": 14.416666666666666,
+    "n_events": 3
+  },
+  "Grand Lake O' The Cherokees, Grove, OK": {
+    "mean_weight": 10.897328571428572,
+    "n_events": 7
+  },
+  "Grand Lake O' the Cherokees, Grove, OK": {
+    "mean_weight": 6.625,
+    "n_events": 2
+  },
+  "Grand Lake O' the Cherokees, Tulsa, OK": {
+    "mean_weight": 10.0156,
+    "n_events": 2
+  },
+  "Grand Lake, Grove, OK": {
+    "mean_weight": 9.40105,
+    "n_events": 6
+  },
+  "Grand Lake, Michigan": {
+    "mean_weight": 5.0111659238,
+    "n_events": 2
+  },
+  "Granite Lake, Wisconsin": {
+    "mean_weight": 18.3076123376,
+    "n_events": 1
+  },
+  "Gratiot Lake, Michigan": {
+    "mean_weight": 3.808719256,
+    "n_events": 1
+  },
+  "Gravenhurst, ON": {
+    "mean_weight": 7.2271,
+    "n_events": 1
+  },
+  "Grayrocks Reservoir, Wyoming": {
+    "mean_weight": 22.6714078928,
+    "n_events": 1
+  },
+  "Grayson Lake, Kentucky": {
+    "mean_weight": 15.844381975599998,
+    "n_events": 1
+  },
+  "Green Bay, WI": {
+    "mean_weight": 22.8388,
+    "n_events": 1
+  },
+  "Green Lake, Michigan": {
+    "mean_weight": 9.2907376548,
+    "n_events": 1
+  },
+  "Green Lake, WI": {
+    "mean_weight": 5.3449,
+    "n_events": 3
+  },
+  "Green River Lake, Kentucky": {
+    "mean_weight": 8.081893326,
+    "n_events": 2
+  },
+  "Green Valley Lake, Iowa": {
+    "mean_weight": 18.12951974576,
+    "n_events": 5
+  },
+  "Green, Minnesota": {
+    "mean_weight": 7.242928346383334,
+    "n_events": 24
+  },
+  "Greenbelt, Texas": {
+    "mean_weight": 15.099581432933334,
+    "n_events": 3
+  },
+  "Greenbo Lake, Kentucky": {
+    "mean_weight": 4.4129674088,
+    "n_events": 2
+  },
+  "Greenville, MI": {
+    "mean_weight": 7.5381,
+    "n_events": 1
+  },
+  "Greenwood, SC": {
+    "mean_weight": 7.1867,
+    "n_events": 1
+  },
+  "Greers Ferry, Arkansas": {
+    "mean_weight": 18.0949201896,
+    "n_events": 1
+  },
+  "Grindstone Lake, Wisconsin": {
+    "mean_weight": 13.73094070335,
+    "n_events": 8
+  },
+  "Grindstone, Minnesota": {
+    "mean_weight": 4.080332304800001,
+    "n_events": 1
+  },
+  "Grissom , CT": {
+    "mean_weight": 4.8081,
+    "n_events": 1
+  },
+  "Groton, MA": {
+    "mean_weight": 4.4376,
+    "n_events": 1
+  },
+  "Grove, OK": {
+    "mean_weight": 7.667439999999999,
+    "n_events": 5
+  },
+  "Guild, TN": {
+    "mean_weight": 14.2421,
+    "n_events": 1
+  },
+  "Guist Creek Lake, Kentucky": {
+    "mean_weight": 10.1725131512,
+    "n_events": 2
+  },
+  "Gull Lake, Michigan": {
+    "mean_weight": 11.7592264128,
+    "n_events": 1
+  },
+  "Gull, Minnesota": {
+    "mean_weight": 6.3790141264,
+    "n_events": 3
+  },
+  "Gun Lake, Michigan": {
+    "mean_weight": 12.234942871000001,
+    "n_events": 2
+  },
+  "Gunlock Lake, Wisconsin": {
+    "mean_weight": 16.53222623986667,
+    "n_events": 3
+  },
+  "Guntersville, AL": {
+    "mean_weight": 8.949940000000002,
+    "n_events": 5
+  },
+  "Hagerhill, KY": {
+    "mean_weight": 2.3058,
+    "n_events": 1
+  },
+  "Haines City, FL": {
+    "mean_weight": 8.249,
+    "n_events": 1
+  },
+  "Half Moon Lake, Michigan": {
+    "mean_weight": 4.0101311464,
+    "n_events": 1
+  },
+  "Half Moon Lake, Wisconsin": {
+    "mean_weight": 18.864793265333333,
+    "n_events": 3
+  },
+  "Hall, Minnesota": {
+    "mean_weight": 3.1717353464,
+    "n_events": 1
+  },
+  "Ham, Minnesota": {
+    "mean_weight": 4.4872034880000005,
+    "n_events": 2
+  },
+  "Hamlin Lake, Michigan": {
+    "mean_weight": 7.2317163398,
+    "n_events": 4
+  },
+  "Hanahan, SC": {
+    "mean_weight": 2.9324,
+    "n_events": 1
+  },
+  "Hancock Lake, Wisconsin": {
+    "mean_weight": 8.7033922332,
+    "n_events": 1
+  },
+  "Hancock, MD": {
+    "mean_weight": 5.5862,
+    "n_events": 1
+  },
+  "Hardy Impoundment, Michigan": {
+    "mean_weight": 6.9499793968,
+    "n_events": 1
+  },
+  "Hardy, VA": {
+    "mean_weight": 15.8746,
+    "n_events": 1
+  },
+  "Harlan Reservoir, Nebraska": {
+    "mean_weight": 3.0141763280000005,
+    "n_events": 4
+  },
+  "Harriet, Minnesota": {
+    "mean_weight": 2.9706552392,
+    "n_events": 1
+  },
+  "Harris Chain of Lakes, Leesburg, FL": {
+    "mean_weight": 10.42813,
+    "n_events": 20
+  },
+  "Harris Chain, Leesburg, FL": {
+    "mean_weight": 7.351575,
+    "n_events": 4
+  },
+  "Harris Lake, Wisconsin": {
+    "mean_weight": 3.9100432762666664,
+    "n_events": 3
+  },
+  "Harrisburg, PA": {
+    "mean_weight": 7.510433333333332,
+    "n_events": 3
+  },
+  "Harrison Township, MI": {
+    "mean_weight": 2.5346,
+    "n_events": 2
+  },
+  "Hart Lake, Wisconsin": {
+    "mean_weight": 10.3787283232,
+    "n_events": 3
+  },
+  "Hasbrook Lake, Wisconsin": {
+    "mean_weight": 19.9093059024,
+    "n_events": 2
+  },
+  "Hasty, CO": {
+    "mean_weight": 1.531,
+    "n_events": 1
+  },
+  "Hattiesburg , MS": {
+    "mean_weight": 16.3392,
+    "n_events": 1
+  },
+  "Havelock, ON": {
+    "mean_weight": 6.4444,
+    "n_events": 1
+  },
+  "Havre De Grace, MD": {
+    "mean_weight": 5.9295,
+    "n_events": 1
+  },
+  "Hawkins, Texas": {
+    "mean_weight": 12.5306105788,
+    "n_events": 1
+  },
+  "Hawthorne, FL": {
+    "mean_weight": 7.495666666666668,
+    "n_events": 3
+  },
+  "Hayden, ID": {
+    "mean_weight": 6.3947,
+    "n_events": 1
+  },
+  "Hayes, LA": {
+    "mean_weight": 2.0654,
+    "n_events": 4
+  },
+  "Hayward Lake, Wisconsin": {
+    "mean_weight": 6.0983945012,
+    "n_events": 2
+  },
+  "Heber City, UT": {
+    "mean_weight": 3.1421142857142854,
+    "n_events": 7
+  },
+  "Heber, UT": {
+    "mean_weight": 3.15405,
+    "n_events": 2
+  },
+  "Hemlock Lake, Wisconsin": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Hemphill, LA": {
+    "mean_weight": 15.8929,
+    "n_events": 1
+  },
+  "Hemphill, TX": {
+    "mean_weight": 9.299900000000001,
+    "n_events": 2
+  },
+  "Henderson, NC, VA": {
+    "mean_weight": 4.2457,
+    "n_events": 1
+  },
+  "Hendersonville, TN": {
+    "mean_weight": 7.2133,
+    "n_events": 2
+  },
+  "Henry, VA": {
+    "mean_weight": 3.2803,
+    "n_events": 1
+  },
+  "Herrington Lake, Kentucky": {
+    "mean_weight": 12.8076477296,
+    "n_events": 1
+  },
+  "Hiawassee, GA": {
+    "mean_weight": 8.8588,
+    "n_events": 1
+  },
+  "Hickory , NC": {
+    "mean_weight": 9.2184,
+    "n_events": 1
+  },
+  "Hickory Grove Lake, Iowa": {
+    "mean_weight": 13.184441326933333,
+    "n_events": 3
+  },
+  "Hickory, NC": {
+    "mean_weight": 10.8814,
+    "n_events": 1
+  },
+  "Higgins Lake, Michigan": {
+    "mean_weight": 4.8279077608000005,
+    "n_events": 1
+  },
+  "High Lake, Wisconsin": {
+    "mean_weight": 4.5027461888,
+    "n_events": 1
+  },
+  "Highland Lake, Connecticut": {
+    "mean_weight": 6.958014716799999,
+    "n_events": 1
+  },
+  "Hill, Minnesota": {
+    "mean_weight": 3.2772303632,
+    "n_events": 1
+  },
+  "Hillman, MI": {
+    "mean_weight": 16.14995,
+    "n_events": 2
+  },
+  "Hillsboro Old City Lake, Illinois": {
+    "mean_weight": 7.7991412148000006,
+    "n_events": 2
+  },
+  "Hillsdale Reservoir, Kansas": {
+    "mean_weight": 3.998816166133333,
+    "n_events": 3
+  },
+  "Hillsdale, KS": {
+    "mean_weight": 2.2721,
+    "n_events": 1
+  },
+  "Hinton, WV": {
+    "mean_weight": 5.2698,
+    "n_events": 1
+  },
+  "Hogue, Arkansas": {
+    "mean_weight": 3.2084,
+    "n_events": 1
+  },
+  "Holbrook, Texas": {
+    "mean_weight": 15.7361727096,
+    "n_events": 1
+  },
+  "Holly, MI": {
+    "mean_weight": 1.7369,
+    "n_events": 1
+  },
+  "Holston River, Tennessee": {
+    "mean_weight": 19.9088543092,
+    "n_events": 1
+  },
+  "Homer Lake, Illinois": {
+    "mean_weight": 8.2215177236,
+    "n_events": 2
+  },
+  "Honey Harbour, ON": {
+    "mean_weight": 15.21,
+    "n_events": 1
+  },
+  "Hopedale, LA": {
+    "mean_weight": 4.5789,
+    "n_events": 1
+  },
+  "Hopkinton, RI": {
+    "mean_weight": 3.1891,
+    "n_events": 1
+  },
+  "Horesethief Reservoir, Kansas": {
+    "mean_weight": 3.071184354,
+    "n_events": 1
+  },
+  "Horseshoe Lake, Wisconsin": {
+    "mean_weight": 24.669487134,
+    "n_events": 2
+  },
+  "Horseshoe, Minnesota": {
+    "mean_weight": 6.113306162000001,
+    "n_events": 2
+  },
+  "Horseshoe/Becker, Minnesota": {
+    "mean_weight": 6.9292636412,
+    "n_events": 1
+  },
+  "Horseshoe/Becker/Cedar Island, Minnesota": {
+    "mean_weight": 3.0521660612000003,
+    "n_events": 1
+  },
+  "Hot Springs National Park, AR": {
+    "mean_weight": 11.5292,
+    "n_events": 1
+  },
+  "Hot Springs, AR": {
+    "mean_weight": 4.5651,
+    "n_events": 1
+  },
+  "Houghton Lake, Michigan": {
+    "mean_weight": 3.1100323944,
+    "n_events": 2
+  },
+  "Housatonic Lake, Connecticut": {
+    "mean_weight": 16.4166958968,
+    "n_events": 1
+  },
+  "Houston County, Texas": {
+    "mean_weight": 13.330132570933332,
+    "n_events": 3
+  },
+  "Houston, Texas": {
+    "mean_weight": 8.0836300548,
+    "n_events": 4
+  },
+  "Hovde, Minnesota": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Hubbard Creek, Texas": {
+    "mean_weight": 15.4771191432,
+    "n_events": 1
+  },
+  "Hubbard Lake, Michigan": {
+    "mean_weight": 7.5609210744,
+    "n_events": 1
+  },
+  "Hudson Lake, Michigan": {
+    "mean_weight": 20.0080732504,
+    "n_events": 1
+  },
+  "Hungry Jack, Minnesota": {
+    "mean_weight": 16.4112810226,
+    "n_events": 2
+  },
+  "Hunt, Minnesota": {
+    "mean_weight": 4.6362308456,
+    "n_events": 1
+  },
+  "Huntingtington Beach, CA": {
+    "mean_weight": 4.594225,
+    "n_events": 4
+  },
+  "Huntington Beach, CA": {
+    "mean_weight": 3.355725,
+    "n_events": 4
+  },
+  "Huntley, IL": {
+    "mean_weight": 12.234839999999998,
+    "n_events": 15
+  },
+  "Huntsville, AL": {
+    "mean_weight": 3.3855,
+    "n_events": 2
+  },
+  "Huntsville, UT": {
+    "mean_weight": 3.0473,
+    "n_events": 2
+  },
+  "Huron River, Michigan": {
+    "mean_weight": 4.2182226996,
+    "n_events": 1
+  },
+  "Hurricane, UT": {
+    "mean_weight": 10.126158333333334,
+    "n_events": 12
+  },
+  "Hyland, Minnesota": {
+    "mean_weight": 3.5519333968,
+    "n_events": 1
+  },
+  "Hyrum, UT": {
+    "mean_weight": 3.3022333333333336,
+    "n_events": 3
+  },
+  "Ida, Minnesota": {
+    "mean_weight": 4.662746550933334,
+    "n_events": 6
+  },
+  "Independence, Minnesota": {
+    "mean_weight": 6.750039151999999,
+    "n_events": 1
+  },
+  "Indian Head, MD": {
+    "mean_weight": 4.27185,
+    "n_events": 2
+  },
+  "Indianapolis, IN": {
+    "mean_weight": 8.1589,
+    "n_events": 1
+  },
+  "Inglis, FL": {
+    "mean_weight": 12.0567,
+    "n_events": 1
+  },
+  "Inguadona, Minnesota": {
+    "mean_weight": 5.1451179968,
+    "n_events": 2
+  },
+  "Interlachen, FL": {
+    "mean_weight": 9.4818,
+    "n_events": 1
+  },
+  "Ione, CA": {
+    "mean_weight": 4.3211,
+    "n_events": 1
+  },
+  "Iowa City, IA": {
+    "mean_weight": 3.9965,
+    "n_events": 1
+  },
+  "Iron Creek Lake, South Dakota": {
+    "mean_weight": 3.7085830448,
+    "n_events": 1
+  },
+  "Irving Lake, Wisconsin": {
+    "mean_weight": 7.221417216,
+    "n_events": 3
+  },
+  "Island Lake, Wisconsin": {
+    "mean_weight": 5.709564392,
+    "n_events": 5
+  },
+  "Island, Minnesota": {
+    "mean_weight": 5.2951347416,
+    "n_events": 6
+  },
+  "Island-Loon, Minnesota": {
+    "mean_weight": 14.7661195312,
+    "n_events": 1
+  },
+  "Itasca, Minnesota": {
+    "mean_weight": 3.669370257866667,
+    "n_events": 3
+  },
+  "Iva, SC": {
+    "mean_weight": 8.3034,
+    "n_events": 1
+  },
+  "Jackson Lake, Wisconsin": {
+    "mean_weight": 3.162411916,
+    "n_events": 2
+  },
+  "Jackson, MS": {
+    "mean_weight": 12.10275,
+    "n_events": 2
+  },
+  "Jacksonville Lake, Illinois": {
+    "mean_weight": 20.435823401199997,
+    "n_events": 2
+  },
+  "Jacksonville, Texas": {
+    "mean_weight": 21.2244579032,
+    "n_events": 3
+  },
+  "James River, Henrico, VA": {
+    "mean_weight": 11.5,
+    "n_events": 2
+  },
+  "James River, Richmond, VA": {
+    "mean_weight": 9.785413333333334,
+    "n_events": 15
+  },
+  "Jamestown, CA": {
+    "mean_weight": 4.7164,
+    "n_events": 1
+  },
+  "Jamestown, NY": {
+    "mean_weight": 7.4766,
+    "n_events": 1
+  },
+  "Jane, Minnesota": {
+    "mean_weight": 6.386042636,
+    "n_events": 1
+  },
+  "Jasper, AL": {
+    "mean_weight": 7.8133,
+    "n_events": 1
+  },
+  "Jasper, TN": {
+    "mean_weight": 10.0396,
+    "n_events": 1
+  },
+  "Jasper, TX": {
+    "mean_weight": 7.918049999999999,
+    "n_events": 2
+  },
+  "Jefferson City, TN": {
+    "mean_weight": 8.0317,
+    "n_events": 1
+  },
+  "Jewell County Lake, Kansas": {
+    "mean_weight": 11.4654854128,
+    "n_events": 1
+  },
+  "Jewett, Minnesota": {
+    "mean_weight": 7.0827881216,
+    "n_events": 2
+  },
+  "Joaquin, TX": {
+    "mean_weight": 7.1275,
+    "n_events": 1
+  },
+  "Joe Pool, Texas": {
+    "mean_weight": 11.359254202,
+    "n_events": 1
+  },
+  "Johanna, Minnesota": {
+    "mean_weight": 4.9586709416,
+    "n_events": 1
+  },
+  "John Redmond Reservoir, Kansas": {
+    "mean_weight": 2.9400978,
+    "n_events": 1
+  },
+  "John Sevier Reservoir, Tennessee": {
+    "mean_weight": 19.9314723952,
+    "n_events": 1
+  },
+  "Johns Lake, Florida": {
+    "mean_weight": 22.0827317656,
+    "n_events": 1
+  },
+  "Jonesville, LA": {
+    "mean_weight": 3.7422,
+    "n_events": 1
+  },
+  "Jordanelle Reservoir, Utah": {
+    "mean_weight": 10.9660824216,
+    "n_events": 2
+  },
+  "Josephine, Minnesota": {
+    "mean_weight": 6.6195133304,
+    "n_events": 1
+  },
+  "Julia, Minnesota": {
+    "mean_weight": 2.9583222352000003,
+    "n_events": 1
+  },
+  "Julington Creek, Florida": {
+    "mean_weight": 6.9041600116,
+    "n_events": 4
+  },
+  "Kabetogama, Minnesota": {
+    "mean_weight": 3.689030349942857,
+    "n_events": 7
+  },
+  "Kalamazoo River, Michigan": {
+    "mean_weight": 3.9822352112,
+    "n_events": 1
+  },
+  "Kamas, UT": {
+    "mean_weight": 2.1388,
+    "n_events": 2
+  },
+  "Kampeska Lake, South Dakota": {
+    "mean_weight": 7.538932195599999,
+    "n_events": 2
+  },
+  "Kanopolis Reservoir, Kansas": {
+    "mean_weight": 2.9519648088,
+    "n_events": 1
+  },
+  "Kanopolis Seep Stream, Kansas": {
+    "mean_weight": 3.673795248,
+    "n_events": 1
+  },
+  "Kansasville, WI": {
+    "mean_weight": 10.4234,
+    "n_events": 1
+  },
+  "Kaskusha Lake, Illinois": {
+    "mean_weight": 8.301444913600001,
+    "n_events": 1
+  },
+  "Katherine Lake, Wisconsin": {
+    "mean_weight": 15.7236694752,
+    "n_events": 3
+  },
+  "Kaufman, TX": {
+    "mean_weight": 10.1448,
+    "n_events": 6
+  },
+  "Kawaguesaga Lake, Wisconsin": {
+    "mean_weight": 9.932072728266666,
+    "n_events": 3
+  },
+  "Kawartha Lakes, Ontario": {
+    "mean_weight": 5.1252,
+    "n_events": 1
+  },
+  "Keller and Spoon, Minnesota": {
+    "mean_weight": 3.7747129744,
+    "n_events": 1
+  },
+  "Keller, Minnesota": {
+    "mean_weight": 4.9707492328,
+    "n_events": 1
+  },
+  "Kelseyville, CA": {
+    "mean_weight": 7.1851,
+    "n_events": 1
+  },
+  "Kenansville, FL": {
+    "mean_weight": 8.3358,
+    "n_events": 1
+  },
+  "Kennewick, WA": {
+    "mean_weight": 4.4069,
+    "n_events": 1
+  },
+  "Kent Lake, Michigan": {
+    "mean_weight": 10.8232972096,
+    "n_events": 1
+  },
+  "Kentuck Lake, Wisconsin": {
+    "mean_weight": 16.2362873144,
+    "n_events": 4
+  },
+  "Kentucky Lake and Lake Barkley, TN": {
+    "mean_weight": 2.632,
+    "n_events": 1
+  },
+  "Kentucky Lake, Kentucky": {
+    "mean_weight": 12.987323161066668,
+    "n_events": 3
+  },
+  "Kentucky Lake, Paris, TN": {
+    "mean_weight": 15.603129999999998,
+    "n_events": 10
+  },
+  "Kentucky Lake/Lake Barkley, Paris, TN": {
+    "mean_weight": 10.864566666666667,
+    "n_events": 3
+  },
+  "Kentucky Reservoir, Tennessee": {
+    "mean_weight": 11.936092175399999,
+    "n_events": 4
+  },
+  "Keswick, ON": {
+    "mean_weight": 4.8785,
+    "n_events": 1
+  },
+  "Keystone Heights, FL": {
+    "mean_weight": 9.3909,
+    "n_events": 1
+  },
+  "Kickapoo, Texas": {
+    "mean_weight": 6.7490223772,
+    "n_events": 1
+  },
+  "Kingsford Flowage Wi-Mi, Wisconsin": {
+    "mean_weight": 13.9390646916,
+    "n_events": 1
+  },
+  "Kiowa State Fishing Lake, Kansas": {
+    "mean_weight": 5.5937369768,
+    "n_events": 1
+  },
+  "Kirby , AR": {
+    "mean_weight": 2.2718,
+    "n_events": 1
+  },
+  "Kirby, Texas": {
+    "mean_weight": 3.7236275952,
+    "n_events": 6
+  },
+  "Kirwin Reservoir, Kansas": {
+    "mean_weight": 3.0094327574,
+    "n_events": 2
+  },
+  "Kissimmee , FL": {
+    "mean_weight": 6.8535,
+    "n_events": 1
+  },
+  "Kissimmee Chain of Lakes, Kissimmee, FL": {
+    "mean_weight": 8.640625,
+    "n_events": 8
+  },
+  "Kissimmee, FL": {
+    "mean_weight": 8.9944,
+    "n_events": 7
+  },
+  "Kissimmee, FL, FL": {
+    "mean_weight": 3.6737,
+    "n_events": 1
+  },
+  "Klamath Falls, OR": {
+    "mean_weight": 6.7283,
+    "n_events": 2
+  },
+  "Knife, Minnesota": {
+    "mean_weight": 4.550589816533334,
+    "n_events": 9
+  },
+  "Knox , PA": {
+    "mean_weight": 5.4252,
+    "n_events": 1
+  },
+  "Knoxville, TN": {
+    "mean_weight": 10.5884,
+    "n_events": 1
+  },
+  "Kohlman, Minnesota": {
+    "mean_weight": 4.421961422400001,
+    "n_events": 1
+  },
+  "Koronis, Minnesota": {
+    "mean_weight": 3.2146799268,
+    "n_events": 2
+  },
+  "Kurth, Texas": {
+    "mean_weight": 13.750144290200002,
+    "n_events": 2
+  },
+  "L-67A Canal, Florida": {
+    "mean_weight": 17.518536278646152,
+    "n_events": 13
+  },
+  "La Crosse, WI": {
+    "mean_weight": 14.332666666666666,
+    "n_events": 3
+  },
+  "La Grange, CA": {
+    "mean_weight": 7.8133,
+    "n_events": 1
+  },
+  "La Grange, TX": {
+    "mean_weight": 5.010400000000001,
+    "n_events": 4
+  },
+  "La Plata, MD": {
+    "mean_weight": 1.4915,
+    "n_events": 1
+  },
+  "LaSalle Cooling Lake, Illinois": {
+    "mean_weight": 7.936922882799999,
+    "n_events": 2
+  },
+  "Lac Courte Oreilles, Wisconsin": {
+    "mean_weight": 7.649725427333332,
+    "n_events": 3
+  },
+  "Lac La Belle, Michigan": {
+    "mean_weight": 14.8917933744,
+    "n_events": 1
+  },
+  "Lac Lavon, Minnesota": {
+    "mean_weight": 5.887864604800001,
+    "n_events": 2
+  },
+  "Lac Qui Parle, Minnesota": {
+    "mean_weight": 2.969663211066667,
+    "n_events": 6
+  },
+  "Lac Sault Dore, Wisconsin": {
+    "mean_weight": 9.4498614784,
+    "n_events": 1
+  },
+  "Lac Vieux Desert, Wisconsin": {
+    "mean_weight": 3.0439963146,
+    "n_events": 2
+  },
+  "Lacombe, LA": {
+    "mean_weight": 2.2986750000000002,
+    "n_events": 8
+  },
+  "Laconia, NH": {
+    "mean_weight": 15.1963,
+    "n_events": 2
+  },
+  "Lacygne Reservoir, Kansas": {
+    "mean_weight": 7.080606076533333,
+    "n_events": 3
+  },
+  "Lafayette, LA": {
+    "mean_weight": 2.205,
+    "n_events": 1
+  },
+  "Lake Amistad, Del Rio, TX": {
+    "mean_weight": 4.5469,
+    "n_events": 2
+  },
+  "Lake Antoine, Michigan": {
+    "mean_weight": 10.1906183848,
+    "n_events": 1
+  },
+  "Lake Apopka, Florida": {
+    "mean_weight": 4.4335831608,
+    "n_events": 2
+  },
+  "Lake Audubon, North Dakota": {
+    "mean_weight": 3.5810187960000004,
+    "n_events": 11
+  },
+  "Lake Barkley Tailwater, Kentucky": {
+    "mean_weight": 3.9426698442,
+    "n_events": 2
+  },
+  "Lake Barkley, Kentucky": {
+    "mean_weight": 8.2315618214,
+    "n_events": 2
+  },
+  "Lake Barkley, Tennessee": {
+    "mean_weight": 14.1145877658,
+    "n_events": 4
+  },
+  "Lake Bellaire, Michigan": {
+    "mean_weight": 5.8762806128000005,
+    "n_events": 1
+  },
+  "Lake Bruin, LA": {
+    "mean_weight": 7.234,
+    "n_events": 1
+  },
+  "Lake Cadillac, Michigan": {
+    "mean_weight": 4.3748621106000005,
+    "n_events": 2
+  },
+  "Lake Cascade, Idaho": {
+    "mean_weight": 10.8484802296,
+    "n_events": 1
+  },
+  "Lake Champlain, Plattsburgh, NY": {
+    "mean_weight": 16.975224137931033,
+    "n_events": 29
+  },
+  "Lake Champlain, Vermont": {
+    "mean_weight": 8.15587135624,
+    "n_events": 5
+  },
+  "Lake Charlevoix, Michigan": {
+    "mean_weight": 6.932247892,
+    "n_events": 1
+  },
+  "Lake Chatuge, Hiawassee, GA": {
+    "mean_weight": 10.270833333333334,
+    "n_events": 3
+  },
+  "Lake Chesdin, VA": {
+    "mean_weight": 5.1676,
+    "n_events": 1
+  },
+  "Lake Chetac, Wisconsin": {
+    "mean_weight": 7.1006129136,
+    "n_events": 2
+  },
+  "Lake Chetek, Wisconsin": {
+    "mean_weight": 11.4102223632,
+    "n_events": 1
+  },
+  "Lake Chippewa, Wisconsin": {
+    "mean_weight": 6.5653773977,
+    "n_events": 4
+  },
+  "Lake Conroe, Houston, TX": {
+    "mean_weight": 11.5781,
+    "n_events": 2
+  },
+  "Lake County, FL": {
+    "mean_weight": 8.3877,
+    "n_events": 1
+  },
+  "Lake Cumberland, Kentucky": {
+    "mean_weight": 10.1916453966,
+    "n_events": 2
+  },
+  "Lake Dardanelle, Russellville, AR": {
+    "mean_weight": 12.416666666666666,
+    "n_events": 6
+  },
+  "Lake Dora and Beauclair, Florida": {
+    "mean_weight": 5.362108635,
+    "n_events": 4
+  },
+  "Lake Eloise and Winterhaven Chain, Florida": {
+    "mean_weight": 11.253333140399999,
+    "n_events": 2
+  },
+  "Lake Emily, Wisconsin": {
+    "mean_weight": 9.7792062424,
+    "n_events": 1
+  },
+  "Lake Erie -Lake Erie Grid (MI_Mon)_1, Michigan": {
+    "mean_weight": 3.447473126912,
+    "n_events": 25
+  },
+  "Lake Erie -Lake Erie Grid (MI_Mon)_2, Michigan": {
+    "mean_weight": 4.426295416333334,
+    "n_events": 24
+  },
+  "Lake Erie -Lake Erie Grid (MI_NA)_1, Michigan": {
+    "mean_weight": 3.0468726860444444,
+    "n_events": 9
+  },
+  "Lake Erie -Lake Erie Grid, Michigan": {
+    "mean_weight": 4.994610262512,
+    "n_events": 50
+  },
+  "Lake Erie, Monroe, MI": {
+    "mean_weight": 14.375,
+    "n_events": 1
+  },
+  "Lake Erie, Sandusky, OH": {
+    "mean_weight": 14.57815,
+    "n_events": 2
+  },
+  "Lake Eufaula, Eufaula, AL": {
+    "mean_weight": 12.828125,
+    "n_events": 8
+  },
+  "Lake Eufaula, Eufaula, OK": {
+    "mean_weight": 8.352272727272727,
+    "n_events": 11
+  },
+  "Lake Fork, Emory, TX": {
+    "mean_weight": 18.445325,
+    "n_events": 4
+  },
+  "Lake Fork, Quitman, TX": {
+    "mean_weight": 16.49689,
+    "n_events": 10
+  },
+  "Lake Fork, Yantis, TX": {
+    "mean_weight": 22.992175,
+    "n_events": 8
+  },
+  "Lake Francis Case, South Dakota": {
+    "mean_weight": 4.6756171376,
+    "n_events": 6
+  },
+  "Lake Garcia, Florida": {
+    "mean_weight": 19.61099007504,
+    "n_events": 5
+  },
+  "Lake Geneva, WI": {
+    "mean_weight": 9.973749999999999,
+    "n_events": 2
+  },
+  "Lake George , NY": {
+    "mean_weight": 12.2181,
+    "n_events": 1
+  },
+  "Lake George, Florida": {
+    "mean_weight": 9.8927486751,
+    "n_events": 8
+  },
+  "Lake George, NY": {
+    "mean_weight": 7.1801,
+    "n_events": 1
+  },
+  "Lake Gogebic, Michigan": {
+    "mean_weight": 5.4373908814666665,
+    "n_events": 6
+  },
+  "Lake Greenwood, Greenwood, SC": {
+    "mean_weight": 8.9062,
+    "n_events": 2
+  },
+  "Lake Griffin Canal, Florida": {
+    "mean_weight": 10.0245604408,
+    "n_events": 1
+  },
+  "Lake Griffin, Florida": {
+    "mean_weight": 9.080505317381819,
+    "n_events": 11
+  },
+  "Lake Guntersville, Birmingham, AL": {
+    "mean_weight": 14.28125,
+    "n_events": 4
+  },
+  "Lake Guntersville, Guntersville, AL": {
+    "mean_weight": 16.4479,
+    "n_events": 3
+  },
+  "Lake Guntersville, Scottsboro, AL": {
+    "mean_weight": 13.611122222222223,
+    "n_events": 9
+  },
+  "Lake Halleck, Nebraska": {
+    "mean_weight": 7.6750515836,
+    "n_events": 1
+  },
+  "Lake Harris, Florida": {
+    "mean_weight": 10.1274657402,
+    "n_events": 8
+  },
+  "Lake Hartwell, Anderson, SC": {
+    "mean_weight": 10.422455555555555,
+    "n_events": 27
+  },
+  "Lake Hartwell, Greenville, SC": {
+    "mean_weight": 12.317716666666668,
+    "n_events": 6
+  },
+  "Lake Havasu City, AZ": {
+    "mean_weight": 5.5735,
+    "n_events": 1
+  },
+  "Lake Havasu, Lake Havasu City, AZ": {
+    "mean_weight": 10.16872,
+    "n_events": 5
+  },
+  "Lake Huron -Alpena, Michigan": {
+    "mean_weight": 5.25317626676,
+    "n_events": 20
+  },
+  "Lake Huron -Au Sable River, Michigan": {
+    "mean_weight": 5.000081112114286,
+    "n_events": 7
+  },
+  "Lake Huron -Carp River, Michigan": {
+    "mean_weight": 3.590861512,
+    "n_events": 1
+  },
+  "Lake Huron -Cheboygan River, Michigan": {
+    "mean_weight": 6.6253923805333335,
+    "n_events": 6
+  },
+  "Lake Huron -Cheboygan, Michigan": {
+    "mean_weight": 3.6214865513600003,
+    "n_events": 10
+  },
+  "Lake Huron -Detour, Michigan": {
+    "mean_weight": 3.0498486928533333,
+    "n_events": 15
+  },
+  "Lake Huron -Hammond Bay, Michigan": {
+    "mean_weight": 4.2153466922666665,
+    "n_events": 3
+  },
+  "Lake Huron -Harbor Beach, Michigan": {
+    "mean_weight": 5.335281161783333,
+    "n_events": 24
+  },
+  "Lake Huron -Harrisville, Michigan": {
+    "mean_weight": 2.9413217856000005,
+    "n_events": 2
+  },
+  "Lake Huron -Lake George, Little Lake George And St. Mary'S River, Michigan": {
+    "mean_weight": 3.67160168945,
+    "n_events": 8
+  },
+  "Lake Huron -Les Cheneaux Islands, Michigan": {
+    "mean_weight": 3.8264267924380952,
+    "n_events": 21
+  },
+  "Lake Huron -Lexington, Michigan": {
+    "mean_weight": 3.1108848596190475,
+    "n_events": 21
+  },
+  "Lake Huron -Mackinaw City, Michigan": {
+    "mean_weight": 3.9793184608,
+    "n_events": 1
+  },
+  "Lake Huron -Ocqueoc River, Michigan": {
+    "mean_weight": 7.964416031200001,
+    "n_events": 1
+  },
+  "Lake Huron -Oscoda, Michigan": {
+    "mean_weight": 3.6628726686666666,
+    "n_events": 24
+  },
+  "Lake Huron -Port Sanilac, Michigan": {
+    "mean_weight": 3.002418653294118,
+    "n_events": 17
+  },
+  "Lake Huron -Presque Isle, Michigan": {
+    "mean_weight": 3.125363776066667,
+    "n_events": 12
+  },
+  "Lake Huron -Rockport, Michigan": {
+    "mean_weight": 3.2116537014,
+    "n_events": 8
+  },
+  "Lake Huron -Rogers City, Michigan": {
+    "mean_weight": 2.97110321264,
+    "n_events": 15
+  },
+  "Lake Huron -Saginaw Bay, Michigan": {
+    "mean_weight": 3.6332630229333334,
+    "n_events": 159
+  },
+  "Lake Huron -Saginaw River, Michigan": {
+    "mean_weight": 3.0913141742666665,
+    "n_events": 30
+  },
+  "Lake Huron -St. Ignace, Michigan": {
+    "mean_weight": 3.1228935154666666,
+    "n_events": 6
+  },
+  "Lake Huron -St. Mary'S River, Michigan": {
+    "mean_weight": 3.899106535368421,
+    "n_events": 38
+  },
+  "Lake Huron -Thunder Bay River, Michigan": {
+    "mean_weight": 6.902439924160001,
+    "n_events": 5
+  },
+  "Lake Huron -Tittabawassee River, Michigan": {
+    "mean_weight": 4.731776025443478,
+    "n_events": 23
+  },
+  "Lake Istokpoga, Florida": {
+    "mean_weight": 10.430034772990476,
+    "n_events": 21
+  },
+  "Lake Jackson, Florida": {
+    "mean_weight": 13.62501653184,
+    "n_events": 5
+  },
+  "Lake Josephine, Florida": {
+    "mean_weight": 8.005665382327273,
+    "n_events": 11
+  },
+  "Lake Julia, Wisconsin": {
+    "mean_weight": 11.9581698116,
+    "n_events": 1
+  },
+  "Lake June, Florida": {
+    "mean_weight": 22.491636979200003,
+    "n_events": 2
+  },
+  "Lake Kegonsa, Wisconsin": {
+    "mean_weight": 8.8494067576,
+    "n_events": 1
+  },
+  "Lake Kentucky Tailwater, Kentucky": {
+    "mean_weight": 4.4168167412,
+    "n_events": 2
+  },
+  "Lake Kissimmee, Florida": {
+    "mean_weight": 9.073827878618182,
+    "n_events": 11
+  },
+  "Lake Lanier, Gwinnett, GA": {
+    "mean_weight": 13.541666666666666,
+    "n_events": 3
+  },
+  "Lake Laura, Wisconsin": {
+    "mean_weight": 5.2443777584,
+    "n_events": 3
+  },
+  "Lake Leelanau, Michigan": {
+    "mean_weight": 4.4066693512,
+    "n_events": 1
+  },
+  "Lake Lillinonah, Connecticut": {
+    "mean_weight": 11.664812557000001,
+    "n_events": 2
+  },
+  "Lake Linville, Kentucky": {
+    "mean_weight": 13.3108291192,
+    "n_events": 1
+  },
+  "Lake Lucerne, Wisconsin": {
+    "mean_weight": 19.616031382666666,
+    "n_events": 3
+  },
+  "Lake Malone, Kentucky": {
+    "mean_weight": 10.4817537464,
+    "n_events": 1
+  },
+  "Lake Marian, Florida": {
+    "mean_weight": 3.4189756970666667,
+    "n_events": 3
+  },
+  "Lake Martin, Alexander City, AL": {
+    "mean_weight": 9.645833333333334,
+    "n_events": 6
+  },
+  "Lake Mattamuskeet, North Carolina": {
+    "mean_weight": 4.274498812,
+    "n_events": 1
+  },
+  "Lake Mattoon, Illinois": {
+    "mean_weight": 6.4375613448,
+    "n_events": 1
+  },
+  "Lake Maumelle, Arkansas": {
+    "mean_weight": 10.2238104972,
+    "n_events": 1
+  },
+  "Lake Michigamme, Michigan": {
+    "mean_weight": 6.7923015016,
+    "n_events": 1
+  },
+  "Lake Michigan -Arcadia, Michigan": {
+    "mean_weight": 2.9363249696,
+    "n_events": 1
+  },
+  "Lake Michigan -Bear River, Michigan": {
+    "mean_weight": 3.195080454114286,
+    "n_events": 14
+  },
+  "Lake Michigan -Benton Harbor St. Joe River, Michigan": {
+    "mean_weight": 3.0491566442000004,
+    "n_events": 22
+  },
+  "Lake Michigan -Big Bay De Noc, Michigan": {
+    "mean_weight": 11.55179637749091,
+    "n_events": 22
+  },
+  "Lake Michigan -Cedar River Pas, Michigan": {
+    "mean_weight": 3.1624723404000004,
+    "n_events": 12
+  },
+  "Lake Michigan -Cedar River, Michigan": {
+    "mean_weight": 8.346961246866668,
+    "n_events": 12
+  },
+  "Lake Michigan -Charlevoix, Michigan": {
+    "mean_weight": 5.915086122766667,
+    "n_events": 24
+  },
+  "Lake Michigan -Dowagiac River, Michigan": {
+    "mean_weight": 3.2181820579428573,
+    "n_events": 7
+  },
+  "Lake Michigan -East Grand Traverse Bay, Michigan": {
+    "mean_weight": 7.941380903392001,
+    "n_events": 25
+  },
+  "Lake Michigan -Elk Rapids, Michigan": {
+    "mean_weight": 13.175642593824,
+    "n_events": 25
+  },
+  "Lake Michigan -Fairport, Michigan": {
+    "mean_weight": 4.264310856800001,
+    "n_events": 3
+  },
+  "Lake Michigan -Frankfort-Elberta, Michigan": {
+    "mean_weight": 2.9520824821000002,
+    "n_events": 20
+  },
+  "Lake Michigan -Glen Arbor, Michigan": {
+    "mean_weight": 3.2234687248,
+    "n_events": 1
+  },
+  "Lake Michigan -Grand Haven, Michigan": {
+    "mean_weight": 3.0198394943999998,
+    "n_events": 17
+  },
+  "Lake Michigan -Harbor Springs, Michigan": {
+    "mean_weight": 6.525654046643479,
+    "n_events": 23
+  },
+  "Lake Michigan -Holland, Michigan": {
+    "mean_weight": 2.9727359510857143,
+    "n_events": 7
+  },
+  "Lake Michigan -Leland, Michigan": {
+    "mean_weight": 3.8665658344000002,
+    "n_events": 4
+  },
+  "Lake Michigan -Little Bay De Noc, Michigan": {
+    "mean_weight": 4.095874294752,
+    "n_events": 25
+  },
+  "Lake Michigan -Ludington, Michigan": {
+    "mean_weight": 2.9856713632200003,
+    "n_events": 20
+  },
+  "Lake Michigan -Manistee Lake, Michigan": {
+    "mean_weight": 3.4327854661333332,
+    "n_events": 6
+  },
+  "Lake Michigan -Manistee River, Michigan": {
+    "mean_weight": 2.9586887552444443,
+    "n_events": 9
+  },
+  "Lake Michigan -Manistee, Michigan": {
+    "mean_weight": 2.97969479672,
+    "n_events": 20
+  },
+  "Lake Michigan -Manistique, Michigan": {
+    "mean_weight": 4.055214231542857,
+    "n_events": 7
+  },
+  "Lake Michigan -Menominee River, Michigan": {
+    "mean_weight": 3.8677541234857142,
+    "n_events": 14
+  },
+  "Lake Michigan -Menominee, Michigan": {
+    "mean_weight": 3.3579196259076927,
+    "n_events": 13
+  },
+  "Lake Michigan -Muskegon, Michigan": {
+    "mean_weight": 2.9906617519500003,
+    "n_events": 16
+  },
+  "Lake Michigan -New Buffalo, Michigan": {
+    "mean_weight": 2.9430171082000003,
+    "n_events": 4
+  },
+  "Lake Michigan -Onekama, Michigan": {
+    "mean_weight": 3.082339805266667,
+    "n_events": 12
+  },
+  "Lake Michigan -Pentwater, Michigan": {
+    "mean_weight": 3.0917345337777777,
+    "n_events": 9
+  },
+  "Lake Michigan -Petoskey, Michigan": {
+    "mean_weight": 4.0850017456,
+    "n_events": 22
+  },
+  "Lake Michigan -Platte Bay, Michigan": {
+    "mean_weight": 3.085115816457143,
+    "n_events": 7
+  },
+  "Lake Michigan -Sable River, Michigan": {
+    "mean_weight": 3.9354006984,
+    "n_events": 1
+  },
+  "Lake Michigan -Saugatuck, Michigan": {
+    "mean_weight": 3.1858582304,
+    "n_events": 1
+  },
+  "Lake Michigan -South Haven, Michigan": {
+    "mean_weight": 2.954561680914286,
+    "n_events": 14
+  },
+  "Lake Michigan -St Joseph River, Michigan": {
+    "mean_weight": 5.814917448,
+    "n_events": 35
+  },
+  "Lake Michigan -St. Joseph River, Michigan": {
+    "mean_weight": 4.1371696807578955,
+    "n_events": 19
+  },
+  "Lake Michigan -Stoney Point, Michigan": {
+    "mean_weight": 3.3615641032,
+    "n_events": 2
+  },
+  "Lake Michigan -West Grand Traverse Bay, Michigan": {
+    "mean_weight": 4.7997911230720005,
+    "n_events": 25
+  },
+  "Lake Michigan -Whitehall-Montague, Michigan": {
+    "mean_weight": 3.053126502775,
+    "n_events": 16
+  },
+  "Lake Michigan -Wilderness State Park, Michigan": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Lake Millicent, Wisconsin": {
+    "mean_weight": 18.545340235466668,
+    "n_events": 3
+  },
+  "Lake Mills, WI": {
+    "mean_weight": 6.7846,
+    "n_events": 2
+  },
+  "Lake Mingo, Illinois": {
+    "mean_weight": 10.125487408533333,
+    "n_events": 3
+  },
+  "Lake Minneola, Florida": {
+    "mean_weight": 4.3675029024,
+    "n_events": 1
+  },
+  "Lake Minnesuing, Wisconsin": {
+    "mean_weight": 4.966088140133333,
+    "n_events": 3
+  },
+  "Lake Mitchell, Michigan": {
+    "mean_weight": 7.7190397464,
+    "n_events": 1
+  },
+  "Lake Monroe, Florida": {
+    "mean_weight": 7.547750147542857,
+    "n_events": 7
+  },
+  "Lake Murray Country , SC": {
+    "mean_weight": 6.363,
+    "n_events": 1
+  },
+  "Lake Murray, Columbia, SC": {
+    "mean_weight": 15.618739999999999,
+    "n_events": 10
+  },
+  "Lake Nancy, Wisconsin": {
+    "mean_weight": 18.4766459484,
+    "n_events": 3
+  },
+  "Lake Nebagamon, Wisconsin": {
+    "mean_weight": 6.370669766933332,
+    "n_events": 3
+  },
+  "Lake Nokomis, Wisconsin": {
+    "mean_weight": 7.0475850158,
+    "n_events": 4
+  },
+  "Lake Noquebay, Wisconsin": {
+    "mean_weight": 10.5834296024,
+    "n_events": 1
+  },
+  "Lake Norman, Charlotte, NC": {
+    "mean_weight": 7.78905,
+    "n_events": 4
+  },
+  "Lake Norman, Cornelius, NC": {
+    "mean_weight": 8.3125,
+    "n_events": 3
+  },
+  "Lake Norman, NC": {
+    "mean_weight": 4.0247,
+    "n_events": 1
+  },
+  "Lake O'the Pines, Texas": {
+    "mean_weight": 16.695541035199998,
+    "n_events": 3
+  },
+  "Lake Oahe Lower, South Dakota": {
+    "mean_weight": 5.534658919200001,
+    "n_events": 3
+  },
+  "Lake Oahe, Mobridge, SD": {
+    "mean_weight": 12.195325,
+    "n_events": 4
+  },
+  "Lake Oahe, North Dakota": {
+    "mean_weight": 2.9341769512,
+    "n_events": 1
+  },
+  "Lake Oahe, Pierre, SD": {
+    "mean_weight": 9.447933333333333,
+    "n_events": 3
+  },
+  "Lake Oahe, South Dakota": {
+    "mean_weight": 5.289814038133334,
+    "n_events": 3
+  },
+  "Lake Odessa, MI": {
+    "mean_weight": 8.0965,
+    "n_events": 1
+  },
+  "Lake Of The Isles, Minnesota": {
+    "mean_weight": 8.424404032,
+    "n_events": 1
+  },
+  "Lake Of The Pines, Wisconsin": {
+    "mean_weight": 3.2394438736000004,
+    "n_events": 3
+  },
+  "Lake Okeechobee, Clewiston, FL": {
+    "mean_weight": 11.1796875,
+    "n_events": 8
+  },
+  "Lake Okeechobee, Florida": {
+    "mean_weight": 10.802949594044444,
+    "n_events": 9
+  },
+  "Lake Okeechobee, Okeechobee, FL": {
+    "mean_weight": 13.56249090909091,
+    "n_events": 11
+  },
+  "Lake Oklawaha, Florida": {
+    "mean_weight": 17.58371826593333,
+    "n_events": 12
+  },
+  "Lake Orion, MI": {
+    "mean_weight": 2.9876,
+    "n_events": 1
+  },
+  "Lake Ouachita, Hot Springs, AR": {
+    "mean_weight": 11.072933333333333,
+    "n_events": 3
+  },
+  "Lake Owen, Wisconsin": {
+    "mean_weight": 20.888516196,
+    "n_events": 3
+  },
+  "Lake Panasoffkee, FL": {
+    "mean_weight": 7.74704,
+    "n_events": 5
+  },
+  "Lake Panasoffkee, Florida": {
+    "mean_weight": 10.6847172876,
+    "n_events": 6
+  },
+  "Lake Placid, FL": {
+    "mean_weight": 6.5136666666666665,
+    "n_events": 3
+  },
+  "Lake Poinsett, South Dakota": {
+    "mean_weight": 4.597348418933334,
+    "n_events": 3
+  },
+  "Lake Powell, Page, AZ": {
+    "mean_weight": 7.479166666666667,
+    "n_events": 3
+  },
+  "Lake Powell, Utah": {
+    "mean_weight": 23.708914861600004,
+    "n_events": 3
+  },
+  "Lake Ray Roberts, Fort Worth, TX": {
+    "mean_weight": 12.8125,
+    "n_events": 5
+  },
+  "Lake Reba, Kentucky": {
+    "mean_weight": 16.1605832784,
+    "n_events": 1
+  },
+  "Lake Sakakawea, North Dakota": {
+    "mean_weight": 3.05525419928,
+    "n_events": 10
+  },
+  "Lake Sam Rayburn, Lufkin, TX": {
+    "mean_weight": 16.35155,
+    "n_events": 4
+  },
+  "Lake Seminole, Bainbridge, GA": {
+    "mean_weight": 12.631944444444445,
+    "n_events": 9
+  },
+  "Lake Sharpe, South Dakota": {
+    "mean_weight": 7.1633564644800005,
+    "n_events": 5
+  },
+  "Lake Shawnee, Kansas": {
+    "mean_weight": 8.529571240533334,
+    "n_events": 3
+  },
+  "Lake Springfield, Illinois": {
+    "mean_weight": 15.812571794399998,
+    "n_events": 1
+  },
+  "Lake St. Clair, Detroit, MI": {
+    "mean_weight": 16.281242857142857,
+    "n_events": 7
+  },
+  "Lake St. Clair, Macomb County, MI": {
+    "mean_weight": 19.2555,
+    "n_events": 17
+  },
+  "Lake St. Croix, Minnesota": {
+    "mean_weight": 4.568017068800001,
+    "n_events": 2
+  },
+  "Lake Storey, Illinois": {
+    "mean_weight": 7.166539135600001,
+    "n_events": 1
+  },
+  "Lake Superior -Au Train, Michigan": {
+    "mean_weight": 2.9818195084,
+    "n_events": 2
+  },
+  "Lake Superior -Black River Harbor, Michigan": {
+    "mean_weight": 3.0071209296000005,
+    "n_events": 3
+  },
+  "Lake Superior -Carp River, Michigan": {
+    "mean_weight": 2.9995304696,
+    "n_events": 1
+  },
+  "Lake Superior -Dead River, Michigan": {
+    "mean_weight": 3.44562471192,
+    "n_events": 10
+  },
+  "Lake Superior -Detroit Riber, Michigan": {
+    "mean_weight": 5.1115470632,
+    "n_events": 1
+  },
+  "Lake Superior -Detroit River, Michigan": {
+    "mean_weight": 10.397380347155554,
+    "n_events": 9
+  },
+  "Lake Superior -Eagle Harbor, Michigan": {
+    "mean_weight": 2.9692466512,
+    "n_events": 1
+  },
+  "Lake Superior -Grand Marais, Michigan": {
+    "mean_weight": 2.9563438273600005,
+    "n_events": 5
+  },
+  "Lake Superior -Keweenaw Bay, Michigan": {
+    "mean_weight": 2.936800306666667,
+    "n_events": 3
+  },
+  "Lake Superior -Marquette, Michigan": {
+    "mean_weight": 2.9460860050285715,
+    "n_events": 7
+  },
+  "Lake Superior -Munising, Michigan": {
+    "mean_weight": 2.9741861475058826,
+    "n_events": 17
+  },
+  "Lake Superior -Ontonagon, Michigan": {
+    "mean_weight": 3.2296382660000003,
+    "n_events": 8
+  },
+  "Lake Superior -St. Mary'S River, Michigan": {
+    "mean_weight": 3.4778506464000003,
+    "n_events": 8
+  },
+  "Lake Superior -Traverse Bay, Michigan": {
+    "mean_weight": 2.96088000272,
+    "n_events": 5
+  },
+  "Lake Sutton, North Carolina": {
+    "mean_weight": 18.9189446104,
+    "n_events": 1
+  },
+  "Lake Talquin, Florida": {
+    "mean_weight": 5.448118275333333,
+    "n_events": 6
+  },
+  "Lake Tarpon, Florida": {
+    "mean_weight": 11.76891160544,
+    "n_events": 5
+  },
+  "Lake Tenkiller, Cookson, OK": {
+    "mean_weight": 10.167975,
+    "n_events": 8
+  },
+  "Lake Texoma, Durant, OK": {
+    "mean_weight": 11.40625,
+    "n_events": 4
+  },
+  "Lake Thompson, Wisconsin": {
+    "mean_weight": 4.188965241466668,
+    "n_events": 3
+  },
+  "Lake Tohopekaliga, Florida": {
+    "mean_weight": 17.664905850266667,
+    "n_events": 12
+  },
+  "Lake Tohopekaliga, Kissimmee, FL": {
+    "mean_weight": 7.75,
+    "n_events": 4
+  },
+  "Lake Trafford, Florida": {
+    "mean_weight": 5.1214352744000005,
+    "n_events": 9
+  },
+  "Lake Travis, Jonestown, TX": {
+    "mean_weight": 10.145833333333334,
+    "n_events": 3
+  },
+  "Lake Tyler, Texas": {
+    "mean_weight": 14.806806508,
+    "n_events": 1
+  },
+  "Lake Wales, FL": {
+    "mean_weight": 4.1805,
+    "n_events": 2
+  },
+  "Lake Washington, Florida": {
+    "mean_weight": 6.153009269333334,
+    "n_events": 3
+  },
+  "Lake Waubesa, Wisconsin": {
+    "mean_weight": 9.282015812,
+    "n_events": 1
+  },
+  "Lake Weir, Florida": {
+    "mean_weight": 18.4216271136,
+    "n_events": 1
+  },
+  "Lake Weohyakapka, Florida": {
+    "mean_weight": 7.2400853802,
+    "n_events": 4
+  },
+  "Lake Winnebago, Menasha, WI": {
+    "mean_weight": 8.677066666666667,
+    "n_events": 3
+  },
+  "Lake Wintergreen, Connecticut": {
+    "mean_weight": 5.438496404,
+    "n_events": 1
+  },
+  "Lake Wissota, Wisconsin": {
+    "mean_weight": 10.3843373698,
+    "n_events": 2
+  },
+  "Lake Wylie, SC": {
+    "mean_weight": 4.4746,
+    "n_events": 1
+  },
+  "Lake Zoar, Connecticut": {
+    "mean_weight": 16.329461252,
+    "n_events": 1
+  },
+  "Lake of the Ozarks, MO": {
+    "mean_weight": 5.596299999999999,
+    "n_events": 2
+  },
+  "Lake of the Ozarks, Osage Beach, MO": {
+    "mean_weight": 11.5625,
+    "n_events": 3
+  },
+  "Lake of the Woods, Illinois": {
+    "mean_weight": 4.97215825,
+    "n_events": 1
+  },
+  "Lakefield, Ontario": {
+    "mean_weight": 7.74,
+    "n_events": 1
+  },
+  "Lakeland, FL": {
+    "mean_weight": 7.11815,
+    "n_events": 2
+  },
+  "Lakeport, CA": {
+    "mean_weight": 12.360566666666665,
+    "n_events": 3
+  },
+  "Lakeshore, MN": {
+    "mean_weight": 18.64,
+    "n_events": 1
+  },
+  "Lakeside Marblehead, OH": {
+    "mean_weight": 5.5212,
+    "n_events": 1
+  },
+  "Lakeside, OR": {
+    "mean_weight": 9.1947,
+    "n_events": 1
+  },
+  "Lakeview, OH": {
+    "mean_weight": 2.3048,
+    "n_events": 1
+  },
+  "Lakewood Lake, Connecticut": {
+    "mean_weight": 6.536576972800001,
+    "n_events": 1
+  },
+  "Lakewood Lake, Kansas": {
+    "mean_weight": 3.6433284744,
+    "n_events": 1
+  },
+  "Lanier, GA": {
+    "mean_weight": 9.3187,
+    "n_events": 1
+  },
+  "Lapeer, MI": {
+    "mean_weight": 5.6613,
+    "n_events": 5
+  },
+  "Larocque Pond, Kansas": {
+    "mean_weight": 13.1204761816,
+    "n_events": 1
+  },
+  "Las Vegas, NV": {
+    "mean_weight": 6.666114285714286,
+    "n_events": 7
+  },
+  "Laurel Lake, Wisconsin": {
+    "mean_weight": 5.1349903152,
+    "n_events": 2
+  },
+  "Laurel River Lake, Kentucky": {
+    "mean_weight": 11.0885232056,
+    "n_events": 3
+  },
+  "Laurel, MD": {
+    "mean_weight": 4.0319,
+    "n_events": 3
+  },
+  "Laurel, MS": {
+    "mean_weight": 6.4226,
+    "n_events": 1
+  },
+  "Lavigne, ON": {
+    "mean_weight": 10.6682,
+    "n_events": 1
+  },
+  "Lavon, Texas": {
+    "mean_weight": 3.9622262552,
+    "n_events": 1
+  },
+  "Lawrence, KS": {
+    "mean_weight": 5.2228,
+    "n_events": 1
+  },
+  "Lay Lake, Columbiana, AL": {
+    "mean_weight": 9.59375,
+    "n_events": 2
+  },
+  "Lay Lake, Shelby County, AL": {
+    "mean_weight": 9.383942857142857,
+    "n_events": 7
+  },
+  "Le-Aqua-Na, Illinois": {
+    "mean_weight": 7.689279644799999,
+    "n_events": 1
+  },
+  "Leavenworth State Fishing Lake, Kansas": {
+    "mean_weight": 9.8022381352,
+    "n_events": 1
+  },
+  "Lebo City Lake, Kansas": {
+    "mean_weight": 8.9332204696,
+    "n_events": 1
+  },
+  "Lecompte, LA": {
+    "mean_weight": 2.9876,
+    "n_events": 1
+  },
+  "Leech Lake, Walker, MN": {
+    "mean_weight": 13.20315,
+    "n_events": 4
+  },
+  "Leech, Minnesota": {
+    "mean_weight": 3.3264136736444443,
+    "n_events": 9
+  },
+  "Leesburg, FL": {
+    "mean_weight": 6.6054,
+    "n_events": 5
+  },
+  "Leesville, LA": {
+    "mean_weight": 7.3419,
+    "n_events": 1
+  },
+  "Leland River, Michigan": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Leon, Texas": {
+    "mean_weight": 13.7608737276,
+    "n_events": 1
+  },
+  "Leonard, MI": {
+    "mean_weight": 3.3519500000000004,
+    "n_events": 2
+  },
+  "Lewes, DE": {
+    "mean_weight": 3.7426,
+    "n_events": 1
+  },
+  "Lewis Smith Lake, Cullman, AL": {
+    "mean_weight": 9.99376,
+    "n_events": 5
+  },
+  "Lewis Smith Lake, Jasper, AL": {
+    "mean_weight": 7.56874,
+    "n_events": 5
+  },
+  "Lewisburg, PA": {
+    "mean_weight": 18.27385,
+    "n_events": 2
+  },
+  "Lewistown, PA": {
+    "mean_weight": 13.562,
+    "n_events": 1
+  },
+  "Lewisville Lake, Lewisville, TX": {
+    "mean_weight": 5.375,
+    "n_events": 2
+  },
+  "Lewisville, TX": {
+    "mean_weight": 5.589,
+    "n_events": 1
+  },
+  "Lewisville, Texas": {
+    "mean_weight": 6.5143090038,
+    "n_events": 2
+  },
+  "Lexington , NC": {
+    "mean_weight": 6.9915,
+    "n_events": 1
+  },
+  "Lexington, NC": {
+    "mean_weight": 6.0442,
+    "n_events": 1
+  },
+  "Lexington, VA": {
+    "mean_weight": 4.333933333333333,
+    "n_events": 3
+  },
+  "Lily Lake, Wisconsin": {
+    "mean_weight": 10.7666007712,
+    "n_events": 1
+  },
+  "Lime Lake, Michigan": {
+    "mean_weight": 3.4046124456,
+    "n_events": 1
+  },
+  "Lincoln Trail, Illinois": {
+    "mean_weight": 8.6012323672,
+    "n_events": 1
+  },
+  "Lindsay, Ontario": {
+    "mean_weight": 4.78,
+    "n_events": 1
+  },
+  "Linesville , PA": {
+    "mean_weight": 5.0526,
+    "n_events": 1
+  },
+  "Linesville, PA": {
+    "mean_weight": 7.3218,
+    "n_events": 2
+  },
+  "Linwood, Minnesota": {
+    "mean_weight": 4.0174495516,
+    "n_events": 2
+  },
+  "Lipsett Lake, Wisconsin": {
+    "mean_weight": 16.5886235594,
+    "n_events": 8
+  },
+  "Little Arbor Vitae Lake, Wisconsin": {
+    "mean_weight": 9.6176045428,
+    "n_events": 3
+  },
+  "Little Boy, Minnesota": {
+    "mean_weight": 3.732365446,
+    "n_events": 1
+  },
+  "Little Fork Lake, Wisconsin": {
+    "mean_weight": 4.2292972892,
+    "n_events": 2
+  },
+  "Little Grassy Lake, Illinois": {
+    "mean_weight": 8.7933659976,
+    "n_events": 2
+  },
+  "Little John Lake, Wisconsin": {
+    "mean_weight": 9.5355754328,
+    "n_events": 1
+  },
+  "Little Mantrap, Minnesota": {
+    "mean_weight": 8.20739149648,
+    "n_events": 5
+  },
+  "Little Mcdonald, Minnesota": {
+    "mean_weight": 6.5259034532,
+    "n_events": 2
+  },
+  "Little Pine, Minnesota": {
+    "mean_weight": 5.731723779199999,
+    "n_events": 2
+  },
+  "Little Portage Lake, Michigan": {
+    "mean_weight": 6.868823534800001,
+    "n_events": 1
+  },
+  "Little Rock Lake, Wisconsin": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Little Rock, Minnesota": {
+    "mean_weight": 3.185304168,
+    "n_events": 1
+  },
+  "Little Round Lake, Wisconsin": {
+    "mean_weight": 8.8809494834,
+    "n_events": 2
+  },
+  "Little Saint Germain Lake, Wisconsin": {
+    "mean_weight": 7.410358476133333,
+    "n_events": 3
+  },
+  "Little Star Lake, Wisconsin": {
+    "mean_weight": 3.9781227560000003,
+    "n_events": 2
+  },
+  "Little Tomahawk Lake, Wisconsin": {
+    "mean_weight": 3.1015089,
+    "n_events": 1
+  },
+  "Little Vermilion, Minnesota": {
+    "mean_weight": 6.134137642514285,
+    "n_events": 7
+  },
+  "Little Webb, Minnesota": {
+    "mean_weight": 6.7925488136,
+    "n_events": 1
+  },
+  "Little Woman, Minnesota": {
+    "mean_weight": 10.0425841496,
+    "n_events": 1
+  },
+  "Little Yellow Lake, Wisconsin": {
+    "mean_weight": 6.704337912800001,
+    "n_events": 2
+  },
+  "Little rock, AR": {
+    "mean_weight": 6.1813,
+    "n_events": 1
+  },
+  "Littleton, CO": {
+    "mean_weight": 3.8234,
+    "n_events": 2
+  },
+  "Littleton, NC": {
+    "mean_weight": 14.1549,
+    "n_events": 1
+  },
+  "Liverpool, PA": {
+    "mean_weight": 11.9501,
+    "n_events": 1
+  },
+  "Livingston , TN": {
+    "mean_weight": 2.9876,
+    "n_events": 1
+  },
+  "Livingston, Texas": {
+    "mean_weight": 5.502968326266667,
+    "n_events": 3
+  },
+  "Lochloosa Lake, Florida": {
+    "mean_weight": 4.31725694096,
+    "n_events": 10
+  },
+  "Lodi, CA": {
+    "mean_weight": 7.622413333333334,
+    "n_events": 75
+  },
+  "Loeb, Minnesota": {
+    "mean_weight": 5.2460476944,
+    "n_events": 1
+  },
+  "Logan Martin Lake, Lincoln, AL": {
+    "mean_weight": 9.40624,
+    "n_events": 5
+  },
+  "Logan Martin Lake, Pell City, AL": {
+    "mean_weight": 8.40625,
+    "n_events": 2
+  },
+  "Logan, UT": {
+    "mean_weight": 3.2405,
+    "n_events": 2
+  },
+  "Lone Star, Texas": {
+    "mean_weight": 25.0,
+    "n_events": 2
+  },
+  "Lonestar Lake, Kansas": {
+    "mean_weight": 14.9194202592,
+    "n_events": 1
+  },
+  "Long Beach, CA": {
+    "mean_weight": 1.8578,
+    "n_events": 1
+  },
+  "Long Island, NY": {
+    "mean_weight": 9.6653,
+    "n_events": 1
+  },
+  "Long Lake, Michigan": {
+    "mean_weight": 7.090163154133333,
+    "n_events": 3
+  },
+  "Long Lake, Wisconsin": {
+    "mean_weight": 9.286578389371428,
+    "n_events": 14
+  },
+  "Long, Minnesota": {
+    "mean_weight": 15.752631555199999,
+    "n_events": 3
+  },
+  "Loon Lake, Michigan": {
+    "mean_weight": 3.2600316232,
+    "n_events": 1
+  },
+  "Lorton, VA": {
+    "mean_weight": 2.7933,
+    "n_events": 1
+  },
+  "Los Angeles, CA": {
+    "mean_weight": 4.61004,
+    "n_events": 5
+  },
+  "Lost Canoe Lake, Wisconsin": {
+    "mean_weight": 4.3810970584,
+    "n_events": 1
+  },
+  "Lost Creek, Texas": {
+    "mean_weight": 18.2089299364,
+    "n_events": 2
+  },
+  "Lost Land Lake, Wisconsin": {
+    "mean_weight": 5.4256909552,
+    "n_events": 2
+  },
+  "Louisburg, KS": {
+    "mean_weight": 1.4047,
+    "n_events": 1
+  },
+  "Loveland, CO": {
+    "mean_weight": 3.2628500000000003,
+    "n_events": 6
+  },
+  "Lovewell Reservoir, Kansas": {
+    "mean_weight": 2.9677292784000002,
+    "n_events": 2
+  },
+  "Lower Buckatabon Lake, Wisconsin": {
+    "mean_weight": 17.4313144656,
+    "n_events": 1
+  },
+  "Lower Eau Claire Lake, Wisconsin": {
+    "mean_weight": 7.6095328928,
+    "n_events": 4
+  },
+  "Lower Grand River, Michigan": {
+    "mean_weight": 3.0257237684000002,
+    "n_events": 2
+  },
+  "Lower Hay, Minnesota": {
+    "mean_weight": 8.135159655999999,
+    "n_events": 2
+  },
+  "Lower Prior, Minnesota": {
+    "mean_weight": 6.06351235,
+    "n_events": 2
+  },
+  "Lower South Long, Minnesota": {
+    "mean_weight": 5.877082474400001,
+    "n_events": 3
+  },
+  "Lower Trelipe, Minnesota": {
+    "mean_weight": 5.7410246592,
+    "n_events": 2
+  },
+  "Lower Turtle Lake, Wisconsin": {
+    "mean_weight": 7.57621702,
+    "n_events": 1
+  },
+  "Lucas, KY": {
+    "mean_weight": 3.48475,
+    "n_events": 2
+  },
+  "Lugoff, SC": {
+    "mean_weight": 3.4738,
+    "n_events": 1
+  },
+  "Lynx Lake (WI_Vil)_1, Wisconsin": {
+    "mean_weight": 11.720664583066666,
+    "n_events": 3
+  },
+  "Lynx Lake, Wisconsin": {
+    "mean_weight": 3.4624330458,
+    "n_events": 2
+  },
+  "MANDEVILLE, LA": {
+    "mean_weight": 2.6246,
+    "n_events": 1
+  },
+  "Maceday Lake, Michigan": {
+    "mean_weight": 13.225571531999998,
+    "n_events": 1
+  },
+  "Mactaquac, NB": {
+    "mean_weight": 7.705,
+    "n_events": 1
+  },
+  "Madeline Lake, Wisconsin": {
+    "mean_weight": 15.1185008048,
+    "n_events": 2
+  },
+  "Madera, CA": {
+    "mean_weight": 3.2176,
+    "n_events": 1
+  },
+  "Madill, OK": {
+    "mean_weight": 9.3912,
+    "n_events": 1
+  },
+  "Madison Heights, VA": {
+    "mean_weight": 4.1443,
+    "n_events": 1
+  },
+  "Madison, MS": {
+    "mean_weight": 8.619499999999999,
+    "n_events": 2
+  },
+  "Madison, Minnesota": {
+    "mean_weight": 5.199522136000001,
+    "n_events": 2
+  },
+  "Madison, WI": {
+    "mean_weight": 7.566750000000001,
+    "n_events": 4
+  },
+  "Madisonville, LA": {
+    "mean_weight": 6.7078,
+    "n_events": 1
+  },
+  "Magnor Lake, Wisconsin": {
+    "mean_weight": 10.0588641,
+    "n_events": 1
+  },
+  "Mahnomen 2, Minnesota": {
+    "mean_weight": 11.5839682536,
+    "n_events": 1
+  },
+  "Maiden Lake, Wisconsin": {
+    "mean_weight": 14.519877225199998,
+    "n_events": 1
+  },
+  "Maitland, FL": {
+    "mean_weight": 3.2176,
+    "n_events": 1
+  },
+  "Mallard Lake, Illinois": {
+    "mean_weight": 6.9670248544,
+    "n_events": 1
+  },
+  "Maltby #2, Connecticut": {
+    "mean_weight": 7.215810008,
+    "n_events": 1
+  },
+  "Maltby #3, Connecticut": {
+    "mean_weight": 15.1393023192,
+    "n_events": 1
+  },
+  "Malvern, AR": {
+    "mean_weight": 3.2417,
+    "n_events": 1
+  },
+  "Mamie Lake, Wisconsin": {
+    "mean_weight": 4.1809258692,
+    "n_events": 1
+  },
+  "Manila, UT": {
+    "mean_weight": 3.1046,
+    "n_events": 1
+  },
+  "Manistee Lake, Michigan": {
+    "mean_weight": 3.1378387544,
+    "n_events": 1
+  },
+  "Manistee River, Michigan": {
+    "mean_weight": 3.6919510576000003,
+    "n_events": 3
+  },
+  "Manitowish Lake, Wisconsin": {
+    "mean_weight": 4.452012568,
+    "n_events": 2
+  },
+  "Manning, SC": {
+    "mean_weight": 7.49815,
+    "n_events": 2
+  },
+  "Mansfield Hollow, Connecticut": {
+    "mean_weight": 7.5770287512,
+    "n_events": 29
+  },
+  "Mansfield, OH": {
+    "mean_weight": 6.5875,
+    "n_events": 1
+  },
+  "Manson Lake, Wisconsin": {
+    "mean_weight": 15.2905624158,
+    "n_events": 2
+  },
+  "Mantua Reservoir, Utah": {
+    "mean_weight": 9.1502219712,
+    "n_events": 1
+  },
+  "Mantua, UT": {
+    "mean_weight": 4.479166666666667,
+    "n_events": 6
+  },
+  "Manuella, Minnesota": {
+    "mean_weight": 5.2241306428000005,
+    "n_events": 2
+  },
+  "Many Point, Minnesota": {
+    "mean_weight": 5.8880780216,
+    "n_events": 1
+  },
+  "Many, LA": {
+    "mean_weight": 4.04945,
+    "n_events": 2
+  },
+  "Maple (MN_Wri)_1, Minnesota": {
+    "mean_weight": 3.0409710056000003,
+    "n_events": 1
+  },
+  "Maple, Minnesota": {
+    "mean_weight": 7.481497173600001,
+    "n_events": 2
+  },
+  "Margaret (MN_Cas)_1, Minnesota": {
+    "mean_weight": 5.7033608048,
+    "n_events": 1
+  },
+  "Marine Creek, Texas": {
+    "mean_weight": 10.4529940288,
+    "n_events": 1
+  },
+  "Marion Reservoir, Kansas": {
+    "mean_weight": 2.970841976,
+    "n_events": 1
+  },
+  "Marion, Minnesota": {
+    "mean_weight": 4.44071106384,
+    "n_events": 5
+  },
+  "Mariposa County, CA": {
+    "mean_weight": 5.1174,
+    "n_events": 1
+  },
+  "Marjella Lake, Michigan": {
+    "mean_weight": 6.3701146064,
+    "n_events": 1
+  },
+  "Marmora, ON": {
+    "mean_weight": 13.42,
+    "n_events": 1
+  },
+  "Marquette, WI, WI": {
+    "mean_weight": 9.2108,
+    "n_events": 1
+  },
+  "Martin Creek, Texas": {
+    "mean_weight": 23.3899584892,
+    "n_events": 3
+  },
+  "Martin, Minnesota": {
+    "mean_weight": 4.0300191956,
+    "n_events": 2
+  },
+  "Mary, Minnesota": {
+    "mean_weight": 4.191903201085714,
+    "n_events": 7
+  },
+  "Marysville, PA": {
+    "mean_weight": 5.6527,
+    "n_events": 1
+  },
+  "Mashapaug Lake, Connecticut": {
+    "mean_weight": 7.399671394199999,
+    "n_events": 6
+  },
+  "Matthews Lake, Wisconsin": {
+    "mean_weight": 16.485703223199998,
+    "n_events": 2
+  },
+  "Mazaska, Minnesota": {
+    "mean_weight": 3.9146866364,
+    "n_events": 2
+  },
+  "McAdam, NB": {
+    "mean_weight": 6.2822,
+    "n_events": 1
+  },
+  "McComb , MS": {
+    "mean_weight": 6.4578,
+    "n_events": 1
+  },
+  "McComb, MS": {
+    "mean_weight": 5.9068,
+    "n_events": 1
+  },
+  "McConaughy Reservoir, Nebraska": {
+    "mean_weight": 5.074395105200001,
+    "n_events": 5
+  },
+  "McCook, CO": {
+    "mean_weight": 4.5646,
+    "n_events": 1
+  },
+  "McLeansboro Lake, Illinois": {
+    "mean_weight": 5.1604741,
+    "n_events": 1
+  },
+  "Mccann Lake, Wisconsin": {
+    "mean_weight": 5.7168434152,
+    "n_events": 1
+  },
+  "Mccarrons, Minnesota": {
+    "mean_weight": 3.3750985656,
+    "n_events": 1
+  },
+  "Mckenzie Lake, Wisconsin": {
+    "mean_weight": 13.148904946933333,
+    "n_events": 3
+  },
+  "Mcpherson State Fishing Lake, Kansas": {
+    "mean_weight": 15.535493259999999,
+    "n_events": 2
+  },
+  "Meadville, MS": {
+    "mean_weight": 1.5344,
+    "n_events": 1
+  },
+  "Meadville, PA": {
+    "mean_weight": 7.7329,
+    "n_events": 1
+  },
+  "Medicine Lake, Wisconsin": {
+    "mean_weight": 3.8698859864000004,
+    "n_events": 2
+  },
+  "Medicine, Minnesota": {
+    "mean_weight": 5.0429644992,
+    "n_events": 4
+  },
+  "Melissa, Minnesota": {
+    "mean_weight": 3.9883279256,
+    "n_events": 4
+  },
+  "Melrose, FL": {
+    "mean_weight": 6.993333333333333,
+    "n_events": 3
+  },
+  "Melton Hill Reservoir, Tennessee": {
+    "mean_weight": 11.2457529928,
+    "n_events": 2
+  },
+  "Melvern, KS": {
+    "mean_weight": 12.84285,
+    "n_events": 2
+  },
+  "Menominee, MI": {
+    "mean_weight": 2.8909,
+    "n_events": 1
+  },
+  "Mercer, WI": {
+    "mean_weight": 12.6659,
+    "n_events": 1
+  },
+  "Meredith, Texas": {
+    "mean_weight": 3.6763066811428575,
+    "n_events": 7
+  },
+  "Mermet Lake, Illinois": {
+    "mean_weight": 4.9004997024,
+    "n_events": 3
+  },
+  "Merrimac, WI": {
+    "mean_weight": 6.2822,
+    "n_events": 1
+  },
+  "Merritt Reservoir, Nebraska": {
+    "mean_weight": 3.8322604961,
+    "n_events": 4
+  },
+  "Metonga Lake, Wisconsin": {
+    "mean_weight": 8.450875775911111,
+    "n_events": 9
+  },
+  "Miami State Fishing Lake, Kansas": {
+    "mean_weight": 6.6595803104,
+    "n_events": 1
+  },
+  "Miccosukee , FL": {
+    "mean_weight": 7.646766666666667,
+    "n_events": 3
+  },
+  "Michigamme Reservoir, Michigan": {
+    "mean_weight": 3.6541317458,
+    "n_events": 2
+  },
+  "Mickey Lake, Michigan": {
+    "mean_weight": 13.7554796696,
+    "n_events": 1
+  },
+  "Middle Creek State Fishing Lake, Kansas": {
+    "mean_weight": 6.08705542,
+    "n_events": 1
+  },
+  "Middle Eau Claire Lake, Wisconsin": {
+    "mean_weight": 8.9928464474,
+    "n_events": 8
+  },
+  "Middle Mckenzie Lake, Wisconsin": {
+    "mean_weight": 21.1895695053,
+    "n_events": 4
+  },
+  "Milam, TX": {
+    "mean_weight": 7.1513,
+    "n_events": 1
+  },
+  "Milford , IA": {
+    "mean_weight": 9.6171,
+    "n_events": 1
+  },
+  "Milford Lake, Junction City, KS": {
+    "mean_weight": 9.4062,
+    "n_events": 2
+  },
+  "Milford Reservoir, Kansas": {
+    "mean_weight": 4.4154393688,
+    "n_events": 1
+  },
+  "Milford, IA": {
+    "mean_weight": 11.438242857142857,
+    "n_events": 7
+  },
+  "Milford, MI": {
+    "mean_weight": 7.2274,
+    "n_events": 1
+  },
+  "Mille Lacs Lake, Mille Lacs, MN": {
+    "mean_weight": 19.9375,
+    "n_events": 3
+  },
+  "Mille Lacs Lake, Onamia, MN": {
+    "mean_weight": 20.218733333333333,
+    "n_events": 3
+  },
+  "Mille Lacs, Minnesota": {
+    "mean_weight": 3.3100746532,
+    "n_events": 29
+  },
+  "Milledgeville, GA": {
+    "mean_weight": 5.721933333333333,
+    "n_events": 6
+  },
+  "Millers Creek, Texas": {
+    "mean_weight": 4.6884898316,
+    "n_events": 1
+  },
+  "Millwood Lake, Arkansas": {
+    "mean_weight": 6.0249912092,
+    "n_events": 1
+  },
+  "Milton, NH": {
+    "mean_weight": 7.6387,
+    "n_events": 1
+  },
+  "Milton, ON": {
+    "mean_weight": 10.582112500000001,
+    "n_events": 8
+  },
+  "Miltona, Minnesota": {
+    "mean_weight": 4.126381892,
+    "n_events": 6
+  },
+  "Mineral Lake, Wisconsin": {
+    "mean_weight": 6.5078400144,
+    "n_events": 1
+  },
+  "Minersville Reservoir, Utah": {
+    "mean_weight": 6.1260476368,
+    "n_events": 1
+  },
+  "Minnetonka, Minnesota": {
+    "mean_weight": 6.1662656082,
+    "n_events": 2
+  },
+  "Minnewaska, Minnesota": {
+    "mean_weight": 3.634662909,
+    "n_events": 2
+  },
+  "Minocqua Lake, Wisconsin": {
+    "mean_weight": 9.145369350933333,
+    "n_events": 3
+  },
+  "Minong Flowage, Wisconsin": {
+    "mean_weight": 7.2944960328,
+    "n_events": 1
+  },
+  "Mississippi River, La Crosse, WI": {
+    "mean_weight": 12.899154545454547,
+    "n_events": 22
+  },
+  "Missouri River, North Dakota": {
+    "mean_weight": 2.9696016297600005,
+    "n_events": 5
+  },
+  "Moccassin, Minnesota": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Moen Lake, Wisconsin": {
+    "mean_weight": 4.2057750528,
+    "n_events": 1
+  },
+  "Mohawk Pond, Connecticut": {
+    "mean_weight": 4.4641378856000005,
+    "n_events": 1
+  },
+  "Mohegan Park Pond, Connecticut": {
+    "mean_weight": 3.475808536,
+    "n_events": 1
+  },
+  "Moncks Corner, SC": {
+    "mean_weight": 3.1214999999999997,
+    "n_events": 3
+  },
+  "Monee Reservoir, Illinois": {
+    "mean_weight": 6.359952148,
+    "n_events": 1
+  },
+  "Moneta, VA": {
+    "mean_weight": 2.1222499999999997,
+    "n_events": 2
+  },
+  "Monterey, MA": {
+    "mean_weight": 3.7777,
+    "n_events": 1
+  },
+  "Montgomery , IN": {
+    "mean_weight": 7.0761,
+    "n_events": 1
+  },
+  "Montgomery State Fishing Lake, Kansas": {
+    "mean_weight": 5.572665774,
+    "n_events": 2
+  },
+  "Monticello , MS": {
+    "mean_weight": 6.1228,
+    "n_events": 1
+  },
+  "Monticello, Texas": {
+    "mean_weight": 13.123108608266667,
+    "n_events": 3
+  },
+  "Moodus Reservoir, Connecticut": {
+    "mean_weight": 7.979881704906665,
+    "n_events": 15
+  },
+  "Mooresville, NC": {
+    "mean_weight": 6.18976,
+    "n_events": 5
+  },
+  "Moose Lake, Wisconsin": {
+    "mean_weight": 3.2083991648000003,
+    "n_events": 1
+  },
+  "Morgan, UT": {
+    "mean_weight": 2.3373999999999997,
+    "n_events": 2
+  },
+  "Morrilton, AR": {
+    "mean_weight": 5.1296333333333335,
+    "n_events": 3
+  },
+  "Moses Lake, WA": {
+    "mean_weight": 12.4299,
+    "n_events": 2
+  },
+  "Moss, Texas": {
+    "mean_weight": 17.340416308800002,
+    "n_events": 1
+  },
+  "Mound City Lake, Kansas": {
+    "mean_weight": 10.6538534112,
+    "n_events": 1
+  },
+  "Mound City, KS": {
+    "mean_weight": 10.6189,
+    "n_events": 1
+  },
+  "Mountain Home, AR": {
+    "mean_weight": 5.8909,
+    "n_events": 1
+  },
+  "Mountain Home, ID": {
+    "mean_weight": 5.7779,
+    "n_events": 1
+  },
+  "Mt Tom Pond, Connecticut": {
+    "mean_weight": 3.7676868776,
+    "n_events": 1
+  },
+  "Mud Lake, Wisconsin": {
+    "mean_weight": 25.0,
+    "n_events": 3
+  },
+  "Mule, Minnesota": {
+    "mean_weight": 25.0,
+    "n_events": 2
+  },
+  "Mullett Lake, Michigan": {
+    "mean_weight": 5.498496858799999,
+    "n_events": 1
+  },
+  "Murphysboro Lake, Illinois": {
+    "mean_weight": 7.625066766000001,
+    "n_events": 2
+  },
+  "Murray Lake, Michigan": {
+    "mean_weight": 11.5756607512,
+    "n_events": 1
+  },
+  "Murray, SC": {
+    "mean_weight": 13.9822,
+    "n_events": 1
+  },
+  "Murvaul, Texas": {
+    "mean_weight": 6.881268529066666,
+    "n_events": 3
+  },
+  "Muscle Shoals, AL, TN": {
+    "mean_weight": 6.0776,
+    "n_events": 1
+  },
+  "Muskallonge Lake, Michigan": {
+    "mean_weight": 3.7016750012,
+    "n_events": 1
+  },
+  "Muskego, WI": {
+    "mean_weight": 5.2692,
+    "n_events": 3
+  },
+  "Muskegon Lake, Michigan": {
+    "mean_weight": 3.8191078448,
+    "n_events": 2
+  },
+  "Muskegon River, Michigan": {
+    "mean_weight": 3.3191987440533333,
+    "n_events": 15
+  },
+  "Muskellunge Lake, Wisconsin": {
+    "mean_weight": 6.5888874976,
+    "n_events": 1
+  },
+  "Muskoka, ON": {
+    "mean_weight": 8.31,
+    "n_events": 1
+  },
+  "NEW PHILADELPHIA, OH": {
+    "mean_weight": 2.0229,
+    "n_events": 1
+  },
+  "Nacogdoches, TX": {
+    "mean_weight": 6.119,
+    "n_events": 1
+  },
+  "Nacogdoches, Texas": {
+    "mean_weight": 22.3386989368,
+    "n_events": 4
+  },
+  "Naconiche, Texas": {
+    "mean_weight": 18.712668611866665,
+    "n_events": 3
+  },
+  "Namakan, Minnesota": {
+    "mean_weight": 5.28473098,
+    "n_events": 7
+  },
+  "Namekagon Lake, Wisconsin": {
+    "mean_weight": 3.6245409288,
+    "n_events": 2
+  },
+  "Namekagon River, Wisconsin": {
+    "mean_weight": 4.4509362968,
+    "n_events": 1
+  },
+  "Nancy, KY": {
+    "mean_weight": 4.995,
+    "n_events": 1
+  },
+  "Napa, CA": {
+    "mean_weight": 8.062825,
+    "n_events": 4
+  },
+  "Napanee, ON": {
+    "mean_weight": 8.0338,
+    "n_events": 2
+  },
+  "Nashotah, WI": {
+    "mean_weight": 9.3457,
+    "n_events": 1
+  },
+  "Nashua, NH": {
+    "mean_weight": 9.2108,
+    "n_events": 1
+  },
+  "Nashville, TN": {
+    "mean_weight": 13.0465,
+    "n_events": 1
+  },
+  "Nasworthy, Texas": {
+    "mean_weight": 5.976045086533333,
+    "n_events": 3
+  },
+  "National Sports Center Pond, Minnesota": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Nawakwa Lake, Michigan": {
+    "mean_weight": 2.9890424688,
+    "n_events": 1
+  },
+  "Nebo State Fishing Lake, Kansas": {
+    "mean_weight": 6.667224107199999,
+    "n_events": 1
+  },
+  "Neely Henry Lake, Gadsden, AL": {
+    "mean_weight": 8.39374,
+    "n_events": 5
+  },
+  "Nelson Lake, Wisconsin": {
+    "mean_weight": 14.829442415466668,
+    "n_events": 3
+  },
+  "New Braunfels, TX": {
+    "mean_weight": 5.9396,
+    "n_events": 1
+  },
+  "New Post, WI": {
+    "mean_weight": 10.6603,
+    "n_events": 1
+  },
+  "New Roads, LA": {
+    "mean_weight": 4.40845,
+    "n_events": 6
+  },
+  "New Underwood Dam, South Dakota": {
+    "mean_weight": 7.41689276,
+    "n_events": 1
+  },
+  "New Vernon, PA": {
+    "mean_weight": 5.079,
+    "n_events": 1
+  },
+  "New and Greenbrier Rivers and Bluestone Lake, WV": {
+    "mean_weight": 2.2035,
+    "n_events": 1
+  },
+  "Newaygo, MI": {
+    "mean_weight": 3.7565,
+    "n_events": 1
+  },
+  "Newellton, LA": {
+    "mean_weight": 5.0839,
+    "n_events": 1
+  },
+  "Newnans Lake, Florida": {
+    "mean_weight": 3.1436306228,
+    "n_events": 6
+  },
+  "Newport Beach, CA": {
+    "mean_weight": 4.7332,
+    "n_events": 3
+  },
+  "Newport, ME": {
+    "mean_weight": 6.3689,
+    "n_events": 1
+  },
+  "Newton Lake, Illinois": {
+    "mean_weight": 15.047228989599999,
+    "n_events": 2
+  },
+  "Newton, IL": {
+    "mean_weight": 6.890866666666667,
+    "n_events": 3
+  },
+  "Niagara River, Buffalo, NY": {
+    "mean_weight": 8.718733333333333,
+    "n_events": 3
+  },
+  "Nickajack Reservoir, Tennessee": {
+    "mean_weight": 20.61330129,
+    "n_events": 1
+  },
+  "Nisswa, Minnesota": {
+    "mean_weight": 6.582830186400001,
+    "n_events": 1
+  },
+  "Nixa, MO": {
+    "mean_weight": 5.9431,
+    "n_events": 1
+  },
+  "Nocona, Texas": {
+    "mean_weight": 20.04241744,
+    "n_events": 1
+  },
+  "Nolin River Lake, Kentucky": {
+    "mean_weight": 15.0041627948,
+    "n_events": 1
+  },
+  "Nord, Minnesota": {
+    "mean_weight": 8.533814849199999,
+    "n_events": 2
+  },
+  "Norfork Lake, Mountain Home, AR": {
+    "mean_weight": 8.578125,
+    "n_events": 4
+  },
+  "Norfork and Bull Shoals, Mountain Home, AR": {
+    "mean_weight": 12.4375,
+    "n_events": 3
+  },
+  "Normandy Reservoir, Tennessee": {
+    "mean_weight": 10.7780254256,
+    "n_events": 1
+  },
+  "Norris Reservoir, Tennessee": {
+    "mean_weight": 11.0863157836,
+    "n_events": 4
+  },
+  "Norris Tailwater, Tennessee": {
+    "mean_weight": 2.9503812696000002,
+    "n_events": 2
+  },
+  "North Big Pine, Minnesota": {
+    "mean_weight": 3.3463801904,
+    "n_events": 1
+  },
+  "North Center, Minnesota": {
+    "mean_weight": 5.1761995414,
+    "n_events": 4
+  },
+  "North Fork Holston River, Tennessee": {
+    "mean_weight": 14.0063337992,
+    "n_events": 1
+  },
+  "North Lida, Minnesota": {
+    "mean_weight": 4.100760465466667,
+    "n_events": 3
+  },
+  "North Long, Minnesota": {
+    "mean_weight": 11.73471842,
+    "n_events": 1
+  },
+  "North Manistique Lake, Michigan": {
+    "mean_weight": 3.1421282256,
+    "n_events": 1
+  },
+  "North Nokomis Lake, Wisconsin": {
+    "mean_weight": 8.164095809600001,
+    "n_events": 1
+  },
+  "North Smithfield, RI": {
+    "mean_weight": 3.4059999999999997,
+    "n_events": 2
+  },
+  "North Turtle Lake, Wisconsin": {
+    "mean_weight": 4.718569026,
+    "n_events": 2
+  },
+  "North Twin, Minnesota": {
+    "mean_weight": 11.2623148348,
+    "n_events": 2
+  },
+  "Norton, KS": {
+    "mean_weight": 17.3691,
+    "n_events": 1
+  },
+  "Norway, Minnesota": {
+    "mean_weight": 3.8567206476000004,
+    "n_events": 2
+  },
+  "Norwood, Ontario": {
+    "mean_weight": 5.3662,
+    "n_events": 1
+  },
+  "OH Ivie, Texas": {
+    "mean_weight": 12.96202985589091,
+    "n_events": 11
+  },
+  "Oak Creek, Texas": {
+    "mean_weight": 12.903800437000001,
+    "n_events": 2
+  },
+  "Oakwood, GA": {
+    "mean_weight": 9.698625,
+    "n_events": 4
+  },
+  "Ocklawaha, FL": {
+    "mean_weight": 5.7277,
+    "n_events": 1
+  },
+  "Ocoee, TN": {
+    "mean_weight": 6.4695,
+    "n_events": 3
+  },
+  "Ogallala, NE": {
+    "mean_weight": 4.0375,
+    "n_events": 1
+  },
+  "Ogechie, Minnesota": {
+    "mean_weight": 4.182343099200001,
+    "n_events": 1
+  },
+  "Oil City, LA": {
+    "mean_weight": 11.978571428571428,
+    "n_events": 7
+  },
+  "Oil City, PA": {
+    "mean_weight": 6.496700000000001,
+    "n_events": 2
+  },
+  "Okabena, Minnesota": {
+    "mean_weight": 5.6137695272000006,
+    "n_events": 1
+  },
+  "Okauchee Lake, Wisconsin": {
+    "mean_weight": 12.0555293772,
+    "n_events": 1
+  },
+  "Okeechobee Kissimee River, Florida": {
+    "mean_weight": 7.052025451333333,
+    "n_events": 6
+  },
+  "Okeechobee, FL": {
+    "mean_weight": 8.8577,
+    "n_events": 1
+  },
+  "Okmulgee, OK": {
+    "mean_weight": 13.1156,
+    "n_events": 1
+  },
+  "Old Hickory Reservoir, Tennessee": {
+    "mean_weight": 11.2180440902,
+    "n_events": 4
+  },
+  "Olson, Minnesota": {
+    "mean_weight": 15.5498666524,
+    "n_events": 2
+  },
+  "Oneida Lake, Syracuse, NY": {
+    "mean_weight": 11.612984615384615,
+    "n_events": 13
+  },
+  "Ontario": {
+    "mean_weight": 11.2202,
+    "n_events": 1
+  },
+  "Ontario, Ontario": {
+    "mean_weight": 11.4255,
+    "n_events": 1
+  },
+  "Opitz Lake, South Dakota": {
+    "mean_weight": 2.939207268,
+    "n_events": 1
+  },
+  "Orange Lake, FL": {
+    "mean_weight": 7.9335,
+    "n_events": 1
+  },
+  "Orange Lake, Florida": {
+    "mean_weight": 11.790798272,
+    "n_events": 7
+  },
+  "Orange Springs, FL": {
+    "mean_weight": 6.0101,
+    "n_events": 1
+  },
+  "Orchard, Minnesota": {
+    "mean_weight": 6.860552734800001,
+    "n_events": 2
+  },
+  "Orillia, ON": {
+    "mean_weight": 2.6895,
+    "n_events": 1
+  },
+  "Orofino, ID": {
+    "mean_weight": 7.0829,
+    "n_events": 1
+  },
+  "Osage Beach, MO": {
+    "mean_weight": 6.9272,
+    "n_events": 1
+  },
+  "Osage City, KS": {
+    "mean_weight": 8.4167,
+    "n_events": 1
+  },
+  "Osage State Fishing Lake, Kansas": {
+    "mean_weight": 8.450217918,
+    "n_events": 1
+  },
+  "Osakis, Minnesota": {
+    "mean_weight": 3.8741358494,
+    "n_events": 4
+  },
+  "Otis, MA": {
+    "mean_weight": 4.3211,
+    "n_events": 1
+  },
+  "Otsego Lake, Michigan": {
+    "mean_weight": 2.9785817744000003,
+    "n_events": 1
+  },
+  "Ottawa State Fishing Lake, Kansas": {
+    "mean_weight": 3.3728187248,
+    "n_events": 2
+  },
+  "Otter Lake, Illinois": {
+    "mean_weight": 8.2631336632,
+    "n_events": 1
+  },
+  "Otter Lake, Wisconsin": {
+    "mean_weight": 7.127182195466666,
+    "n_events": 6
+  },
+  "Otter Tail, Minnesota": {
+    "mean_weight": 2.96287411,
+    "n_events": 5
+  },
+  "Ottsville, PA": {
+    "mean_weight": 3.4407,
+    "n_events": 1
+  },
+  "Ouachita Lake, Arkansas": {
+    "mean_weight": 12.3440522912,
+    "n_events": 4
+  },
+  "Ouray, UT": {
+    "mean_weight": 5.2391,
+    "n_events": 1
+  },
+  "Overbrook Lake, Kansas": {
+    "mean_weight": 6.007372398399999,
+    "n_events": 1
+  },
+  "Overcup Lake, Arkansas": {
+    "mean_weight": 5.788714300800001,
+    "n_events": 1
+  },
+  "Owasso, Minnesota": {
+    "mean_weight": 3.7143153936,
+    "n_events": 1
+  },
+  "Oxbow Lake, Wisconsin": {
+    "mean_weight": 8.825102499466666,
+    "n_events": 3
+  },
+  "Oxford, MI": {
+    "mean_weight": 1.8731,
+    "n_events": 2
+  },
+  "Ozawindib, Minnesota": {
+    "mean_weight": 9.4288799436,
+    "n_events": 2
+  },
+  "PINE CITY, MN": {
+    "mean_weight": 9.5733,
+    "n_events": 1
+  },
+  "Pachaug Pond, Connecticut": {
+    "mean_weight": 7.190545402300001,
+    "n_events": 8
+  },
+  "Pactola Reservoir, South Dakota": {
+    "mean_weight": 3.6931623296,
+    "n_events": 1
+  },
+  "Paintsville Lake, Kentucky": {
+    "mean_weight": 12.6147079514,
+    "n_events": 4
+  },
+  "Paintsville, KY": {
+    "mean_weight": 2.0079,
+    "n_events": 1
+  },
+  "Palatka, FL": {
+    "mean_weight": 6.7728,
+    "n_events": 1
+  },
+  "Palestine, Texas": {
+    "mean_weight": 9.7570213265,
+    "n_events": 4
+  },
+  "Palm Coast, FL": {
+    "mean_weight": 2.1057,
+    "n_events": 1
+  },
+  "Palmer Lake, Wisconsin": {
+    "mean_weight": 3.4563012916,
+    "n_events": 2
+  },
+  "Palo Pinto, Texas": {
+    "mean_weight": 11.9445150804,
+    "n_events": 1
+  },
+  "Palo, IA": {
+    "mean_weight": 2.9831,
+    "n_events": 1
+  },
+  "Pana Lake, Illinois": {
+    "mean_weight": 12.173064741600001,
+    "n_events": 2
+  },
+  "Panama City, FL": {
+    "mean_weight": 4.23935,
+    "n_events": 2
+  },
+  "Papoose Lake, Wisconsin": {
+    "mean_weight": 5.5631117162666675,
+    "n_events": 3
+  },
+  "Paris East Lake, Illinois": {
+    "mean_weight": 9.063238953599999,
+    "n_events": 2
+  },
+  "Paris Landing, TN": {
+    "mean_weight": 7.4577,
+    "n_events": 1
+  },
+  "Paris West Lake, Illinois": {
+    "mean_weight": 7.0189285904,
+    "n_events": 2
+  },
+  "Paris, TN": {
+    "mean_weight": 3.9732,
+    "n_events": 3
+  },
+  "Parksville Reservoir, Tennessee": {
+    "mean_weight": 13.8889167896,
+    "n_events": 1
+  },
+  "Parry Sound, ON": {
+    "mean_weight": 14.575,
+    "n_events": 2
+  },
+  "Pascoag, RI": {
+    "mean_weight": 3.7088,
+    "n_events": 1
+  },
+  "Pat Cleburne, Texas": {
+    "mean_weight": 13.4341942144,
+    "n_events": 1
+  },
+  "Pattaconk Lake, Connecticut": {
+    "mean_weight": 10.2887081936,
+    "n_events": 1
+  },
+  "Patten Lake, Wisconsin": {
+    "mean_weight": 5.106334850666667,
+    "n_events": 3
+  },
+  "Paw Paw Lake, Michigan": {
+    "mean_weight": 4.0902692012,
+    "n_events": 1
+  },
+  "Pawnee Reservoir, Nebraska": {
+    "mean_weight": 4.8530472112,
+    "n_events": 5
+  },
+  "Pearl, Minnesota": {
+    "mean_weight": 3.3729462784,
+    "n_events": 1
+  },
+  "Peavy Pond, Michigan": {
+    "mean_weight": 4.3007639728,
+    "n_events": 1
+  },
+  "Pelican Lake, Utah": {
+    "mean_weight": 16.3645698584,
+    "n_events": 1
+  },
+  "Pelican Lake, Wisconsin": {
+    "mean_weight": 6.4799857928,
+    "n_events": 1
+  },
+  "Pelican, Minnesota": {
+    "mean_weight": 6.596661901120001,
+    "n_events": 5
+  },
+  "Peltier, Minnesota": {
+    "mean_weight": 3.4378534056000003,
+    "n_events": 2
+  },
+  "Pembroke Pines, FL": {
+    "mean_weight": 7.7344,
+    "n_events": 1
+  },
+  "Pennington Pit, Minnesota": {
+    "mean_weight": 11.6188031,
+    "n_events": 1
+  },
+  "Pentwater Lake, Michigan": {
+    "mean_weight": 13.2215687287,
+    "n_events": 4
+  },
+  "Peoa, UT": {
+    "mean_weight": 2.0531,
+    "n_events": 1
+  },
+  "Pequot Lakes, MN": {
+    "mean_weight": 16.72,
+    "n_events": 1
+  },
+  "Percy Priest Reservoir, Tennessee": {
+    "mean_weight": 11.0254728034,
+    "n_events": 4
+  },
+  "Pere Marquette River, Michigan": {
+    "mean_weight": 3.1061579248,
+    "n_events": 1
+  },
+  "Perry Reservoir Stilling Basin, Kansas": {
+    "mean_weight": 3.1409679472,
+    "n_events": 2
+  },
+  "Perry Reservoir, Kansas": {
+    "mean_weight": 3.972417354,
+    "n_events": 2
+  },
+  "Perry, KS": {
+    "mean_weight": 5.6871,
+    "n_events": 3
+  },
+  "Perryville, AR": {
+    "mean_weight": 4.1668,
+    "n_events": 1
+  },
+  "Perryville, MD": {
+    "mean_weight": 5.3795,
+    "n_events": 4
+  },
+  "Peterborough, ON": {
+    "mean_weight": 3.1418,
+    "n_events": 1
+  },
+  "Petite Lake, Illinois": {
+    "mean_weight": 5.0915463896,
+    "n_events": 1
+  },
+  "Pewaukee Lake, Wisconsin": {
+    "mean_weight": 9.7565697704,
+    "n_events": 1
+  },
+  "Pewaukee, WI": {
+    "mean_weight": 2.7707,
+    "n_events": 1
+  },
+  "Phalen and Round, Minnesota": {
+    "mean_weight": 5.4302939976,
+    "n_events": 1
+  },
+  "Phalen, Minnesota": {
+    "mean_weight": 4.3224611928000005,
+    "n_events": 1
+  },
+  "Phelps Lake, North Carolina": {
+    "mean_weight": 11.8817981376,
+    "n_events": 1
+  },
+  "Pickerel Lake, Connecticut": {
+    "mean_weight": 8.8800735906,
+    "n_events": 12
+  },
+  "Pickerel Lake, Michigan": {
+    "mean_weight": 3.5912477572,
+    "n_events": 1
+  },
+  "Pickerel Lake, South Dakota": {
+    "mean_weight": 4.3516441016,
+    "n_events": 2
+  },
+  "Pickerel Lake, Wisconsin": {
+    "mean_weight": 4.4021768104,
+    "n_events": 1
+  },
+  "Pickering , ON": {
+    "mean_weight": 13.06,
+    "n_events": 1
+  },
+  "Pickwick Lake, Florence, AL": {
+    "mean_weight": 11.08681111111111,
+    "n_events": 9
+  },
+  "Pickwick Reservoir, Tennessee": {
+    "mean_weight": 23.7567245141,
+    "n_events": 4
+  },
+  "Pierce Lake, Illinois": {
+    "mean_weight": 5.291594491200001,
+    "n_events": 2
+  },
+  "Pierre Part, LA": {
+    "mean_weight": 2.6591,
+    "n_events": 1
+  },
+  "Pig, Minnesota": {
+    "mean_weight": 13.1502803168,
+    "n_events": 2
+  },
+  "Pigeon River, Tennessee": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Pike Lake, Wisconsin": {
+    "mean_weight": 10.622804403428571,
+    "n_events": 7
+  },
+  "Pikeville, KY": {
+    "mean_weight": 7.4909,
+    "n_events": 2
+  },
+  "Pillager, MN": {
+    "mean_weight": 15.265,
+    "n_events": 1
+  },
+  "Pine Lake, Wisconsin": {
+    "mean_weight": 6.896089036769231,
+    "n_events": 13
+  },
+  "Pine Mountain, Minnesota": {
+    "mean_weight": 3.1558186036,
+    "n_events": 2
+  },
+  "Pinkston, Texas": {
+    "mean_weight": 18.342592378,
+    "n_events": 4
+  },
+  "Pipe Lake, Wisconsin": {
+    "mean_weight": 24.5863935732,
+    "n_events": 2
+  },
+  "Pipersville, PA": {
+    "mean_weight": 3.2417,
+    "n_events": 1
+  },
+  "Pistakee Lake, Illinois": {
+    "mean_weight": 4.8434513896,
+    "n_events": 1
+  },
+  "Pittsfield, MA": {
+    "mean_weight": 3.7931500000000002,
+    "n_events": 2
+  },
+  "Planting Ground Lake, Wisconsin": {
+    "mean_weight": 3.7520467948,
+    "n_events": 2
+  },
+  "Platte, Minnesota": {
+    "mean_weight": 3.205434808,
+    "n_events": 2
+  },
+  "Plattsburgh, NY": {
+    "mean_weight": 8.6777,
+    "n_events": 2
+  },
+  "Pleasant Lake, Michigan": {
+    "mean_weight": 11.8292717484,
+    "n_events": 1
+  },
+  "Pleasant, Minnesota": {
+    "mean_weight": 6.0884150328,
+    "n_events": 2
+  },
+  "Pleasanton East Lake, Kansas": {
+    "mean_weight": 5.0642368344,
+    "n_events": 1
+  },
+  "Pleasanton West Lake, Kansas": {
+    "mean_weight": 7.0159875728,
+    "n_events": 1
+  },
+  "Plum Lake, Wisconsin": {
+    "mean_weight": 7.1167506567,
+    "n_events": 8
+  },
+  "Plumerville, AR": {
+    "mean_weight": 5.6834,
+    "n_events": 3
+  },
+  "Plymouth, WA": {
+    "mean_weight": 17.0274,
+    "n_events": 1
+  },
+  "Pointe au Baril, ON": {
+    "mean_weight": 21.5343,
+    "n_events": 1
+  },
+  "Pokegama Lake, Grand Rapids, MN": {
+    "mean_weight": 11.5625,
+    "n_events": 3
+  },
+  "Pokegama Lake, Wisconsin": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Pokegama, Minnesota": {
+    "mean_weight": 3.0660279249,
+    "n_events": 4
+  },
+  "Pomona Reservoir Stilling Basin, Kansas": {
+    "mean_weight": 3.7727400696,
+    "n_events": 1
+  },
+  "Pomona Reservoir, Kansas": {
+    "mean_weight": 6.7440611384,
+    "n_events": 1
+  },
+  "Ponto, Minnesota": {
+    "mean_weight": 11.038213733,
+    "n_events": 2
+  },
+  "Pony Creek Lake, Kansas": {
+    "mean_weight": 17.6459401364,
+    "n_events": 1
+  },
+  "Poplar Bluff, MO": {
+    "mean_weight": 4.3527,
+    "n_events": 1
+  },
+  "Poplar, Minnesota": {
+    "mean_weight": 8.0929896656,
+    "n_events": 1
+  },
+  "Port Aransas, Port Aransas, TX": {
+    "mean_weight": 11.1875,
+    "n_events": 2
+  },
+  "Port Aransas, TX": {
+    "mean_weight": 11.114566666666667,
+    "n_events": 3
+  },
+  "Port Perry, Ontario": {
+    "mean_weight": 10.83,
+    "n_events": 1
+  },
+  "Port Severn, ON": {
+    "mean_weight": 9.263166666666667,
+    "n_events": 3
+  },
+  "Portage Lake, Michigan": {
+    "mean_weight": 19.17381848393333,
+    "n_events": 6
+  },
+  "Portage, Minnesota": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Portersville, PA": {
+    "mean_weight": 4.6338,
+    "n_events": 2
+  },
+  "Portsmouth Pit, Minnesota": {
+    "mean_weight": 3.4575882768,
+    "n_events": 1
+  },
+  "Possum Kingdom, Texas": {
+    "mean_weight": 10.986311157,
+    "n_events": 2
+  },
+  "Potato, Minnesota": {
+    "mean_weight": 5.4182771864,
+    "n_events": 1
+  },
+  "Potomac River, Charles County, MD": {
+    "mean_weight": 11.270850000000001,
+    "n_events": 6
+  },
+  "Pottawatomie State Fishing Lake #1, Kansas": {
+    "mean_weight": 17.5706126248,
+    "n_events": 1
+  },
+  "Pottawatomie State Fishing Lake #2, Kansas": {
+    "mean_weight": 6.7617403272,
+    "n_events": 1
+  },
+  "Prairie Du Chien, WI": {
+    "mean_weight": 6.9934,
+    "n_events": 1
+  },
+  "Prairie Lake, Wisconsin": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Prairie Queen Reservoir, Nebraska": {
+    "mean_weight": 18.482401885199998,
+    "n_events": 2
+  },
+  "Presque Isle Lake, Wisconsin": {
+    "mean_weight": 5.2453049928,
+    "n_events": 2
+  },
+  "Prestonsburg, KY": {
+    "mean_weight": 2.5065,
+    "n_events": 1
+  },
+  "Pueblo, CO": {
+    "mean_weight": 7.109685714285715,
+    "n_events": 7
+  },
+  "Pulaski , VA": {
+    "mean_weight": 1.5706,
+    "n_events": 1
+  },
+  "Pulaski Lake, Wisconsin": {
+    "mean_weight": 15.9985151776,
+    "n_events": 1
+  },
+  "Pulaski, Minnesota": {
+    "mean_weight": 4.7974698016,
+    "n_events": 2
+  },
+  "Quabbin Reservoir, Massachusetts": {
+    "mean_weight": 6.879565014581818,
+    "n_events": 11
+  },
+  "Quaddick Reservoir, Connecticut": {
+    "mean_weight": 9.737631712866666,
+    "n_events": 6
+  },
+  "Quinebaug Lake, Connecticut": {
+    "mean_weight": 10.0941331808,
+    "n_events": 2
+  },
+  "Quitman, TX": {
+    "mean_weight": 5.2107,
+    "n_events": 1
+  },
+  "Quitman, Texas": {
+    "mean_weight": 8.9285404728,
+    "n_events": 2
+  },
+  "Quonnipaug Lake, Connecticut": {
+    "mean_weight": 9.4345827704,
+    "n_events": 1
+  },
+  "ROCK HILL, SC": {
+    "mean_weight": 10.2095,
+    "n_events": 1
+  },
+  "RUSH CITY, MN": {
+    "mean_weight": 8.2227,
+    "n_events": 1
+  },
+  "Rachel, Minnesota": {
+    "mean_weight": 7.548512224960001,
+    "n_events": 5
+  },
+  "Radford, VA": {
+    "mean_weight": 6.48165,
+    "n_events": 4
+  },
+  "Rainbow Flowage, Wisconsin": {
+    "mean_weight": 2.9922841816,
+    "n_events": 1
+  },
+  "Rainy Lake, Minnesota": {
+    "mean_weight": 3.8756268457333336,
+    "n_events": 15
+  },
+  "Rama, ON": {
+    "mean_weight": 5.8896,
+    "n_events": 2
+  },
+  "Range Line Lake, Wisconsin": {
+    "mean_weight": 9.2921123244,
+    "n_events": 2
+  },
+  "Raven, Texas": {
+    "mean_weight": 9.4981751072,
+    "n_events": 6
+  },
+  "Ray Roberts, Texas": {
+    "mean_weight": 7.819263671,
+    "n_events": 2
+  },
+  "Ray, Minnesota": {
+    "mean_weight": 8.0849098248,
+    "n_events": 1
+  },
+  "Raymond , CA": {
+    "mean_weight": 8.6216,
+    "n_events": 2
+  },
+  "Raymond, CA": {
+    "mean_weight": 3.6696,
+    "n_events": 1
+  },
+  "Rays, Minnesota": {
+    "mean_weight": 3.7260499072,
+    "n_events": 2
+  },
+  "Readfield, ME": {
+    "mean_weight": 8.7708,
+    "n_events": 1
+  },
+  "Rebecca, Minnesota": {
+    "mean_weight": 10.0984682284,
+    "n_events": 2
+  },
+  "Red Cedar Lake, Wisconsin": {
+    "mean_weight": 19.1905248196,
+    "n_events": 1
+  },
+  "Red Fleet Reservoir, Utah": {
+    "mean_weight": 6.0357046096,
+    "n_events": 1
+  },
+  "Red Hills Lake, Illinois": {
+    "mean_weight": 8.5853842094,
+    "n_events": 2
+  },
+  "Red Lake, Wisconsin": {
+    "mean_weight": 5.8554289168,
+    "n_events": 1
+  },
+  "Red River, Natchitoches, LA": {
+    "mean_weight": 5.770833333333333,
+    "n_events": 3
+  },
+  "Red River, North Dakota": {
+    "mean_weight": 3.0118807808000003,
+    "n_events": 1
+  },
+  "Red River, Shreveport, LA": {
+    "mean_weight": 5.9375,
+    "n_events": 4
+  },
+  "Red River, Shreveport-Bossier, LA": {
+    "mean_weight": 6.2499666666666664,
+    "n_events": 3
+  },
+  "Red River, Shreveport/Bossier City, LA": {
+    "mean_weight": 5.20315,
+    "n_events": 2
+  },
+  "Redding , CA": {
+    "mean_weight": 7.1892,
+    "n_events": 1
+  },
+  "Redding, CA": {
+    "mean_weight": 5.08,
+    "n_events": 1
+  },
+  "Reeds, Minnesota": {
+    "mean_weight": 4.646213213999999,
+    "n_events": 2
+  },
+  "Reelfoot Lake, Tennessee": {
+    "mean_weight": 3.9553086503,
+    "n_events": 4
+  },
+  "Reetz Lake, South Dakota": {
+    "mean_weight": 16.1352395056,
+    "n_events": 1
+  },
+  "Rend Lake, Illinois": {
+    "mean_weight": 6.2430598296,
+    "n_events": 2
+  },
+  "Rescue Lake, Vermont": {
+    "mean_weight": 6.9766091108,
+    "n_events": 2
+  },
+  "Rest Lake, Wisconsin": {
+    "mean_weight": 6.512881219733333,
+    "n_events": 3
+  },
+  "Rib Lake, Wisconsin": {
+    "mean_weight": 3.5060725880000003,
+    "n_events": 1
+  },
+  "Rice River Flowage*, Wisconsin": {
+    "mean_weight": 3.8023721999999998,
+    "n_events": 4
+  },
+  "Rice, Minnesota": {
+    "mean_weight": 3.1030931429333335,
+    "n_events": 3
+  },
+  "Richland Chambers, Texas": {
+    "mean_weight": 6.92406147736,
+    "n_events": 5
+  },
+  "Richmond, MA": {
+    "mean_weight": 3.7554,
+    "n_events": 2
+  },
+  "Richmond, VA": {
+    "mean_weight": 12.96355,
+    "n_events": 2
+  },
+  "Ringold, OK": {
+    "mean_weight": 6.8535,
+    "n_events": 1
+  },
+  "Ririe Reservoir, Idaho": {
+    "mean_weight": 7.011338316,
+    "n_events": 1
+  },
+  "Roanoke Rapids Lake, North Carolina": {
+    "mean_weight": 9.511229492,
+    "n_events": 1
+  },
+  "Roanoke, VA": {
+    "mean_weight": 9.3909,
+    "n_events": 1
+  },
+  "Roberds, Minnesota": {
+    "mean_weight": 4.2060765774,
+    "n_events": 2
+  },
+  "Roberts Lake, Wisconsin": {
+    "mean_weight": 8.6012221708,
+    "n_events": 3
+  },
+  "Rock Lake, Wisconsin": {
+    "mean_weight": 3.2092563584000002,
+    "n_events": 2
+  },
+  "Rocky Ford Fishing Area, Kansas": {
+    "mean_weight": 3.1486655912000003,
+    "n_events": 1
+  },
+  "Rocky Pond, Kansas": {
+    "mean_weight": 4.0295738832,
+    "n_events": 1
+  },
+  "Roemhildts, Minnesota": {
+    "mean_weight": 7.1522222184,
+    "n_events": 1
+  },
+  "Rogers Lake, Connecticut": {
+    "mean_weight": 6.911411003846154,
+    "n_events": 13
+  },
+  "Rogers, AR": {
+    "mean_weight": 3.1146,
+    "n_events": 1
+  },
+  "Ronkonkoma, NY": {
+    "mean_weight": 3.9528,
+    "n_events": 1
+  },
+  "Rooks State Lake, Kansas": {
+    "mean_weight": 7.356159684,
+    "n_events": 1
+  },
+  "Ross Barnett Reservoir, Ridgeland, MS": {
+    "mean_weight": 9.428972727272727,
+    "n_events": 11
+  },
+  "Rough River Lake, Kentucky": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Round Lake, Illinois": {
+    "mean_weight": 6.023756412400001,
+    "n_events": 2
+  },
+  "Round Lake, Wisconsin": {
+    "mean_weight": 6.698332872488888,
+    "n_events": 9
+  },
+  "Round, Minnesota": {
+    "mean_weight": 6.1676621148,
+    "n_events": 3
+  },
+  "Roy Lake, South Dakota": {
+    "mean_weight": 5.1571517672,
+    "n_events": 1
+  },
+  "Roy, Minnesota": {
+    "mean_weight": 7.301927108799999,
+    "n_events": 1
+  },
+  "Rush City, MN": {
+    "mean_weight": 5.9662,
+    "n_events": 1
+  },
+  "Rush, Minnesota": {
+    "mean_weight": 8.4615807038,
+    "n_events": 2
+  },
+  "Russell, KS": {
+    "mean_weight": 3.82455,
+    "n_events": 2
+  },
+  "Russellville, AR": {
+    "mean_weight": 7.5779,
+    "n_events": 2
+  },
+  "Rutland, FL": {
+    "mean_weight": 6.3193,
+    "n_events": 1
+  },
+  "SANTIAGO NUEVO LEON, NEWL": {
+    "mean_weight": 4.1711,
+    "n_events": 1
+  },
+  "Sabine River, Orange, TX": {
+    "mean_weight": 7.016447368421052,
+    "n_events": 19
+  },
+  "Sabinsville, PA": {
+    "mean_weight": 3.8115,
+    "n_events": 1
+  },
+  "Sacramento River, Sacramento, CA": {
+    "mean_weight": 13.572933333333333,
+    "n_events": 3
+  },
+  "Sacramento, CA": {
+    "mean_weight": 11.1197,
+    "n_events": 3
+  },
+  "Sagamore Pit, Minnesota": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Saganaga and Gull Creel Areas, Minnesota": {
+    "mean_weight": 5.1386016272,
+    "n_events": 1
+  },
+  "Saginaw Bay, Bangor Charter Township, MI": {
+    "mean_weight": 13.71875,
+    "n_events": 2
+  },
+  "Saginaw Bay, Bay City, MI": {
+    "mean_weight": 12.0677,
+    "n_events": 6
+  },
+  "Saginaw Bay, MI": {
+    "mean_weight": 9.5,
+    "n_events": 1
+  },
+  "Saguaro Lake, AZ": {
+    "mean_weight": 5.3676666666666675,
+    "n_events": 3
+  },
+  "Saint Paris, OH": {
+    "mean_weight": 2.9587000000000003,
+    "n_events": 2
+  },
+  "Saint-Stephen, NB": {
+    "mean_weight": 5.1174,
+    "n_events": 1
+  },
+  "Sakatah, Minnesota": {
+    "mean_weight": 6.145633912,
+    "n_events": 1
+  },
+  "Salisbury, MD": {
+    "mean_weight": 9.1217,
+    "n_events": 1
+  },
+  "Sallie, Minnesota": {
+    "mean_weight": 3.3830434210666667,
+    "n_events": 3
+  },
+  "Salt Springs, FL": {
+    "mean_weight": 4.1168,
+    "n_events": 2
+  },
+  "Sam Parr, Illinois": {
+    "mean_weight": 15.682554864799998,
+    "n_events": 1
+  },
+  "Sam Rayburn Reservoir, Jasper, TX": {
+    "mean_weight": 9.847233333333334,
+    "n_events": 9
+  },
+  "Sam Rayburn, Texas": {
+    "mean_weight": 24.36658512284,
+    "n_events": 10
+  },
+  "San Diego, CA": {
+    "mean_weight": 2.4496,
+    "n_events": 5
+  },
+  "San Marcos, TX": {
+    "mean_weight": 4.1711,
+    "n_events": 1
+  },
+  "Sanbornton, NH": {
+    "mean_weight": 9.9929,
+    "n_events": 1
+  },
+  "Sanburn, Minnesota": {
+    "mean_weight": 15.4488918192,
+    "n_events": 1
+  },
+  "Sand Hollow Reservoir, Utah": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Sand Lake, Michigan": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Sand Lake, Wisconsin": {
+    "mean_weight": 12.751390589261538,
+    "n_events": 13
+  },
+  "Sand Point, Minnesota": {
+    "mean_weight": 6.600380340114286,
+    "n_events": 7
+  },
+  "Sand, Minnesota": {
+    "mean_weight": 9.967058134933334,
+    "n_events": 3
+  },
+  "Sanford Lake, Michigan": {
+    "mean_weight": 9.91424864,
+    "n_events": 1
+  },
+  "Sangchris Lake, Illinois": {
+    "mean_weight": 15.0359932296,
+    "n_events": 1
+  },
+  "Santa Fe Lake, Florida": {
+    "mean_weight": 9.549304168133334,
+    "n_events": 6
+  },
+  "Santee Cooper Lakes, Clarendon County, SC": {
+    "mean_weight": 15.258518181818182,
+    "n_events": 11
+  },
+  "Santee, SC": {
+    "mean_weight": 5.484633333333334,
+    "n_events": 3
+  },
+  "Sarah, Minnesota": {
+    "mean_weight": 9.490264174,
+    "n_events": 2
+  },
+  "Saranac Lake, NY": {
+    "mean_weight": 10.956842857142858,
+    "n_events": 7
+  },
+  "Saranac, NY": {
+    "mean_weight": 10.5208,
+    "n_events": 1
+  },
+  "Saratoga Springs , NY": {
+    "mean_weight": 7.5192,
+    "n_events": 2
+  },
+  "Saugatuck Reservoir, Connecticut": {
+    "mean_weight": 5.4442017132,
+    "n_events": 1
+  },
+  "Sauk River Chain, Minnesota": {
+    "mean_weight": 5.2090904772,
+    "n_events": 1
+  },
+  "Sawyer Lake, Wisconsin": {
+    "mean_weight": 16.5468165768,
+    "n_events": 1
+  },
+  "Scattering Rice Lake, Wisconsin": {
+    "mean_weight": 3.405153322666667,
+    "n_events": 3
+  },
+  "Schwer Reservoir, Nebraska": {
+    "mean_weight": 3.1830909112000003,
+    "n_events": 1
+  },
+  "Scoggan Pond, Kansas": {
+    "mean_weight": 9.1709459976,
+    "n_events": 1
+  },
+  "Scottsboro , AL": {
+    "mean_weight": 12.8327,
+    "n_events": 3
+  },
+  "Scottsboro, AL": {
+    "mean_weight": 3.9393,
+    "n_events": 1
+  },
+  "Scottsville, KY": {
+    "mean_weight": 4.4405,
+    "n_events": 2
+  },
+  "Sebelius Reservoir, Kansas": {
+    "mean_weight": 6.747407139066667,
+    "n_events": 3
+  },
+  "Sebring, FL": {
+    "mean_weight": 6.859366666666666,
+    "n_events": 3
+  },
+  "Second Lake, Wisconsin": {
+    "mean_weight": 3.3998881136000003,
+    "n_events": 1
+  },
+  "Section 6 Pit, Minnesota": {
+    "mean_weight": 12.7986567088,
+    "n_events": 1
+  },
+  "Selinsgrove, PA": {
+    "mean_weight": 9.997025,
+    "n_events": 4
+  },
+  "Selma, OR": {
+    "mean_weight": 4.6213,
+    "n_events": 1
+  },
+  "Seminole, FL": {
+    "mean_weight": 8.9755,
+    "n_events": 3
+  },
+  "Seneca, SC": {
+    "mean_weight": 5.0829,
+    "n_events": 1
+  },
+  "Sevenmile Lake, Wisconsin": {
+    "mean_weight": 3.8433647208000004,
+    "n_events": 3
+  },
+  "Severn, ON": {
+    "mean_weight": 13.25,
+    "n_events": 1
+  },
+  "Severn, Ontario": {
+    "mean_weight": 9.725,
+    "n_events": 1
+  },
+  "Shabbona Lake, Illinois": {
+    "mean_weight": 7.0561415006,
+    "n_events": 2
+  },
+  "Shakey Lakes, Michigan": {
+    "mean_weight": 5.0067432672,
+    "n_events": 1
+  },
+  "Shakopee, Minnesota": {
+    "mean_weight": 3.3142452285333337,
+    "n_events": 3
+  },
+  "Shamineau, Minnesota": {
+    "mean_weight": 4.2217692256,
+    "n_events": 1
+  },
+  "Shavehead Lake, Michigan": {
+    "mean_weight": 15.5794085,
+    "n_events": 1
+  },
+  "Shawnee State Fishing Lake, Kansas": {
+    "mean_weight": 7.5894181912,
+    "n_events": 1
+  },
+  "Shelbyville Main Lake, Illinois": {
+    "mean_weight": 7.278677008400001,
+    "n_events": 1
+  },
+  "Shell Knob, MO": {
+    "mean_weight": 6.4226,
+    "n_events": 1
+  },
+  "Shell Lake, Wisconsin": {
+    "mean_weight": 15.158709876666668,
+    "n_events": 3
+  },
+  "Shenandoah, VA": {
+    "mean_weight": 4.76285,
+    "n_events": 4
+  },
+  "Sheridan Lake, South Dakota": {
+    "mean_weight": 7.7524694616000005,
+    "n_events": 2
+  },
+  "Sherman Reservoir, Nebraska": {
+    "mean_weight": 3.15355432768,
+    "n_events": 5
+  },
+  "Shishebogama Lake, Wisconsin": {
+    "mean_weight": 13.619423972933333,
+    "n_events": 3
+  },
+  "Shogman, Minnesota": {
+    "mean_weight": 3.113331272,
+    "n_events": 1
+  },
+  "Shreveport, LA": {
+    "mean_weight": 9.87045,
+    "n_events": 2
+  },
+  "Siloam Springs, Illinois": {
+    "mean_weight": 4.676604251200001,
+    "n_events": 1
+  },
+  "Silver Lake, Connecticut": {
+    "mean_weight": 14.2142589678,
+    "n_events": 2
+  },
+  "Silver Lake, Illinois": {
+    "mean_weight": 10.1322021884,
+    "n_events": 1
+  },
+  "Silver Lake, Wisconsin": {
+    "mean_weight": 17.7677329844,
+    "n_events": 2
+  },
+  "Silver Spring Lake, Illinois": {
+    "mean_weight": 3.7220284192,
+    "n_events": 1
+  },
+  "Silver, Minnesota": {
+    "mean_weight": 5.0757237459999995,
+    "n_events": 2
+  },
+  "Simley, Minnesota": {
+    "mean_weight": 5.841391826400001,
+    "n_events": 1
+  },
+  "Siskiwit Lake, Wisconsin": {
+    "mean_weight": 9.922272541733333,
+    "n_events": 3
+  },
+  "Sissabagama Lake, Wisconsin": {
+    "mean_weight": 12.3235273324,
+    "n_events": 4
+  },
+  "Sissabagamah, Minnesota": {
+    "mean_weight": 7.5129843876,
+    "n_events": 2
+  },
+  "Sisseton, Minnesota": {
+    "mean_weight": 2.939957092,
+    "n_events": 1
+  },
+  "Skegemog Lake, Michigan": {
+    "mean_weight": 13.4079692128,
+    "n_events": 1
+  },
+  "Slidell, LA": {
+    "mean_weight": 2.1451,
+    "n_events": 1
+  },
+  "Smith Lake, Cullman, AL": {
+    "mean_weight": 9.281233333333333,
+    "n_events": 3
+  },
+  "Smith Lake, Jasper, AL": {
+    "mean_weight": 8.7421875,
+    "n_events": 8
+  },
+  "Smith Lake, Wisconsin": {
+    "mean_weight": 6.221586976799999,
+    "n_events": 1
+  },
+  "Smithville, TN": {
+    "mean_weight": 10.1356,
+    "n_events": 1
+  },
+  "Smokey Valley, Kentucky": {
+    "mean_weight": 10.382154708,
+    "n_events": 1
+  },
+  "Snail, Minnesota": {
+    "mean_weight": 6.9667178256,
+    "n_events": 1
+  },
+  "Sneads, FL": {
+    "mean_weight": 5.9295,
+    "n_events": 1
+  },
+  "Snelling, Minnesota": {
+    "mean_weight": 3.1845889816,
+    "n_events": 1
+  },
+  "Snipe Lake, Wisconsin": {
+    "mean_weight": 6.090273641511112,
+    "n_events": 9
+  },
+  "Snow Hill, MD": {
+    "mean_weight": 4.8583,
+    "n_events": 1
+  },
+  "Snowbank, Minnesota": {
+    "mean_weight": 12.6285849096,
+    "n_events": 1
+  },
+  "Soddy Daisy, TN": {
+    "mean_weight": 7.999,
+    "n_events": 1
+  },
+  "Solberg Lake, Wisconsin": {
+    "mean_weight": 3.0847980057333335,
+    "n_events": 3
+  },
+  "Solon, IA": {
+    "mean_weight": 4.465450000000001,
+    "n_events": 2
+  },
+  "Somerset, PA": {
+    "mean_weight": 7.1513,
+    "n_events": 1
+  },
+  "Somerville, TX": {
+    "mean_weight": 2.2035,
+    "n_events": 1
+  },
+  "Somerville, Texas": {
+    "mean_weight": 5.097930689333333,
+    "n_events": 3
+  },
+  "Somo Lake, Wisconsin": {
+    "mean_weight": 4.2279567584,
+    "n_events": 1
+  },
+  "Sonora, CA": {
+    "mean_weight": 3.374,
+    "n_events": 1
+  },
+  "South Big Pine, Minnesota": {
+    "mean_weight": 4.012482048800001,
+    "n_events": 2
+  },
+  "South Boston, VA": {
+    "mean_weight": 10.9168,
+    "n_events": 1
+  },
+  "South Center, Minnesota": {
+    "mean_weight": 5.1980784754,
+    "n_events": 4
+  },
+  "South Holston Reservoir, Tennessee": {
+    "mean_weight": 14.2249193504,
+    "n_events": 1
+  },
+  "South Kingston, RI": {
+    "mean_weight": 3.3047,
+    "n_events": 1
+  },
+  "South Kingstown, RI": {
+    "mean_weight": 4.2074,
+    "n_events": 1
+  },
+  "South Lida, Minnesota": {
+    "mean_weight": 4.1394043884,
+    "n_events": 3
+  },
+  "South Manistique Lake, Michigan": {
+    "mean_weight": 4.8001849672,
+    "n_events": 3
+  },
+  "South Turtle Lake, Wisconsin": {
+    "mean_weight": 5.4486191208,
+    "n_events": 2
+  },
+  "Sparkling Lake, Wisconsin": {
+    "mean_weight": 20.845675116800003,
+    "n_events": 2
+  },
+  "Spectacle, Minnesota": {
+    "mean_weight": 4.3591581176,
+    "n_events": 1
+  },
+  "Spider Lake, Wisconsin": {
+    "mean_weight": 10.378089514866668,
+    "n_events": 6
+  },
+  "Spider, Minnesota": {
+    "mean_weight": 5.946390804,
+    "n_events": 4
+  },
+  "Spirit Lake, ID": {
+    "mean_weight": 9.1755,
+    "n_events": 1
+  },
+  "Spirit Lake, Iowa": {
+    "mean_weight": 7.355401260533333,
+    "n_events": 3
+  },
+  "Spirit River Flowage, Wisconsin": {
+    "mean_weight": 3.7886801632,
+    "n_events": 1
+  },
+  "Spiritwood Lake, North Dakota": {
+    "mean_weight": 5.287707872533334,
+    "n_events": 3
+  },
+  "Spoon, Minnesota": {
+    "mean_weight": 4.444737158200001,
+    "n_events": 2
+  },
+  "Spring City, TN": {
+    "mean_weight": 5.66025,
+    "n_events": 2
+  },
+  "Spring Lake North, Illinois": {
+    "mean_weight": 10.9985558212,
+    "n_events": 2
+  },
+  "Spring Lake South, Illinois": {
+    "mean_weight": 4.4778163968,
+    "n_events": 1
+  },
+  "Spring Lake, MI": {
+    "mean_weight": 7.1211,
+    "n_events": 1
+  },
+  "Spring, Minnesota": {
+    "mean_weight": 3.3770541168,
+    "n_events": 2
+  },
+  "Springfield, IL": {
+    "mean_weight": 15.6254,
+    "n_events": 1
+  },
+  "Squantz Pond, Connecticut": {
+    "mean_weight": 6.15049332665,
+    "n_events": 16
+  },
+  "Square, Minnesota": {
+    "mean_weight": 3.6806429483999996,
+    "n_events": 4
+  },
+  "Squash Lake, Wisconsin": {
+    "mean_weight": 6.458971093600001,
+    "n_events": 1
+  },
+  "Squaw Lake, Wisconsin": {
+    "mean_weight": 3.5194321804000004,
+    "n_events": 3
+  },
+  "Squirrel Lake, Wisconsin": {
+    "mean_weight": 12.7268861719,
+    "n_events": 4
+  },
+  "St Joseph, LA": {
+    "mean_weight": 5.7214,
+    "n_events": 1
+  },
+  "St. Johns River, Palatka, FL": {
+    "mean_weight": 12.688748,
+    "n_events": 25
+  },
+  "St. Joseph, LA": {
+    "mean_weight": 4.9809,
+    "n_events": 1
+  },
+  "St. Landry, LA": {
+    "mean_weight": 3.4371,
+    "n_events": 1
+  },
+  "St. Lawrence River, Clayton, NY": {
+    "mean_weight": 20.084138461538462,
+    "n_events": 13
+  },
+  "St. Lawrence River, Waddington, NY": {
+    "mean_weight": 18.07255357142857,
+    "n_events": 28
+  },
+  "St. Paul, MN": {
+    "mean_weight": 14.2691,
+    "n_events": 1
+  },
+  "St. Stephen, SC": {
+    "mean_weight": 2.0229,
+    "n_events": 1
+  },
+  "Standing Bear, Nebraska": {
+    "mean_weight": 4.3759220548,
+    "n_events": 1
+  },
+  "Star Lake, Wisconsin": {
+    "mean_weight": 3.6564993783,
+    "n_events": 4
+  },
+  "Starke, FL": {
+    "mean_weight": 7.2088,
+    "n_events": 1
+  },
+  "Starvation Reservoir, Utah": {
+    "mean_weight": 4.0629695872000005,
+    "n_events": 1
+  },
+  "Steiger, Minnesota": {
+    "mean_weight": 5.101062697066667,
+    "n_events": 3
+  },
+  "Steinaker Reservoir, Utah": {
+    "mean_weight": 4.2778884712,
+    "n_events": 1
+  },
+  "Stella, Minnesota": {
+    "mean_weight": 4.0699310198,
+    "n_events": 2
+  },
+  "Sterling Lake, Illinois": {
+    "mean_weight": 4.5403445728000005,
+    "n_events": 2
+  },
+  "Stevens Lake, Wisconsin": {
+    "mean_weight": 3.356550415,
+    "n_events": 2
+  },
+  "Stiles Pond, Vermont": {
+    "mean_weight": 4.0062886696,
+    "n_events": 1
+  },
+  "Stockade Lake, South Dakota": {
+    "mean_weight": 6.2684407572000005,
+    "n_events": 2
+  },
+  "Stockton , CA": {
+    "mean_weight": 5.6798,
+    "n_events": 1
+  },
+  "Stockton, CA": {
+    "mean_weight": 15.616866666666667,
+    "n_events": 3
+  },
+  "Stockton, MO": {
+    "mean_weight": 6.2751399999999995,
+    "n_events": 5
+  },
+  "Stone Lake, Wisconsin": {
+    "mean_weight": 12.688989290079999,
+    "n_events": 5
+  },
+  "Stony, Minnesota": {
+    "mean_weight": 17.3532575552,
+    "n_events": 1
+  },
+  "Strawberry Lake, Michigan": {
+    "mean_weight": 10.97649602,
+    "n_events": 1
+  },
+  "Strawberry, Minnesota": {
+    "mean_weight": 4.3533128776000005,
+    "n_events": 1
+  },
+  "Sturbridge, MA": {
+    "mean_weight": 4.7064,
+    "n_events": 1
+  },
+  "Sturgeon Bay, Door County, WI": {
+    "mean_weight": 12.760399999999999,
+    "n_events": 3
+  },
+  "Sturgeon Bay, WI": {
+    "mean_weight": 14.45715,
+    "n_events": 2
+  },
+  "Sturgeon, Minnesota": {
+    "mean_weight": 6.2040377428,
+    "n_events": 6
+  },
+  "Sucker, Minnesota": {
+    "mean_weight": 3.6359608156,
+    "n_events": 1
+  },
+  "Suffolk, VA": {
+    "mean_weight": 3.7750000000000004,
+    "n_events": 2
+  },
+  "Sugar, Minnesota": {
+    "mean_weight": 5.8961976968,
+    "n_events": 1
+  },
+  "Sullivan, IN": {
+    "mean_weight": 4.1271,
+    "n_events": 2
+  },
+  "Sullivan, Minnesota": {
+    "mean_weight": 3.2486877976,
+    "n_events": 2
+  },
+  "Summit Lake, Iowa": {
+    "mean_weight": 14.635400134000001,
+    "n_events": 2
+  },
+  "Summit Lake, Wisconsin": {
+    "mean_weight": 3.610443588,
+    "n_events": 1
+  },
+  "Sunbury, PA": {
+    "mean_weight": 4.7164,
+    "n_events": 1
+  },
+  "Sunfish, Minnesota": {
+    "mean_weight": 7.1979245248,
+    "n_events": 1
+  },
+  "Susquehanna , PA": {
+    "mean_weight": 6.3125,
+    "n_events": 1
+  },
+  "Sutherland, Nebraska": {
+    "mean_weight": 4.7583305664,
+    "n_events": 2
+  },
+  "Suwannee River, Florida": {
+    "mean_weight": 5.4780544108,
+    "n_events": 2
+  },
+  "Swan, Minnesota": {
+    "mean_weight": 3.4676978276000003,
+    "n_events": 2
+  },
+  "Sweetwater, Texas": {
+    "mean_weight": 13.4986650656,
+    "n_events": 1
+  },
+  "TEMPE, AZ": {
+    "mean_weight": 7.5356,
+    "n_events": 1
+  },
+  "Table Rock Lake, Branson, MO": {
+    "mean_weight": 9.357157142857144,
+    "n_events": 7
+  },
+  "Table Rock Lake, Springfield, MO": {
+    "mean_weight": 10.03125,
+    "n_events": 2
+  },
+  "Tahlequah, OK": {
+    "mean_weight": 14.3297,
+    "n_events": 1
+  },
+  "Tahquamenon River, Michigan": {
+    "mean_weight": 3.6842403984,
+    "n_events": 2
+  },
+  "Tallahassee, FL": {
+    "mean_weight": 6.486883333333334,
+    "n_events": 6
+  },
+  "Tampa, FL": {
+    "mean_weight": 3.7422,
+    "n_events": 1
+  },
+  "Tampier Lake, Illinois": {
+    "mean_weight": 3.7094820216,
+    "n_events": 1
+  },
+  "Tanners, Minnesota": {
+    "mean_weight": 6.22909394,
+    "n_events": 2
+  },
+  "Tatum, TX": {
+    "mean_weight": 7.9774,
+    "n_events": 1
+  },
+  "Tawakoni, Texas": {
+    "mean_weight": 4.4050395280000005,
+    "n_events": 4
+  },
+  "Taylorsville Lake, Kentucky": {
+    "mean_weight": 13.157032294,
+    "n_events": 1
+  },
+  "Tea North Pond, South Dakota": {
+    "mean_weight": 6.0694495432,
+    "n_events": 1
+  },
+  "Tea South Pond, South Dakota": {
+    "mean_weight": 10.5353585528,
+    "n_events": 1
+  },
+  "Teal Lake, Wisconsin": {
+    "mean_weight": 4.0489720064,
+    "n_events": 2
+  },
+  "Tellico Reservoir, Tennessee": {
+    "mean_weight": 18.2246477514,
+    "n_events": 2
+  },
+  "Tempe, AZ": {
+    "mean_weight": 10.3281,
+    "n_events": 1
+  },
+  "Ten Mile, Minnesota": {
+    "mean_weight": 9.129635093533333,
+    "n_events": 6
+  },
+  "Ten Mile, TN": {
+    "mean_weight": 9.2108,
+    "n_events": 1
+  },
+  "Tenderfoot Lake, Wisconsin": {
+    "mean_weight": 6.463912769,
+    "n_events": 2
+  },
+  "Tenmile Lake, Wisconsin": {
+    "mean_weight": 10.5166758944,
+    "n_events": 1
+  },
+  "Tennessee River, Knoxville, TN": {
+    "mean_weight": 8.0664,
+    "n_events": 8
+  },
+  "Tetonka, Minnesota": {
+    "mean_weight": 4.2535395956,
+    "n_events": 1
+  },
+  "Texoma, Texas": {
+    "mean_weight": 6.735742442,
+    "n_events": 2
+  },
+  "Thomas Mitchell Pond, Iowa": {
+    "mean_weight": 9.6997724352,
+    "n_events": 2
+  },
+  "Thomason , CT": {
+    "mean_weight": 6.214,
+    "n_events": 1
+  },
+  "Thomaston, GA": {
+    "mean_weight": 2.8098,
+    "n_events": 1
+  },
+  "Thompson, Minnesota": {
+    "mean_weight": 3.4816083968,
+    "n_events": 1
+  },
+  "Three Mile Lake, Iowa": {
+    "mean_weight": 6.625348606,
+    "n_events": 2
+  },
+  "Thumb Lake, Michigan": {
+    "mean_weight": 9.7605608664,
+    "n_events": 1
+  },
+  "Thunder Lake, Wisconsin": {
+    "mean_weight": 2.9620133552000003,
+    "n_events": 1
+  },
+  "Ticonderoga, NY": {
+    "mean_weight": 11.463775,
+    "n_events": 4
+  },
+  "Tiger Cat Flowage, Wisconsin": {
+    "mean_weight": 16.5555311928,
+    "n_events": 1
+  },
+  "Tightwad, MO": {
+    "mean_weight": 6.299875,
+    "n_events": 4
+  },
+  "Tims Ford Lake, Winchester, TN": {
+    "mean_weight": 12.302066666666667,
+    "n_events": 3
+  },
+  "Tims Ford Reservoir, Tennessee": {
+    "mean_weight": 12.775457190200001,
+    "n_events": 2
+  },
+  "Tioga county, NY": {
+    "mean_weight": 4.4286,
+    "n_events": 1
+  },
+  "Tiverton, RI": {
+    "mean_weight": 3.3885,
+    "n_events": 1
+  },
+  "Tohickon, PA": {
+    "mean_weight": 3.2933,
+    "n_events": 1
+  },
+  "Toledo Bend Reservoir, LA": {
+    "mean_weight": 3.2417,
+    "n_events": 1
+  },
+  "Toledo Bend Reservoir, Many, LA": {
+    "mean_weight": 13.312491666666666,
+    "n_events": 12
+  },
+  "Toledo Bend, LA": {
+    "mean_weight": 2.52,
+    "n_events": 1
+  },
+  "Toledo Bend, Many, LA": {
+    "mean_weight": 13.307283333333332,
+    "n_events": 6
+  },
+  "Toledo Bend, Texas": {
+    "mean_weight": 13.1838463127,
+    "n_events": 8
+  },
+  "Tomahawk Lake, Wisconsin": {
+    "mean_weight": 14.8457679728,
+    "n_events": 3
+  },
+  "Tombigbee River, Columbus, MS": {
+    "mean_weight": 9.427100000000001,
+    "n_events": 3
+  },
+  "Topeka, KS": {
+    "mean_weight": 4.593071428571428,
+    "n_events": 7
+  },
+  "Topsham, ME": {
+    "mean_weight": 16.603,
+    "n_events": 1
+  },
+  "Toronto Reservoir, Kansas": {
+    "mean_weight": 3.1024587776000003,
+    "n_events": 1
+  },
+  "Tovey, IL": {
+    "mean_weight": 6.9816,
+    "n_events": 2
+  },
+  "Towanda, PA": {
+    "mean_weight": 2.8311,
+    "n_events": 1
+  },
+  "Townline Lake, Wisconsin": {
+    "mean_weight": 3.0619190048,
+    "n_events": 1
+  },
+  "Tradinghouse, Texas": {
+    "mean_weight": 19.1862292468,
+    "n_events": 1
+  },
+  "Travis, Texas": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Trinidad, CO": {
+    "mean_weight": 4.57956,
+    "n_events": 5
+  },
+  "Trout Lake, Wisconsin": {
+    "mean_weight": 5.253820114577778,
+    "n_events": 9
+  },
+  "Trude Lake, Wisconsin": {
+    "mean_weight": 4.5111957332,
+    "n_events": 2
+  },
+  "Tsala Apopka Floral City Pool, Florida": {
+    "mean_weight": 11.4535179016,
+    "n_events": 2
+  },
+  "Tsala Apopka Hernando Pool, Florida": {
+    "mean_weight": 9.7352014568,
+    "n_events": 1
+  },
+  "Tsala Apopka Inverness Pool, Florida": {
+    "mean_weight": 17.961283862800002,
+    "n_events": 2
+  },
+  "Tug Lake, Wisconsin": {
+    "mean_weight": 5.8735154976,
+    "n_events": 1
+  },
+  "Tulsa, OK": {
+    "mean_weight": 12.0989,
+    "n_events": 1
+  },
+  "Tupper Lake, NY": {
+    "mean_weight": 13.1598,
+    "n_events": 1
+  },
+  "Turner Lake, Wisconsin": {
+    "mean_weight": 3.6405794687000004,
+    "n_events": 4
+  },
+  "Turtle Flambeau Flowage, Wisconsin": {
+    "mean_weight": 5.2235296584,
+    "n_events": 3
+  },
+  "Turtle, Minnesota": {
+    "mean_weight": 8.6329023392,
+    "n_events": 1
+  },
+  "Tuttle Creek River Pond, Kansas": {
+    "mean_weight": 3.0264750424,
+    "n_events": 1
+  },
+  "Twelve Mile Lake, Iowa": {
+    "mean_weight": 11.029626552666665,
+    "n_events": 6
+  },
+  "Twin Bear Lake, Wisconsin": {
+    "mean_weight": 16.57448576293333,
+    "n_events": 3
+  },
+  "Twin Buttes, Texas": {
+    "mean_weight": 21.3478104596,
+    "n_events": 1
+  },
+  "Twin Falls Flowage, Wisconsin": {
+    "mean_weight": 17.3682800076,
+    "n_events": 1
+  },
+  "Twin Lakes (WI_Vil)_1, Wisconsin": {
+    "mean_weight": 3.6260567124,
+    "n_events": 4
+  },
+  "Twin Lakes, Wisconsin": {
+    "mean_weight": 3.0147573836,
+    "n_events": 1
+  },
+  "Two Island, Minnesota": {
+    "mean_weight": 13.2325140392,
+    "n_events": 2
+  },
+  "Two Sisters Lake, Wisconsin": {
+    "mean_weight": 17.66541122452,
+    "n_events": 10
+  },
+  "Tyler Lake, Connecticut": {
+    "mean_weight": 3.9753370624,
+    "n_events": 1
+  },
+  "Tyler, TX": {
+    "mean_weight": 8.03395,
+    "n_events": 2
+  },
+  "Umatilla, OR": {
+    "mean_weight": 7.367,
+    "n_events": 2
+  },
+  "Uncertain, TX": {
+    "mean_weight": 9.537075,
+    "n_events": 4
+  },
+  "Union Lake, Michigan": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Upper Buckatabon Lake, Wisconsin": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Upper Chesapeake Bay, Cecil County, MD": {
+    "mean_weight": 7.802066666666666,
+    "n_events": 3
+  },
+  "Upper Chesapeake Bay, North East, MD": {
+    "mean_weight": 13.75,
+    "n_events": 3
+  },
+  "Upper Clam Lake, Wisconsin": {
+    "mean_weight": 3.0208402728,
+    "n_events": 1
+  },
+  "Upper Eau Claire Lake, Wisconsin": {
+    "mean_weight": 9.468889089866666,
+    "n_events": 3
+  },
+  "Upper Grand, Michigan": {
+    "mean_weight": 6.639706614266667,
+    "n_events": 9
+  },
+  "Upper Gull, Minnesota": {
+    "mean_weight": 6.098400312800001,
+    "n_events": 1
+  },
+  "Upper Mississippi River, Clinton, IA": {
+    "mean_weight": 8.697933333333333,
+    "n_events": 3
+  },
+  "Upper Mississippi River, La Crosse, WI": {
+    "mean_weight": 13.476575,
+    "n_events": 4
+  },
+  "Upper Prior, Minnesota": {
+    "mean_weight": 7.3040468,
+    "n_events": 1
+  },
+  "Upper Saint Croix Lake, Wisconsin": {
+    "mean_weight": 6.041643337866667,
+    "n_events": 3
+  },
+  "Upper Trelipe, Minnesota": {
+    "mean_weight": 11.301815955199999,
+    "n_events": 2
+  },
+  "Utah Lake, Utah": {
+    "mean_weight": 2.9403200444,
+    "n_events": 1
+  },
+  "VA": {
+    "mean_weight": 8.5989,
+    "n_events": 1
+  },
+  "Van Vliet Lake, Wisconsin": {
+    "mean_weight": 4.434778366800001,
+    "n_events": 2
+  },
+  "Various, CO": {
+    "mean_weight": 6.7804,
+    "n_events": 1
+  },
+  "Vermilion, Minnesota": {
+    "mean_weight": 4.9672514052571435,
+    "n_events": 7
+  },
+  "Vernon Township, NJ": {
+    "mean_weight": 5.1561,
+    "n_events": 1
+  },
+  "Vero Beach, FL": {
+    "mean_weight": 7.3803,
+    "n_events": 1
+  },
+  "Victor Braunig, Texas": {
+    "mean_weight": 3.1116350098,
+    "n_events": 4
+  },
+  "Voyageur Lake, Wisconsin": {
+    "mean_weight": 3.5231961484000003,
+    "n_events": 2
+  },
+  "WI, IL": {
+    "mean_weight": 7.68685,
+    "n_events": 2
+  },
+  "Wabedo, Minnesota": {
+    "mean_weight": 6.3139217356,
+    "n_events": 1
+  },
+  "Wachusett Reservoir, Massachusetts": {
+    "mean_weight": 4.806357159,
+    "n_events": 4
+  },
+  "Wacissa, FL": {
+    "mean_weight": 4.0461,
+    "n_events": 1
+  },
+  "Waco, Texas": {
+    "mean_weight": 20.353631531,
+    "n_events": 2
+  },
+  "Waconia, Minnesota": {
+    "mean_weight": 4.285900011200001,
+    "n_events": 4
+  },
+  "Wahoo, NE": {
+    "mean_weight": 7.0056,
+    "n_events": 1
+  },
+  "Wake Forest, NC": {
+    "mean_weight": 3.374,
+    "n_events": 1
+  },
+  "Wakefield, Minnesota": {
+    "mean_weight": 4.835508684000001,
+    "n_events": 1
+  },
+  "Wakefield, RI": {
+    "mean_weight": 1.7369,
+    "n_events": 1
+  },
+  "Walloon Lake, Michigan": {
+    "mean_weight": 7.9209827428,
+    "n_events": 1
+  },
+  "Walnut Point, Illinois": {
+    "mean_weight": 13.6794988112,
+    "n_events": 1
+  },
+  "Walter E Long, Texas": {
+    "mean_weight": 24.3921393648,
+    "n_events": 1
+  },
+  "Walton Park Lake, Illinois": {
+    "mean_weight": 7.455071944399999,
+    "n_events": 2
+  },
+  "Wamplers Lake, Michigan": {
+    "mean_weight": 12.364842623200001,
+    "n_events": 2
+  },
+  "Wanahoo, Nebraska": {
+    "mean_weight": 12.1157018716,
+    "n_events": 1
+  },
+  "Wapogasset Lake, Wisconsin": {
+    "mean_weight": 25.0,
+    "n_events": 1
+  },
+  "Wappapello, MO": {
+    "mean_weight": 4.2083,
+    "n_events": 1
+  },
+  "Washington County State Fishing Lake, Kansas": {
+    "mean_weight": 3.0744362168,
+    "n_events": 1
+  },
+  "Washington County, Illinois": {
+    "mean_weight": 10.7394541496,
+    "n_events": 1
+  },
+  "Washington, Minnesota": {
+    "mean_weight": 3.7655209893999997,
+    "n_events": 2
+  },
+  "Watauga Lake, Carter County, TN": {
+    "mean_weight": 13.833333333333334,
+    "n_events": 3
+  },
+  "Watauga Reservoir, Tennessee": {
+    "mean_weight": 16.063622022,
+    "n_events": 2
+  },
+  "Waterford, MI": {
+    "mean_weight": 6.19045,
+    "n_events": 2
+  },
+  "Waterloo, NY": {
+    "mean_weight": 4.0247,
+    "n_events": 1
+  },
+  "Watertown, NY": {
+    "mean_weight": 4.7117,
+    "n_events": 1
+  },
+  "Waterville, MN": {
+    "mean_weight": 8.3496,
+    "n_events": 1
+  },
+  "Watts Bar Reservoir, Kingston, TN": {
+    "mean_weight": 8.468766666666667,
+    "n_events": 3
+  },
+  "Watts Bar Reservoir, Tennessee": {
+    "mean_weight": 11.096317473733334,
+    "n_events": 3
+  },
+  "Waubay Lake, South Dakota": {
+    "mean_weight": 4.885313632,
+    "n_events": 6
+  },
+  "Waukesha, WI": {
+    "mean_weight": 5.01515,
+    "n_events": 2
+  },
+  "Waxahachie, Texas": {
+    "mean_weight": 11.6978417416,
+    "n_events": 1
+  },
+  "Waynesboro , MS": {
+    "mean_weight": 5.0668,
+    "n_events": 1
+  },
+  "Webb, Minnesota": {
+    "mean_weight": 14.153153613,
+    "n_events": 2
+  },
+  "Webster Reservoir Stilling Basin, Kansas": {
+    "mean_weight": 4.1151080144000005,
+    "n_events": 1
+  },
+  "Webster Reservoir, Kansas": {
+    "mean_weight": 3.4905617118,
+    "n_events": 2
+  },
+  "Wellington, ON": {
+    "mean_weight": 12.54,
+    "n_events": 1
+  },
+  "Welsh, Texas": {
+    "mean_weight": 21.4377360138,
+    "n_events": 2
+  },
+  "West Battle, Minnesota": {
+    "mean_weight": 4.827404808000001,
+    "n_events": 2
+  },
+  "West Bearskin, Minnesota": {
+    "mean_weight": 19.21870376,
+    "n_events": 1
+  },
+  "West Bend, WI": {
+    "mean_weight": 6.8546,
+    "n_events": 1
+  },
+  "West Borrow Pit KDOT, Kansas": {
+    "mean_weight": 3.3678791664000003,
+    "n_events": 1
+  },
+  "West Coon, Minnesota": {
+    "mean_weight": 6.125203620800001,
+    "n_events": 2
+  },
+  "West Hill Pond, Connecticut": {
+    "mean_weight": 5.3353531422,
+    "n_events": 2
+  },
+  "West Linn, OR": {
+    "mean_weight": 15.2283,
+    "n_events": 1
+  },
+  "West Lost, Minnesota": {
+    "mean_weight": 3.858317898,
+    "n_events": 2
+  },
+  "West Moore, Minnesota": {
+    "mean_weight": 4.343381932,
+    "n_events": 1
+  },
+  "West Newton, PA": {
+    "mean_weight": 6.4931,
+    "n_events": 1
+  },
+  "West Nipissing, ON": {
+    "mean_weight": 10.7176,
+    "n_events": 1
+  },
+  "West Rush, Minnesota": {
+    "mean_weight": 5.043559130666667,
+    "n_events": 3
+  },
+  "West Thompson Reservoir, Connecticut": {
+    "mean_weight": 11.763106607000001,
+    "n_events": 2
+  },
+  "West Twin Lake, Michigan": {
+    "mean_weight": 5.879524738400001,
+    "n_events": 2
+  },
+  "West Warwick, RI": {
+    "mean_weight": 4.5085,
+    "n_events": 1
+  },
+  "Western Pa, PA": {
+    "mean_weight": 4.5931,
+    "n_events": 1
+  },
+  "Wheatland, WY": {
+    "mean_weight": 6.4226,
+    "n_events": 1
+  },
+  "Wheeler Branch, Texas": {
+    "mean_weight": 19.5322110846,
+    "n_events": 2
+  },
+  "Wheeler Lake, Decatur, AL": {
+    "mean_weight": 12.689900000000002,
+    "n_events": 13
+  },
+  "Wheeler Lake, Wisconsin": {
+    "mean_weight": 17.3949550892,
+    "n_events": 1
+  },
+  "Whitby, ON": {
+    "mean_weight": 11.25124,
+    "n_events": 5
+  },
+  "Whitby, Ontario": {
+    "mean_weight": 12.4134,
+    "n_events": 4
+  },
+  "White Bear, Minnesota": {
+    "mean_weight": 6.2547068328,
+    "n_events": 1
+  },
+  "White Birch Lake, Wisconsin": {
+    "mean_weight": 7.525928924266666,
+    "n_events": 3
+  },
+  "White Potato Lake, Wisconsin": {
+    "mean_weight": 14.014829917599998,
+    "n_events": 1
+  },
+  "White River, Texas": {
+    "mean_weight": 4.3233000932,
+    "n_events": 1
+  },
+  "White Rock, Texas": {
+    "mean_weight": 3.3997432992000003,
+    "n_events": 1
+  },
+  "White Sand Lake, Wisconsin": {
+    "mean_weight": 3.7408283768,
+    "n_events": 1
+  },
+  "White Springs, FL": {
+    "mean_weight": 11.325849999999999,
+    "n_events": 2
+  },
+  "Whitefish Lake, Wisconsin": {
+    "mean_weight": 8.6104561971,
+    "n_events": 4
+  },
+  "Whitefish, Minnesota": {
+    "mean_weight": 4.8806001982,
+    "n_events": 2
+  },
+  "Whitesboro, TX": {
+    "mean_weight": 13.695,
+    "n_events": 2
+  },
+  "Whitewater, WI": {
+    "mean_weight": 7.982,
+    "n_events": 1
+  },
+  "Whitewood Lake, Michigan": {
+    "mean_weight": 23.4959388624,
+    "n_events": 1
+  },
+  "Whittier , CA": {
+    "mean_weight": 3.5098,
+    "n_events": 1
+  },
+  "Widow, Minnesota": {
+    "mean_weight": 12.489966348,
+    "n_events": 1
+  },
+  "Wiggins, MS": {
+    "mean_weight": 5.2391,
+    "n_events": 1
+  },
+  "Wilbur Reservoir, Tennessee": {
+    "mean_weight": 2.9685593512,
+    "n_events": 1
+  },
+  "Wilbur Tailwater, Tennessee": {
+    "mean_weight": 2.9565450920000003,
+    "n_events": 1
+  },
+  "Wild Rice Lake, Wisconsin": {
+    "mean_weight": 3.7181238205333336,
+    "n_events": 3
+  },
+  "Wilgreen Lake, Kentucky": {
+    "mean_weight": 9.6615173288,
+    "n_events": 1
+  },
+  "Wilkins, Minnesota": {
+    "mean_weight": 7.2743325996,
+    "n_events": 2
+  },
+  "Willard Bay Reservoir, Utah": {
+    "mean_weight": 3.3293743816,
+    "n_events": 1
+  },
+  "Williamsport, MD": {
+    "mean_weight": 5.617325,
+    "n_events": 4
+  },
+  "Willis, TX": {
+    "mean_weight": 1.2197,
+    "n_events": 1
+  },
+  "Wilson State Fishing Lake, Kansas": {
+    "mean_weight": 17.2643003452,
+    "n_events": 2
+  },
+  "Winchester Lake, Connecticut": {
+    "mean_weight": 6.1830071632,
+    "n_events": 3
+  },
+  "Windfall Lake, Wisconsin": {
+    "mean_weight": 3.855925108,
+    "n_events": 1
+  },
+  "Windigo Lake, Wisconsin": {
+    "mean_weight": 21.062648054,
+    "n_events": 1
+  },
+  "Windsor, ON": {
+    "mean_weight": 11.0173,
+    "n_events": 1
+  },
+  "Winfield City Lake, Kansas": {
+    "mean_weight": 3.3738059776,
+    "n_events": 1
+  },
+  "Winnibigoshish and Cutfoot Chain, Minnesota": {
+    "mean_weight": 3.05157914992,
+    "n_events": 5
+  },
+  "Winnibigoshish, Minnesota": {
+    "mean_weight": 2.9396945144,
+    "n_events": 1
+  },
+  "Winnsboro, Texas": {
+    "mean_weight": 12.2188443504,
+    "n_events": 1
+  },
+  "Winter Garden, FL": {
+    "mean_weight": 7.4206,
+    "n_events": 1
+  },
+  "Winter Haven , FL": {
+    "mean_weight": 7.034,
+    "n_events": 1
+  },
+  "Winter Haven, FL": {
+    "mean_weight": 4.28,
+    "n_events": 1
+  },
+  "Winter Lake, Wisconsin": {
+    "mean_weight": 4.9847118976,
+    "n_events": 1
+  },
+  "Winthrop, ME": {
+    "mean_weight": 10.8169,
+    "n_events": 1
+  },
+  "Winyah Bay, Georgetown, SC": {
+    "mean_weight": 8.093754545454546,
+    "n_events": 11
+  },
+  "Winyah Bay, SC": {
+    "mean_weight": 8.083333333333334,
+    "n_events": 3
+  },
+  "Woman, Minnesota": {
+    "mean_weight": 4.382816178400001,
+    "n_events": 5
+  },
+  "Wononskopomuc Lake, Connecticut": {
+    "mean_weight": 6.838886266399999,
+    "n_events": 1
+  },
+  "Woods Lake, Illinois": {
+    "mean_weight": 10.6830106724,
+    "n_events": 2
+  },
+  "Woodworth, LA": {
+    "mean_weight": 3.0548,
+    "n_events": 2
+  },
+  "Worth, Texas": {
+    "mean_weight": 15.1061789948,
+    "n_events": 1
+  },
+  "Wright Patman, Texas": {
+    "mean_weight": 11.2117304712,
+    "n_events": 2
+  },
+  "Wyandotte County Lake, Kansas": {
+    "mean_weight": 4.8546609568,
+    "n_events": 1
+  },
+  "Wyoming, AL": {
+    "mean_weight": 22.40135,
+    "n_events": 2
+  },
+  "Yantis, TX": {
+    "mean_weight": 7.901066666666668,
+    "n_events": 3
+  },
+  "Yatesville Lake, Kentucky": {
+    "mean_weight": 19.4681615512,
+    "n_events": 1
+  },
+  "Yellow Birch Lake, Wisconsin": {
+    "mean_weight": 4.0351450848,
+    "n_events": 3
+  },
+  "Yellow Lake, Wisconsin": {
+    "mean_weight": 3.545878506133333,
+    "n_events": 3
+  },
+  "Zukey Lake, Michigan": {
+    "mean_weight": 16.105308652,
+    "n_events": 1
+  },
+  "Zumbro, Minnesota": {
+    "mean_weight": 8.2396554024,
+    "n_events": 1
+  },
+  "Zwolle, LA": {
+    "mean_weight": 7.00145,
+    "n_events": 4
+  },
+  "augusta , ME": {
+    "mean_weight": 5.0282,
+    "n_events": 1
+  },
+  "augusta, ME": {
+    "mean_weight": 6.7804,
+    "n_events": 1
+  },
+  "barkcamp, OH": {
+    "mean_weight": 2.7104999999999997,
+    "n_events": 6
+  },
+  "belmont, OH": {
+    "mean_weight": 4.3211,
+    "n_events": 1
+  },
+  "cherryvale, KS": {
+    "mean_weight": 6.5801,
+    "n_events": 1
+  },
+  "china nuevo leon, NEWL": {
+    "mean_weight": 7.6144,
+    "n_events": 1
+  },
+  "conway, AR": {
+    "mean_weight": 7.3848,
+    "n_events": 1
+  },
+  "fish creek, WV": {
+    "mean_weight": 3.7032,
+    "n_events": 1
+  },
+  "huntsville, AL": {
+    "mean_weight": 3.5345,
+    "n_events": 5
+  },
+  "lodi, CA": {
+    "mean_weight": 14.506,
+    "n_events": 1
+  },
+  "mcmechen, WV": {
+    "mean_weight": 5.9634,
+    "n_events": 2
+  },
+  "piedmont, OH": {
+    "mean_weight": 2.6000666666666667,
+    "n_events": 3
+  },
+  "smithfield, RI": {
+    "mean_weight": 1.6114,
+    "n_events": 1
+  },
+  "viola, WV": {
+    "mean_weight": 2.5641,
+    "n_events": 1
+  },
+  "washington, PA": {
+    "mean_weight": 3.326,
+    "n_events": 1
+  },
+  "wheeling, WV": {
+    "mean_weight": 5.630599999999999,
+    "n_events": 2
+  },
+  "wind lake, WI": {
+    "mean_weight": 3.4738,
+    "n_events": 1
+  }
+}

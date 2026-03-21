@@ -256,6 +256,17 @@
 - Practical meaning: the project is no longer broadly blocked on pipeline fragility or total coverage collapse; it is at the edge of the first real weak/viable/strong judgment.
 - Immediate next move: secure one additional trustworthy row from the highest-probability blocked waters and rerun the guarded comparison.
 
+## 2026-03-15 20:18 America/Edmonton — source-of-truth sync to provisional Phase 0 result
+- The workspace has moved beyond the earlier guarded 15-row state. Current `castline/validation/artifacts/validation_summary.md` now reports:
+  - **Judgment:** `strong`
+  - **27 assembled rows / 26 fully usable rows**
+  - **Baseline R²:** 0.0143
+  - **Full-model R²:** 0.6599
+  - **Decision:** proceed, with caveats
+- Important caveat: this stronger result currently lives inside a broad uncommitted validation expansion, so it should be treated as a **provisional strong thesis**, not yet a fully hardened production-trustworthy benchmark.
+- Coordination update: refreshed `IMPLEMENTATION_PLAN.md` so it no longer talks as if Phase 0 is still one row short of judgment.
+- New top priority is no longer just crossing the row threshold; it is stabilizing/curating the expanded validation lane and rerunning a cleaner holdout-aware evaluation so the strong thesis can be committed and trusted with appropriate caveats.
+
 ## 2026-03-15 08:34 America/Edmonton — threshold-push lane launched
 - Spawned a focused sub-agent lane: `castline-threshold-push`.
 - Scope: promote any additional coverage-backed recommendations into the approved compact mapping batch, rerun the full real-data Phase 0 pipeline, and determine whether the usable-row count can finally clear the 16-row judgment threshold.

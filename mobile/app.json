@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "CASTLINE",
-    "slug": "castline-mobile",
-    "scheme": "castline",
+    "name": "OpenCatch",
+    "slug": "opencatch",
+    "scheme": "opencatch",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
@@ -14,7 +14,16 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.castline.mobile"
+      "bundleIdentifier": "com.opencatch.mobile"
+    },
+    "plugins": [
+      "expo-font",
+      "@maplibre/maplibre-react-native"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0ab7193d-926e-44e6-9d23-4bd4c8aef6d9"
+      }
     }
   }
 }

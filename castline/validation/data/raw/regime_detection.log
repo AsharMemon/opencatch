@@ -1,0 +1,104 @@
+2026-03-18 06:14:52,594 INFO ============================================================
+2026-03-18 06:14:52,594 INFO CASTLINE Weather Regime Detection
+2026-03-18 06:14:52,594 INFO ============================================================
+2026-03-18 06:14:52,607 INFO Loaded 1236 tournament weather rows from /workspace/castline/raw/tournament_weather_daily.csv
+2026-03-18 06:14:52,610 INFO Unique event-days: 1236
+2026-03-18 06:14:52,619 INFO Loaded 2912 ASOS stations
+2026-03-18 06:15:11,136 INFO Progress: 25/1236 (new: 20, failed: 5)
+2026-03-18 06:17:13,717 INFO ============================================================
+2026-03-18 06:17:13,717 INFO CASTLINE Weather Regime Detection
+2026-03-18 06:17:13,717 INFO ============================================================
+2026-03-18 06:17:13,731 INFO Loaded 1236 tournament weather rows from /workspace/castline/raw/tournament_weather_daily.csv
+2026-03-18 06:17:13,733 INFO Unique event-days: 1236
+2026-03-18 06:17:13,743 INFO Loaded 2912 ASOS stations
+2026-03-18 06:17:26,236 INFO Progress: 25/1236 (new: 20, failed: 5)
+2026-03-18 06:17:42,512 INFO Progress: 50/1236 (new: 41, failed: 9)
+2026-03-18 06:17:49,053 INFO Progress: 60/1236 (new: 50, failed: 10, checkpoint saved)
+2026-03-18 06:18:18,876 INFO Progress: 100/1236 (new: 83, failed: 17)
+2026-03-18 06:18:36,714 INFO Progress: 121/1236 (new: 100, failed: 21, checkpoint saved)
+2026-03-18 06:18:39,411 INFO Progress: 125/1236 (new: 104, failed: 21)
+2026-03-18 06:19:00,419 INFO Progress: 150/1236 (new: 125, failed: 25)
+2026-03-18 06:19:19,427 INFO Progress: 175/1236 (new: 147, failed: 28)
+2026-03-18 06:19:21,298 INFO Progress: 178/1236 (new: 150, failed: 28, checkpoint saved)
+2026-03-18 06:20:15,048 INFO Progress: 243/1236 (new: 200, failed: 43, checkpoint saved)
+2026-03-18 06:20:19,712 INFO Progress: 250/1236 (new: 206, failed: 44)
+2026-03-18 06:20:40,261 INFO Progress: 275/1236 (new: 227, failed: 48)
+2026-03-18 06:20:58,282 INFO Progress: 300/1236 (new: 250, failed: 50, checkpoint saved)
+2026-03-18 06:20:58,283 INFO Progress: 300/1236 (new: 250, failed: 50)
+2026-03-18 06:21:17,347 INFO Progress: 325/1236 (new: 273, failed: 52)
+2026-03-18 06:21:35,362 INFO Progress: 350/1236 (new: 295, failed: 55)
+2026-03-18 06:21:40,137 INFO Progress: 356/1236 (new: 300, failed: 56, checkpoint saved)
+2026-03-18 06:21:51,660 INFO Progress: 375/1236 (new: 318, failed: 57)
+2026-03-18 06:22:24,520 INFO Progress: 400/1236 (new: 342, failed: 58)
+2026-03-18 06:22:31,295 INFO Progress: 409/1236 (new: 350, failed: 59, checkpoint saved)
+2026-03-18 06:22:43,038 INFO Progress: 425/1236 (new: 365, failed: 60)
+2026-03-18 06:22:59,977 INFO Progress: 450/1236 (new: 389, failed: 61)
+2026-03-18 06:23:07,215 INFO Progress: 461/1236 (new: 400, failed: 61, checkpoint saved)
+2026-03-18 06:23:16,569 INFO Progress: 475/1236 (new: 413, failed: 62)
+2026-03-18 06:23:29,464 INFO Progress: 500/1236 (new: 438, failed: 62)
+2026-03-18 06:23:37,436 INFO Progress: 512/1236 (new: 450, failed: 62, checkpoint saved)
+2026-03-18 06:23:45,589 INFO Progress: 525/1236 (new: 463, failed: 62)
+2026-03-18 06:24:01,521 INFO Progress: 550/1236 (new: 487, failed: 63)
+2026-03-18 06:24:08,247 INFO Progress: 563/1236 (new: 500, failed: 63, checkpoint saved)
+2026-03-18 06:24:16,375 INFO Progress: 575/1236 (new: 512, failed: 63)
+2026-03-18 06:24:33,755 INFO Progress: 600/1236 (new: 537, failed: 63)
+2026-03-18 06:24:42,659 INFO Progress: 613/1236 (new: 550, failed: 63, checkpoint saved)
+2026-03-18 06:24:50,288 INFO Progress: 625/1236 (new: 562, failed: 63)
+2026-03-18 06:25:07,869 INFO Progress: 650/1236 (new: 586, failed: 64)
+2026-03-18 06:25:17,634 INFO Progress: 664/1236 (new: 600, failed: 64, checkpoint saved)
+2026-03-18 06:25:24,368 INFO Progress: 675/1236 (new: 611, failed: 64)
+2026-03-18 06:25:43,460 INFO Progress: 700/1236 (new: 636, failed: 64)
+2026-03-18 06:25:55,487 INFO Progress: 714/1236 (new: 650, failed: 64, checkpoint saved)
+2026-03-18 06:26:02,983 INFO Progress: 725/1236 (new: 661, failed: 64)
+2026-03-18 06:26:19,115 INFO Progress: 750/1236 (new: 685, failed: 65)
+2026-03-18 06:26:30,096 INFO Progress: 765/1236 (new: 700, failed: 65, checkpoint saved)
+2026-03-18 06:26:36,912 INFO Progress: 775/1236 (new: 710, failed: 65)
+2026-03-18 06:26:53,921 INFO Progress: 800/1236 (new: 735, failed: 65)
+2026-03-18 06:27:06,188 INFO Progress: 816/1236 (new: 750, failed: 66, checkpoint saved)
+2026-03-18 06:27:12,701 INFO Progress: 825/1236 (new: 759, failed: 66)
+2026-03-18 06:27:30,970 INFO Progress: 850/1236 (new: 784, failed: 66)
+2026-03-18 06:27:41,802 INFO Progress: 866/1236 (new: 800, failed: 66, checkpoint saved)
+2026-03-18 06:27:46,757 INFO Progress: 875/1236 (new: 809, failed: 66)
+2026-03-18 06:28:03,460 INFO Progress: 900/1236 (new: 833, failed: 67)
+2026-03-18 06:28:14,582 INFO Progress: 917/1236 (new: 850, failed: 67, checkpoint saved)
+2026-03-18 06:28:20,946 INFO Progress: 925/1236 (new: 858, failed: 67)
+2026-03-18 06:28:39,101 INFO Progress: 950/1236 (new: 882, failed: 68)
+2026-03-18 06:28:51,501 INFO Progress: 968/1236 (new: 900, failed: 68, checkpoint saved)
+2026-03-18 06:28:56,682 INFO Progress: 975/1236 (new: 907, failed: 68)
+2026-03-18 06:29:14,596 INFO Progress: 1000/1236 (new: 932, failed: 68)
+2026-03-18 06:29:27,068 INFO Progress: 1019/1236 (new: 950, failed: 69, checkpoint saved)
+2026-03-18 06:29:30,296 INFO Progress: 1025/1236 (new: 956, failed: 69)
+2026-03-18 06:29:45,948 INFO Progress: 1050/1236 (new: 981, failed: 69)
+2026-03-18 06:29:59,471 INFO Progress: 1069/1236 (new: 1000, failed: 69, checkpoint saved)
+2026-03-18 06:30:03,239 INFO Progress: 1075/1236 (new: 1006, failed: 69)
+2026-03-18 06:30:23,557 INFO Progress: 1100/1236 (new: 1030, failed: 70)
+2026-03-18 06:30:36,978 INFO Progress: 1120/1236 (new: 1050, failed: 70, checkpoint saved)
+2026-03-18 06:30:39,866 INFO Progress: 1125/1236 (new: 1055, failed: 70)
+2026-03-18 06:30:57,008 INFO Progress: 1150/1236 (new: 1080, failed: 70)
+2026-03-18 06:31:10,743 INFO Progress: 1170/1236 (new: 1100, failed: 70, checkpoint saved)
+2026-03-18 06:31:14,299 INFO Progress: 1175/1236 (new: 1105, failed: 70)
+2026-03-18 06:31:32,667 INFO Progress: 1200/1236 (new: 1130, failed: 70)
+2026-03-18 06:31:46,413 INFO Progress: 1220/1236 (new: 1150, failed: 70, checkpoint saved)
+2026-03-18 06:31:49,530 INFO Progress: 1225/1236 (new: 1155, failed: 70)
+2026-03-18 06:31:57,291 INFO ============================================================
+2026-03-18 06:31:57,291 INFO RESULTS
+2026-03-18 06:31:57,291 INFO ============================================================
+2026-03-18 06:31:57,291 INFO Total events processed: 1236
+2026-03-18 06:31:57,291 INFO Regime coverage: 1166/1236 (94.3%)
+2026-03-18 06:31:57,292 INFO Regime distribution:
+2026-03-18 06:31:57,292 INFO   post_frontal_late     395 (32.0%)
+2026-03-18 06:31:57,292 INFO   frontal_passage       391 (31.6%)
+2026-03-18 06:31:57,292 INFO   post_frontal_early    280 (22.7%)
+2026-03-18 06:31:57,292 INFO   stable                 91 (7.4%)
+2026-03-18 06:31:57,292 INFO   storm_approach          8 (0.6%)
+2026-03-18 06:31:57,292 INFO   pre_frontal             1 (0.1%)
+2026-03-18 06:31:57,292 INFO Feature coverage:
+2026-03-18 06:31:57,293 INFO   hours_since_front         1137/1236 (92.0%)
+2026-03-18 06:31:57,293 INFO   hours_since_precip        1166/1236 (94.3%)
+2026-03-18 06:31:57,293 INFO   pressure_trend_6h         1130/1236 (91.4%)
+2026-03-18 06:31:57,293 INFO   pressure_trend_12h        1147/1236 (92.8%)
+2026-03-18 06:31:57,293 INFO   temp_trend_6h             1130/1236 (91.4%)
+2026-03-18 06:31:57,294 INFO   wind_shift_magnitude      1164/1236 (94.2%)
+2026-03-18 06:31:57,294 INFO   stability_index           1166/1236 (94.3%)
+2026-03-18 06:31:57,308 INFO Saved regime features to /workspace/castline/raw/tournament_regime_features.csv
+2026-03-18 06:31:57,309 INFO Removed checkpoint file

@@ -2,7 +2,7 @@
 
 # CASTLINE implementation plan — source of truth
 
-_Last updated: 2026-03-15 08:51 America/Edmonton_
+_Last updated: 2026-03-15 20:18 America/Edmonton_
 
 ## Build posture
 
@@ -231,3 +231,4 @@ These remain important, but only after the thesis is being validated and the fir
 ## Immediate next action
 
 **Push the guarded real-data dataset from 15 usable rows over the 16-row judgment threshold by landing at least one additional trustworthy fully populated row — starting with the highest-probability blocked waters (Clarks Hill, Sam Rayburn, Harris Chain, Chickamauga) — then rerun the full manifest-driven outcomes + USGS + IEM pipeline and record the first non-withheld thesis judgment.**
+t-probability blocked waters (Clarks Hill, Sam Rayburn, Harris Chain, Chickamauga) — then rerun the full manifest-driven outcomes + USGS + IEM pipeline and record the first non-withheld thesis judgment.**
