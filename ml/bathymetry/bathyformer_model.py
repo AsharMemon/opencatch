@@ -595,7 +595,7 @@ class PhysicsInformedLoss(nn.Module):
             gate = pred["gate"]
             # Soft target: sigmoid((depth - threshold) / temperature)
             gate_target = torch.sigmoid((target - SHALLOW_THRESHOLD) / 1.0)
-            losses["gate"] = F.binary_cross_entropy(gate, gate_target)
+            losses["gate"] = F.binary_cross_entropy_with_logits(gate.logit(eps=1e-6), gate_target)
         else:
             losses["gate"] = torch.tensor(0.0, device=pred_depth.device)
 
