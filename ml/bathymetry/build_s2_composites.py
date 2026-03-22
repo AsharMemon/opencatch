@@ -446,6 +446,10 @@ def build_composites_batch(
 
     log.info(f"Loading lakes from {lakes_path}...")
     gdf = gpd.read_file(lakes_path)
+    # Ensure WGS84 for STAC bbox queries
+    if gdf.crs and not gdf.crs.is_geographic:
+        log.info(f"Reprojecting from {gdf.crs} to EPSG:4326")
+        gdf = gdf.to_crs("EPSG:4326")
 
     # Filter to named lakes
     name_col = None
@@ -479,6 +483,18 @@ def build_composites_batch(
         lake_name = row.get(name_col, f"lake_{idx}") if name_col else f"lake_{idx}"
 
         bounds = row.geometry.bounds  # (minx, miny, maxx, maxy)
+        # If bounds look like UTM (values > 180), transform to WGS84
+        if abs(bounds[0]) > 180 or abs(bounds[1]) > 90:
+            from rasterio.warp import transform_bounds as _tb
+            try:
+                bounds = _tb("EPSG:32615", "EPSG:4326", *bounds)  # UTM 15N (MN)
+            except Exception:
+                try:
+                    bounds = _tb("EPSG:32614", "EPSG:4326", *bounds)  # UTM 14N
+                except Exception:
+                    log.warning(f"  Skipping {lake_name}: cannot transform CRS")
+                    failed += 1
+                    continue
         bbox = (
             bounds[0] - buffer_deg,
             bounds[1] - buffer_deg,

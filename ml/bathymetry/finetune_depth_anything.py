@@ -415,6 +415,13 @@ def train(args: argparse.Namespace) -> None:
         best_val_rmse = ckpt.get("best_val_rmse", float("inf"))
         history = ckpt.get("history", [])
         log.info(f"Resumed from epoch {start_epoch}")
+        # Force unfreeze backbone if we are past frozen epochs
+        if start_epoch >= args.frozen_epochs:
+            log.info("Force-unfreezing backbone for Stage 2 resume")
+            for param in model.base_model.parameters():
+                param.requires_grad = True
+            trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+            log.info(f"Trainable parameters after force-unfreeze: {trainable:,}")
 
     total_epochs = args.frozen_epochs + args.finetune_epochs
 
