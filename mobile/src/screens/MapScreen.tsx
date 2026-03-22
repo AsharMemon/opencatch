@@ -118,6 +118,7 @@ import { DepthNumberOverlay } from '../components/DepthNumberOverlay';
 import { MarineGasOverlay } from '../components/MarineGasOverlay';
 import { OceanFishingSpotsOverlay } from '../components/OceanFishingSpotsOverlay';
 import { TidalCurrentOverlay } from '../components/TidalCurrentOverlay';
+import { USACESurveyOverlay } from '../components/USACESurveyOverlay';
 import { DraftAccessibilityOverlay } from '../components/DraftAccessibilityOverlay';
 import { IceThicknessOverlay } from '../components/IceThicknessOverlay';
 import { FishingPressureOverlay } from '../components/FishingPressureOverlay';
@@ -2763,6 +2764,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     }).catch(() => { /* use default */ });
   }, []);
 
+  // USACE survey overlay (channel depths, locks, harbors)
+  const [usaceSurveyEnabled, setUsaceSurveyEnabled] = useState(false);
+
   // AIS WiFi receiver overlay
   const [aisWifiEnabled, setAisWifiEnabled] = useState(false);
   const [aisWifiGeoJSON, setAisWifiGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
@@ -4620,6 +4624,14 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             : null,
         },
         {
+          key: 'usace-surveys',
+          label: 'USACE Surveys',
+          icon: 'water-outline',
+          description: 'Channel depths, locks, harbors',
+          isActive: usaceSurveyEnabled,
+          onPress: () => setUsaceSurveyEnabled((prev) => !prev),
+        },
+        {
           key: 'nav-aids-tool',
           label: 'Navigation Aids',
           icon: 'radio-outline',
@@ -4883,6 +4895,20 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
+          />
+        )}
+
+        {/* USACE survey overlay (channel depths, locks, harbors) */}
+        {usaceSurveyEnabled && userLocation && ShapeSource && LineLayer && CircleLayer && SymbolLayer && (
+          <USACESurveyOverlay
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            zoom={currentZoom}
+            ShapeSource={ShapeSource}
+            LineLayer={LineLayer}
+            CircleLayer={CircleLayer}
+            SymbolLayer={SymbolLayer}
+            FillLayer={FillLayer}
           />
         )}
 
@@ -6021,19 +6047,19 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       {/* Map Tools button — opens slide-out drawer (replaces 7 individual buttons) */}
       {/* Design: "Kitchen Sink" avoidance per Gaigg Ch.7 */}
       <Pressable
-        style={[styles.mapToolsButton, (measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || draftAccessEnabled) && styles.mapToolsButtonActive]}
+        style={[styles.mapToolsButton, (measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || draftAccessEnabled || usaceSurveyEnabled) && styles.mapToolsButtonActive]}
         onPress={() => setMapToolsDrawerOpen(true)}
         accessibilityLabel="Open map tools drawer"
       >
         <Ionicons
           name="build-outline"
           size={20}
-          color={(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || tidalCurrentEnabled || aisWifiEnabled || draftAccessEnabled) ? '#FFFFFF' : palette.textSecondary}
+          color={(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || tidalCurrentEnabled || aisWifiEnabled || draftAccessEnabled || usaceSurveyEnabled) ? '#FFFFFF' : palette.textSecondary}
         />
-        {(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || tidalCurrentEnabled || aisWifiEnabled || draftAccessEnabled) && (
+        {(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || tidalCurrentEnabled || aisWifiEnabled || draftAccessEnabled || usaceSurveyEnabled) && (
           <View style={styles.mapToolsBadge}>
             <Text style={styles.mapToolsBadgeText}>
-              {[measureMode, annotationMode, windEnabled, radarEnabled, marinasEnabled, accessEnabled, windAnimatedEnabled, waveEnabled, depthNumbersEnabled, marineGasEnabled, oceanSpotsEnabled, terrain3DEnabled, tidalCurrentEnabled, aisWifiEnabled, draftAccessEnabled].filter(Boolean).length}
+              {[measureMode, annotationMode, windEnabled, radarEnabled, marinasEnabled, accessEnabled, windAnimatedEnabled, waveEnabled, depthNumbersEnabled, marineGasEnabled, oceanSpotsEnabled, terrain3DEnabled, tidalCurrentEnabled, aisWifiEnabled, draftAccessEnabled, usaceSurveyEnabled].filter(Boolean).length}
             </Text>
           </View>
         )}
