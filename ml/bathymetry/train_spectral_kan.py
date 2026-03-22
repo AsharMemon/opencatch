@@ -76,7 +76,13 @@ DERIVED_FEATURES = [
     "green_sq", "blue_sq",
 ]
 
-ALL_FEATURES = RAW_BANDS + DERIVED_FEATURES  # 28 features
+# ICESat-2 depth-only features (used when S2 bands are not available)
+ICESAT2_FEATURES = [
+    "lat", "lon", "h_mean", "h_sigma",
+    "n_fit_photons", "w_surface_window_final", "quality",
+]
+
+ALL_FEATURES = RAW_BANDS + DERIVED_FEATURES + ICESAT2_FEATURES
 
 
 # ── Dataset ─────────────────────────────────────────────────────────
@@ -283,20 +289,21 @@ class PhysicsInformedLoss(nn.Module):
     3. Non-negative penalty (redundant with Softplus but reinforces)
     """
 
-    def __init__(self, physics_weight: float = 0.1):
+    def __init__(self, physics_weight: float = 0.1, blue_idx: int = 0):
         super().__init__()
         self.physics_weight = physics_weight
+        self.blue_idx = blue_idx  # -1 means no blue band available
         self.huber = nn.HuberLoss(delta=2.0)
 
     def forward(self, pred, target, features=None):
         # Primary loss
         loss = self.huber(pred, target)
 
-        if features is not None and self.physics_weight > 0:
+        if features is not None and self.physics_weight > 0 and self.blue_idx >= 0:
             # Monotonicity: deeper water -> less blue reflectance
             # Penalise if (pred_i > pred_j) but (blue_i > blue_j) for nearby points
             # Simplified: correlation between pred and blue should be negative
-            blue = features[:, 0]  # First feature = blue (normalised)
+            blue = features[:, self.blue_idx]  # blue band (normalised)
             if len(pred) > 10:
                 # Sample random pairs
                 n = min(len(pred), 256)
@@ -362,17 +369,22 @@ def train_model(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Determine available features
-    available = [f for f in ALL_FEATURES if f in df.columns]
-    if len(available) < len(RAW_BANDS):
-        log.error(f"Only {len(available)} features available. Need at least raw bands.")
+    # Determine available features — supports both S2+ICeSat-2 and ICeSat-2-only modes
+    available = [f for f in ALL_FEATURES if f in df.columns and f != "depth_m"]
+    has_s2 = any(b in df.columns for b in RAW_BANDS)
+    has_icesat2 = any(f in df.columns for f in ICESAT2_FEATURES)
+    if len(available) < 3:
+        log.error(f"Only {len(available)} features available. Need at least 3.")
         return
+    if not has_s2:
+        log.warning("No S2 bands found — running in ICESat-2 depth-only mode")
     log.info(f"Using {len(available)} features: {available}")
 
-    # Stumpf baseline
-    if "blue" in df.columns and "green" in df.columns:
+    # Stumpf baseline (only with S2 bands)
+    if has_s2 and "blue" in df.columns and "green" in df.columns:
         baseline = stumpf_warm_start(df)
     else:
+        log.info("Skipping Stumpf baseline (no S2 bands)")
         baseline = {"rmse": float("inf")}
 
     # Create datasets
@@ -428,7 +440,8 @@ def train_model(
         optimizer, T_0=50, T_mult=2, eta_min=1e-6
     )
 
-    criterion = PhysicsInformedLoss(physics_weight=physics_weight)
+    blue_idx = available.index("blue") if "blue" in available else -1
+    criterion = PhysicsInformedLoss(physics_weight=physics_weight, blue_idx=blue_idx)
     scaler = torch.amp.GradScaler("cuda") if "cuda" in device else None
 
     # Training

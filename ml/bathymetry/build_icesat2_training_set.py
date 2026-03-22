@@ -86,7 +86,9 @@ REGIONS = {
     "nh_vt":          {"bbox": [-73, 43, -71, 45], "priority": 2},
 
     # Florida — 30,000+ lakes (mostly shallow, good for training)
-    "fl_north":       {"bbox": [-86, 28, -80, 31], "priority": 2},
+    # fl_north split: original [-86,28,-80,31] was 6x3 deg, OOM'd
+    "fl_north_w":     {"bbox": [-86, 28, -83, 31], "priority": 2},
+    "fl_north_e":     {"bbox": [-83, 28, -80, 31], "priority": 2},
     "fl_central":     {"bbox": [-82, 27, -80, 29], "priority": 2},
 
     # Texas reservoirs
@@ -103,17 +105,22 @@ REGIONS = {
     "co_mountain":    {"bbox": [-107, 38, -105, 40], "priority": 3},
     "id_central":     {"bbox": [-116, 43, -114, 45], "priority": 3},
 
-    # Dakotas / Prairie pothole
-    "sd_east":        {"bbox": [-100, 43, -96, 46], "priority": 3},
-    "nd_east":        {"bbox": [-100, 46, -96, 49], "priority": 3},
+    # Dakotas / Prairie pothole — split to keep bbox <= 3deg
+    "sd_east_n":      {"bbox": [-100, 44.5, -96, 46], "priority": 3},
+    "sd_east_s":      {"bbox": [-100, 43, -96, 44.5], "priority": 3},
+    "nd_east_n":      {"bbox": [-100, 47.5, -96, 49], "priority": 3},
+    "nd_east_s":      {"bbox": [-100, 46, -96, 47.5], "priority": 3},
 
-    # Great Lakes nearshore (shallow bays)
-    "great_lakes_w":  {"bbox": [-88, 43, -84, 46], "priority": 2},
-    "great_lakes_e":  {"bbox": [-84, 42, -76, 46], "priority": 3},
+    # Great Lakes nearshore (shallow bays) — split large bboxes
+    "great_lakes_w":  {"bbox": [-88, 43, -85, 46], "priority": 2},
+    "great_lakes_e_w": {"bbox": [-84, 42, -80, 46], "priority": 3},
+    "great_lakes_e_e": {"bbox": [-80, 42, -76, 46], "priority": 3},
 
-    # Canada
-    "on_south":       {"bbox": [-82, 43, -78, 46], "priority": 3},
-    "ab_south":       {"bbox": [-116, 50, -112, 53], "priority": 3},
+    # Canada — split large bboxes
+    "on_south_w":     {"bbox": [-82, 43, -80, 46], "priority": 3},
+    "on_south_e":     {"bbox": [-80, 43, -78, 46], "priority": 3},
+    "ab_south_w":     {"bbox": [-116, 50, -114, 53], "priority": 3},
+    "ab_south_e":     {"bbox": [-114, 50, -112, 53], "priority": 3},
     "bc_okanagan":    {"bbox": [-120, 49, -119, 51], "priority": 3},
 }
 
