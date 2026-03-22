@@ -187,6 +187,7 @@ import {
 } from '../services/manOverboard';
 import { QuickActionFAB } from '../components/QuickActionFAB';
 import { MapToolsDrawer, type MapToolGroup, type OverlayInfoCard } from '../components/MapToolsDrawer';
+import { MapOverlayLoadingBanner } from '../components/MapOverlayLoadingBanner';
 import { CoachMarks } from '../components/CoachMarks';
 import { MapLongPressMenu, type LongPressAction, type LongPressCoordinate } from '../components/MapLongPressMenu';
 import { MapInfoBar, type AnchorWatchInfo } from '../components/MapInfoBar';
@@ -2729,12 +2730,15 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
   // Animated wind overlay (enhanced)
   const [windAnimatedEnabled, setWindAnimatedEnabled] = useState(false);
+  const [windAnimatedLoading, setWindAnimatedLoading] = useState(false);
 
   // Wave height overlay (coastal only)
   const [waveEnabled, setWaveEnabled] = useState(false);
+  const [waveLoading, setWaveLoading] = useState(false);
 
   // Depth number overlay (nautical chart soundings)
   const [depthNumbersEnabled, setDepthNumbersEnabled] = useState(false);
+  const [depthLoading, setDepthLoading] = useState(false);
 
   // Marine gas stations overlay
   const [marineGasEnabled, setMarineGasEnabled] = useState(false);
@@ -2747,11 +2751,29 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
   // Tidal current overlay (coastal only)
   const [tidalCurrentEnabled, setTidalCurrentEnabled] = useState(false);
+  const [tidalLoading, setTidalLoading] = useState(false);
 
   // ── New map-integrated overlays ──
   const [iceThicknessEnabled, setIceThicknessEnabled] = useState(false);
+  const [iceLoading, setIceLoading] = useState(false);
   const [fishingPressureOverlayEnabled, setFishingPressureOverlayEnabled] = useState(false);
+  const [pressureLoading, setPressureLoading] = useState(false);
   const [biteTimeOverlayEnabled, setBiteTimeOverlayEnabled] = useState(false);
+  const [biteLoading, setBiteLoading] = useState(false);
+
+  // ── Overlay loading banner state ──
+  const overlayLoadingSet = React.useMemo(() => {
+    const s = new Set<string>();
+    if (windAnimatedLoading) s.add('Wind');
+    if (waveLoading) s.add('Wave');
+    if (depthLoading) s.add('Depth');
+    if (tidalLoading) s.add('Tidal');
+    if (iceLoading) s.add('Ice');
+    if (pressureLoading) s.add('Pressure');
+    if (biteLoading) s.add('Bite');
+    if (radarLoading) s.add('Radar');
+    return s;
+  }, [windAnimatedLoading, waveLoading, depthLoading, tidalLoading, iceLoading, pressureLoading, biteLoading, radarLoading]);
 
   // Draft accessibility overlay (shows safe/caution/danger based on boat draft)
   const [draftAccessEnabled, setDraftAccessEnabled] = useState(false);
@@ -4445,6 +4467,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           icon: 'cellular-outline',
           description: 'Windy-style animated wind grid (knots)',
           isActive: windAnimatedEnabled,
+          isLoading: windAnimatedLoading,
           onPress: () => setWindAnimatedEnabled((prev) => !prev),
         },
         {
@@ -4453,6 +4476,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           icon: 'water-outline',
           description: 'Wave height and direction (coastal)',
           isActive: waveEnabled,
+          isLoading: waveLoading,
           visible: isNearCoastNow,
           onPress: () => setWaveEnabled((prev) => !prev),
         },
@@ -4481,6 +4505,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           icon: 'swap-horizontal-outline',
           description: 'NOAA tidal current predictions',
           isActive: tidalCurrentEnabled,
+          isLoading: tidalLoading,
           visible: isNearCoastNow,
           onPress: () => setTidalCurrentEnabled((prev) => !prev),
         },
@@ -4542,6 +4567,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           icon: 'flame-outline',
           description: 'Color-code spots by current bite score',
           isActive: biteTimeOverlayEnabled,
+          isLoading: biteLoading,
           onPress: () => setBiteTimeOverlayEnabled((prev) => !prev),
           infoCard: biteTimeOverlayEnabled
             ? {
@@ -4558,6 +4584,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           icon: 'people-outline',
           description: 'Heat map of crowding at spots',
           isActive: fishingPressureOverlayEnabled,
+          isLoading: pressureLoading,
           onPress: () => setFishingPressureOverlayEnabled((prev) => !prev),
           infoCard: fishingPressureOverlayEnabled
             ? {
@@ -4574,6 +4601,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           icon: 'snow-outline',
           description: 'Estimated ice depth across lakes',
           isActive: iceThicknessEnabled,
+          isLoading: iceLoading,
           visible: isWinterSeason,
           onPress: () => setIceThicknessEnabled((prev) => !prev),
           infoCard: iceThicknessEnabled
@@ -4605,6 +4633,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           icon: 'text-outline',
           description: 'Nautical chart depth soundings',
           isActive: depthNumbersEnabled,
+          isLoading: depthLoading,
           onPress: () => setDepthNumbersEnabled((prev) => !prev),
         },
         {
@@ -4803,6 +4832,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             ShapeSource={ShapeSource}
             SymbolLayer={SymbolLayer}
             CircleLayer={CircleLayer}
+            onLoadStart={() => setWindAnimatedLoading(true)}
+            onLoadEnd={() => setWindAnimatedLoading(false)}
           />
         )}
 
@@ -4814,6 +4845,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
+            onLoadStart={() => setWaveLoading(true)}
+            onLoadEnd={() => setWaveLoading(false)}
           />
         )}
 
@@ -4826,6 +4859,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             units="imperial"
             ShapeSource={ShapeSource}
             SymbolLayer={SymbolLayer}
+            onLoadStart={() => setDepthLoading(true)}
+            onLoadEnd={() => setDepthLoading(false)}
           />
         )}
 
@@ -4859,6 +4894,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
+            onLoadStart={() => setIceLoading(true)}
+            onLoadEnd={() => setIceLoading(false)}
           />
         )}
 
@@ -4871,6 +4908,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
+            onLoadStart={() => setPressureLoading(true)}
+            onLoadEnd={() => setPressureLoading(false)}
           />
         )}
 
@@ -4883,6 +4922,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
+            onLoadStart={() => setBiteLoading(true)}
+            onLoadEnd={() => setBiteLoading(false)}
           />
         )}
 
@@ -4895,6 +4936,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
+            onLoadStart={() => setTidalLoading(true)}
+            onLoadEnd={() => setTidalLoading(false)}
           />
         )}
 
@@ -6067,6 +6110,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
       {/* Compass heading widget — only visible when map is rotated */}
       <CompassWidget heading={compassHeading} mode={compassMode} onToggleMode={handleToggleCompassMode} />
+
+      {/* Overlay loading banner — shows when any overlay is fetching data */}
+      <MapOverlayLoadingBanner loadingOverlays={overlayLoadingSet} />
 
       {/* Map Tools Drawer (slide-out panel for secondary tools) */}
       <MapToolsDrawer

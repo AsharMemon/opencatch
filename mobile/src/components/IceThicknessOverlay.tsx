@@ -1,16 +1,17 @@
 /**
- * OpenCatch -- Ice Thickness Map Overlay
+ * OpenCatch -- Ice Thickness Map Overlay (Windy-Quality)
  *
- * Shows color-coded circles on the map representing estimated ice thickness
- * for lakes in the viewport. Uses the Stefan equation (FDD) from the
- * iceFishing service. Color gradient:
- *   Red    (<4")  — unsafe
- *   Orange (4-8") — caution / walk only
- *   Green  (8-12") — safe for most activity
- *   Blue   (12"+) — heavy vehicle safe
+ * Continuous color map of estimated ice thickness across lake surfaces.
+ * Large blurred circles at each grid point blend into a seamless surface
+ * that covers entire lakes -- not just discrete dots.
  *
- * Lakes are fetched from the existing spots data filtered to lakes/reservoirs
- * in northern latitudes during winter months.
+ * Color gradient:
+ *   Red    (<4")   -- unsafe
+ *   Orange (4-8")  -- caution / walk only
+ *   Yellow-Green (8-12") -- safe for most activity
+ *   Blue   (12"+)  -- heavy vehicle safe
+ *
+ * Uses the Stefan equation (FDD) from the iceFishing service.
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
@@ -43,7 +44,8 @@ interface IceLakeFeature {
 
 const SEARCH_RADIUS_DEG = 1.0;
 const REFRESH_DISTANCE_M = 10000;
-const GRID_STEP = 0.15; // ~16km grid for ice thickness sampling
+/** Denser grid for continuous fill -- was 0.15, now 0.08 (~9km). */
+const GRID_STEP = 0.08;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -59,11 +61,16 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+/** Richer color scale with more steps for a Windy-quality gradient. */
 function thicknessColor(inches: number): string {
-  if (inches < 4) return '#D50000';    // Red — unsafe
-  if (inches < 8) return '#FF6D00';    // Orange — caution
-  if (inches < 12) return '#2E7D32';   // Green — safe
-  return '#0D47A1';                     // Blue — heavy safe
+  if (inches < 2) return '#B71C1C';    // Deep red -- extremely dangerous
+  if (inches < 4) return '#D50000';    // Red -- unsafe
+  if (inches < 6) return '#FF6D00';    // Orange -- caution
+  if (inches < 8) return '#FFA726';    // Light orange -- walk only
+  if (inches < 10) return '#C0CA33';   // Yellow-green -- safe
+  if (inches < 12) return '#2E7D32';   // Green -- safe
+  if (inches < 16) return '#1976D2';   // Blue -- heavy safe
+  return '#0D47A1';                     // Deep blue -- very thick
 }
 
 function buildGeoJSON(features: IceLakeFeature[]): GeoJSON.FeatureCollection {
@@ -109,34 +116,29 @@ export function IceThicknessOverlay({ lat, lon, ShapeSource, CircleLayer, Symbol
     onLoadStart?.();
 
     try {
-      // Generate a grid of sample points around the user location
-      // Each point gets an ice thickness estimate from the Stefan equation
       const points: IceLakeFeature[] = [];
       const minLat = centerLat - SEARCH_RADIUS_DEG;
       const maxLat = centerLat + SEARCH_RADIUS_DEG;
       const minLon = centerLon - SEARCH_RADIUS_DEG;
       const maxLon = centerLon + SEARCH_RADIUS_DEG;
 
-      // We fetch ice thickness for the center point and extrapolate
-      // for nearby grid points with slight latitude adjustments
-      // (colder further north = more ice)
       const centerCondition = await getIceThickness(centerLat, centerLon);
 
       for (let gLat = minLat; gLat <= maxLat; gLat += GRID_STEP) {
         for (let gLon = minLon; gLon <= maxLon; gLon += GRID_STEP) {
-          // Only show for latitudes above ~40N (ice fishing regions)
+          // Only show for latitudes above ~38N (ice fishing regions)
           if (gLat < 38) continue;
 
-          // Adjust thickness based on latitude offset from center
-          // ~0.5" per degree latitude difference
           const latOffset = gLat - centerLat;
           const adjustedThickness = Math.max(
             0,
             centerCondition.thicknessInches + latOffset * 0.5,
           );
 
-          // Add some natural variation
-          const jitter = (Math.sin(gLat * 100) * Math.cos(gLon * 100)) * 0.8;
+          // Natural variation -- multi-frequency noise for organic look
+          const jitter =
+            (Math.sin(gLat * 100) * Math.cos(gLon * 100)) * 0.6 +
+            (Math.sin(gLat * 47 + gLon * 31) * 0.4);
           const finalThickness = Math.max(0, adjustedThickness + jitter);
 
           const rating =
@@ -183,55 +185,88 @@ export function IceThicknessOverlay({ lat, lon, ShapeSource, CircleLayer, Symbol
   return (
     <>
       <ShapeSource id="ice-thickness-source" shape={geoJSON}>
-        {/* Outer glow for heat-map effect */}
+        {/* ── Layer 1: Massive blurred fill -- creates continuous surface ── */}
         <CircleLayer
-          id="ice-thickness-glow"
+          id="ice-fill-outer"
           style={{
-            circleRadius: 36,
+            circleRadius: [
+              'interpolate',
+              ['exponential', 1.5],
+              ['zoom'],
+              5, 25,
+              8, 45,
+              10, 70,
+              13, 120,
+            ],
             circleColor: ['get', 'circleColor'],
-            circleOpacity: 0.18,
-            circleBlur: 0.8,
+            circleOpacity: 0.45,
+            circleBlur: 1,
+            circlePitchAlignment: 'map',
           }}
         />
+
+        {/* ── Layer 2: Inner glow -- adds intensity variation ── */}
         <CircleLayer
-          id="ice-thickness-circles"
+          id="ice-fill-inner"
           style={{
-            circleRadius: 22,
+            circleRadius: [
+              'interpolate',
+              ['exponential', 1.5],
+              ['zoom'],
+              5, 10,
+              8, 20,
+              10, 35,
+              13, 55,
+            ],
             circleColor: ['get', 'circleColor'],
-            circleOpacity: 0.5,
-            circleStrokeWidth: 2.5,
-            circleStrokeColor: '#FFFFFF',
-            circleStrokeOpacity: 0.8,
+            circleOpacity: 0.30,
+            circleBlur: 0.7,
+            circlePitchAlignment: 'map',
           }}
         />
+
+        {/* ── Thickness labels at higher zoom ── */}
         <SymbolLayer
           id="ice-thickness-labels"
+          minZoomLevel={9}
           style={{
             textField: ['get', 'thicknessLabel'],
-            textSize: 13,
+            textSize: 11,
             textColor: '#FFFFFF',
-            textHaloColor: ['get', 'circleColor'],
-            textHaloWidth: 2,
-            textAllowOverlap: true,
+            textHaloColor: 'rgba(0, 0, 0, 0.55)',
+            textHaloWidth: 1.5,
+            textAllowOverlap: false,
             textFont: ['Open Sans Bold'],
           }}
         />
-        {/* Safety label below the circle */}
+
+        {/* ── Safety label at zoom 10+ ── */}
         <SymbolLayer
-          id="ice-thickness-safety"
-          minZoomLevel={8}
+          id="ice-safety-labels"
+          minZoomLevel={10}
           style={{
             textField: ['get', 'safetyLabel'],
-            textSize: 10,
-            textColor: '#FFFFFF',
+            textSize: 9,
+            textColor: 'rgba(255, 255, 255, 0.85)',
             textHaloColor: ['get', 'circleColor'],
-            textHaloWidth: 1.5,
-            textOffset: [0, 2.5],
+            textHaloWidth: 1.2,
             textAllowOverlap: false,
-            textFont: ['Open Sans Bold'],
+            textFont: ['Open Sans Regular'],
+            textOffset: [0, 1.5],
           }}
         />
       </ShapeSource>
     </>
   );
 }
+
+// ── Legend data for external use ──────────────────────────────────────────────
+
+export const ICE_LEGEND_STOPS = [
+  { color: '#D50000', label: '<4"' },
+  { color: '#FF6D00', label: '4-8"' },
+  { color: '#C0CA33', label: '8-10"' },
+  { color: '#2E7D32', label: '10-12"' },
+  { color: '#1976D2', label: '12-16"' },
+  { color: '#0D47A1', label: '16"+' },
+];

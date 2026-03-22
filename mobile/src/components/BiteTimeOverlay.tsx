@@ -1,14 +1,15 @@
 /**
- * OpenCatch -- Bite Time Map Overlay
+ * OpenCatch -- Bite Activity Map Overlay (Windy-Quality)
  *
- * Color-codes fishing spots on the map by their current bite score.
- * Green = hot bite right now, yellow = moderate, red/gray = slow.
- * Uses the bestTimeWindows service to score each spot.
+ * Dramatic, high-contrast visualization of bite activity across spots.
+ * Hot spots get massive pulsing glow halos with intense color cores.
+ * Cold/dead spots are visually muted. The contrast makes it instantly
+ * obvious where the fish are biting.
  *
- * This answers the key angler question: "Where should I go RIGHT NOW?"
+ * Green = HOT bite -> Yellow = Fair -> Orange = Slow -> Gray = Dead
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { palette } from '../theme/palette';
 import {
   getDailyBiteForecast,
@@ -28,14 +29,16 @@ interface Props {
   onLoadEnd?: () => void;
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Color scale (high contrast for immediate readability) ────────────────────
 
 function biteColor(score: number): string {
-  if (score >= 75) return '#2E7D32';   // Hot -- go now
-  if (score >= 55) return '#66BB6A';   // Good
-  if (score >= 40) return '#FFA726';   // Moderate
-  if (score >= 25) return '#EF5350';   // Slow
-  return '#78909C';                     // Dead
+  if (score >= 80) return '#00C853';   // Bright green -- HOT
+  if (score >= 65) return '#2E7D32';   // Green -- Good
+  if (score >= 50) return '#8BC34A';   // Light green -- Fair+
+  if (score >= 40) return '#FFC107';   // Amber -- Fair
+  if (score >= 25) return '#FF9800';   // Orange -- Slow
+  if (score >= 15) return '#EF5350';   // Red -- Poor
+  return '#546E7A';                     // Blue-gray -- Dead
 }
 
 function biteLabel(score: number): string {
@@ -54,8 +57,6 @@ function buildGeoJSON(
   return {
     type: 'FeatureCollection',
     features: spots.map((spot) => {
-      // Get a bite forecast score for this spot's location
-      // We use the spot lat/lon with some deterministic variation
       const forecast = getDailyBiteForecast(spot.lat, spot.lon);
       const hourlyScore = forecast.hourlyScores[currentHour] ?? forecast.overallRating;
 
@@ -77,6 +78,9 @@ function buildGeoJSON(
           scoreText: `${hourlyScore}`,
           overallRating: forecast.overallRating,
           ratingLabel: forecast.ratingLabel,
+          // Pre-computed flags for MapLibre expression filters
+          isHot: hourlyScore >= 70 ? 1 : 0,
+          isGood: hourlyScore >= 50 ? 1 : 0,
         },
       };
     }),
@@ -117,52 +121,157 @@ export function BiteTimeOverlay({
   return (
     <>
       <ShapeSource id="bite-time-source" shape={geoJSON}>
-        {/* Outer glow for all spots */}
+        {/* ── Layer 1: Massive outer shimmer halo for HOT spots.
+             Creates dramatic "heat shimmer" visible from far away. ── */}
         <CircleLayer
-          id="bite-glow"
+          id="bite-shimmer-outer"
+          filter={['>=', ['get', 'score'], 65]}
           style={{
             circleRadius: [
-              'interpolate', ['linear'], ['get', 'score'],
-              0, 24,
-              50, 32,
-              100, 44,
+              'interpolate',
+              ['exponential', 1.5],
+              ['zoom'],
+              5, 40,
+              8, 65,
+              11, 100,
+              14, 160,
             ],
             circleColor: ['get', 'color'],
             circleOpacity: [
               'interpolate', ['linear'], ['get', 'score'],
-              0, 0.1,
-              50, 0.15,
+              65, 0.10,
+              80, 0.18,
               100, 0.25,
             ],
-            circleBlur: 0.7,
+            circleBlur: 1,
+            circlePitchAlignment: 'map',
           }}
         />
-        {/* Main bite score circle */}
+
+        {/* ── Layer 2: Medium glow ring -- visible for all above-average spots ── */}
         <CircleLayer
-          id="bite-dots"
+          id="bite-glow-mid"
+          filter={['>=', ['get', 'score'], 40]}
           style={{
-            circleRadius: 16,
+            circleRadius: [
+              'interpolate',
+              ['exponential', 1.5],
+              ['zoom'],
+              5, 20,
+              8, 35,
+              11, 55,
+              14, 85,
+            ],
             circleColor: ['get', 'color'],
-            circleOpacity: 0.7,
-            circleStrokeWidth: 2.5,
-            circleStrokeColor: '#FFFFFF',
-            circleStrokeOpacity: 0.9,
+            circleOpacity: [
+              'interpolate', ['linear'], ['get', 'score'],
+              40, 0.15,
+              70, 0.30,
+              100, 0.45,
+            ],
+            circleBlur: 0.7,
+            circlePitchAlignment: 'map',
           }}
         />
-        {/* Bite status label */}
+
+        {/* ── Layer 3: Inner intensity core -- bright center ── */}
+        <CircleLayer
+          id="bite-core"
+          style={{
+            circleRadius: [
+              'interpolate',
+              ['exponential', 1.5],
+              ['zoom'],
+              5, 8,
+              8, 14,
+              11, 22,
+              14, 35,
+            ],
+            circleColor: ['get', 'color'],
+            circleOpacity: [
+              'interpolate', ['linear'], ['get', 'score'],
+              0, 0.30,
+              40, 0.50,
+              70, 0.70,
+              100, 0.85,
+            ],
+            circleBlur: 0.3,
+            circlePitchAlignment: 'map',
+          }}
+        />
+
+        {/* ── Layer 4: Center pip with strong white stroke ── */}
+        <CircleLayer
+          id="bite-pip"
+          minZoomLevel={7}
+          style={{
+            circleRadius: [
+              'interpolate', ['linear'], ['get', 'score'],
+              0, 5,
+              50, 8,
+              80, 12,
+              100, 14,
+            ],
+            circleColor: ['get', 'color'],
+            circleOpacity: 0.9,
+            circleStrokeWidth: [
+              'interpolate', ['linear'], ['get', 'score'],
+              0, 1,
+              70, 2,
+              100, 3,
+            ],
+            circleStrokeColor: '#FFFFFF',
+            circleStrokeOpacity: 0.95,
+          }}
+        />
+
+        {/* ── Bite status label ── */}
         <SymbolLayer
           id="bite-labels"
+          minZoomLevel={8}
           style={{
             textField: ['get', 'label'],
-            textSize: 11,
+            textSize: [
+              'interpolate', ['linear'], ['get', 'score'],
+              0, 9,
+              70, 12,
+              100, 14,
+            ],
             textColor: '#FFFFFF',
-            textHaloColor: ['get', 'color'],
-            textHaloWidth: 2,
-            textAllowOverlap: true,
+            textHaloColor: 'rgba(0, 0, 0, 0.6)',
+            textHaloWidth: 1.5,
+            textAllowOverlap: false,
             textFont: ['Open Sans Bold'],
+            textOffset: [0, -2],
+          }}
+        />
+
+        {/* ── Score number at high zoom ── */}
+        <SymbolLayer
+          id="bite-score-text"
+          minZoomLevel={10}
+          style={{
+            textField: ['get', 'scoreText'],
+            textSize: 9,
+            textColor: 'rgba(255, 255, 255, 0.8)',
+            textHaloColor: ['get', 'color'],
+            textHaloWidth: 1,
+            textAllowOverlap: false,
+            textFont: ['Open Sans Regular'],
+            textOffset: [0, 1.8],
           }}
         />
       </ShapeSource>
     </>
   );
 }
+
+// ── Legend data for external use ──────────────────────────────────────────────
+
+export const BITE_LEGEND_STOPS = [
+  { color: '#546E7A', label: 'Dead' },
+  { color: '#EF5350', label: 'Slow' },
+  { color: '#FFC107', label: 'Fair' },
+  { color: '#8BC34A', label: 'Good' },
+  { color: '#00C853', label: 'HOT' },
+];

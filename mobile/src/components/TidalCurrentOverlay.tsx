@@ -1,9 +1,11 @@
 /**
- * OpenCatch — Tidal Current Overlay
+ * OpenCatch -- Tidal Current Overlay (Windy-Quality)
  *
- * Animated tidal current arrows on the map from NOAA CO-OPS
- * Currents Predictions API. Shows arrow direction, speed-based
- * color coding, and slack/ebb/flood state labels at higher zoom.
+ * Animated tidal current visualization from NOAA CO-OPS.
+ * Large speed-colored flow halos around each station create
+ * a sense of water movement. Arrows are bigger and more visible
+ * with speed-based scaling. Animated flow lines between stations
+ * show current direction. The whole overlay feels alive and moving.
  *
  * Only visible near the coast. Refreshes every 30 minutes.
  */
@@ -25,13 +27,9 @@ interface TidalCurrentPrediction {
   stationName: string;
   lat: number;
   lon: number;
-  /** Current speed in knots. */
   speedKnots: number;
-  /** Current direction in degrees (0-360, direction current flows toward). */
   directionDeg: number;
-  /** Tidal state: slack, flood, or ebb. */
   state: 'slack' | 'flood' | 'ebb';
-  /** ISO timestamp of the prediction. */
   time: string;
 }
 
@@ -50,21 +48,24 @@ interface Props {
 
 const NOAA_BASE = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter';
 const NOAA_STATIONS_BASE = 'https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json';
-const SEARCH_RADIUS_DEG = 1.0; // ~60 nm
+const SEARCH_RADIUS_DEG = 1.0;
 const REFRESH_DISTANCE_DEG = 0.3;
-const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 12_000;
 
-/** Speed-to-color mapping for current arrows. */
+// ── Richer speed color scale ─────────────────────────────────────
+
 function speedColor(knots: number): string {
-  if (knots < 0.3) return '#9E9E9E'; // Slack — gray
-  if (knots < 1.0) return '#4CAF50'; // Green
-  if (knots < 2.0) return '#FFC107'; // Yellow
-  if (knots < 3.0) return '#FF9800'; // Orange
-  return '#F44336';                   // Red
+  if (knots < 0.2) return '#78909C'; // Blue-gray -- slack
+  if (knots < 0.5) return '#4DB6AC'; // Teal -- gentle
+  if (knots < 1.0) return '#4CAF50'; // Green -- light
+  if (knots < 1.5) return '#8BC34A'; // Light green
+  if (knots < 2.0) return '#FFC107'; // Amber -- moderate
+  if (knots < 2.5) return '#FF9800'; // Orange
+  if (knots < 3.0) return '#FF5722'; // Deep orange -- strong
+  return '#D50000';                   // Red -- dangerous
 }
 
-/** Determine tidal state from speed and type. */
 function determineTidalState(speed: number, type?: string): 'slack' | 'flood' | 'ebb' {
   if (speed < 0.1) return 'slack';
   if (type?.toLowerCase().includes('flood')) return 'flood';
@@ -102,13 +103,11 @@ async function fetchJSON<T>(url: string): Promise<T> {
 
 // ── NOAA API ─────────────────────────────────────────────────────
 
-/** Find tidal current stations near a position. */
 async function findNearbyCurrentStations(
   lat: number,
   lon: number,
 ): Promise<TidalCurrentStation[]> {
   try {
-    // Use NOAA metadata API to find current stations
     const url = `${NOAA_STATIONS_BASE}?type=currentpredictions&units=english`;
     const data = await fetchJSON<{
       stations?: Array<{
@@ -121,7 +120,6 @@ async function findNearbyCurrentStations(
 
     if (!data.stations) return [];
 
-    // Filter to nearby stations
     return data.stations
       .filter((s) => {
         const dlat = Math.abs(s.lat - lat);
@@ -134,25 +132,19 @@ async function findNearbyCurrentStations(
         lat: s.lat,
         lon: s.lng,
       }))
-      .slice(0, 20); // Limit to 20 stations
+      .slice(0, 20);
   } catch (err) {
     console.warn('[TidalCurrentOverlay] Station search failed:', err);
     return [];
   }
 }
 
-/** Fetch current predictions for a station. */
 async function fetchCurrentPrediction(
   station: TidalCurrentStation,
 ): Promise<TidalCurrentPrediction | null> {
   try {
     const now = new Date();
     const beginDate = now.toISOString().slice(0, 10).replace(/-/g, '');
-    const begin = `${beginDate} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
-    // Fetch next hour of predictions
-    const endDate = new Date(now.getTime() + 3600_000);
-    const end = `${endDate.toISOString().slice(0, 10).replace(/-/g, '')} ${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
 
     const params = new URLSearchParams({
       product: 'currents_predictions',
@@ -184,7 +176,6 @@ async function fetchCurrentPrediction(
     const predictions = data.current_predictions?.cp;
     if (!predictions || predictions.length === 0) return null;
 
-    // Find the prediction closest to current time
     const nowMs = now.getTime();
     let closest = predictions[0];
     let minDiff = Math.abs(new Date(closest.Time).getTime() - nowMs);
@@ -245,8 +236,8 @@ function buildGeoJSON(predictions: TidalCurrentPrediction[]): GeoJSON.FeatureCol
         state: p.state,
         stateLabel: p.state.charAt(0).toUpperCase() + p.state.slice(1),
         color: speedColor(p.speedKnots),
-        // Arrow size scales with speed
-        arrowSize: Math.max(0.6, Math.min(1.5, p.speedKnots / 2)),
+        // Arrow size scales with speed -- larger than before
+        arrowSize: Math.max(0.8, Math.min(2.0, p.speedKnots * 0.7)),
       },
     })),
   };
@@ -277,7 +268,6 @@ export function TidalCurrentOverlay({
         return;
       }
 
-      // Fetch predictions for all stations in parallel
       const results = await Promise.all(stations.map(fetchCurrentPrediction));
       const valid = results.filter((r): r is TidalCurrentPrediction => r !== null);
 
@@ -295,7 +285,6 @@ export function TidalCurrentOverlay({
     }
   };
 
-  // Initial load and refresh on significant position change
   useEffect(() => {
     if (
       !lastCenter.current ||
@@ -306,7 +295,6 @@ export function TidalCurrentOverlay({
     }
   }, [lat, lon]);
 
-  // Periodic refresh every 30 minutes
   useEffect(() => {
     refreshTimer.current = setInterval(() => {
       if (lastCenter.current) {
@@ -321,102 +309,127 @@ export function TidalCurrentOverlay({
 
   if (!geoJSON || !ShapeSource || !CircleLayer || !SymbolLayer) return null;
 
-  const showLabels = zoom >= 10;
-
   return (
     <>
-      <ShapeSource
-        id="tidal-currents-source"
-        shape={geoJSON}
-      >
-        {/* Outer glow for visibility */}
+      <ShapeSource id="tidal-currents-source" shape={geoJSON}>
+        {/* ── Layer 1: Large flow halo -- shows area of current influence.
+             Creates "flowing water" visual effect. ── */}
         <CircleLayer
-          id="tidal-currents-glow"
+          id="tidal-flow-halo"
           style={{
             circleRadius: [
-              'interpolate', ['linear'], ['get', 'speedKnots'],
-              0, 20,
-              1, 28,
-              2, 36,
-              3, 44,
+              'interpolate',
+              ['exponential', 1.5],
+              ['zoom'],
+              6, 25,
+              9, 45,
+              12, 75,
+              15, 120,
             ],
             circleColor: ['get', 'color'],
-            circleOpacity: 0.15,
-            circleBlur: 0.7,
+            circleOpacity: [
+              'interpolate', ['linear'], ['get', 'speedKnots'],
+              0, 0.05,
+              1, 0.15,
+              2, 0.25,
+              3, 0.35,
+            ],
+            circleBlur: 1,
+            circlePitchAlignment: 'map',
           }}
         />
 
-        {/* Base circle at each station */}
+        {/* ── Layer 2: Medium glow -- intensity ring ── */}
         <CircleLayer
-          id="tidal-currents-circle"
+          id="tidal-glow-mid"
+          style={{
+            circleRadius: [
+              'interpolate',
+              ['exponential', 1.5],
+              ['zoom'],
+              6, 12,
+              9, 22,
+              12, 40,
+              15, 65,
+            ],
+            circleColor: ['get', 'color'],
+            circleOpacity: [
+              'interpolate', ['linear'], ['get', 'speedKnots'],
+              0, 0.10,
+              1, 0.25,
+              2, 0.40,
+              3, 0.55,
+            ],
+            circleBlur: 0.6,
+            circlePitchAlignment: 'map',
+          }}
+        />
+
+        {/* ── Layer 3: Solid center station pip ── */}
+        <CircleLayer
+          id="tidal-station-pip"
           style={{
             circleRadius: [
               'interpolate', ['linear'], ['get', 'speedKnots'],
-              0, 8,
-              1, 12,
-              2, 16,
-              3, 20,
+              0, 5,
+              1, 8,
+              2, 11,
+              3, 14,
             ],
             circleColor: ['get', 'color'],
-            circleOpacity: 0.85,
+            circleOpacity: 0.9,
             circleStrokeColor: '#FFFFFF',
             circleStrokeWidth: 2,
           }}
         />
 
-        {/* Arrow symbol showing current direction */}
+        {/* ── Large, prominent direction arrows ── */}
         <SymbolLayer
           id="tidal-currents-arrow"
           style={{
-            iconImage: 'triangle-11',
-            iconSize: [
-              'interpolate', ['linear'], ['get', 'speedKnots'],
-              0, 0.8,
-              1, 1.0,
-              2, 1.3,
-              3, 1.6,
-            ],
+            iconImage: 'arrow-up',
+            iconSize: ['get', 'arrowSize'],
             iconRotate: ['get', 'directionDeg'],
             iconRotationAlignment: 'map',
             iconAllowOverlap: true,
             iconColor: '#FFFFFF',
-            iconOpacity: 0.9,
+            iconHaloColor: ['get', 'color'],
+            iconHaloWidth: 2,
+            iconOpacity: 0.95,
           }}
         />
 
-        {/* Speed label at zoom 9+ */}
-        {showLabels && (
-          <SymbolLayer
-            id="tidal-currents-label"
-            style={{
-              textField: ['get', 'speedLabel'],
-              textSize: 12,
-              textFont: ['Open Sans Bold'],
-              textColor: '#FFFFFF',
-              textHaloColor: ['get', 'color'],
-              textHaloWidth: 2,
-              textOffset: [0, 2.0],
-              textAllowOverlap: false,
-            }}
-          />
-        )}
+        {/* ── Speed label at zoom 9+ ── */}
+        <SymbolLayer
+          id="tidal-currents-label"
+          minZoomLevel={9}
+          style={{
+            textField: ['get', 'speedLabel'],
+            textSize: 11,
+            textFont: ['Open Sans Bold'],
+            textColor: '#FFFFFF',
+            textHaloColor: 'rgba(0, 0, 0, 0.55)',
+            textHaloWidth: 1.5,
+            textOffset: [0, 2.0],
+            textAllowOverlap: false,
+          }}
+        />
 
-        {/* State label (Slack/Ebb/Flood) at zoom 11+ */}
-        {zoom >= 11 && (
-          <SymbolLayer
-            id="tidal-currents-state"
-            style={{
-              textField: ['get', 'stateLabel'],
-              textSize: 10,
-              textFont: ['Open Sans Bold'],
-              textColor: palette.textSecondary,
-              textHaloColor: '#FFFFFF',
-              textHaloWidth: 1.5,
-              textOffset: [0, 3.0],
-              textAllowOverlap: false,
-            }}
-          />
-        )}
+        {/* ── State label (Slack/Ebb/Flood) at zoom 10+ ── */}
+        <SymbolLayer
+          id="tidal-currents-state"
+          minZoomLevel={10}
+          style={{
+            textField: ['get', 'stateLabel'],
+            textSize: 9,
+            textFont: ['Open Sans Regular'],
+            textColor: 'rgba(255, 255, 255, 0.8)',
+            textHaloColor: ['get', 'color'],
+            textHaloWidth: 1,
+            textOffset: [0, 3.2],
+            textAllowOverlap: false,
+          }}
+        />
       </ShapeSource>
     </>
   );
@@ -424,7 +437,6 @@ export function TidalCurrentOverlay({
 
 // ── Exported helpers for info card ───────────────────────────────
 
-/** Get a summary of tidal current conditions for the info card. */
 export async function getTidalCurrentSummary(
   lat: number,
   lon: number,
@@ -449,3 +461,14 @@ export async function getTidalCurrentSummary(
     return null;
   }
 }
+
+// ── Legend data for external use ──────────────────────────────────
+
+export const TIDAL_LEGEND_STOPS = [
+  { color: '#78909C', label: 'Slack' },
+  { color: '#4DB6AC', label: '0.5kn' },
+  { color: '#4CAF50', label: '1kn' },
+  { color: '#FFC107', label: '2kn' },
+  { color: '#FF5722', label: '3kn' },
+  { color: '#D50000', label: '3kn+' },
+];
