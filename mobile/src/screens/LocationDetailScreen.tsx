@@ -20,6 +20,7 @@ import { ForecastChart } from '../components/ForecastChart';
 import { ExplanationCard } from '../components/ExplanationCard';
 import { api } from '../services/api';
 import { getCachedLocationDetail, getStaleLocationDetail, cacheLocationDetail } from '../services/locationDetailCache';
+import { shareWaypoint, type SharedWaypoint } from '../services/waypointSharing';
 import {
   getSpeciesLikelihood,
   getMonthlyActivityChart,
@@ -958,20 +959,38 @@ export function LocationDetailScreen({ route, navigation }: Props) {
         </View>
       </View>
 
-      {/* Log a Catch CTA */}
-      <Pressable
-        style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaPressed]}
-        onPress={() =>
-          navigation.navigate('CatchReport', {
-            locationId: location.id,
-            lat: location.lat,
-            lon: location.lon,
-          })
-        }
-      >
-        <Ionicons name="fish-outline" size={20} color="#FFFFFF" />
-        <Text style={styles.ctaText}>Log a Catch</Text>
-      </Pressable>
+      {/* Action buttons */}
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <Pressable
+          style={({ pressed }) => [styles.ctaButton, { flex: 1 }, pressed && styles.ctaPressed]}
+          onPress={() =>
+            navigation.navigate('CatchReport', {
+              locationId: location.id,
+              lat: location.lat,
+              lon: location.lon,
+            })
+          }
+        >
+          <Ionicons name="fish-outline" size={20} color="#FFFFFF" />
+          <Text style={styles.ctaText}>Log a Catch</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.ctaButton, { flex: 1, backgroundColor: '#4A6572' }, pressed && styles.ctaPressed]}
+          onPress={() => {
+            const wp: SharedWaypoint = {
+              id: location.id,
+              name: location.name,
+              lat: location.lat,
+              lon: location.lon,
+              createdAt: Date.now(),
+            };
+            shareWaypoint(wp);
+          }}
+        >
+          <Ionicons name="share-outline" size={20} color="#FFFFFF" />
+          <Text style={styles.ctaText}>Share Spot</Text>
+        </Pressable>
+      </View>
 
       {/* Bottom spacer */}
       <View style={{ height: 40 }} />

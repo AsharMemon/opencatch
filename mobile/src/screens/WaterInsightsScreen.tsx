@@ -29,6 +29,12 @@ import {
   type TrendDirection,
   type WeatherAdvisory,
 } from '../services/waterInsights';
+import {
+  isCanadianLocation,
+  getNearestCanadianStation,
+  getCanadianWaterTemp,
+  getCanadianStreamflow,
+} from '../services/canadaData';
 
 // ── Trend Arrow ──────────────────────────────────────────────────────────────
 
@@ -94,6 +100,7 @@ export function WaterInsightsScreen({ route }: any) {
   const [dashboard, setDashboard] = useState<WaterInsightsDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [locationName, setLocationName] = useState('Your Location');
+  const [canadianData, setCanadianData] = useState<{ stationName?: string; waterTempC?: number; flowCms?: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,6 +134,26 @@ export function WaterInsightsScreen({ route }: any) {
           airTempF: 68,
         });
         if (!cancelled) setDashboard(data);
+
+        // Supplement with Canadian data if location is in Canada
+        if (isCanadianLocation(lat, lon)) {
+          try {
+            const station = await getNearestCanadianStation(lat, lon);
+            if (station && !cancelled) {
+              const [tempResult, flowResult] = await Promise.all([
+                getCanadianWaterTemp(lat, lon).catch(() => null),
+                getCanadianStreamflow(station.id).catch(() => null),
+              ]);
+              setCanadianData({
+                stationName: station.name,
+                waterTempC: tempResult?.[0]?.waterTempC ?? undefined,
+                flowCms: flowResult?.[0]?.discharge ?? undefined,
+              });
+            }
+          } catch {
+            // Canadian data is supplemental
+          }
+        }
       } catch {
         // Will show empty state
       } finally {
@@ -204,6 +231,42 @@ export function WaterInsightsScreen({ route }: any) {
           <InsightCard key={i} insight={insight} />
         ))}
       </View>
+
+      {/* Canadian Water Data (if in Canada) */}
+      {canadianData && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Canadian Water Data</Text>
+          <View style={styles.card}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <Ionicons name="flag-outline" size={16} color="#D32F2F" />
+              <Text style={{ fontSize: 13, fontWeight: '600', color: palette.text }}>
+                {canadianData.stationName || 'Canadian Station'}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              {canadianData.waterTempC != null && (
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: palette.text }}>
+                    {(canadianData.waterTempC * 9/5 + 32).toFixed(0)}{'\u00B0'}F
+                  </Text>
+                  <Text style={{ fontSize: 11, color: palette.textMuted }}>Water Temp</Text>
+                </View>
+              )}
+              {canadianData.flowCms != null && (
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: palette.text }}>
+                    {(canadianData.flowCms * 35.3147).toFixed(0)} cfs
+                  </Text>
+                  <Text style={{ fontSize: 11, color: palette.textMuted }}>Streamflow</Text>
+                </View>
+              )}
+            </View>
+            <Text style={{ fontSize: 11, color: palette.textDim, marginTop: 6 }}>
+              Source: Water Survey of Canada (HYDAT)
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* Fishing Impact Summary */}
       <View style={styles.section}>

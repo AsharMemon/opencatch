@@ -23,6 +23,7 @@ import { fonts } from '../theme/typography';
 import { getAllCatches, type EnhancedCatch } from '../services/catchEnhancements';
 import { trackRecorder, type FishingTrack } from '../services/trackRecorder';
 import { shareCatchToSocial } from '../services/socialSharing';
+import { exportCatches, type ExportOptions } from '../services/catchExport';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -220,6 +221,18 @@ export function ActivityLogScreen() {
 
   const FILTERS: FilterType[] = ['All', 'Catches', 'Trips'];
 
+  const handleExport = useCallback(async (format: 'csv' | 'pdf') => {
+    try {
+      const result = await exportCatches({ format, includeWeather: true, includeLocation: true });
+      if (!result.success) {
+        const { Alert: RNAlert } = require('react-native');
+        RNAlert.alert('Export', result.error || 'No catches to export');
+      }
+    } catch {
+      // Sharing cancelled
+    }
+  }, []);
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -230,7 +243,7 @@ export function ActivityLogScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Filter chips */}
+      {/* Filter chips + export */}
       <View style={styles.chipRow}>
         {FILTERS.map((f) => (
           <Pressable
@@ -243,6 +256,21 @@ export function ActivityLogScreen() {
             </Text>
           </Pressable>
         ))}
+        <View style={{ flex: 1 }} />
+        <Pressable
+          style={styles.exportBtn}
+          onPress={() => handleExport('csv')}
+        >
+          <Ionicons name="download-outline" size={16} color={palette.accent} />
+          <Text style={styles.exportBtnText}>CSV</Text>
+        </Pressable>
+        <Pressable
+          style={styles.exportBtn}
+          onPress={() => handleExport('pdf')}
+        >
+          <Ionicons name="document-outline" size={16} color={palette.accent} />
+          <Text style={styles.exportBtnText}>PDF</Text>
+        </Pressable>
       </View>
 
       {filtered.length === 0 ? (
@@ -310,6 +338,20 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: '#fff',
+  },
+  exportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: palette.accent + '12',
+  },
+  exportBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: palette.accent,
   },
   list: {
     paddingHorizontal: 16,

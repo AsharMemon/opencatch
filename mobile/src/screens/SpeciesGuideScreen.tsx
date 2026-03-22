@@ -30,6 +30,10 @@ import {
   type FishSpecies,
   type IdentificationResult,
 } from '../services/fishSpeciesAI';
+import {
+  getSaltWaterSpecies,
+  type SaltwaterSpecies,
+} from '../services/coastalFishing';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -57,6 +61,18 @@ export function SpeciesGuideScreen() {
   const [idResults, setIdResults] = useState<IdentificationResult[]>([]);
 
   const allSpecies = useMemo(() => getAllSpecies(), []);
+
+  // Coastal/saltwater species from coastalFishing service (shown when saltwater filter active)
+  const [coastalSpecies, setCoastalSpecies] = useState<SaltwaterSpecies[]>([]);
+  React.useEffect(() => {
+    if (waterFilter === 'saltwater') {
+      // Use a generic coastal US coordinate when no location
+      const species = getSaltWaterSpecies(28.5, -80.5); // Florida coast default
+      setCoastalSpecies(species);
+    } else {
+      setCoastalSpecies([]);
+    }
+  }, [waterFilter]);
 
   const filteredSpecies = useMemo(() => {
     let results = searchQuery ? searchSpecies(searchQuery) : [...allSpecies];
@@ -337,6 +353,25 @@ export function SpeciesGuideScreen() {
           ))}
         </ScrollView>
       </View>
+
+      {/* Coastal saltwater species from coastalFishing service */}
+      {coastalSpecies.length > 0 && (
+        <View style={{ paddingHorizontal: 16, gap: 8, marginBottom: 8 }}>
+          <Text style={[styles.resultCount, { fontWeight: '700', fontSize: 13 }]}>
+            In Season Saltwater ({coastalSpecies.length})
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+            {coastalSpecies.slice(0, 8).map((sp) => (
+              <View key={sp.name} style={{ backgroundColor: '#FFFFFF', borderRadius: 10, padding: 10, width: 140, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: palette.text }} numberOfLines={1}>{sp.name}</Text>
+                <Text style={{ fontSize: 10, color: palette.textMuted, fontStyle: 'italic' }} numberOfLines={1}>{sp.scientificName}</Text>
+                <Text style={{ fontSize: 10, color: palette.textSecondary, marginTop: 4 }} numberOfLines={2}>{sp.habitat}</Text>
+                <Text style={{ fontSize: 10, color: palette.accent, marginTop: 2 }}>{sp.techniques.slice(0, 2).join(', ')}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Species count */}
       <Text style={styles.resultCount}>{filteredSpecies.length} species</Text>

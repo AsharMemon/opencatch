@@ -31,6 +31,8 @@ import { palette } from '../theme/palette';
 import { type as typeStyles, fonts } from '../theme/typography';
 import { hapticLight } from '../utils/haptics';
 import { RAW_SPOTS, type StaticSpot } from '../data/topFishingSpots';
+import { isCanadianLocation } from '../services/canadaData';
+import { getCanadianPublicLands, type PublicLandArea } from '../services/canadianPublicLands';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -430,6 +432,7 @@ export function LakeFinderScreen() {
   const [maxDistance, setMaxDistance] = useState(200);
   const [sortBy, setSortBy] = useState<SortKey>('distance');
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [publicLands, setPublicLands] = useState<PublicLandArea[]>([]);
 
   // Get user location
   useEffect(() => {
@@ -452,6 +455,15 @@ export function LakeFinderScreen() {
       setLoading(false);
     })();
   }, []);
+
+  // Fetch Canadian public lands if user is in Canada
+  useEffect(() => {
+    if (userLat != null && userLon != null && isCanadianLocation(userLat, userLon)) {
+      getCanadianPublicLands(userLat, userLon, 100)
+        .then((lands) => setPublicLands(lands.slice(0, 10)))
+        .catch(() => {});
+    }
+  }, [userLat, userLon]);
 
   // Build enriched lake results
   const allLakes = useMemo<LakeResult[]>(() => {
@@ -677,6 +689,33 @@ export function LakeFinderScreen() {
             </Pressable>
           )}
         </ScrollView>
+      )}
+
+      {/* Canadian Public Lands (if in Canada) */}
+      {publicLands.length > 0 && (
+        <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+            <Ionicons name="leaf-outline" size={16} color="#2E7D32" />
+            <Text style={{ fontSize: 13, fontWeight: '700', color: palette.text }}>
+              Public Fishing Access ({publicLands.length})
+            </Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+            {publicLands.map((land) => (
+              <View key={land.id} style={{ backgroundColor: '#FFFFFF', borderRadius: 10, padding: 10, width: 160, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: palette.text }} numberOfLines={1}>{land.name}</Text>
+                <Text style={{ fontSize: 11, color: palette.textMuted }}>{land.type.replace(/_/g, ' ')}</Text>
+                {land.operator && <Text style={{ fontSize: 10, color: palette.textDim }} numberOfLines={1}>{land.operator}</Text>}
+                {land.fishingAccess === 'yes' && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
+                    <Ionicons name="fish-outline" size={12} color="#2E7D32" />
+                    <Text style={{ fontSize: 10, color: '#2E7D32', fontWeight: '600' }}>Fishing Access</Text>
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        </View>
       )}
 
       {/* Sort + result count */}

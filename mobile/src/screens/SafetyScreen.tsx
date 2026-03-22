@@ -50,6 +50,21 @@ import {
   type SharingSession,
 } from '../services/liveLocationSharing';
 import { hapticHeavy, hapticError, hapticSuccess } from '../utils/haptics';
+import {
+  getLightningWarning,
+  type LightningWarning,
+} from '../services/lightningDetection';
+import {
+  getClosestPort,
+  getClosestCoastGuard,
+  nmToMiles,
+  type Port,
+  type CoastGuardStation,
+} from '../services/nauticalNav';
+import {
+  getNearbyVessels,
+  type NearbyVessel,
+} from '../services/vesselTracking';
 import type { RootStackProps } from '../types/navigation';
 
 // ---------------------------------------------------------------------------
@@ -311,6 +326,17 @@ export function SafetyScreen({ navigation }: RootStackProps<'Safety'>) {
   const [sharingSession, setSharingSession] = useState<SharingSession | null>(null);
   const [sharingTimeLeft, setSharingTimeLeft] = useState<string | null>(null);
 
+  // -- Lightning state --
+  const [lightningWarning, setLightningWarning] = useState<LightningWarning | null>(null);
+  const [lightningLoading, setLightningLoading] = useState(false);
+
+  // -- Nearest port/coast guard --
+  const [nearestPort, setNearestPort] = useState<Port | null>(null);
+  const [nearestCG, setNearestCG] = useState<CoastGuardStation | null>(null);
+
+  // -- Nearby vessels (AIS) --
+  const [nearbyVessels, setNearbyVessels] = useState<NearbyVessel[]>([]);
+
   // -- MOB pulse animation --
   useEffect(() => {
     if (!mobStatus.active) return;
@@ -343,6 +369,29 @@ export function SafetyScreen({ navigation }: RootStackProps<'Safety'>) {
     const unsub2 = addAnchorListener(setAnchorStatus);
     const unsub3 = addSharingListener(setSharingSession);
     return () => { unsub1(); unsub2(); unsub3(); };
+  }, []);
+
+  // -- Lightning detection on mount --
+  useEffect(() => {
+    (async () => {
+      try {
+        setLightningLoading(true);
+        const Location = await import('expo-location');
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const warning = await getLightningWarning(pos.coords.latitude, pos.coords.longitude);
+        setLightningWarning(warning);
+        // Also fetch nearest port, coast guard, and nearby vessels
+        getClosestPort(pos.coords.latitude, pos.coords.longitude, 1).then((ports) => { if (ports.length > 0) setNearestPort(ports[0]); }).catch(() => {});
+        getClosestCoastGuard(pos.coords.latitude, pos.coords.longitude, 1).then((stations) => { if (stations.length > 0) setNearestCG(stations[0]); }).catch(() => {});
+        getNearbyVessels(pos.coords.latitude, pos.coords.longitude).then((v) => setNearbyVessels(v.slice(0, 5))).catch(() => {});
+      } catch {
+        // Silent — non-critical
+      } finally {
+        setLightningLoading(false);
+      }
+    })();
   }, []);
 
   // -- Sharing timer countdown --
@@ -608,6 +657,62 @@ export function SafetyScreen({ navigation }: RootStackProps<'Safety'>) {
         </Pressable>
       </Animated.View>
 
+      {/* ─── Lightning Detection ───────────────────────────────────────── */}
+      <View style={[
+        styles.card,
+        lightningWarning && lightningWarning.level === 'imminent' && styles.cardAlarm,
+      ]}>
+        <SectionHeader title="Lightning Risk" icon="flash-outline" />
+        {lightningLoading ? (
+          <ActivityIndicator size="small" color={palette.accent} style={{ paddingVertical: 12 }} />
+        ) : lightningWarning ? (
+          <View style={{ gap: 8, paddingTop: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons
+                name={lightningWarning.level === 'clear' ? 'checkmark-circle' : lightningWarning.level === 'imminent' ? 'warning' : 'alert-circle'}
+                size={20}
+                color={lightningWarning.level === 'clear' ? '#4CAF50' : lightningWarning.level === 'imminent' ? '#D32F2F' : '#F57C00'}
+              />
+              <Text style={[styles.cardDescription, { fontWeight: '700', flex: 1, color: lightningWarning.level === 'clear' ? '#4CAF50' : lightningWarning.level === 'imminent' ? '#D32F2F' : '#F57C00' }]}>
+                {lightningWarning.headline}
+              </Text>
+            </View>
+            <Text style={styles.cardDescription}>{lightningWarning.message}</Text>
+            {lightningWarning.nearestStrikeMiles != null && (
+              <Text style={[styles.cardDescription, { fontWeight: '600' }]}>
+                Nearest activity: {lightningWarning.nearestStrikeMiles.toFixed(1)} mi away
+              </Text>
+            )}
+          </View>
+        ) : (
+          <Text style={styles.cardDescription}>Unable to check lightning conditions.</Text>
+        )}
+      </View>
+
+      {/* ─── Nearby Vessels (AIS) ──────────────────────────────────────── */}
+      {nearbyVessels.length > 0 && (
+        <View style={styles.card}>
+          <SectionHeader title="Nearby Vessels" icon="boat-outline" />
+          <Text style={styles.cardDescription}>
+            AIS vessel traffic within 10 nautical miles.
+          </Text>
+          {nearbyVessels.map((v) => (
+            <View key={v.mmsi} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.borderLight }}>
+              <Ionicons name="navigate-outline" size={16} color={palette.accent} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: palette.text }} numberOfLines={1}>
+                  {v.name || `MMSI ${v.mmsi}`}
+                </Text>
+                <Text style={{ fontSize: 11, color: palette.textMuted }}>
+                  {v.shipTypeLabel} {'\u00B7'} {v.distanceNm.toFixed(1)} nm
+                  {v.lastPosition?.sogKnots ? ` \u00B7 ${v.lastPosition.sogKnots.toFixed(1)} kts` : ''}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
       {/* ─── Anchor Watch ──────────────────────────────────────────────── */}
       <View style={[styles.card, anchorStatus.alarm && styles.cardAlarm]}>
         <SectionHeader title="Anchor Watch" icon="locate-outline" />
@@ -772,6 +877,34 @@ export function SafetyScreen({ navigation }: RootStackProps<'Safety'>) {
           <Ionicons name="share-outline" size={18} color="#FFFFFF" />
           <Text style={styles.shareLocationText}>Share My Location</Text>
         </Pressable>
+
+        {/* Nearest port / coast guard from nauticalNav */}
+        {(nearestPort || nearestCG) && (
+          <View style={{ marginTop: 12, gap: 6 }}>
+            {nearestPort && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 }}>
+                <Ionicons name="boat-outline" size={16} color={palette.accent} />
+                <Text style={{ fontSize: 13, color: palette.text, flex: 1 }} numberOfLines={1}>
+                  Nearest port: {nearestPort.name}
+                </Text>
+                <Text style={{ fontSize: 12, color: palette.textMuted }}>
+                  {nmToMiles(nearestPort.distanceNm).toFixed(1)} mi
+                </Text>
+              </View>
+            )}
+            {nearestCG && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 }}>
+                <Ionicons name="shield-outline" size={16} color="#D32F2F" />
+                <Text style={{ fontSize: 13, color: palette.text, flex: 1 }} numberOfLines={1}>
+                  Nearest USCG: {nearestCG.name}
+                </Text>
+                <Text style={{ fontSize: 12, color: palette.textMuted }}>
+                  {nmToMiles(nearestCG.distanceNm).toFixed(1)} mi
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
       </View>
 
       {/* ─── Pre-Departure Checklist ───────────────────────────────────── */}

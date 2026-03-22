@@ -27,6 +27,11 @@ import {
   type TidePrediction,
   type NextTideInfo,
 } from '../services/tidesService';
+import {
+  getMarineForecast,
+  describeSeaState,
+  type MarineForecast,
+} from '../services/marineWeather';
 
 // ── Constants ────────────────────────────────────────────────────
 
@@ -107,6 +112,7 @@ export function TideChartScreen({ route }: any) {
   const [hourly, setHourly] = useState<TideHourly[]>([]);
   const [predictions, setPredictions] = useState<TidePrediction[]>([]);
   const [nextTide, setNextTide] = useState<NextTideInfo | null>(null);
+  const [marine, setMarine] = useState<MarineForecast | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -128,6 +134,19 @@ export function TideChartScreen({ route }: any) {
         setHourly(hourlyData);
         setPredictions(predData);
         setNextTide(tidesService.getNextTide(predData));
+
+        // Fetch marine weather using station's coordinates (approximate via location)
+        try {
+          const Location = await import('expo-location');
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status === 'granted') {
+            const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            const marineFc = await getMarineForecast(pos.coords.latitude, pos.coords.longitude);
+            if (!cancelled) setMarine(marineFc);
+          }
+        } catch {
+          // Marine weather is supplemental — non-critical
+        }
       } catch (err: any) {
         if (!cancelled) {
           setError(err.message ?? 'Failed to load tide data');
@@ -177,6 +196,43 @@ export function TideChartScreen({ route }: any) {
 
       {/* Next tide card */}
       {nextTide && <NextTideCard info={nextTide} />}
+
+      {/* Marine Conditions (from marineWeather service) */}
+      {marine && (
+        <View style={styles.marineCard}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <Ionicons name="boat-outline" size={18} color={palette.accent} />
+            <Text style={[styles.screenTitle, { fontSize: 16 }]}>Marine Conditions</Text>
+          </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+            {marine.waveHeightFt != null && (
+              <View style={styles.marineMetric}>
+                <Text style={styles.marineValue}>{marine.waveHeightFt.toFixed(1)} ft</Text>
+                <Text style={styles.marineLabel}>Waves</Text>
+                <Text style={styles.marineDesc}>{describeSeaState(marine.waveHeightFt)}</Text>
+              </View>
+            )}
+            {marine.wavePeriodSec != null && (
+              <View style={styles.marineMetric}>
+                <Text style={styles.marineValue}>{marine.wavePeriodSec.toFixed(0)}s</Text>
+                <Text style={styles.marineLabel}>Period</Text>
+              </View>
+            )}
+            {marine.seaSurfaceTempF != null && (
+              <View style={styles.marineMetric}>
+                <Text style={styles.marineValue}>{marine.seaSurfaceTempF.toFixed(0)}{'\u00B0'}F</Text>
+                <Text style={styles.marineLabel}>Sea Surface</Text>
+              </View>
+            )}
+            {marine.visibilityNm != null && (
+              <View style={styles.marineMetric}>
+                <Text style={styles.marineValue}>{marine.visibilityNm.toFixed(0)} nm</Text>
+                <Text style={styles.marineLabel}>Visibility</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      )}
 
       {/* Multi-day predictions */}
       <PredictionsList predictions={predictions} />
@@ -750,5 +806,44 @@ const styles = StyleSheet.create({
     color: palette.text,
     textAlign: 'right',
     width: 60,
+  },
+
+  // ── Marine conditions ─────────────────────────────────────────
+  marineCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 16,
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  marineMetric: {
+    width: '46%',
+    alignItems: 'center',
+    backgroundColor: palette.background,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  marineValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: palette.text,
+  },
+  marineLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: palette.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginTop: 2,
+  },
+  marineDesc: {
+    fontSize: 11,
+    color: palette.textSecondary,
+    marginTop: 2,
   },
 });
