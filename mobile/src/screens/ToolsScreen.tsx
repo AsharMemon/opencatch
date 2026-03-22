@@ -94,6 +94,8 @@ const TOOL_CATEGORIES: ToolCategory[] = [
   {
     title: 'Boating',
     items: [
+      { label: 'Route Planner', description: 'Autoroute & nav', ionicon: 'navigate', color: '#0A6EBD', screen: 'RoutePlanner', tags: ['boating', 'popular', 'planning'] },
+      { label: 'Trip Viz', description: 'Preview & review trips', ionicon: 'analytics', color: '#4CAF50', screen: 'TripVisualization', tags: ['boating', 'planning'] },
       { label: 'Fuel Calc', description: 'Trip fuel & range', ionicon: 'water', color: '#E65100', screen: 'FuelCalculator', tags: ['boating'] },
       { label: 'Maintenance', description: 'Engine hours & service', ionicon: 'build', color: '#5D4037', screen: 'Maintenance', tags: ['boating'] },
     ],

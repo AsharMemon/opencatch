@@ -6048,7 +6048,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       {!focusedLocation && (
         <MapInfoBar
           bottomOffset={Platform.OS === 'ios' ? 100 : 72}
-          anchorWatch={anchorStatus.active ? { active: true, driftMeters: anchorStatus.distance, radiusMeters: anchorStatus.radius } as AnchorWatchInfo : undefined}
+          anchorWatch={anchorStatus.active ? { active: true, driftMeters: anchorStatus.driftDistance, radiusMeters: anchorStatus.watch?.radiusMeters ?? 30 } as AnchorWatchInfo : undefined}
         />
       )}
 
