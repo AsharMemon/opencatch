@@ -173,6 +173,8 @@ import {
   type MOBStatus,
 } from '../services/manOverboard';
 import { QuickActionFAB } from '../components/QuickActionFAB';
+import { MapToolsDrawer, type MapToolGroup } from '../components/MapToolsDrawer';
+import { CoachMarks } from '../components/CoachMarks';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -280,6 +282,8 @@ interface OverlayLayer {
   label: string;
   ionicon: string;
   description: string;
+  /** Contextual filter: 'coastal' = only near coast, 'winter' = only Nov-Mar, 'always' = always shown */
+  context?: 'coastal' | 'winter' | 'always';
 }
 
 const OVERLAY_LAYERS: OverlayLayer[] = [
@@ -288,13 +292,13 @@ const OVERLAY_LAYERS: OverlayLayer[] = [
   { key: 'access-points', label: 'Access Points', ionicon: 'fish-outline', description: 'Boat launches, shore access, campgrounds' },
   { key: 'parking', label: 'Parking', ionicon: 'car-outline', description: 'Parking lots and pull-offs near access' },
   { key: 'trails', label: 'Trails', ionicon: 'walk-outline', description: 'Named access trails and paths to water' },
-  { key: 'nautical', label: 'Nautical Marks', ionicon: 'boat-outline', description: 'OpenSeaMap buoys, channels, marks' },
+  { key: 'nautical', label: 'Nautical Marks', ionicon: 'boat-outline', description: 'OpenSeaMap buoys, channels, marks', context: 'coastal' },
   { key: 'shaded-relief', label: 'Shaded Relief', ionicon: 'layers-outline', description: '3D terrain and elevation' },
   { key: 'water-flow', label: 'Hydrology', ionicon: 'water-outline', description: 'USGS streams & water features' },
   { key: 'depth-contours', label: 'Depth Contours', ionicon: 'resize-outline', description: 'GEBCO bathymetry lines' },
-  { key: 'no-wake-zones', label: 'No-Wake Zones', ionicon: 'speedometer-outline', description: 'Speed-restricted areas on water' },
-  { key: 'nav-aids', label: 'Nav Aids', ionicon: 'radio-outline', description: 'Buoys, lights, channel markers' },
-  { key: 'artificial-reefs', label: 'Artificial Reefs', ionicon: 'flag-outline', description: 'State artificial reef GPS locations' },
+  { key: 'no-wake-zones', label: 'No-Wake Zones', ionicon: 'speedometer-outline', description: 'Speed-restricted areas on water', context: 'coastal' },
+  { key: 'nav-aids', label: 'Nav Aids', ionicon: 'radio-outline', description: 'Buoys, lights, channel markers', context: 'coastal' },
+  { key: 'artificial-reefs', label: 'Artificial Reefs', ionicon: 'flag-outline', description: 'State artificial reef GPS locations', context: 'coastal' },
   { key: 'radar', label: 'Precip Radar', ionicon: 'rainy-outline', description: 'Real-time precipitation radar' },
   { key: 'satellite-imagery', label: 'Satellite Imagery', ionicon: 'planet-outline', description: 'ESRI high-res satellite tiles' },
 ];
@@ -1917,7 +1921,17 @@ function LayerPicker({ visible, currentStyle, activeOverlays, showQualityPins, u
 
           <View style={styles.layerDivider} />
           <Text style={styles.layerSectionTitle}>OVERLAYS</Text>
-          {OVERLAY_LAYERS.map((layer) => {
+          {OVERLAY_LAYERS.filter((layer) => {
+            // Contextual filtering: only show relevant overlays (Gaigg Ch.4 — reduce data overload)
+            if (layer.context === 'coastal') {
+              return pickerUserLoc ? isNearCoast(pickerUserLoc.lat, pickerUserLoc.lon) : false;
+            }
+            if (layer.context === 'winter') {
+              const m = new Date().getMonth() + 1;
+              return m >= 11 || m <= 3;
+            }
+            return true;
+          }).map((layer) => {
             const isActive = activeOverlays.has(layer.key);
             return (
               <Pressable
@@ -2276,6 +2290,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   // Selected marker for callout
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const [focusedLocation, setFocusedLocation] = useState<FishingLocation | null>(null);
+
+  // Map Tools drawer (progressive disclosure — avoids Kitchen Sink pattern)
+  const [mapToolsDrawerOpen, setMapToolsDrawerOpen] = useState(false);
 
   // Measure / ruler mode
   const [measureMode, setMeasureMode] = useState(false);
@@ -3837,6 +3854,141 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     [],
   );
 
+  // ── Map Tools drawer groups (progressive disclosure) ─────────────
+  // Contextual: only show tools relevant to current location/season
+  const currentMonth = new Date().getMonth() + 1; // 1-12
+  const isWinterSeason = currentMonth >= 11 || currentMonth <= 3;
+  const isNearCoastNow = userLocation ? isNearCoast(userLocation.lat, userLocation.lon) : false;
+
+  const mapToolGroups: MapToolGroup[] = [
+    {
+      title: 'Drawing & Measurement',
+      tools: [
+        {
+          key: 'measure',
+          label: 'Measure Distance',
+          icon: 'resize-outline',
+          description: 'Tap points to measure between them',
+          isActive: measureMode,
+          onPress: () => {
+            setMeasureMode((prev) => { if (prev) setMeasurePoints([]); return !prev; });
+            setMapToolsDrawerOpen(false);
+          },
+        },
+        {
+          key: 'annotate',
+          label: 'Annotate Map',
+          icon: 'create-outline',
+          description: 'Draw markers, arrows, and circles',
+          isActive: annotationMode,
+          onPress: () => {
+            setAnnotationMode((prev) => !prev);
+            if (measureMode) { setMeasureMode(false); setMeasurePoints([]); }
+            setMapToolsDrawerOpen(false);
+          },
+        },
+        {
+          key: 'contour-settings',
+          label: 'Depth Contours',
+          icon: 'analytics-outline',
+          description: 'Customize contour colors and intervals',
+          onPress: () => {
+            setShowContourModal(true);
+            setMapToolsDrawerOpen(false);
+          },
+        },
+      ],
+    },
+    {
+      title: 'Weather Overlays',
+      tools: [
+        {
+          key: 'wind',
+          label: 'Wind',
+          icon: 'flag-outline',
+          description: 'Wind speed and direction arrows',
+          isActive: windEnabled,
+          isLoading: windLoading,
+          onPress: () => setWindEnabled((prev) => !prev),
+        },
+        {
+          key: 'radar',
+          label: 'Precipitation Radar',
+          icon: 'rainy-outline',
+          description: 'Real-time rain and snow radar',
+          isActive: radarEnabled,
+          isLoading: radarLoading,
+          onPress: () => setRadarEnabled((prev) => !prev),
+        },
+      ],
+    },
+    {
+      title: 'Points of Interest',
+      tools: [
+        {
+          key: 'marinas',
+          label: 'Marinas & POIs',
+          icon: 'boat-outline',
+          description: 'Marinas, fuel docks, and boat ramps',
+          isActive: marinasEnabled,
+          isLoading: marinasLoading,
+          onPress: () => setMarinasEnabled((prev) => !prev),
+        },
+        {
+          key: 'access-points',
+          label: 'Access Points',
+          icon: 'trail-sign-outline',
+          description: 'Boat launches, shore access, trails',
+          isActive: accessEnabled,
+          isLoading: accessLoading,
+          onPress: () => setAccessEnabled((prev) => !prev),
+        },
+      ],
+    },
+    {
+      title: 'Nautical',
+      tools: [
+        {
+          key: 'nav-aids-tool',
+          label: 'Navigation Aids',
+          icon: 'radio-outline',
+          description: 'Buoys, lights, channel markers',
+          visible: isNearCoastNow || marinasEnabled,
+          onPress: () => {
+            // Toggle nav-aids overlay
+            handleToggleOverlay('nav-aids');
+            setMapToolsDrawerOpen(false);
+          },
+          isActive: activeOverlays.has('nav-aids'),
+        },
+        {
+          key: 'no-wake-tool',
+          label: 'No-Wake Zones',
+          icon: 'speedometer-outline',
+          description: 'Speed-restricted areas on water',
+          visible: isNearCoastNow || marinasEnabled,
+          onPress: () => {
+            handleToggleOverlay('no-wake-zones');
+            setMapToolsDrawerOpen(false);
+          },
+          isActive: activeOverlays.has('no-wake-zones'),
+        },
+        {
+          key: 'artificial-reefs-tool',
+          label: 'Artificial Reefs',
+          icon: 'flag-outline',
+          description: 'State artificial reef GPS locations',
+          visible: isNearCoastNow,
+          onPress: () => {
+            handleToggleOverlay('artificial-reefs');
+            setMapToolsDrawerOpen(false);
+          },
+          isActive: activeOverlays.has('artificial-reefs'),
+        },
+      ],
+    },
+  ];
+
   // ── Render ───────────────────────────────────────────────────────
   if (Platform.OS === 'web') {
     return (
@@ -5007,94 +5159,35 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
       </Pressable>
 
-      {/* Ruler / measure toggle button */}
+      {/* Map Tools button — opens slide-out drawer (replaces 7 individual buttons) */}
+      {/* Design: "Kitchen Sink" avoidance per Gaigg Ch.7 */}
       <Pressable
-        style={[styles.rulerButton, measureMode && styles.rulerButtonActive]}
-        onPress={() => {
-          setMeasureMode((prev) => {
-            if (prev) setMeasurePoints([]);
-            return !prev;
-          });
-        }}
-        accessibilityLabel={measureMode ? 'Exit measure mode' : 'Measure distance'}
+        style={[styles.mapToolsButton, (measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled) && styles.mapToolsButtonActive]}
+        onPress={() => setMapToolsDrawerOpen(true)}
+        accessibilityLabel="Open map tools drawer"
       >
         <Ionicons
-          name="resize-outline"
+          name="build-outline"
           size={20}
-          color={measureMode ? '#FFFFFF' : palette.textSecondary}
+          color={(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled) ? '#FFFFFF' : palette.textSecondary}
         />
+        {(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled) && (
+          <View style={styles.mapToolsBadge}>
+            <Text style={styles.mapToolsBadgeText}>
+              {[measureMode, annotationMode, windEnabled, radarEnabled, marinasEnabled, accessEnabled].filter(Boolean).length}
+            </Text>
+          </View>
+        )}
       </Pressable>
 
-      {/* Annotation mode toggle button */}
-      <Pressable
-        style={[styles.annotateButton, annotationMode && styles.annotateButtonActive]}
-        onPress={() => {
-          setAnnotationMode((prev) => !prev);
-          if (measureMode) { setMeasureMode(false); setMeasurePoints([]); }
-        }}
-        accessibilityLabel={annotationMode ? 'Exit annotation mode' : 'Annotate map'}
-      >
-        <Ionicons
-          name="create-outline"
-          size={20}
-          color={annotationMode ? '#FFFFFF' : palette.textSecondary}
-        />
-      </Pressable>
-
-      {/* Depth contour settings button */}
-      <Pressable
-        style={styles.contourButton}
-        onPress={() => setShowContourModal(true)}
-        accessibilityLabel="Depth contour settings"
-      >
-        <Ionicons name="analytics-outline" size={20} color={palette.textSecondary} />
-      </Pressable>
-
-      {/* Compass heading widget */}
+      {/* Compass heading widget — only visible when map is rotated */}
       <CompassWidget heading={compassHeading} mode={compassMode} onToggleMode={handleToggleCompassMode} />
 
-      {/* Marina POI toggle button */}
-      <MapToggleButton
-        style={styles.marinaButton}
-        activeStyle={styles.marinaButtonActive}
-        isActive={marinasEnabled}
-        isLoading={marinasLoading}
-        icon="boat-outline"
-        onPress={() => setMarinasEnabled((prev) => !prev)}
-        accessibilityLabel={marinasEnabled ? 'Hide marinas and POIs' : 'Show marinas and POIs'}
-      />
-
-      {/* Wind overlay toggle button */}
-      <MapToggleButton
-        style={styles.windButton}
-        activeStyle={styles.windButtonActive}
-        isActive={windEnabled}
-        isLoading={windLoading}
-        icon="flag-outline"
-        onPress={() => setWindEnabled((prev) => !prev)}
-        accessibilityLabel={windEnabled ? 'Hide wind overlay' : 'Show wind overlay'}
-      />
-
-      {/* Radar overlay toggle button */}
-      <MapToggleButton
-        style={styles.radarButton}
-        activeStyle={styles.radarButtonActive}
-        isActive={radarEnabled}
-        isLoading={radarLoading}
-        icon="rainy-outline"
-        onPress={() => setRadarEnabled((prev) => !prev)}
-        accessibilityLabel={radarEnabled ? 'Hide precipitation radar' : 'Show precipitation radar'}
-      />
-
-      {/* Access points toggle button */}
-      <MapToggleButton
-        style={styles.accessButton}
-        activeStyle={styles.accessButtonActive}
-        isActive={accessEnabled}
-        isLoading={accessLoading}
-        icon="trail-sign-outline"
-        onPress={() => setAccessEnabled((prev) => !prev)}
-        accessibilityLabel={accessEnabled ? 'Hide access points' : 'Show access points'}
+      {/* Map Tools Drawer (slide-out panel for secondary tools) */}
+      <MapToolsDrawer
+        visible={mapToolsDrawerOpen}
+        onClose={() => setMapToolsDrawerOpen(false)}
+        toolGroups={mapToolGroups}
       />
 
       {/* Catch photos toggle available via layer picker */}
@@ -5684,6 +5777,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         />
       )}
 
+      {/* First-time user coach marks (Gaigg Ch.1 — Onboarding pattern) */}
+      <CoachMarks mapReady={!loading && userLocation !== null} />
+
       {/* Bottom sheet with location list (merged from Explore) */}
       {markerMode === 'locations' && (
         <Animated.View style={[styles.sheet, { height: sheetHeight }]}>
@@ -6269,6 +6365,45 @@ const styles = StyleSheet.create({
   },
   overlayBadgeText: {
     fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  // ── Map Tools button (replaces 7 individual buttons) ──────────────
+  mapToolsButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 205 : 165,
+    right: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: palette.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+    zIndex: 5,
+  },
+  mapToolsButtonActive: {
+    backgroundColor: palette.accent,
+  },
+  mapToolsBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#FB8C00',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  mapToolsBadgeText: {
+    fontSize: 9,
     fontWeight: '700',
     color: '#FFFFFF',
   },

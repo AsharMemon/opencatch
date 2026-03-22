@@ -72,14 +72,14 @@ const PAGES: OnboardingPage[] = [
   },
   {
     key: 'getstarted',
-    title: 'Get Started',
-    subtitle: 'Enable location access to find spots near you and get personalized forecasts.',
+    title: 'Simple to Start',
+    subtitle: 'We keep things simple. Features appear as you need them — the more you explore, the more you unlock.',
     icon: 'fish',
     iconColor: palette.accent,
     features: [
-      { icon: 'location', text: 'Location helps find nearby fishing spots' },
-      { icon: 'notifications', text: 'Get alerted when conditions are prime' },
-      { icon: 'shield-checkmark', text: 'Your data stays on your device' },
+      { icon: 'location', text: 'Enable location to find spots near you' },
+      { icon: 'map', text: 'Tap any spot on the map for instant conditions' },
+      { icon: 'add-circle', text: 'Use the + button to log catches and trips' },
     ],
   },
 ];
