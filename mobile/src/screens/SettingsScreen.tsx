@@ -30,6 +30,7 @@ import {
   cancelAllNotifications,
   type NotificationPrefs,
 } from '../services/dailyNotifications';
+import { useNavigation } from '@react-navigation/native';
 import type { UserSettings, UnitSystem, MapStyle } from '../types/models';
 
 const MAP_STYLE_LABELS: Record<MapStyle, string> = {
@@ -39,6 +40,7 @@ const MAP_STYLE_LABELS: Record<MapStyle, string> = {
 };
 
 export function SettingsScreen() {
+  const navigation = useNavigation<any>();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [cacheSize, setCacheSize] = useState<string>('Calculating...');
   const [loading, setLoading] = useState(true);
@@ -240,6 +242,11 @@ export function SettingsScreen() {
             onPress={() => {
               // Navigate handled by parent
             }}
+          />
+          <SettingsButton
+            label="AIS Receiver"
+            value="WiFi AIS Setup"
+            onPress={() => navigation.navigate('AISSettings')}
           />
         </View>
       </View>

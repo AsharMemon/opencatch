@@ -468,7 +468,7 @@ function BestTimesCard({ forecasts }: { forecasts: BiteFC[] }) {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>Best Times \u2014 Next 3 Days</Text>
+      <Text style={styles.cardTitle}>Best Times {'\u2013'} Next 3 Days</Text>
       {forecasts.slice(0, 3).map((fc, i) => {
         const dayLabel = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : days[fc.date.getDay()];
         const ratingColor =

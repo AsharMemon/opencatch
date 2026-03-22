@@ -46,6 +46,7 @@ export type RootStackParamList = {
   IceFishing: undefined;
   RoutePlanner: { destinationLat?: number; destinationLon?: number; destinationName?: string } | undefined;
   TripVisualization: { routeId?: string; tripId?: string } | undefined;
+  AISSettings: undefined;
 };
 
 // Screen prop helpers

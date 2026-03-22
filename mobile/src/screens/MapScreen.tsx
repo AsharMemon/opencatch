@@ -117,6 +117,8 @@ import { WaveOverlayAnimated } from '../components/WaveOverlayAnimated';
 import { DepthNumberOverlay } from '../components/DepthNumberOverlay';
 import { MarineGasOverlay } from '../components/MarineGasOverlay';
 import { OceanFishingSpotsOverlay } from '../components/OceanFishingSpotsOverlay';
+import { TidalCurrentOverlay } from '../components/TidalCurrentOverlay';
+import { aisReceiver } from '../services/aisWifiReceiver';
 import {
   trackRecorder,
   buildSpeedColoredGeoJSON,
@@ -1843,19 +1845,28 @@ function MapToggleButton({ style, activeStyle, isActive, isLoading, icon, iconSi
 
 // ── Layer Picker ──────────────────────────────────────────────────
 
+interface POIFilter {
+  key: string;
+  label: string;
+  ionicon: string;
+  isActive: boolean;
+  onToggle: () => void;
+}
+
 interface LayerPickerProps {
   visible: boolean;
   currentStyle: MapStyleKey;
   activeOverlays: Set<string>;
   showQualityPins: boolean;
   userLocation: { lat: number; lon: number } | null;
+  poiFilters: POIFilter[];
   onSelectStyle: (style: MapStyleKey) => void;
   onToggleOverlay: (key: string) => void;
   onToggleQualityPins: () => void;
   onClose: () => void;
 }
 
-function LayerPicker({ visible, currentStyle, activeOverlays, showQualityPins, userLocation: pickerUserLoc, onSelectStyle, onToggleOverlay, onToggleQualityPins, onClose }: LayerPickerProps) {
+function LayerPicker({ visible, currentStyle, activeOverlays, showQualityPins, userLocation: pickerUserLoc, poiFilters, onSelectStyle, onToggleOverlay, onToggleQualityPins, onClose }: LayerPickerProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -1967,26 +1978,28 @@ function LayerPicker({ visible, currentStyle, activeOverlays, showQualityPins, u
             );
           })}
 
+          {/* POI filter chips — Google Maps style */}
           <View style={styles.layerDivider} />
-          <Text style={styles.layerSectionTitle}>READING THE MAP</Text>
-          <View style={styles.topoHintsContainer}>
-            {[
-              { icon: 'trending-down-outline', title: 'Drop-offs & Ledges', text: 'Look for closely spaced contour lines — steep depth changes attract bass, especially in spring.' },
-              { icon: 'git-merge-outline', title: 'Points & Humps', text: 'Underwater points jutting into deep water are ambush spots. Fish stage here before moving shallow.' },
-              { icon: 'water-outline', title: 'Creek Channels', text: 'Submerged creek beds act as highways for fish. Follow the deepest contour lines.' },
-              { icon: 'leaf-outline', title: 'Flats Near Deep Water', text: 'Shallow flats adjacent to deep water are feeding zones. Bass move up to feed and retreat to depth.' },
-              { icon: 'snow-outline', title: 'Early Spring', text: 'Bass spawn in 2-6 ft on hard bottom near drop-offs. Look for flats with nearby deep water access.' },
-              { icon: 'flash-outline', title: 'Pike & Musky', text: 'Ambush predators love weed edges, creek mouths, and shallow bays connected to deep channels.' },
-            ].map((hint, i) => (
-              <View key={i} style={styles.topoHintRow}>
-                <Ionicons name={hint.icon as any} size={14} color={palette.accent} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.topoHintTitle}>{hint.title}</Text>
-                  <Text style={styles.topoHintText}>{hint.text}</Text>
-                </View>
-              </View>
+          <Text style={styles.layerSectionTitle}>POINTS OF INTEREST</Text>
+          <View style={styles.poiChipRow}>
+            {poiFilters.map((filter) => (
+              <Pressable
+                key={filter.key}
+                style={[styles.poiChip, filter.isActive && styles.poiChipActive]}
+                onPress={filter.onToggle}
+              >
+                <Ionicons
+                  name={filter.ionicon as any}
+                  size={15}
+                  color={filter.isActive ? '#FFFFFF' : palette.textSecondary}
+                />
+                <Text style={[styles.poiChipLabel, filter.isActive && styles.poiChipLabelActive]}>
+                  {filter.label}
+                </Text>
+              </Pressable>
             ))}
           </View>
+
         </ScrollView>
       </Animated.View>
     </>
@@ -2364,6 +2377,13 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
   // 3D terrain / relief shading
   const [terrain3DEnabled, setTerrain3DEnabled] = useState(false);
+
+  // Tidal current overlay (coastal only)
+  const [tidalCurrentEnabled, setTidalCurrentEnabled] = useState(false);
+
+  // AIS WiFi receiver overlay
+  const [aisWifiEnabled, setAisWifiEnabled] = useState(false);
+  const [aisWifiGeoJSON, setAisWifiGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
 
   // Dynamic fishing spot discovery (OSM Overpass)
   // Initialize from module-level cache so pins survive tab switches
@@ -3927,6 +3947,25 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     [],
   );
 
+  // ── AIS WiFi vessel refresh ──────────────────────────────────────
+  useEffect(() => {
+    if (!aisWifiEnabled) {
+      setAisWifiGeoJSON(null);
+      return;
+    }
+    // Initial load
+    setAisWifiGeoJSON(aisReceiver.getVesselsGeoJSON());
+    // Subscribe to updates
+    const unsub = aisReceiver.addAISListener(() => {
+      setAisWifiGeoJSON(aisReceiver.getVesselsGeoJSON());
+    });
+    // Also poll every 10s in case of missed updates
+    const interval = setInterval(() => {
+      setAisWifiGeoJSON(aisReceiver.getVesselsGeoJSON());
+    }, 10_000);
+    return () => { unsub(); clearInterval(interval); };
+  }, [aisWifiEnabled]);
+
   // ── Map Tools drawer groups (progressive disclosure) ─────────────
   // Contextual: only show tools relevant to current location/season
   const currentMonth = new Date().getMonth() + 1; // 1-12
@@ -4029,6 +4068,15 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                 color: '#7B1FA2',
               } as OverlayInfoCard
             : null,
+        },
+        {
+          key: 'tidal-currents',
+          label: 'Tidal Currents',
+          icon: 'swap-horizontal-outline',
+          description: 'NOAA tidal current predictions',
+          isActive: tidalCurrentEnabled,
+          visible: isNearCoastNow,
+          onPress: () => setTidalCurrentEnabled((prev) => !prev),
         },
       ],
     },
@@ -4148,6 +4196,22 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             setMapToolsDrawerOpen(false);
           },
           isActive: activeOverlays.has('artificial-reefs'),
+        },
+        {
+          key: 'ais-wifi',
+          label: 'AIS WiFi Vessels',
+          icon: 'radio-outline',
+          description: 'Local AIS receiver vessel overlay',
+          isActive: aisWifiEnabled,
+          onPress: () => setAisWifiEnabled((prev) => !prev),
+          infoCard: aisWifiEnabled && aisWifiGeoJSON && aisWifiGeoJSON.features.length > 0
+            ? {
+                primary: `${aisWifiGeoJSON.features.length} vessel${aisWifiGeoJSON.features.length !== 1 ? 's' : ''} via WiFi AIS`,
+                secondary: aisReceiver.getAISStatus().status === 'connected' ? 'Connected' : 'Not connected',
+                icon: 'radio',
+                color: '#00897B',
+              } as OverlayInfoCard
+            : null,
         },
       ],
     },
@@ -4304,6 +4368,50 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
           />
+        )}
+
+        {/* Tidal current overlay (coastal only) */}
+        {tidalCurrentEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+          <TidalCurrentOverlay
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            zoom={currentZoom}
+            ShapeSource={ShapeSource}
+            CircleLayer={CircleLayer}
+            SymbolLayer={SymbolLayer}
+          />
+        )}
+
+        {/* AIS WiFi vessel markers from local receiver */}
+        {aisWifiEnabled && aisWifiGeoJSON && ShapeSource && CircleLayer && SymbolLayer && (
+          <ShapeSource id="ais-wifi-vessels-source" shape={aisWifiGeoJSON}>
+            <CircleLayer
+              id="ais-wifi-vessels-circle"
+              style={{
+                circleRadius: 6,
+                circleColor: '#00897B',
+                circleStrokeColor: '#FFFFFF',
+                circleStrokeWidth: 2,
+                circleOpacity: 0.9,
+              }}
+            />
+            <SymbolLayer
+              id="ais-wifi-vessels-label"
+              minZoomLevel={10}
+              style={{
+                textField: ['get', 'name'],
+                textSize: 10,
+                textFont: ['Open Sans Bold'],
+                textColor: '#00695C',
+                textHaloColor: '#FFFFFF',
+                textHaloWidth: 1.5,
+                textOffset: [0, 1.5],
+                textAllowOverlap: false,
+                iconRotate: ['get', 'heading'],
+                iconRotationAlignment: 'map',
+              }}
+            />
+          </ShapeSource>
         )}
 
         {/* 3D Terrain — hillshade + terrain exaggeration */}
@@ -5403,12 +5511,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         <Ionicons
           name="build-outline"
           size={20}
-          color={(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled) ? '#FFFFFF' : palette.textSecondary}
+          color={(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || tidalCurrentEnabled || aisWifiEnabled) ? '#FFFFFF' : palette.textSecondary}
         />
-        {(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled) && (
+        {(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || tidalCurrentEnabled || aisWifiEnabled) && (
           <View style={styles.mapToolsBadge}>
             <Text style={styles.mapToolsBadgeText}>
-              {[measureMode, annotationMode, windEnabled, radarEnabled, marinasEnabled, accessEnabled, windAnimatedEnabled, waveEnabled, depthNumbersEnabled, marineGasEnabled, oceanSpotsEnabled, terrain3DEnabled].filter(Boolean).length}
+              {[measureMode, annotationMode, windEnabled, radarEnabled, marinasEnabled, accessEnabled, windAnimatedEnabled, waveEnabled, depthNumbersEnabled, marineGasEnabled, oceanSpotsEnabled, terrain3DEnabled, tidalCurrentEnabled, aisWifiEnabled].filter(Boolean).length}
             </Text>
           </View>
         )}
@@ -5745,6 +5853,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         activeOverlays={activeOverlays}
         showQualityPins={showQualityPins}
         userLocation={userLocation}
+        poiFilters={[
+          { key: 'marinas', label: 'Marinas', ionicon: 'boat-outline', isActive: marinasEnabled, onToggle: () => setMarinasEnabled((p) => !p) },
+          { key: 'marine-gas', label: 'Fuel Docks', ionicon: 'flame-outline', isActive: marineGasEnabled, onToggle: () => setMarineGasEnabled((p) => !p) },
+          { key: 'boat-launches', label: 'Boat Launches', ionicon: 'trail-sign-outline', isActive: accessEnabled, onToggle: () => setAccessEnabled((p) => !p) },
+          { key: 'tackle-shops', label: 'Tackle Shops', ionicon: 'cart-outline', isActive: activeOverlays.has('tackle-shops'), onToggle: () => handleToggleOverlay('tackle-shops') },
+        ]}
         onSelectStyle={setMapStyle}
         onToggleOverlay={handleToggleOverlay}
         onToggleQualityPins={() => setShowQualityPins((p) => !p)}
@@ -6727,6 +6841,35 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: palette.textMuted,
     marginTop: 1,
+  },
+  poiChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 2,
+  },
+  poiChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  poiChipActive: {
+    backgroundColor: palette.accent,
+    borderColor: palette.accent,
+  },
+  poiChipLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: palette.textSecondary,
+  },
+  poiChipLabelActive: {
+    color: '#FFFFFF',
   },
   topoHintsContainer: {
     gap: 10,

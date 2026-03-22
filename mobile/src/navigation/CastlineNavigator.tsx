@@ -1,5 +1,5 @@
 import React, { Suspense, useCallback, useRef, lazy, ComponentType } from 'react';
-import { ActivityIndicator, Animated, Image, StyleSheet, Platform, View } from 'react-native';
+import { ActivityIndicator, Animated, Image, StyleSheet, Platform, View, Text, Pressable } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,13 +27,41 @@ function ScreenSkeleton() {
   );
 }
 
-/** Wrap a lazy import in Suspense with skeleton fallback */
+/** Error boundary to catch lazy-load crashes and allow retry */
+interface ErrorBoundaryState { hasError: boolean }
+class ScreenErrorBoundary extends React.Component<{ children: React.ReactNode }, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false };
+  static getDerivedStateFromError(): ErrorBoundaryState { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FAFAF8', padding: 24 }}>
+          <Ionicons name="refresh-outline" size={32} color="#666" />
+          <Text style={{ fontSize: 15, color: '#333', marginTop: 12, textAlign: 'center' }}>
+            Something went wrong loading this screen.
+          </Text>
+          <Pressable
+            onPress={() => this.setState({ hasError: false })}
+            style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#0A6EBD', borderRadius: 8 }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>Retry</Text>
+          </Pressable>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+/** Wrap a lazy import in Suspense + ErrorBoundary with skeleton fallback */
 function withSuspense<P extends object>(LazyComponent: React.LazyExoticComponent<ComponentType<P>>): ComponentType<P> {
   return function SuspenseWrapped(props: P) {
     return (
-      <Suspense fallback={<ScreenSkeleton />}>
-        <LazyComponent {...props} />
-      </Suspense>
+      <ScreenErrorBoundary>
+        <Suspense fallback={<ScreenSkeleton />}>
+          <LazyComponent {...props} />
+        </Suspense>
+      </ScreenErrorBoundary>
     );
   };
 }
@@ -89,7 +117,7 @@ const KnotGuideScreen = withSuspense(lazy(() => import('../screens/KnotGuideScre
 const IceFishingScreen = withSuspense(lazy(() => import('../screens/IceFishingScreen').then(m => ({ default: m.IceFishingScreen }))));
 const RoutePlannerScreen = withSuspense(lazy(() => import('../screens/RoutePlannerScreen').then(m => ({ default: m.RoutePlannerScreen }))));
 const TripVisualizationScreen = withSuspense(lazy(() => import('../screens/TripVisualizationScreen').then(m => ({ default: m.TripVisualizationScreen }))));
-
+const AISSettingsScreen = withSuspense(lazy(() => import('../screens/AISSettingsScreen').then(m => ({ default: m.AISSettingsScreen }))));
 
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
@@ -115,6 +143,7 @@ interface NavProps {
 function TabNavigator({ user, onLogout }: NavProps) {
   return (
     <Tab.Navigator
+      detachInactiveScreens={false}
       screenOptions={({ route }) => ({
         animation: 'fade' as const,
         headerStyle: {
@@ -382,6 +411,11 @@ export function OpenCatchNavigator({ user, onLogout }: NavProps) {
         name="TripVisualization"
         component={TripVisualizationScreen}
         options={{ title: 'Trip Visualization' }}
+      />
+      <Stack.Screen
+        name="AISSettings"
+        component={AISSettingsScreen}
+        options={{ title: 'AIS Receiver' }}
       />
     </Stack.Navigator>
   );

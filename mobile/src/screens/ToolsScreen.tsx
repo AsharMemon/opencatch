@@ -62,10 +62,10 @@ const TOOL_CATEGORIES: ToolCategory[] = [
     title: 'Conditions',
     items: [
       { label: 'Forecasts', description: 'AI fishing forecasts', ionicon: 'analytics', color: palette.accent, screen: 'ForecastsTab', tags: ['morning', 'planning', 'popular'] },
-      { label: 'Tides', description: 'Tides & currents', ionicon: 'water', color: '#1E88E5', screen: 'TideChart', params: { stationId: '', stationName: 'Find Station' }, tags: ['coastal', 'planning'] },
+      { label: 'Tides', description: 'Tides & currents', ionicon: 'water-outline', color: '#1E88E5', screen: 'TideChart', params: { stationId: '', stationName: 'Find Station' }, tags: ['coastal', 'planning'] },
       { label: 'Water Data', description: 'Temp, clarity, flow', ionicon: 'thermometer', color: '#1565C0', screen: 'WaterInsights', params: {}, tags: ['morning', 'planning', 'popular'] },
       { label: 'Best Times', description: 'Peak fishing windows', ionicon: 'time', color: '#E53935', screen: 'BestTimes', tags: ['morning', 'planning', 'popular'] },
-      { label: 'Pressure', description: 'Angler traffic trends', ionicon: 'people', color: '#FB8C00', screen: 'FishingPressure', tags: ['weekend'] },
+      { label: 'Pressure', description: 'Angler traffic trends', ionicon: 'speedometer-outline', color: '#FB8C00', screen: 'FishingPressure', tags: ['weekend'] },
       { label: 'Sun & Moon', description: 'Solunar periods', ionicon: 'moon', color: '#5C6BC0', screen: 'SunMoon', tags: ['morning', 'planning'] },
     ],
   },
@@ -96,8 +96,9 @@ const TOOL_CATEGORIES: ToolCategory[] = [
     items: [
       { label: 'Route Planner', description: 'Autoroute & nav', ionicon: 'navigate', color: '#0A6EBD', screen: 'RoutePlanner', tags: ['boating', 'popular', 'planning'] },
       { label: 'Trip Viz', description: 'Preview & review trips', ionicon: 'analytics', color: '#4CAF50', screen: 'TripVisualization', tags: ['boating', 'planning'] },
-      { label: 'Fuel Calc', description: 'Trip fuel & range', ionicon: 'water', color: '#E65100', screen: 'FuelCalculator', tags: ['boating'] },
+      { label: 'Fuel Calc', description: 'Trip fuel & range', ionicon: 'calculator-outline', color: '#E65100', screen: 'FuelCalculator', tags: ['boating'] },
       { label: 'Maintenance', description: 'Engine hours & service', ionicon: 'build', color: '#5D4037', screen: 'Maintenance', tags: ['boating'] },
+      { label: 'AIS Receiver', description: 'WiFi AIS setup', ionicon: 'radio', color: '#00897B', screen: 'AISSettings', tags: ['boating', 'coastal'] },
     ],
   },
   {
@@ -105,7 +106,7 @@ const TOOL_CATEGORIES: ToolCategory[] = [
     items: [
       { label: 'Offline Maps', description: 'Download for offline', ionicon: 'cloud-offline', color: '#607D8B', screen: 'OfflineMaps', badge: 'PRO', tags: ['planning'] },
       { label: 'Buoys', description: 'Weather buoy data', ionicon: 'radio', color: '#0288D1', screen: 'WeatherBuoys', params: {}, tags: ['coastal'] },
-      { label: 'Species Map', description: 'Distribution overlay', ionicon: 'analytics', color: '#2E7D32', screen: 'SpeciesMap', tags: ['planning'] },
+      { label: 'Species Map', description: 'Distribution overlay', ionicon: 'earth-outline', color: '#2E7D32', screen: 'SpeciesMap', tags: ['planning'] },
     ],
   },
   {
