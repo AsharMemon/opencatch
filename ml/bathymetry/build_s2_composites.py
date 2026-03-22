@@ -43,17 +43,18 @@ logging.basicConfig(
 log = logging.getLogger("build_s2")
 
 # Sentinel-2 L2A bands for V2 model (10 bands)
+# Element84 Earth Search band names (different from Planetary Computer)
 S2_BANDS_V2 = [
-    "B02",   # Blue 490nm — 10m
-    "B03",   # Green 560nm — 10m
-    "B04",   # Red 665nm — 10m
-    "B05",   # Red Edge 1 705nm — 20m
-    "B06",   # Red Edge 2 740nm — 20m
-    "B07",   # Red Edge 3 783nm — 20m
-    "B08",   # NIR 842nm — 10m
-    "B8A",   # NIR narrow 865nm — 20m
-    "B11",   # SWIR1 1610nm — 20m
-    "B12",   # SWIR2 2190nm — 20m
+    "blue",      # B02 490nm — 10m
+    "green",     # B03 560nm — 10m
+    "red",       # B04 665nm — 10m
+    "rededge1",  # B05 705nm — 20m
+    "rededge2",  # B06 740nm — 20m
+    "rededge3",  # B07 783nm — 20m
+    "nir",       # B08 842nm — 10m
+    "nir08",     # B8A 865nm — 20m
+    "swir16",    # B11 1610nm — 20m
+    "swir22",    # B12 2190nm — 20m
 ]
 
 # Scene Classification Layer values (for cloud masking)
@@ -64,6 +65,9 @@ SCL_CLEAR = {4, 5, 6}       # Clear pixels (veg, soil, water)
 SCL_CLOUD = {7, 8, 9, 10}   # Cloud pixels to mask
 
 # Planetary Computer STAC
+# Element84 Earth Search — free, no auth, S3 COGs, much more reliable
+E84_STAC_URL = "https://earth-search.aws.element84.com/v1"
+# Legacy Planetary Computer URL (kept for reference)
 PC_STAC_URL = "https://planetarycomputer.microsoft.com/api/stac/v1"
 
 # 3DEP DEM
@@ -71,11 +75,10 @@ DEM_3DEP_COLLECTION = "3dep-seamless"
 
 
 def get_stac_client():
-    """Initialize Planetary Computer STAC client."""
-    import planetary_computer as pc
+    """Initialize Element84 Earth Search STAC client (free, no auth)."""
     from pystac_client import Client
 
-    return Client.open(PC_STAC_URL, modifier=pc.sign_inplace)
+    return Client.open(E84_STAC_URL)
 
 
 # ── Sun Glint Correction ────────────────────────────────────────────
@@ -239,7 +242,6 @@ def fetch_dem_for_bbox(
             bands=["data"],
             bbox=bbox,
             resolution=resolution,
-            crs="EPSG:4326",
         )
 
         dem = data["data"].values[0].astype(np.float32)
@@ -313,13 +315,12 @@ def build_composite_for_lake(
     # 2. Load all scenes
     try:
         # Load 10 spectral bands + SCL for cloud masking
-        all_bands = S2_BANDS_V2 + ["SCL"]
+        all_bands = S2_BANDS_V2 + ["scl"]
         data = stac_load(
             items,
             bands=all_bands,
             bbox=bbox,
             resolution=resolution,
-            crs="EPSG:4326",
         )
     except Exception as e:
         log.warning(f"  Failed to load S2 data for {lake_name}: {e}")
@@ -340,13 +341,21 @@ def build_composite_for_lake(
         stack[:, i] = band_data
 
     # Cloud mask from SCL
-    scl = data["SCL"].values  # (T, H, W)
+    scl = data["scl"].values  # (T, H, W)
     cloud_mask = np.zeros_like(scl, dtype=bool)
     for scl_val in SCL_CLOUD:
         cloud_mask |= (scl == scl_val)
 
+    # Debug: log pre-masking stats
+    pre_valid = np.isfinite(stack[:, 0]).mean()
+    cloud_pct = cloud_mask.mean()
+    log.info(f"  {lake_name}: pre-mask valid={pre_valid:.0%}, cloud={cloud_pct:.0%}")
+
     # Mask cloudy pixels
     stack[cloud_mask[:, np.newaxis].repeat(len(S2_BANDS_V2), axis=1)] = np.nan
+
+    post_valid = np.isfinite(stack[:, 0]).mean()
+    log.info(f"  {lake_name}: post-mask valid={post_valid:.0%}")
 
     # 4. Sun glint correction per scene
     for t in range(n_times):
@@ -358,11 +367,14 @@ def build_composite_for_lake(
     with np.errstate(all="ignore"):
         composite = np.nanmedian(stack, axis=0)  # (C, H, W)
 
-    # Check for sufficient valid pixels
-    valid_frac = np.isfinite(composite[0]).mean()
-    if valid_frac < 0.3:
+    # Check for sufficient valid pixels (in the center region, not edges)
+    ch, cw = composite.shape[1] // 4, composite.shape[2] // 4
+    center = composite[0, ch:-ch, cw:-cw] if ch > 0 and cw > 0 else composite[0]
+    valid_frac = np.isfinite(center).mean()
+    if valid_frac < 0.1:  # Lowered from 0.3 — even 10% is usable
         log.warning(f"  {lake_name}: only {valid_frac:.0%} valid pixels after masking")
         return None
+    log.info(f"  {lake_name}: {valid_frac:.0%} valid pixels (center region)")
 
     # Fill remaining NaN with 0
     composite = np.nan_to_num(composite, nan=0.0)

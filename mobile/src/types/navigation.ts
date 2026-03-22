@@ -44,6 +44,8 @@ export type RootStackParamList = {
   LakeFinder: undefined;
   KnotGuide: undefined;
   IceFishing: undefined;
+  RoutePlanner: { destinationLat?: number; destinationLon?: number; destinationName?: string } | undefined;
+  TripVisualization: { routeId?: string; tripId?: string } | undefined;
 };
 
 // Screen prop helpers

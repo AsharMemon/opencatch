@@ -87,6 +87,9 @@ const MaintenanceScreen = withSuspense(lazy(() => import('../screens/Maintenance
 const LakeFinderScreen = withSuspense(lazy(() => import('../screens/LakeFinderScreen').then(m => ({ default: m.LakeFinderScreen }))));
 const KnotGuideScreen = withSuspense(lazy(() => import('../screens/KnotGuideScreen').then(m => ({ default: m.KnotGuideScreen }))));
 const IceFishingScreen = withSuspense(lazy(() => import('../screens/IceFishingScreen').then(m => ({ default: m.IceFishingScreen }))));
+const RoutePlannerScreen = withSuspense(lazy(() => import('../screens/RoutePlannerScreen').then(m => ({ default: m.RoutePlannerScreen }))));
+const TripVisualizationScreen = withSuspense(lazy(() => import('../screens/TripVisualizationScreen').then(m => ({ default: m.TripVisualizationScreen }))));
+
 
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
@@ -369,6 +372,16 @@ export function OpenCatchNavigator({ user, onLogout }: NavProps) {
         name="IceFishing"
         component={IceFishingScreen}
         options={{ title: 'Ice Fishing' }}
+      />
+      <Stack.Screen
+        name="RoutePlanner"
+        component={RoutePlannerScreen}
+        options={{ title: 'Route Planner' }}
+      />
+      <Stack.Screen
+        name="TripVisualization"
+        component={TripVisualizationScreen}
+        options={{ title: 'Trip Visualization' }}
       />
     </Stack.Navigator>
   );

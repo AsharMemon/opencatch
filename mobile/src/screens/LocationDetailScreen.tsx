@@ -959,6 +959,27 @@ export function LocationDetailScreen({ route, navigation }: Props) {
         </View>
       </View>
 
+      {/* Plan Trip Here */}
+      <Pressable
+        style={({ pressed }) => [styles.planTripButton, pressed && styles.ctaPressed]}
+        onPress={() =>
+          navigation.navigate('RoutePlanner', {
+            destinationLat: location.lat,
+            destinationLon: location.lon,
+            destinationName: location.name,
+          })
+        }
+      >
+        <View style={styles.planTripLeft}>
+          <Ionicons name="navigate" size={22} color={palette.accent} />
+          <View>
+            <Text style={styles.planTripLabel}>Plan Trip Here</Text>
+            <Text style={styles.planTripSub}>Route, ETA, fuel estimate</Text>
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={palette.textMuted} />
+      </Pressable>
+
       {/* Action buttons */}
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <Pressable
@@ -1796,5 +1817,31 @@ const styles = StyleSheet.create({
     color: palette.textMuted,
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  planTripButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: palette.accentLight,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: palette.accent + '20',
+  },
+  planTripLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  planTripLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: palette.accent,
+  },
+  planTripSub: {
+    fontSize: 12,
+    color: palette.textMuted,
+    marginTop: 1,
   },
 });

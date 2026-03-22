@@ -6,9 +6,12 @@
  * lives in this drawer, accessed via a single "tools" button.
  *
  * Progressive disclosure: tools are grouped and contextually filtered.
+ * Active overlays show mini info cards with live data (wind speed,
+ * radar timestamp, tide times, weather summary).
  */
 import React, { useRef, useEffect } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Dimensions,
   Platform,
@@ -23,9 +26,21 @@ import { palette } from '../theme/palette';
 import { hapticLight } from '../utils/haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const DRAWER_WIDTH = Math.min(280, SCREEN_WIDTH * 0.72);
+const DRAWER_WIDTH = Math.min(300, SCREEN_WIDTH * 0.76);
 
 // ── Tool definitions ─────────────────────────────────────────────
+
+/** Mini info card data shown below active overlay tools */
+export interface OverlayInfoCard {
+  /** Primary value (e.g. "12 mph NW" for wind) */
+  primary: string;
+  /** Secondary detail (e.g. "Gusting to 18 mph") */
+  secondary?: string;
+  /** Icon name (Ionicons) */
+  icon: string;
+  /** Tint color for the icon and primary text */
+  color?: string;
+}
 
 export interface MapTool {
   key: string;
@@ -39,6 +54,8 @@ export interface MapTool {
   contextual?: boolean;
   /** If false, tool is hidden (contextually not relevant right now) */
   visible?: boolean;
+  /** Mini info card shown when this overlay is active */
+  infoCard?: OverlayInfoCard | null;
 }
 
 export interface MapToolGroup {
@@ -130,51 +147,85 @@ export function MapToolsDrawer({ visible, onClose, toolGroups }: MapToolsDrawerP
             <View key={group.title} style={styles.group}>
               <Text style={styles.groupTitle}>{group.title}</Text>
               {group.tools.map((tool) => (
-                <Pressable
-                  key={tool.key}
-                  style={({ pressed }) => [
-                    styles.toolRow,
-                    tool.isActive && styles.toolRowActive,
-                    pressed && styles.toolRowPressed,
-                  ]}
-                  onPress={() => {
-                    hapticLight();
-                    tool.onPress();
-                  }}
-                  accessibilityLabel={`${tool.label}: ${tool.description}`}
-                >
-                  <View
-                    style={[
-                      styles.toolIcon,
-                      tool.isActive && styles.toolIconActive,
+                <View key={tool.key}>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.toolRow,
+                      tool.isActive && styles.toolRowActive,
+                      pressed && styles.toolRowPressed,
                     ]}
+                    onPress={() => {
+                      hapticLight();
+                      tool.onPress();
+                    }}
+                    accessibilityLabel={`${tool.label}: ${tool.description}`}
                   >
-                    <Ionicons
-                      name={tool.icon as any}
-                      size={18}
-                      color={tool.isActive ? '#FFFFFF' : palette.textSecondary}
-                    />
-                  </View>
-                  <View style={styles.toolTextArea}>
-                    <Text
+                    <View
                       style={[
-                        styles.toolLabel,
-                        tool.isActive && styles.toolLabelActive,
+                        styles.toolIcon,
+                        tool.isActive && styles.toolIconActive,
                       ]}
                     >
-                      {tool.label}
-                    </Text>
-                    <Text style={styles.toolDescription} numberOfLines={1}>
-                      {tool.description}
-                    </Text>
-                  </View>
-                  {tool.isActive && (
-                    <View style={styles.activeDot} />
+                      <Ionicons
+                        name={tool.icon as any}
+                        size={18}
+                        color={tool.isActive ? '#FFFFFF' : palette.textSecondary}
+                      />
+                    </View>
+                    <View style={styles.toolTextArea}>
+                      <Text
+                        style={[
+                          styles.toolLabel,
+                          tool.isActive && styles.toolLabelActive,
+                        ]}
+                      >
+                        {tool.label}
+                      </Text>
+                      <Text style={styles.toolDescription} numberOfLines={1}>
+                        {tool.description}
+                      </Text>
+                    </View>
+                    {tool.isActive && (
+                      <View style={styles.activeDot} />
+                    )}
+                    {tool.isLoading && (
+                      <View style={styles.loadingDot} />
+                    )}
+                  </Pressable>
+
+                  {/* Mini info card for active overlay */}
+                  {tool.isActive && tool.infoCard && (
+                    <View style={styles.infoCard}>
+                      <Ionicons
+                        name={tool.infoCard.icon as any}
+                        size={14}
+                        color={tool.infoCard.color || palette.accent}
+                      />
+                      <View style={styles.infoCardTextArea}>
+                        <Text
+                          style={[
+                            styles.infoCardPrimary,
+                            tool.infoCard.color ? { color: tool.infoCard.color } : undefined,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {tool.infoCard.primary}
+                        </Text>
+                        {tool.infoCard.secondary ? (
+                          <Text style={styles.infoCardSecondary} numberOfLines={1}>
+                            {tool.infoCard.secondary}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </View>
                   )}
-                  {tool.isLoading && (
-                    <View style={styles.loadingDot} />
+                  {tool.isActive && tool.isLoading && !tool.infoCard && (
+                    <View style={styles.infoCard}>
+                      <ActivityIndicator size="small" color={palette.accent} />
+                      <Text style={styles.infoCardSecondary}>Loading data...</Text>
+                    </View>
                   )}
-                </Pressable>
+                </View>
               ))}
             </View>
           ))}
@@ -307,5 +358,33 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#FB8C00',
+  },
+  // ── Overlay info card ────────────────────────────────────────────
+  infoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 56, // Align with tool text (34px icon + 10px padding + 12px gap)
+    marginTop: 2,
+    marginBottom: 6,
+    backgroundColor: palette.surface,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.borderLight,
+  },
+  infoCardTextArea: {
+    flex: 1,
+    gap: 1,
+  },
+  infoCardPrimary: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: palette.text,
+  },
+  infoCardSecondary: {
+    fontSize: 10,
+    color: palette.textMuted,
   },
 });

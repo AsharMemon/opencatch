@@ -112,6 +112,11 @@ import { SpeedCourseHUD } from '../components/SpeedCourseHUD';
 import { NoWakeZoneOverlay } from '../components/NoWakeZoneOverlay';
 import { NavigationAidsOverlay } from '../components/NavigationAidsOverlay';
 import { ArtificialReefOverlay } from '../components/ArtificialReefOverlay';
+import { WindOverlayAnimated } from '../components/WindOverlayAnimated';
+import { WaveOverlayAnimated } from '../components/WaveOverlayAnimated';
+import { DepthNumberOverlay } from '../components/DepthNumberOverlay';
+import { MarineGasOverlay } from '../components/MarineGasOverlay';
+import { OceanFishingSpotsOverlay } from '../components/OceanFishingSpotsOverlay';
 import {
   trackRecorder,
   buildSpeedColoredGeoJSON,
@@ -173,8 +178,10 @@ import {
   type MOBStatus,
 } from '../services/manOverboard';
 import { QuickActionFAB } from '../components/QuickActionFAB';
-import { MapToolsDrawer, type MapToolGroup } from '../components/MapToolsDrawer';
+import { MapToolsDrawer, type MapToolGroup, type OverlayInfoCard } from '../components/MapToolsDrawer';
 import { CoachMarks } from '../components/CoachMarks';
+import { MapLongPressMenu, type LongPressAction, type LongPressCoordinate } from '../components/MapLongPressMenu';
+import { MapInfoBar, type AnchorWatchInfo } from '../components/MapInfoBar';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -2287,6 +2294,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [pendingCoord, setPendingCoord] = useState<{ latitude: number; longitude: number } | null>(null);
   const [showWaypointModal, setShowWaypointModal] = useState(false);
 
+  // Long-press contextual menu
+  const [longPressMenuVisible, setLongPressMenuVisible] = useState(false);
+  const [longPressCoord, setLongPressCoord] = useState<LongPressCoordinate | null>(null);
+
   // Selected marker for callout
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const [focusedLocation, setFocusedLocation] = useState<FishingLocation | null>(null);
@@ -2335,6 +2346,24 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [accessLoading, setAccessLoading] = useState(false);
   const accessFetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAccessCenter = useRef<{ lat: number; lon: number } | null>(null);
+
+  // Animated wind overlay (enhanced)
+  const [windAnimatedEnabled, setWindAnimatedEnabled] = useState(false);
+
+  // Wave height overlay (coastal only)
+  const [waveEnabled, setWaveEnabled] = useState(false);
+
+  // Depth number overlay (nautical chart soundings)
+  const [depthNumbersEnabled, setDepthNumbersEnabled] = useState(false);
+
+  // Marine gas stations overlay
+  const [marineGasEnabled, setMarineGasEnabled] = useState(false);
+
+  // Ocean fishing spots overlay (coastal only)
+  const [oceanSpotsEnabled, setOceanSpotsEnabled] = useState(false);
+
+  // 3D terrain / relief shading
+  const [terrain3DEnabled, setTerrain3DEnabled] = useState(false);
 
   // Dynamic fishing spot discovery (OSM Overpass)
   // Initialize from module-level cache so pins survive tab switches
@@ -3623,10 +3652,54 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     const coords = event.geometry?.coordinates;
     if (coords) {
       // MapLibre gives [lng, lat]; we store as {latitude, longitude}
-      setPendingCoord({ latitude: coords[1], longitude: coords[0] });
-      setShowWaypointModal(true);
+      // Show context menu instead of directly opening waypoint modal
+      const screenPoint = event.properties?.screenPointX != null
+        ? { screenX: event.properties.screenPointX, screenY: event.properties.screenPointY }
+        : { screenX: SCREEN_WIDTH / 2, screenY: SCREEN_HEIGHT / 3 };
+      setLongPressCoord({
+        latitude: coords[1],
+        longitude: coords[0],
+        ...screenPoint,
+      });
+      setLongPressMenuVisible(true);
     }
   }, []);
+
+  const handleLongPressAction = useCallback((action: LongPressAction, coordinate: LongPressCoordinate) => {
+    switch (action) {
+      case 'drop-pin':
+        setPendingCoord({ latitude: coordinate.latitude, longitude: coordinate.longitude });
+        setShowWaypointModal(true);
+        break;
+      case 'get-conditions':
+        navigation.navigate('WaterInsights', {
+          lat: coordinate.latitude,
+          lon: coordinate.longitude,
+        });
+        break;
+      case 'add-to-route':
+        // For now, same as drop-pin — future route planning
+        setPendingCoord({ latitude: coordinate.latitude, longitude: coordinate.longitude });
+        setShowWaypointModal(true);
+        break;
+      case 'whats-here':
+        // Fly to location and enable marinas/access points
+        cameraRef.current?.setCamera({
+          centerCoordinate: [coordinate.longitude, coordinate.latitude],
+          zoomLevel: 14,
+          animationDuration: 600,
+        });
+        if (!marinasEnabled) setMarinasEnabled(true);
+        if (!accessEnabled) setAccessEnabled(true);
+        break;
+      case 'measure-distance':
+        setMeasureMode(true);
+        setMeasurePoints([[coordinate.latitude, coordinate.longitude]]);
+        setMapToolsDrawerOpen(false);
+        break;
+    }
+    setLongPressMenuVisible(false);
+  }, [navigation, marinasEnabled, accessEnabled]);
 
   const handleToggleLayerPicker = useCallback(() => {
     setLayerPickerVisible((prev) => !prev);
@@ -3910,6 +3983,33 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           isActive: windEnabled,
           isLoading: windLoading,
           onPress: () => setWindEnabled((prev) => !prev),
+          infoCard: windEnabled && windGeoJSON?.features?.length > 0
+            ? {
+                primary: `${windGeoJSON.features.length} wind vectors loaded`,
+                secondary: lastWindCenter.current
+                  ? `Center: ${lastWindCenter.current.lat.toFixed(2)}, ${lastWindCenter.current.lon.toFixed(2)}`
+                  : undefined,
+                icon: 'flag',
+                color: '#1565C0',
+              } as OverlayInfoCard
+            : null,
+        },
+        {
+          key: 'wind-animated',
+          label: 'Wind (Animated)',
+          icon: 'cellular-outline',
+          description: 'Windy-style animated wind grid (knots)',
+          isActive: windAnimatedEnabled,
+          onPress: () => setWindAnimatedEnabled((prev) => !prev),
+        },
+        {
+          key: 'waves',
+          label: 'Wave Height',
+          icon: 'water-outline',
+          description: 'Wave height and direction (coastal)',
+          isActive: waveEnabled,
+          visible: isNearCoastNow,
+          onPress: () => setWaveEnabled((prev) => !prev),
         },
         {
           key: 'radar',
@@ -3919,6 +4019,16 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           isActive: radarEnabled,
           isLoading: radarLoading,
           onPress: () => setRadarEnabled((prev) => !prev),
+          infoCard: radarEnabled && radarFrames.length > 0
+            ? {
+                primary: radarFrames[radarFrameIndex]?.timestamp
+                  ? new Date(radarFrames[radarFrameIndex].timestamp.time * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+                  : 'Loading...',
+                secondary: `${radarFrames.length} frames${radarPlaying ? ' (playing)' : ''}`,
+                icon: 'rainy',
+                color: '#7B1FA2',
+              } as OverlayInfoCard
+            : null,
         },
       ],
     },
@@ -3933,6 +4043,14 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           isActive: marinasEnabled,
           isLoading: marinasLoading,
           onPress: () => setMarinasEnabled((prev) => !prev),
+          infoCard: marinasEnabled && marinaPOIs.length > 0
+            ? {
+                primary: `${marinaPOIs.length} POIs nearby`,
+                secondary: `Marinas, bait shops, ramps`,
+                icon: 'boat',
+                color: '#2563EB',
+              } as OverlayInfoCard
+            : null,
         },
         {
           key: 'access-points',
@@ -3942,12 +4060,50 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           isActive: accessEnabled,
           isLoading: accessLoading,
           onPress: () => setAccessEnabled((prev) => !prev),
+          infoCard: accessEnabled && accessPoints.length > 0
+            ? {
+                primary: `${accessPoints.length} access points`,
+                secondary: 'Launches, trails, shore access',
+                icon: 'trail-sign',
+                color: '#16A34A',
+              } as OverlayInfoCard
+            : null,
+        },
+        {
+          key: 'marine-gas',
+          label: 'Marine Fuel Docks',
+          icon: 'car-outline',
+          description: 'Marine gas stations and fuel docks',
+          isActive: marineGasEnabled,
+          onPress: () => setMarineGasEnabled((prev) => !prev),
+        },
+      ],
+    },
+    {
+      title: 'Fishing',
+      tools: [
+        {
+          key: 'ocean-spots',
+          label: 'Ocean Fishing Spots',
+          icon: 'fish-outline',
+          description: 'Wrecks, reefs, ledges',
+          isActive: oceanSpotsEnabled,
+          visible: isNearCoastNow,
+          onPress: () => setOceanSpotsEnabled((prev) => !prev),
         },
       ],
     },
     {
       title: 'Nautical',
       tools: [
+        {
+          key: 'depth-numbers',
+          label: 'Depth Numbers',
+          icon: 'text-outline',
+          description: 'Nautical chart depth soundings',
+          isActive: depthNumbersEnabled,
+          onPress: () => setDepthNumbersEnabled((prev) => !prev),
+        },
         {
           key: 'nav-aids-tool',
           label: 'Navigation Aids',
@@ -3972,6 +4128,14 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             setMapToolsDrawerOpen(false);
           },
           isActive: activeOverlays.has('no-wake-zones'),
+        },
+        {
+          key: 'terrain-3d',
+          label: '3D Terrain',
+          icon: 'cube-outline',
+          description: 'Terrain exaggeration and hillshade',
+          isActive: terrain3DEnabled,
+          onPress: () => setTerrain3DEnabled((prev) => !prev),
         },
         {
           key: 'artificial-reefs-tool',
@@ -4084,6 +4248,76 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
           />
+        )}
+
+        {/* Animated wind overlay (enhanced Windy-style) */}
+        {windAnimatedEnabled && userLocation && ShapeSource && SymbolLayer && CircleLayer && (
+          <WindOverlayAnimated
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            ShapeSource={ShapeSource}
+            SymbolLayer={SymbolLayer}
+            CircleLayer={CircleLayer}
+          />
+        )}
+
+        {/* Wave height overlay (coastal only) */}
+        {waveEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+          <WaveOverlayAnimated
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            ShapeSource={ShapeSource}
+            CircleLayer={CircleLayer}
+            SymbolLayer={SymbolLayer}
+          />
+        )}
+
+        {/* Depth number overlay (nautical chart soundings) */}
+        {depthNumbersEnabled && userLocation && ShapeSource && SymbolLayer && (
+          <DepthNumberOverlay
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            zoom={currentZoom}
+            units="imperial"
+            ShapeSource={ShapeSource}
+            SymbolLayer={SymbolLayer}
+          />
+        )}
+
+        {/* Marine gas station markers */}
+        {marineGasEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+          <MarineGasOverlay
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            ShapeSource={ShapeSource}
+            CircleLayer={CircleLayer}
+            SymbolLayer={SymbolLayer}
+          />
+        )}
+
+        {/* Ocean fishing spots (wrecks, reefs, ledges) */}
+        {oceanSpotsEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+          <OceanFishingSpotsOverlay
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            ShapeSource={ShapeSource}
+            CircleLayer={CircleLayer}
+            SymbolLayer={SymbolLayer}
+          />
+        )}
+
+        {/* 3D Terrain — hillshade + terrain exaggeration */}
+        {terrain3DEnabled && RasterSource && RasterLayer && (
+          <RasterSource
+            id="terrain-hillshade-source"
+            tileUrlTemplates={['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png']}
+            tileSize={256}
+          >
+            <RasterLayer
+              id="terrain-hillshade-layer"
+              style={{ rasterOpacity: 0.35 }}
+            />
+          </RasterSource>
         )}
 
         {/* Overlay raster tile layers */}
@@ -5162,19 +5396,19 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       {/* Map Tools button — opens slide-out drawer (replaces 7 individual buttons) */}
       {/* Design: "Kitchen Sink" avoidance per Gaigg Ch.7 */}
       <Pressable
-        style={[styles.mapToolsButton, (measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled) && styles.mapToolsButtonActive]}
+        style={[styles.mapToolsButton, (measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled) && styles.mapToolsButtonActive]}
         onPress={() => setMapToolsDrawerOpen(true)}
         accessibilityLabel="Open map tools drawer"
       >
         <Ionicons
           name="build-outline"
           size={20}
-          color={(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled) ? '#FFFFFF' : palette.textSecondary}
+          color={(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled) ? '#FFFFFF' : palette.textSecondary}
         />
-        {(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled) && (
+        {(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled) && (
           <View style={styles.mapToolsBadge}>
             <Text style={styles.mapToolsBadgeText}>
-              {[measureMode, annotationMode, windEnabled, radarEnabled, marinasEnabled, accessEnabled].filter(Boolean).length}
+              {[measureMode, annotationMode, windEnabled, radarEnabled, marinasEnabled, accessEnabled, windAnimatedEnabled, waveEnabled, depthNumbersEnabled, marineGasEnabled, oceanSpotsEnabled, terrain3DEnabled].filter(Boolean).length}
             </Text>
           </View>
         )}
@@ -5692,7 +5926,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
               </ScrollView>
             </View>
           )}
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          {/* Quick action row: Tips, Share, Save */}
+          <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
             {contextualTips.length > 0 && (
               <Pressable
                 style={[styles.focusedTipsBtn]}
@@ -5702,9 +5937,30 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
               </Pressable>
             )}
             <Pressable
+              style={styles.focusedActionBtn}
+              onPress={() => {
+                const msg = focusedLocation.name + ' on OpenCatch';
+                import('react-native').then(function(m) { m.Share.share({ message: msg }).catch(function() {}); }).catch(function() {});
+              }}
+            >
+              <Ionicons name="share-outline" size={15} color={palette.accent} />
+            </Pressable>
+            <Pressable
+              style={styles.focusedActionBtn}
+              onPress={() => {
+                setPendingCoord({ latitude: focusedLocation.lat, longitude: focusedLocation.lon });
+                setShowWaypointModal(true);
+              }}
+            >
+              <Ionicons name="bookmark-outline" size={15} color={palette.accent} />
+            </Pressable>
+            <View style={{ flex: 1 }} />
+          </View>
+          {/* Main action buttons row */}
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable
               style={[styles.focusedDetailsBtn, { backgroundColor: '#3B82C4', flex: 1 }]}
               onPress={() => {
-                // Open external maps app for directions — works for all location types
                 const url = Platform.select({
                   ios: `maps:?daddr=${focusedLocation.lat},${focusedLocation.lon}`,
                   android: `google.navigation:q=${focusedLocation.lat},${focusedLocation.lon}`,
@@ -5724,7 +5980,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
               }}
             >
               <Ionicons name="information-circle-outline" size={16} color="#FFFFFF" />
-              <Text style={styles.focusedDetailsBtnText}>More Details</Text>
+              <Text style={styles.focusedDetailsBtnText}>Details</Text>
             </Pressable>
           </View>
         </Animated.View>
@@ -5779,6 +6035,22 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
       {/* First-time user coach marks (Gaigg Ch.1 — Onboarding pattern) */}
       <CoachMarks mapReady={!loading && userLocation !== null} />
+
+      {/* Long-press contextual menu */}
+      <MapLongPressMenu
+        visible={longPressMenuVisible}
+        coordinate={longPressCoord}
+        onAction={handleLongPressAction}
+        onClose={() => setLongPressMenuVisible(false)}
+      />
+
+      {/* Persistent map info bar — speed, heading, GPS accuracy */}
+      {!focusedLocation && (
+        <MapInfoBar
+          bottomOffset={Platform.OS === 'ios' ? 100 : 72}
+          anchorWatch={anchorStatus.active ? { active: true, driftMeters: anchorStatus.distance, radiusMeters: anchorStatus.radius } as AnchorWatchInfo : undefined}
+        />
+      )}
 
       {/* Bottom sheet with location list (merged from Explore) */}
       {markerMode === 'locations' && (
@@ -6173,6 +6445,14 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 10,
     backgroundColor: 'rgba(255,193,7,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  focusedActionBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: palette.accentDim,
     alignItems: 'center',
     justifyContent: 'center',
   },
