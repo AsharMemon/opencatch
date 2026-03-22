@@ -123,6 +123,7 @@ import { SEABED_LEGEND_STOPS } from '../services/seabedCharacteristics';
 import { MaritimeBoundariesOverlay } from '../components/MaritimeBoundariesOverlay';
 import { USACESurveyOverlay } from '../components/USACESurveyOverlay';
 import { DraftAccessibilityOverlay } from '../components/DraftAccessibilityOverlay';
+import { DynamicDepthOverlay, TideBadge } from '../components/DynamicDepthOverlay';
 import { IceThicknessOverlay } from '../components/IceThicknessOverlay';
 import { FishingPressureOverlay } from '../components/FishingPressureOverlay';
 import { BiteTimeOverlay } from '../components/BiteTimeOverlay';
@@ -2781,13 +2782,14 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     if (windAnimatedLoading) s.add('Wind');
     if (waveLoading) s.add('Wave');
     if (depthLoading) s.add('Depth');
+    if (dynamicDepthLoading) s.add('Dynamic Depths');
     if (tidalLoading) s.add('Tidal');
     if (iceLoading) s.add('Ice');
     if (pressureLoading) s.add('Pressure');
     if (biteLoading) s.add('Bite');
     if (radarLoading) s.add('Radar');
     return s;
-  }, [windAnimatedLoading, waveLoading, depthLoading, tidalLoading, iceLoading, pressureLoading, biteLoading, radarLoading]);
+  }, [windAnimatedLoading, waveLoading, depthLoading, dynamicDepthLoading, tidalLoading, iceLoading, pressureLoading, biteLoading, radarLoading]);
 
   // Draft accessibility overlay (shows safe/caution/danger based on boat draft)
   const [draftAccessEnabled, setDraftAccessEnabled] = useState(false);
@@ -2799,6 +2801,13 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       if (boat?.draftFt && boat.draftFt > 0) setBoatDraftFt(boat.draftFt);
     }).catch(() => { /* use default */ });
   }, []);
+
+  // Dynamic Depths overlay (tide-adjusted charted depths)
+  const [dynamicDepthsEnabled, setDynamicDepthsEnabled] = useState(false);
+  const [dynamicDepthLoading, setDynamicDepthLoading] = useState(false);
+  const [tideBadgeText, setTideBadgeText] = useState('');
+  const [tideLevelM, setTideLevelM] = useState(0);
+  const [tideStationName, setTideStationName] = useState<string | undefined>();
 
   // USACE survey overlay (channel depths, locks, harbors)
   const [usaceSurveyEnabled, setUsaceSurveyEnabled] = useState(false);
@@ -4676,6 +4685,24 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           onPress: () => setDepthNumbersEnabled((prev) => !prev),
         },
         {
+          key: 'dynamic-depths',
+          label: 'Dynamic Depths',
+          icon: 'water-outline',
+          description: 'Tide-adjusted depths (real-time)',
+          isActive: dynamicDepthsEnabled,
+          isLoading: dynamicDepthLoading,
+          visible: isNearCoastNow,
+          onPress: () => setDynamicDepthsEnabled((prev) => !prev),
+          infoCard: dynamicDepthsEnabled && tideBadgeText
+            ? {
+                primary: tideBadgeText,
+                secondary: tideStationName ? `Station: ${tideStationName}` : 'Adjusting depths by tide',
+                icon: tideLevelM >= 0 ? 'trending-up' : 'trending-down',
+                color: tideLevelM >= 0 ? '#1E88E5' : '#E65100',
+              } as OverlayInfoCard
+            : null,
+        },
+        {
           key: 'draft-access',
           label: 'Draft Accessibility',
           icon: 'boat-outline',
@@ -5081,6 +5108,26 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
+          />
+        )}
+
+        {/* Dynamic Depths overlay (tide-adjusted charted depths) */}
+        {dynamicDepthsEnabled && userLocation && ShapeSource && SymbolLayer && CircleLayer && (
+          <DynamicDepthOverlay
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            zoom={currentZoom}
+            boatDraftFt={boatDraftFt}
+            ShapeSource={ShapeSource}
+            SymbolLayer={SymbolLayer}
+            CircleLayer={CircleLayer}
+            onLoadStart={() => setDynamicDepthLoading(true)}
+            onLoadEnd={() => setDynamicDepthLoading(false)}
+            onTideBadgeUpdate={(badge, levelM) => {
+              setTideBadgeText(badge);
+              setTideLevelM(levelM);
+            }}
+            onStationUpdate={(station) => setTideStationName(station?.name)}
           />
         )}
 
@@ -6206,19 +6253,19 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       {/* Map Tools button — opens slide-out drawer (replaces 7 individual buttons) */}
       {/* Design: "Kitchen Sink" avoidance per Gaigg Ch.7 */}
       <Pressable
-        style={[styles.mapToolsButton, (measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || draftAccessEnabled || usaceSurveyEnabled || sstEnabled) && styles.mapToolsButtonActive]}
+        style={[styles.mapToolsButton, (measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || draftAccessEnabled || dynamicDepthsEnabled || usaceSurveyEnabled || sstEnabled) && styles.mapToolsButtonActive]}
         onPress={() => setMapToolsDrawerOpen(true)}
         accessibilityLabel="Open map tools drawer"
       >
         <Ionicons
           name="build-outline"
           size={20}
-          color={(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || tidalCurrentEnabled || aisWifiEnabled || draftAccessEnabled || usaceSurveyEnabled || sstEnabled) ? '#FFFFFF' : palette.textSecondary}
+          color={(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || tidalCurrentEnabled || aisWifiEnabled || draftAccessEnabled || dynamicDepthsEnabled || usaceSurveyEnabled || sstEnabled) ? '#FFFFFF' : palette.textSecondary}
         />
-        {(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || tidalCurrentEnabled || aisWifiEnabled || draftAccessEnabled || usaceSurveyEnabled || sstEnabled) && (
+        {(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || tidalCurrentEnabled || aisWifiEnabled || draftAccessEnabled || dynamicDepthsEnabled || usaceSurveyEnabled || sstEnabled) && (
           <View style={styles.mapToolsBadge}>
             <Text style={styles.mapToolsBadgeText}>
-              {[measureMode, annotationMode, windEnabled, radarEnabled, marinasEnabled, accessEnabled, windAnimatedEnabled, waveEnabled, depthNumbersEnabled, marineGasEnabled, oceanSpotsEnabled, terrain3DEnabled, tidalCurrentEnabled, aisWifiEnabled, draftAccessEnabled, usaceSurveyEnabled, sstEnabled].filter(Boolean).length}
+              {[measureMode, annotationMode, windEnabled, radarEnabled, marinasEnabled, accessEnabled, windAnimatedEnabled, waveEnabled, depthNumbersEnabled, marineGasEnabled, oceanSpotsEnabled, terrain3DEnabled, tidalCurrentEnabled, aisWifiEnabled, draftAccessEnabled, dynamicDepthsEnabled, usaceSurveyEnabled, sstEnabled].filter(Boolean).length}
             </Text>
           </View>
         )}

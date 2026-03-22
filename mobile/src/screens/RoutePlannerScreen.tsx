@@ -45,6 +45,12 @@ import {
   type ShallowWarning,
   type BoatRouteProfile,
 } from '../services/routePlanner';
+import {
+  checkRouteDepthWithTides,
+  type RouteLegDepthForecast,
+  SAFETY_COLORS,
+  SAFETY_LABELS,
+} from '../services/dynamicDepths';
 import { formatDuration } from '../services/fuelCalculator';
 import type { RootStackProps } from '../types/navigation';
 
@@ -92,6 +98,7 @@ export function RoutePlannerScreen({ route: navRoute, navigation }: Props) {
   });
   const [currentPosition, setCurrentPosition] = useState<LatLng | null>(null);
   const [bottomSheetExpanded, setBottomSheetExpanded] = useState(true);
+  const [tidalDepthForecasts, setTidalDepthForecasts] = useState<RouteLegDepthForecast[]>([]);
 
   // Load boat profile
   useEffect(() => {
@@ -146,6 +153,17 @@ export function RoutePlannerScreen({ route: navRoute, navigation }: Props) {
     // Check depth in background
     checkRouteDepth(route, boatProfile.draftMeters).then(({ warnings }) => {
       setShallowWarnings(warnings);
+    });
+
+    // Check tidal depth forecasts for the route
+    const segmentsForTide = route.segments.map((seg, idx) => ({
+      lat: (seg.from.lat + seg.to.lat) / 2,
+      lon: (seg.from.lon + seg.to.lon) / 2,
+      chartedDepthM: seg.minDepthM,
+      etaHours: idx * (routeMetrics.adjustedTimeHours / Math.max(route.segments.length, 1)),
+    }));
+    checkRouteDepthWithTides(segmentsForTide, boatProfile.draftMeters).then((forecasts) => {
+      setTidalDepthForecasts(forecasts);
     });
   }, [waypoints, boatProfile, routeName]);
 
@@ -509,6 +527,29 @@ export function RoutePlannerScreen({ route: navRoute, navigation }: Props) {
                     </Text>
                   </View>
                 ))}
+              </View>
+            )}
+
+            {/* Tidal Depth Forecast Warnings */}
+            {tidalDepthForecasts.filter((f) => f.safety !== 'safe').length > 0 && (
+              <View style={styles.warningCard}>
+                <View style={styles.warningHeader}>
+                  <Ionicons name="water" size={18} color="#1E88E5" />
+                  <Text style={[styles.warningTitle, { color: '#1565C0' }]}>
+                    Tide-Adjusted Depth Warnings
+                  </Text>
+                </View>
+                {tidalDepthForecasts
+                  .filter((f) => f.safety !== 'safe')
+                  .map((forecast) => (
+                    <View key={forecast.segmentIndex} style={styles.warningItem}>
+                      <Text style={[styles.warningItemText, { color: SAFETY_COLORS[forecast.safety] }]}>
+                        Segment {forecast.segmentIndex + 1}: {forecast.adjustedDepthM.toFixed(1)}m at{' '}
+                        {new Date(forecast.forecastTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {' '}({SAFETY_LABELS[forecast.safety]})
+                      </Text>
+                    </View>
+                  ))}
               </View>
             )}
 
