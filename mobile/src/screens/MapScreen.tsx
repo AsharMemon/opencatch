@@ -123,6 +123,14 @@ import { DraftAccessibilityOverlay } from '../components/DraftAccessibilityOverl
 import { IceThicknessOverlay } from '../components/IceThicknessOverlay';
 import { FishingPressureOverlay } from '../components/FishingPressureOverlay';
 import { BiteTimeOverlay } from '../components/BiteTimeOverlay';
+import { SSTOverlay } from '../components/SSTOverlay';
+import { OverlayLegend } from '../components/OverlayLegend';
+import { WAVE_LEGEND_STOPS } from '../components/WaveOverlayAnimated';
+import { SST_LEGEND_STOPS } from '../components/SSTOverlay';
+import { PRESSURE_LEGEND_STOPS } from '../components/FishingPressureOverlay';
+import { ICE_LEGEND_STOPS } from '../components/IceThicknessOverlay';
+import { BITE_LEGEND_STOPS } from '../components/BiteTimeOverlay';
+import { TIDAL_LEGEND_STOPS } from '../components/TidalCurrentOverlay';
 import { getDefaultBoat } from '../services/boatProfile';
 import { aisReceiver } from '../services/aisWifiReceiver';
 import {
@@ -2746,6 +2754,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   // Ocean fishing spots overlay (coastal only)
   const [oceanSpotsEnabled, setOceanSpotsEnabled] = useState(false);
 
+  // Sea Surface Temperature overlay (coastal only)
+  const [sstEnabled, setSSTEnabled] = useState(false);
+
   // 3D terrain / relief shading
   const [terrain3DEnabled, setTerrain3DEnabled] = useState(false);
 
@@ -3732,7 +3743,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         setRadarTileUrl(radarFrames[next].tileUrl);
         return next;
       });
-    }, 700);
+    }, 500);
 
     return () => {
       if (radarAnimRef.current) { clearInterval(radarAnimRef.current); radarAnimRef.current = null; }
@@ -4509,6 +4520,23 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           visible: isNearCoastNow,
           onPress: () => setTidalCurrentEnabled((prev) => !prev),
         },
+        {
+          key: 'sst',
+          label: 'Sea Surface Temp',
+          icon: 'thermometer-outline',
+          description: 'Ocean temperature map (find temp breaks)',
+          isActive: sstEnabled,
+          visible: isNearCoastNow,
+          onPress: () => setSSTEnabled((prev) => !prev),
+          infoCard: sstEnabled
+            ? {
+                primary: 'SST overlay active',
+                secondary: 'Blue = cold, Red = warm',
+                icon: 'thermometer',
+                color: '#FF9800',
+              } as OverlayInfoCard
+            : null,
+        },
       ],
     },
     {
@@ -4847,6 +4875,17 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             SymbolLayer={SymbolLayer}
             onLoadStart={() => setWaveLoading(true)}
             onLoadEnd={() => setWaveLoading(false)}
+          />
+        )}
+
+        {/* Sea Surface Temperature overlay (coastal only) */}
+        {sstEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+          <SSTOverlay
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            ShapeSource={ShapeSource}
+            CircleLayer={CircleLayer}
+            SymbolLayer={SymbolLayer}
           />
         )}
 
@@ -5608,7 +5647,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           >
             <RasterLayer
               id="radar-tile-layer"
-              style={{ rasterOpacity: 0.55 }}
+              style={{ rasterOpacity: 0.75 }}
             />
           </RasterSource>
         )}
@@ -6090,19 +6129,19 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       {/* Map Tools button — opens slide-out drawer (replaces 7 individual buttons) */}
       {/* Design: "Kitchen Sink" avoidance per Gaigg Ch.7 */}
       <Pressable
-        style={[styles.mapToolsButton, (measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || draftAccessEnabled || usaceSurveyEnabled) && styles.mapToolsButtonActive]}
+        style={[styles.mapToolsButton, (measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || draftAccessEnabled || usaceSurveyEnabled || sstEnabled) && styles.mapToolsButtonActive]}
         onPress={() => setMapToolsDrawerOpen(true)}
         accessibilityLabel="Open map tools drawer"
       >
         <Ionicons
           name="build-outline"
           size={20}
-          color={(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || tidalCurrentEnabled || aisWifiEnabled || draftAccessEnabled || usaceSurveyEnabled) ? '#FFFFFF' : palette.textSecondary}
+          color={(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || tidalCurrentEnabled || aisWifiEnabled || draftAccessEnabled || usaceSurveyEnabled || sstEnabled) ? '#FFFFFF' : palette.textSecondary}
         />
-        {(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || tidalCurrentEnabled || aisWifiEnabled || draftAccessEnabled || usaceSurveyEnabled) && (
+        {(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || tidalCurrentEnabled || aisWifiEnabled || draftAccessEnabled || usaceSurveyEnabled || sstEnabled) && (
           <View style={styles.mapToolsBadge}>
             <Text style={styles.mapToolsBadgeText}>
-              {[measureMode, annotationMode, windEnabled, radarEnabled, marinasEnabled, accessEnabled, windAnimatedEnabled, waveEnabled, depthNumbersEnabled, marineGasEnabled, oceanSpotsEnabled, terrain3DEnabled, tidalCurrentEnabled, aisWifiEnabled, draftAccessEnabled, usaceSurveyEnabled].filter(Boolean).length}
+              {[measureMode, annotationMode, windEnabled, radarEnabled, marinasEnabled, accessEnabled, windAnimatedEnabled, waveEnabled, depthNumbersEnabled, marineGasEnabled, oceanSpotsEnabled, terrain3DEnabled, tidalCurrentEnabled, aisWifiEnabled, draftAccessEnabled, usaceSurveyEnabled, sstEnabled].filter(Boolean).length}
             </Text>
           </View>
         )}
@@ -6195,6 +6234,26 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             ))}
           </View>
         </View>
+      )}
+
+      {/* ── Overlay Legends (Windy-style corner legends) ── */}
+      {waveEnabled && (
+        <OverlayLegend title="Wave Height" unit="(m)" stops={WAVE_LEGEND_STOPS} position="bottom-left" />
+      )}
+      {sstEnabled && (
+        <OverlayLegend title="Sea Surface Temp" stops={SST_LEGEND_STOPS} position="bottom-left" />
+      )}
+      {fishingPressureOverlayEnabled && (
+        <OverlayLegend title="Fishing Pressure" stops={PRESSURE_LEGEND_STOPS} position="bottom-left" />
+      )}
+      {iceThicknessEnabled && (
+        <OverlayLegend title="Ice Thickness" stops={ICE_LEGEND_STOPS} position="bottom-left" />
+      )}
+      {biteTimeOverlayEnabled && (
+        <OverlayLegend title="Bite Activity" stops={BITE_LEGEND_STOPS} position="bottom-left" />
+      )}
+      {tidalCurrentEnabled && (
+        <OverlayLegend title="Tidal Current" stops={TIDAL_LEGEND_STOPS} position="bottom-left" />
       )}
 
       {/* Storm cell warnings */}
