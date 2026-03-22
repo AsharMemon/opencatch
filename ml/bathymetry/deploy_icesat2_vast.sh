@@ -27,7 +27,7 @@ VAST_USER="root"
 SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=10"
 
 LOCAL_BATHY_DIR="$(cd "$(dirname "$0")" && pwd)"
-REMOTE_DIR="/workspace/bathymetry"
+REMOTE_DIR="/root/ml/bathymetry"
 REMOTE_DATA="/data"
 
 MODEL="${1:-kan}"
@@ -94,6 +94,8 @@ ssh_cmd "mkdir -p ${REMOTE_DIR}"
 # Upload all relevant scripts
 for script in \
     train_icesat2_fusion.py \
+    train_spectral_kan.py \
+    build_icesat2_training_set.py \
     fetch_icesat2_depths.py \
     fetch_icesat2.py \
     build_s2_composites.py \

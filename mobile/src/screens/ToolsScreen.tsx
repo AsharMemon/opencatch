@@ -99,6 +99,7 @@ const TOOL_CATEGORIES: ToolCategory[] = [
       { label: 'Fuel Calc', description: 'Trip fuel & range', ionicon: 'calculator-outline', color: '#E65100', screen: 'FuelCalculator', tags: ['boating'] },
       { label: 'Maintenance', description: 'Engine hours & service', ionicon: 'build', color: '#5D4037', screen: 'Maintenance', tags: ['boating'] },
       { label: 'AIS Receiver', description: 'WiFi AIS setup', ionicon: 'radio', color: '#00897B', screen: 'AISSettings', tags: ['boating', 'coastal'] },
+      { label: 'USACE Surveys', description: 'Channel depths & locks', ionicon: 'water-outline', color: '#1565C0', screen: 'MapTab', params: { enableOverlay: 'usace-surveys' }, tags: ['boating', 'coastal'] },
     ],
   },
   {

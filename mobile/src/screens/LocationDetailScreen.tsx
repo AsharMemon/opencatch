@@ -43,6 +43,13 @@ import {
   conditionColor,
   type WaterInsightsDashboard,
 } from '../services/waterInsights';
+import {
+  getDamsInArea,
+  getReservoirLevels,
+  type ReservoirLevel,
+  type NIDDam,
+  type SurveyBBox,
+} from '../services/usaceDepthSurveys';
 import type {
   FishingLocation,
   ActivityLevel,
@@ -643,6 +650,8 @@ export function LocationDetailScreen({ route, navigation }: Props) {
   const [currentPressure, setCurrentPressure] = useState<PressureReading | null>(null);
   const [biteForecasts, setBiteForecasts] = useState<BiteFC[]>([]);
   const [waterInsights, setWaterInsights] = useState<WaterInsightsDashboard | null>(null);
+  const [reservoirLevel, setReservoirLevel] = useState<ReservoirLevel | null>(null);
+  const [nearbyDam, setNearbyDam] = useState<NIDDam | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -734,6 +743,32 @@ export function LocationDetailScreen({ route, navigation }: Props) {
     // Async water insights
     getWaterInsights(lat, lon, { locationName: name }).then((w) => {
       if (!cancelled) setWaterInsights(w);
+    }).catch(() => {});
+
+    // Async USACE reservoir/dam data — check for nearby dams
+    const damBBox: SurveyBBox = {
+      west: lon - 0.15,
+      south: lat - 0.15,
+      east: lon + 0.15,
+      north: lat + 0.15,
+    };
+    getDamsInArea(damBBox).then((dams) => {
+      if (cancelled || dams.length === 0) return;
+      // Pick the closest dam
+      const closest = dams.sort((a, b) => {
+        const dA = Math.hypot(a.lat - lat, a.lon - lon);
+        const dB = Math.hypot(b.lat - lat, b.lon - lon);
+        return dA - dB;
+      })[0];
+      if (!cancelled) setNearbyDam(closest);
+
+      // Try to fetch reservoir level from CWMS if this is a USACE dam
+      if (closest.ownerType.toLowerCase().includes('federal')) {
+        const stationName = closest.name.replace(/Dam$/i, '').trim() + '-Lake';
+        getReservoirLevels(stationName).then((level) => {
+          if (!cancelled && level) setReservoirLevel(level);
+        }).catch(() => {});
+      }
     }).catch(() => {});
 
     return () => { cancelled = true; };
@@ -925,6 +960,65 @@ export function LocationDetailScreen({ route, navigation }: Props) {
       {/* Water Conditions (legacy USGS card) */}
       {location.waterLevel && (
         <WaterConditionsCard data={location.waterLevel} />
+      )}
+
+      {/* USACE Reservoir Level (nearby dam data from NID + CWMS) */}
+      {nearbyDam && (
+        <View style={styles.card}>
+          <View style={styles.waterCardHeader}>
+            <Text style={styles.cardTitle}>Reservoir Data</Text>
+            <View style={[styles.trendPill, { backgroundColor: palette.water + '18' }]}>
+              <Text style={[styles.trendPillText, { color: palette.water }]}>USACE</Text>
+            </View>
+          </View>
+          <Text style={{ fontSize: 13, color: palette.textSecondary, marginBottom: 8 }}>
+            {nearbyDam.name}{nearbyDam.river ? ` on ${nearbyDam.river}` : ''}
+          </Text>
+          <View style={styles.waterStatsRow}>
+            {reservoirLevel?.currentElevationFt != null && (
+              <View style={styles.waterStat}>
+                <Text style={styles.waterStatValue}>
+                  {reservoirLevel.currentElevationFt.toFixed(1)}
+                </Text>
+                <Text style={styles.waterStatUnit}>ft</Text>
+                <Text style={styles.waterStatLabel}>Pool Elev.</Text>
+              </View>
+            )}
+            {nearbyDam.heightFt != null && (
+              <>
+                {reservoirLevel?.currentElevationFt != null && <View style={styles.waterStatDivider} />}
+                <View style={styles.waterStat}>
+                  <Text style={styles.waterStatValue}>{nearbyDam.heightFt}</Text>
+                  <Text style={styles.waterStatUnit}>ft</Text>
+                  <Text style={styles.waterStatLabel}>Dam Height</Text>
+                </View>
+              </>
+            )}
+            {nearbyDam.storageAcreFt != null && (
+              <>
+                <View style={styles.waterStatDivider} />
+                <View style={styles.waterStat}>
+                  <Text style={styles.waterStatValue}>
+                    {nearbyDam.storageAcreFt > 1000
+                      ? `${(nearbyDam.storageAcreFt / 1000).toFixed(0)}k`
+                      : String(nearbyDam.storageAcreFt)}
+                  </Text>
+                  <Text style={styles.waterStatUnit}>ac-ft</Text>
+                  <Text style={styles.waterStatLabel}>Storage</Text>
+                </View>
+              </>
+            )}
+          </View>
+          {reservoirLevel?.lastUpdated && (
+            <View style={styles.waterFooter}>
+              <Text style={styles.waterStationName}>{nearbyDam.purpose || 'Multi-purpose'}</Text>
+              <Text style={styles.waterUpdated}>
+                {reservoirLevel.trend === 'rising' ? '\u2191 Rising' : reservoirLevel.trend === 'falling' ? '\u2193 Falling' : '\u2014 Stable'}
+              </Text>
+            </View>
+          )}
+          <Text style={styles.waterSource}>Data from USACE NID / CWMS</Text>
+        </View>
       )}
 
       {/* Species Activity — only for verified (non-OSM) locations */}
