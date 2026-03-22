@@ -118,6 +118,9 @@ import { DepthNumberOverlay } from '../components/DepthNumberOverlay';
 import { MarineGasOverlay } from '../components/MarineGasOverlay';
 import { OceanFishingSpotsOverlay } from '../components/OceanFishingSpotsOverlay';
 import { TidalCurrentOverlay } from '../components/TidalCurrentOverlay';
+import { SeabedOverlay } from '../components/SeabedOverlay';
+import { SEABED_LEGEND_STOPS } from '../services/seabedCharacteristics';
+import { MaritimeBoundariesOverlay } from '../components/MaritimeBoundariesOverlay';
 import { USACESurveyOverlay } from '../components/USACESurveyOverlay';
 import { DraftAccessibilityOverlay } from '../components/DraftAccessibilityOverlay';
 import { IceThicknessOverlay } from '../components/IceThicknessOverlay';
@@ -2800,6 +2803,14 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   // USACE survey overlay (channel depths, locks, harbors)
   const [usaceSurveyEnabled, setUsaceSurveyEnabled] = useState(false);
 
+  // Seabed characteristics overlay
+  const [seabedEnabled, setSeabedEnabled] = useState(false);
+  const [seabedLoading, setSeabedLoading] = useState(false);
+
+  // Maritime boundaries overlay (shipping lanes, restricted areas)
+  const [maritimeBoundariesEnabled, setMaritimeBoundariesEnabled] = useState(false);
+  const [maritimeBoundariesLoading, setMaritimeBoundariesLoading] = useState(false);
+
   // AIS WiFi receiver overlay
   const [aisWifiEnabled, setAisWifiEnabled] = useState(false);
   const [aisWifiGeoJSON, setAisWifiGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
@@ -4734,6 +4745,42 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           isActive: activeOverlays.has('artificial-reefs'),
         },
         {
+          key: 'seabed-chars',
+          label: 'Seabed Type',
+          icon: 'layers-outline',
+          description: 'Bottom composition & anchoring',
+          isActive: seabedEnabled,
+          isLoading: seabedLoading,
+          visible: isNearCoastNow,
+          onPress: () => setSeabedEnabled((prev) => !prev),
+          infoCard: seabedEnabled
+            ? {
+                primary: 'Seabed Characteristics',
+                secondary: 'Green = good, Yellow = fair, Red = poor anchoring',
+                icon: 'layers',
+                color: '#4CAF50',
+              } as OverlayInfoCard
+            : null,
+        },
+        {
+          key: 'maritime-boundaries',
+          label: 'Maritime Boundaries',
+          icon: 'shield-outline',
+          description: 'Shipping lanes & restricted areas',
+          isActive: maritimeBoundariesEnabled,
+          isLoading: maritimeBoundariesLoading,
+          visible: isNearCoastNow,
+          onPress: () => setMaritimeBoundariesEnabled((prev) => !prev),
+          infoCard: maritimeBoundariesEnabled
+            ? {
+                primary: 'Shipping Lanes & Restrictions',
+                secondary: 'Safety-critical boundaries shown',
+                icon: 'shield-checkmark',
+                color: '#F44336',
+              } as OverlayInfoCard
+            : null,
+        },
+        {
           key: 'ais-wifi',
           label: 'AIS WiFi Vessels',
           icon: 'radio-outline',
@@ -4977,6 +5024,36 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             SymbolLayer={SymbolLayer}
             onLoadStart={() => setTidalLoading(true)}
             onLoadEnd={() => setTidalLoading(false)}
+          />
+        )}
+
+        {/* Seabed characteristics overlay (zoom 10+) */}
+        {seabedEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+          <SeabedOverlay
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            zoom={currentZoom}
+            ShapeSource={ShapeSource}
+            CircleLayer={CircleLayer}
+            SymbolLayer={SymbolLayer}
+            onLoadStart={() => setSeabedLoading(true)}
+            onLoadEnd={() => setSeabedLoading(false)}
+          />
+        )}
+
+        {/* Maritime boundaries overlay (shipping lanes, restricted areas — safety-critical) */}
+        {maritimeBoundariesEnabled && userLocation && ShapeSource && LineLayer && FillLayer && SymbolLayer && CircleLayer && (
+          <MaritimeBoundariesOverlay
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            zoom={currentZoom}
+            ShapeSource={ShapeSource}
+            LineLayer={LineLayer}
+            FillLayer={FillLayer}
+            SymbolLayer={SymbolLayer}
+            CircleLayer={CircleLayer}
+            onLoadStart={() => setMaritimeBoundariesLoading(true)}
+            onLoadEnd={() => setMaritimeBoundariesLoading(false)}
           />
         )}
 

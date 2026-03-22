@@ -20,6 +20,14 @@ import {
   FUEL_CONSUMPTION_ESTIMATES,
 } from './fuelCalculator';
 import { getDefaultBoat, type BoatProfile } from './boatProfile';
+import {
+  getRestrictedAreas,
+  getShippingLanes,
+  doesSegmentCrossRestricted,
+  type RestrictedArea,
+  type ShippingLane,
+  type BBox as MaritimeBBox,
+} from './maritimeRoutes';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -554,4 +562,166 @@ export function getNextWaypointNav(
     distanceMi: Math.round(distanceNm * 1.15078 * 100) / 100,
     isLastWaypoint: currentWaypointIndex === route.waypoints.length - 1,
   };
+}
+
+// ── Route Restriction Checking ────────────────────────────────────
+
+export interface RouteRestrictionWarning {
+  /** Which segment triggered the warning */
+  segmentIndex: number;
+  /** Position along the segment where restriction was detected */
+  position: LatLng;
+  /** Type of restriction */
+  type: 'restricted_area' | 'shipping_lane_crossing';
+  /** Severity: danger (military, security) or warning (sanctuary, etc.) */
+  severity: 'danger' | 'warning' | 'caution';
+  /** Name of the restricted area or shipping lane */
+  name: string;
+  /** Detailed description for the user */
+  message: string;
+  /** The restricted area details (if type is restricted_area) */
+  restrictedArea?: RestrictedArea;
+}
+
+/**
+ * Check if any route segment passes through a restricted area or crosses a shipping lane.
+ * Returns all warnings found along the route.
+ *
+ * This is the primary safety check — should be called automatically when
+ * a route is created or modified.
+ */
+export async function checkRouteRestrictions(
+  route: Route,
+): Promise<RouteRestrictionWarning[]> {
+  if (route.segments.length === 0) return [];
+
+  // Build bounding box for the entire route
+  const lats = route.waypoints.map((w) => w.position.lat);
+  const lons = route.waypoints.map((w) => w.position.lon);
+  const bbox: MaritimeBBox = {
+    minLat: Math.min(...lats) - 0.05,
+    maxLat: Math.max(...lats) + 0.05,
+    minLon: Math.min(...lons) - 0.05,
+    maxLon: Math.max(...lons) + 0.05,
+  };
+
+  // Fetch restricted areas and shipping lanes in parallel
+  const [restrictedAreas, shippingLanes] = await Promise.all([
+    getRestrictedAreas(bbox),
+    getShippingLanes(bbox),
+  ]);
+
+  const warnings: RouteRestrictionWarning[] = [];
+
+  // Check each segment against restricted areas
+  for (let i = 0; i < route.segments.length; i++) {
+    const segment = route.segments[i];
+
+    // Check restricted areas
+    const restrictedHit = doesSegmentCrossRestricted(
+      segment.from,
+      segment.to,
+      restrictedAreas,
+      30, // Fine sampling for safety
+    );
+
+    if (restrictedHit) {
+      const midpoint: LatLng = {
+        lat: (segment.from.lat + segment.to.lat) / 2,
+        lon: (segment.from.lon + segment.to.lon) / 2,
+      };
+
+      const typeLabel = restrictedHit.type
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+
+      warnings.push({
+        segmentIndex: i,
+        position: midpoint,
+        type: 'restricted_area',
+        severity: restrictedHit.severity,
+        name: restrictedHit.name,
+        message: `Route passes through ${typeLabel}: ${restrictedHit.name}. ${restrictedHit.restrictions}`,
+        restrictedArea: restrictedHit,
+      });
+    }
+
+    // Check shipping lane crossings
+    for (const lane of shippingLanes) {
+      if (doesSegmentCrossLine(segment.from, segment.to, lane.coordinates)) {
+        const midpoint: LatLng = {
+          lat: (segment.from.lat + segment.to.lat) / 2,
+          lon: (segment.from.lon + segment.to.lon) / 2,
+        };
+
+        warnings.push({
+          segmentIndex: i,
+          position: midpoint,
+          type: 'shipping_lane_crossing',
+          severity: 'caution',
+          name: lane.name,
+          message: `Route crosses shipping lane: ${lane.name}. Exercise caution and maintain lookout.`,
+        });
+        break; // One warning per lane per segment is sufficient
+      }
+    }
+  }
+
+  return warnings;
+}
+
+/**
+ * Check if a segment crosses a polyline (shipping lane).
+ * Uses simple bounding-box + proximity test.
+ */
+function doesSegmentCrossLine(
+  from: LatLng,
+  to: LatLng,
+  lineCoords: LatLng[],
+  thresholdDeg: number = 0.005,
+): boolean {
+  // Sample points along our route segment
+  const samples = 15;
+  for (let i = 0; i <= samples; i++) {
+    const t = i / samples;
+    const px = from.lat + (to.lat - from.lat) * t;
+    const py = from.lon + (to.lon - from.lon) * t;
+
+    // Check proximity to any segment of the shipping lane
+    for (let j = 0; j < lineCoords.length - 1; j++) {
+      const ax = lineCoords[j].lat;
+      const ay = lineCoords[j].lon;
+      const bx = lineCoords[j + 1].lat;
+      const by = lineCoords[j + 1].lon;
+
+      // Point-to-segment distance approximation
+      const dx = bx - ax;
+      const dy = by - ay;
+      const lenSq = dx * dx + dy * dy;
+      if (lenSq === 0) continue;
+
+      let param = ((px - ax) * dx + (py - ay) * dy) / lenSq;
+      param = Math.max(0, Math.min(1, param));
+
+      const nearX = ax + param * dx;
+      const nearY = ay + param * dy;
+
+      const dist = Math.sqrt((px - nearX) ** 2 + (py - nearY) ** 2);
+      if (dist < thresholdDeg) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Get the most severe restriction warning from a list.
+ */
+export function getMostSevereWarning(
+  warnings: RouteRestrictionWarning[],
+): RouteRestrictionWarning | null {
+  if (warnings.length === 0) return null;
+  const severityOrder: Record<string, number> = { danger: 3, warning: 2, caution: 1 };
+  return warnings.reduce((most, w) =>
+    (severityOrder[w.severity] ?? 0) > (severityOrder[most.severity] ?? 0) ? w : most,
+  );
 }

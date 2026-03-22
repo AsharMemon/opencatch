@@ -218,6 +218,18 @@ async function fetchCurrentPrediction(
 
 // ── Build GeoJSON ────────────────────────────────────────────────
 
+/**
+ * State icon for ebb/flood/slack — traditional nautical chart convention.
+ * Arrow points in direction of current flow (true nautical convention).
+ */
+function stateIcon(state: 'slack' | 'flood' | 'ebb'): string {
+  switch (state) {
+    case 'flood': return 'FLOOD';
+    case 'ebb': return 'EBB';
+    default: return 'SLACK';
+  }
+}
+
 function buildGeoJSON(predictions: TidalCurrentPrediction[]): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
@@ -232,12 +244,20 @@ function buildGeoJSON(predictions: TidalCurrentPrediction[]): GeoJSON.FeatureCol
         stationName: p.stationName,
         speedKnots: p.speedKnots,
         speedLabel: `${p.speedKnots.toFixed(1)} kn`,
+        /** Full speed text with units for prominent display */
+        speedTextFull: `${p.speedKnots.toFixed(1)} knots`,
         directionDeg: p.directionDeg,
         state: p.state,
         stateLabel: p.state.charAt(0).toUpperCase() + p.state.slice(1),
+        /** Prominent state display: EBB / FLOOD / SLACK */
+        stateIconLabel: stateIcon(p.state),
         color: speedColor(p.speedKnots),
         // Arrow size scales with speed -- larger than before
         arrowSize: Math.max(0.8, Math.min(2.0, p.speedKnots * 0.7)),
+        /** Traditional nautical arrow rotation — points in direction of flow */
+        nauticalArrowRotation: p.directionDeg,
+        /** Secondary color for ebb/flood distinction */
+        stateColor: p.state === 'flood' ? '#1565C0' : p.state === 'ebb' ? '#E65100' : '#78909C',
       },
     })),
   };
@@ -383,13 +403,13 @@ export function TidalCurrentOverlay({
           }}
         />
 
-        {/* ── Large, prominent direction arrows ── */}
+        {/* ── Large, prominent direction arrows (nautical convention: points in flow direction) ── */}
         <SymbolLayer
           id="tidal-currents-arrow"
           style={{
             iconImage: 'arrow-up',
             iconSize: ['get', 'arrowSize'],
-            iconRotate: ['get', 'directionDeg'],
+            iconRotate: ['get', 'nauticalArrowRotation'],
             iconRotationAlignment: 'map',
             iconAllowOverlap: true,
             iconColor: '#FFFFFF',
@@ -399,35 +419,63 @@ export function TidalCurrentOverlay({
           }}
         />
 
-        {/* ── Speed label at zoom 9+ ── */}
+        {/* ── Speed text label (always visible at zoom 8+) — prominent ── */}
         <SymbolLayer
-          id="tidal-currents-label"
-          minZoomLevel={9}
+          id="tidal-currents-speed-text"
+          minZoomLevel={8}
           style={{
             textField: ['get', 'speedLabel'],
-            textSize: 11,
+            textSize: [
+              'interpolate', ['linear'], ['zoom'],
+              8, 10,
+              11, 13,
+              14, 15,
+            ],
             textFont: ['Open Sans Bold'],
             textColor: '#FFFFFF',
-            textHaloColor: 'rgba(0, 0, 0, 0.55)',
-            textHaloWidth: 1.5,
+            textHaloColor: 'rgba(0, 0, 0, 0.65)',
+            textHaloWidth: 1.8,
             textOffset: [0, 2.0],
             textAllowOverlap: false,
           }}
         />
 
-        {/* ── State label (Slack/Ebb/Flood) at zoom 10+ ── */}
+        {/* ── Prominent Ebb/Flood/Slack state badge at zoom 9+ ── */}
         <SymbolLayer
-          id="tidal-currents-state"
-          minZoomLevel={10}
+          id="tidal-currents-state-badge"
+          minZoomLevel={9}
           style={{
-            textField: ['get', 'stateLabel'],
-            textSize: 9,
-            textFont: ['Open Sans Regular'],
-            textColor: 'rgba(255, 255, 255, 0.8)',
-            textHaloColor: ['get', 'color'],
-            textHaloWidth: 1,
+            textField: ['get', 'stateIconLabel'],
+            textSize: [
+              'interpolate', ['linear'], ['zoom'],
+              9, 9,
+              12, 12,
+            ],
+            textFont: ['Open Sans Bold'],
+            textColor: ['get', 'stateColor'],
+            textHaloColor: '#FFFFFF',
+            textHaloWidth: 1.5,
             textOffset: [0, 3.2],
             textAllowOverlap: false,
+            textTransform: 'uppercase',
+            textLetterSpacing: 0.1,
+          }}
+        />
+
+        {/* ── Station name at zoom 11+ ── */}
+        <SymbolLayer
+          id="tidal-currents-station-name"
+          minZoomLevel={11}
+          style={{
+            textField: ['get', 'stationName'],
+            textSize: 9,
+            textFont: ['Open Sans Regular'],
+            textColor: 'rgba(255, 255, 255, 0.75)',
+            textHaloColor: 'rgba(0, 0, 0, 0.4)',
+            textHaloWidth: 1,
+            textOffset: [0, 4.4],
+            textAllowOverlap: false,
+            textMaxWidth: 12,
           }}
         />
       </ShapeSource>
