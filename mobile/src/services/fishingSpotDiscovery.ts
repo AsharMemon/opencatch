@@ -55,13 +55,14 @@ const ZOOM_STATE = 8;     // zoom 5-8: medium lakes (area > 1 km2)
 
 // ── Smart Filtering Constants ────────────────────────────────────
 
-/** Minimum area in km² for UNNAMED water bodies (0.5 hectares = 0.005 km²) */
-const MIN_AREA_UNNAMED_KM2 = 0.005;
+/** Minimum area in km² for UNNAMED water bodies (~0.5 acres = 2,000 m² = 0.002 km²) */
+const MIN_AREA_UNNAMED_KM2 = 0.002;
 
-/** Minimum area in km² for NAMED water bodies (0.1 hectares = 0.001 km²) */
-const MIN_AREA_NAMED_KM2 = 0.001;
+/** Named water bodies: no minimum area (any named body is kept) */
+const MIN_AREA_NAMED_KM2 = 0;
 
-/** Borderline range upper bound: 2 hectares = 0.02 km² */
+/** Borderline range upper bound: 2 hectares = 0.02 km² (~5 acres) — unnamed
+ *  bodies below this with no fishing tags and no name are likely puddles/ditches */
 const BORDERLINE_UPPER_KM2 = 0.02;
 
 /** Minimum area in km² for wetlands (5 hectares = 0.05 km²) — only large marshes are fishable */
@@ -71,11 +72,17 @@ const MIN_AREA_WETLAND_KM2 = 0.05;
 const SKIP_NAME_PATTERNS = [
   'storm', 'retention', 'treatment', 'sewage',
   'detention', 'drainage', 'outfall', 'settling',
+  'ditch', 'culvert', 'runoff', 'wastewater',
 ];
 
 /** OSM tag values indicating non-fishable water */
-const SKIP_WATER_TYPES = new Set(['wastewater', 'sewage', 'basin']);
+const SKIP_WATER_TYPES = new Set([
+  'wastewater', 'sewage', 'basin',
+  'ditch', 'drain', 'wastewater_plant',
+]);
 const SKIP_LANDUSE_TYPES = new Set(['basin']);
+/** OSM waterway values indicating non-fishable drainage infrastructure */
+const SKIP_WATERWAY_TYPES = new Set(['ditch', 'drain', 'gutter']);
 
 /** Name substrings that indicate a real fishing-relevant water body */
 const FISHING_NAME_KEYWORDS = [
@@ -110,11 +117,13 @@ function hasSkipName(name: string): boolean {
  * Applies name-based, type-based, area-based, and fishing-relevance filters.
  */
 function shouldKeepWaterBody(tags: Record<string, string>, areaKm2: number | undefined, name: string): boolean {
-  // 1. Type filtering: always skip wastewater / sewage / basin types
+  // 1. Type filtering: always skip wastewater / sewage / basin / ditch / drain types
   const waterTag = (tags.water ?? '').toLowerCase();
   const landuseTag = (tags.landuse ?? '').toLowerCase();
   const naturalTag = (tags.natural ?? '').toLowerCase();
+  const waterwayTag = (tags.waterway ?? '').toLowerCase();
   if (SKIP_WATER_TYPES.has(waterTag)) return false;
+  if (SKIP_WATERWAY_TYPES.has(waterwayTag)) return false;
   // Don't skip landuse=reservoir — those are fishable water bodies
   if (SKIP_LANDUSE_TYPES.has(landuseTag) && landuseTag !== 'reservoir') return false;
 
@@ -136,18 +145,24 @@ function shouldKeepWaterBody(tags: Record<string, string>, areaKm2: number | und
   if (landuseTag === 'reservoir' && name) return true;
   if (tags.reservoir && name) return true;
 
-  // 5. Name-based filtering: skip infrastructure names
+  // 5. Name-based filtering: skip infrastructure names even if named
   if (hasSkipName(name)) return false;
 
-  // 6. Minimum area filter: named water bodies get a lower threshold (0.1 ha vs 0.5 ha)
-  const minArea = name ? MIN_AREA_NAMED_KM2 : MIN_AREA_UNNAMED_KM2;
-  if (areaKm2 !== undefined && areaKm2 < minArea) return false;
+  // 6. Named water bodies of ANY size are always kept (e.g. "Johnson's Pond")
+  //    — the name indicates it's a known, real spot regardless of area
+  if (name) return true;
 
-  // 7. Borderline check: 0.5–2 hectares with no fishing tags and no recognizable name
-  if (areaKm2 !== undefined && areaKm2 < BORDERLINE_UPPER_KM2 && !name) {
+  // 7. Unnamed water bodies: must meet minimum area threshold (~0.5 acres / 2,000 m²)
+  if (areaKm2 !== undefined && areaKm2 < MIN_AREA_UNNAMED_KM2) return false;
+
+  // 8. Borderline check: unnamed bodies under ~5 acres with no fishing tags — likely puddles/ditches
+  if (areaKm2 !== undefined && areaKm2 < BORDERLINE_UPPER_KM2) {
     // Unnamed small water body with no fishing tags — likely a pond/ditch, skip
     return false;
   }
+
+  // 9. Unnamed with no area data — skip (can't verify it's not a puddle)
+  if (areaKm2 === undefined) return false;
 
   return true;
 }
@@ -283,13 +298,14 @@ out center tags 500;
   // - waterway=riverbank catches large river area polygons
   // - natural=wetland catches fishable marshes (filtered by area later)
   // - multipolygon relations are caught by the relation queries
+  // - Excludes ditch/drain/basin/wastewater at query level to reduce response size
   return `
 [out:json][timeout:8][bbox:${bb}];
 (
-  way["natural"="water"];
-  relation["natural"="water"];
-  way["water"~"lake|river|pond|reservoir|stream|oxbow|canal|moat"];
-  relation["water"~"lake|river|pond|reservoir|stream|oxbow|canal|moat"];
+  way["natural"="water"]["water"!~"ditch|drain|basin|wastewater"];
+  relation["natural"="water"]["water"!~"ditch|drain|basin|wastewater"];
+  way["water"~"lake|river|pond|reservoir|stream|oxbow|canal"]["water"!~"ditch|drain|basin|wastewater"];
+  relation["water"~"lake|river|pond|reservoir|stream|oxbow|canal"]["water"!~"ditch|drain|basin|wastewater"];
   way["landuse"="reservoir"];
   relation["landuse"="reservoir"];
   way["waterway"="riverbank"];
