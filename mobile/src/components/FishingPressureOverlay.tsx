@@ -27,6 +27,8 @@ interface Props {
   ShapeSource: any;
   CircleLayer: any;
   SymbolLayer: any;
+  onLoadStart?: () => void;
+  onLoadEnd?: () => void;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -107,13 +109,17 @@ export function FishingPressureOverlay({
   ShapeSource,
   CircleLayer,
   SymbolLayer,
+  onLoadStart,
+  onLoadEnd,
 }: Props) {
   const [geoJSON, setGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
 
   useEffect(() => {
     if (spots.length === 0) return;
+    onLoadStart?.();
     setGeoJSON(buildGeoJSON(spots));
-  }, [spots, lat, lon]);
+    onLoadEnd?.();
+  }, [spots, lat, lon, onLoadStart, onLoadEnd]);
 
   // Refresh every 5 minutes (pressure changes with time)
   useEffect(() => {
@@ -132,9 +138,14 @@ export function FishingPressureOverlay({
         <CircleLayer
           id="pressure-glow"
           style={{
-            circleRadius: ['get', 'haloRadius'],
+            circleRadius: [
+              'interpolate', ['linear'], ['get', 'score'],
+              0, 30,
+              50, 45,
+              100, 60,
+            ],
             circleColor: ['get', 'color'],
-            circleOpacity: 0.15,
+            circleOpacity: 0.2,
             circleBlur: 0.8,
           }}
         />
@@ -142,11 +153,11 @@ export function FishingPressureOverlay({
         <CircleLayer
           id="pressure-dots"
           style={{
-            circleRadius: 10,
+            circleRadius: 14,
             circleColor: ['get', 'color'],
-            circleOpacity: 0.6,
-            circleStrokeWidth: 1.5,
-            circleStrokeColor: ['get', 'color'],
+            circleOpacity: 0.7,
+            circleStrokeWidth: 2.5,
+            circleStrokeColor: '#FFFFFF',
             circleStrokeOpacity: 0.9,
           }}
         />
@@ -155,12 +166,11 @@ export function FishingPressureOverlay({
           id="pressure-labels"
           style={{
             textField: ['get', 'label'],
-            textSize: 9,
+            textSize: 11,
             textColor: '#FFFFFF',
             textHaloColor: ['get', 'color'],
-            textHaloWidth: 1.2,
-            textOffset: [0, -2],
-            textAllowOverlap: false,
+            textHaloWidth: 1.8,
+            textAllowOverlap: true,
             textFont: ['Open Sans Bold'],
           }}
         />

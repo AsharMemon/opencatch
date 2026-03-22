@@ -185,11 +185,15 @@ export function MapToolsDrawer({ visible, onClose, toolGroups }: MapToolsDrawerP
                         {tool.description}
                       </Text>
                     </View>
-                    {tool.isActive && (
+                    {tool.isActive && !tool.isLoading && (
                       <View style={styles.activeDot} />
                     )}
                     {tool.isLoading && (
-                      <View style={styles.loadingDot} />
+                      <ActivityIndicator
+                        size="small"
+                        color={palette.accent}
+                        style={styles.loadingSpinner}
+                      />
                     )}
                   </Pressable>
 
@@ -353,11 +357,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: palette.accent,
   },
-  loadingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FB8C00',
+  loadingSpinner: {
+    marginLeft: 2,
   },
   // ── Overlay info card ────────────────────────────────────────────
   infoCard: {

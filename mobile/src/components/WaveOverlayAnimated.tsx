@@ -1,14 +1,16 @@
 /**
- * OpenCatch — Wave Height Overlay
+ * OpenCatch -- Wave Height Overlay (Windy-Quality)
  *
- * Visualizes wave height for coastal areas using the Open-Meteo Marine API.
- * Colored circles at grid points sized proportionally to wave height,
- * with small directional arrows for wave direction.
+ * Full-screen color heat map covering ocean areas, like Windy's wave view.
+ * Fetches a dense grid from the Open-Meteo Marine API and renders each cell
+ * as a large semi-transparent blurred circle that blends with neighbors to
+ * create a continuous color surface. Wave direction arrows overlaid on top.
  *
- * Color scale (meters): blue (0-1m), green (1-2m), yellow (2-3m),
- *   orange (3-4m), red (4m+).
+ * Color scale (meters):
+ *   Deep Blue (0-0.5m) -> Blue (0.5-1m) -> Cyan (1-1.5m) ->
+ *   Green (1.5-2m) -> Yellow (2-3m) -> Orange (3-4m) -> Red (4m+)
  *
- * Only visible when user is near coast.
+ * Only visible near the coast.
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
@@ -29,23 +31,43 @@ interface Props {
   ShapeSource: any;
   CircleLayer: any;
   SymbolLayer: any;
+  onLoadStart?: () => void;
+  onLoadEnd?: () => void;
 }
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const MARINE_API_BASE = 'https://marine-api.open-meteo.com/v1/marine';
 
-/** Grid spacing in degrees (~30km for open ocean). */
-const GRID_SPACING_DEG = 0.3;
+/**
+ * Dense grid spacing -- ~15km for smooth heat map fill.
+ * Smaller than before (was 0.3) to create continuous coverage.
+ */
+const GRID_SPACING_DEG = 0.15;
 
-/** Radius of the wave grid in degrees. */
-const GRID_RADIUS_DEG = 1.5;
+/** Radius of the wave grid in degrees (~2 degrees for wide coverage). */
+const GRID_RADIUS_DEG = 2.0;
 
 /** Minimum move distance before refetching (meters). */
-const REFRESH_DISTANCE_M = 10000;
+const REFRESH_DISTANCE_M = 8000;
 
 /** Cache TTL: 30 minutes. */
 const CACHE_TTL_MS = 30 * 60 * 1000;
+
+// ── Color scale (Windy-style rich gradient) ─────────────────────────────────
+
+function waveColor(heightM: number): string {
+  if (heightM < 0.25) return '#1A237E'; // Deep navy
+  if (heightM < 0.5) return '#1565C0';  // Dark blue
+  if (heightM < 1.0) return '#2196F3';  // Blue
+  if (heightM < 1.5) return '#00BCD4';  // Cyan
+  if (heightM < 2.0) return '#4CAF50';  // Green
+  if (heightM < 2.5) return '#8BC34A';  // Light green
+  if (heightM < 3.0) return '#FFC107';  // Amber
+  if (heightM < 3.5) return '#FF9800';  // Orange
+  if (heightM < 4.0) return '#FF5722';  // Deep orange
+  return '#D50000';                      // Red
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -59,23 +81,6 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
       Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function waveColor(heightM: number): string {
-  if (heightM < 1) return '#2196F3';  // blue
-  if (heightM < 2) return '#4CAF50';  // green
-  if (heightM < 3) return '#FFC107';  // yellow
-  if (heightM < 4) return '#FF9800';  // orange
-  return '#F44336';                    // red
-}
-
-function waveLabel(heightM: number): string {
-  if (heightM < 0.5) return 'Flat';
-  if (heightM < 1) return 'Calm';
-  if (heightM < 2) return 'Moderate';
-  if (heightM < 3) return 'Rough';
-  if (heightM < 4) return 'Very Rough';
-  return 'High';
 }
 
 // ── Grid building ────────────────────────────────────────────────────────────
@@ -137,7 +142,6 @@ async function fetchWaveBatch(coords: Array<{ lat: number; lon: number }>): Prom
         const periodS = item.hourly?.wave_period?.[0] ?? 0;
         const dirDeg = item.hourly?.wave_direction?.[0] ?? 0;
 
-        // Only include points that returned valid wave data (ocean points)
         if (heightM != null && heightM >= 0) {
           results.push({
             lat: batch[j].lat,
@@ -174,9 +178,6 @@ function waveGridToGeoJSON(points: WavePoint[]): GeoJSON.FeatureCollection {
         iconRotation: (p.directionDeg + 180) % 360,
         color: waveColor(p.heightM),
         label: `${p.heightM.toFixed(1)}m`,
-        description: waveLabel(p.heightM),
-        // Circle radius proportional to wave height (min 4, max 16)
-        radius: Math.min(16, Math.max(4, p.heightM * 4)),
       },
     })),
   };
@@ -188,7 +189,7 @@ let _waveCache: { geoJSON: GeoJSON.FeatureCollection; lat: number; lon: number; 
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function WaveOverlayAnimated({ lat, lon, ShapeSource, CircleLayer, SymbolLayer }: Props) {
+export function WaveOverlayAnimated({ lat, lon, ShapeSource, CircleLayer, SymbolLayer, onLoadStart, onLoadEnd }: Props) {
   const [geoJSON, setGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
   const lastCenter = useRef<{ lat: number; lon: number } | null>(null);
   const loadingRef = useRef(false);
@@ -213,6 +214,7 @@ export function WaveOverlayAnimated({ lat, lon, ShapeSource, CircleLayer, Symbol
 
     loadingRef.current = true;
     lastCenter.current = { lat: centerLat, lon: centerLon };
+    onLoadStart?.();
 
     try {
       const grid = buildGrid(centerLat, centerLon);
@@ -228,8 +230,9 @@ export function WaveOverlayAnimated({ lat, lon, ShapeSource, CircleLayer, Symbol
       // Keep previous data
     } finally {
       loadingRef.current = false;
+      onLoadEnd?.();
     }
-  }, []);
+  }, [onLoadStart, onLoadEnd]);
 
   useEffect(() => {
     fetchData(lat, lon);
@@ -239,53 +242,84 @@ export function WaveOverlayAnimated({ lat, lon, ShapeSource, CircleLayer, Symbol
 
   return (
     <ShapeSource id="wave-overlay-source" shape={geoJSON}>
-      {/* Colored circles — size proportional to wave height */}
+      {/* ── Heat map fill: large blurred circles that overlap to form a
+           continuous color surface across the ocean ── */}
       <CircleLayer
-        id="wave-overlay-circles"
+        id="wave-heatmap-fill"
         style={{
           circleRadius: [
             'interpolate',
-            ['linear'],
-            ['get', 'heightM'],
-            0, 4,
-            1, 6,
-            2, 9,
-            3, 12,
-            4, 15,
+            ['exponential', 1.5],
+            ['zoom'],
+            4, 30,
+            7, 50,
+            10, 80,
+            13, 140,
           ],
           circleColor: ['get', 'color'],
-          circleStrokeColor: '#FFFFFF',
-          circleStrokeWidth: 1,
-          circleOpacity: 0.65,
+          circleOpacity: 0.55,
+          circleBlur: 1,
+          circlePitchAlignment: 'map',
+          circleTranslate: [0, 0],
         }}
       />
-      {/* Wave direction arrows */}
+
+      {/* ── Inner intensity core: brighter center for depth ── */}
+      <CircleLayer
+        id="wave-heatmap-core"
+        style={{
+          circleRadius: [
+            'interpolate',
+            ['exponential', 1.5],
+            ['zoom'],
+            4, 10,
+            7, 18,
+            10, 30,
+            13, 55,
+          ],
+          circleColor: ['get', 'color'],
+          circleOpacity: 0.35,
+          circleBlur: 0.8,
+          circlePitchAlignment: 'map',
+        }}
+      />
+
+      {/* ── Wave direction arrows at medium-high zoom ── */}
       <SymbolLayer
         id="wave-overlay-arrows"
-        minZoomLevel={7}
+        minZoomLevel={6}
         style={{
           iconImage: 'triangle-11',
-          iconSize: 0.7,
+          iconSize: [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            6, 0.5,
+            9, 0.8,
+            12, 1.1,
+          ],
           iconRotate: ['get', 'iconRotation'],
           iconAllowOverlap: true,
           iconIgnorePlacement: true,
-          iconColor: ['get', 'color'],
+          iconColor: '#FFFFFF',
           iconOpacity: 0.7,
-          iconOffset: [0, -20],
+          iconHaloColor: ['get', 'color'],
+          iconHaloWidth: 1,
         }}
       />
-      {/* Height labels at higher zoom */}
+
+      {/* ── Height labels at higher zoom ── */}
       <SymbolLayer
         id="wave-overlay-labels"
-        minZoomLevel={8}
+        minZoomLevel={9}
         style={{
           textField: ['get', 'label'],
-          textSize: 10,
-          textColor: ['get', 'color'],
-          textHaloColor: 'rgba(255, 255, 255, 0.95)',
+          textSize: 11,
+          textColor: '#FFFFFF',
+          textHaloColor: 'rgba(0, 0, 0, 0.6)',
           textHaloWidth: 1.5,
-          textFont: ['Open Sans Regular'],
-          textOffset: [0, 2.0],
+          textFont: ['Open Sans Bold'],
+          textOffset: [0, 2.2],
           textAnchor: 'top',
           textOptional: true,
           textAllowOverlap: false,
@@ -294,3 +328,15 @@ export function WaveOverlayAnimated({ lat, lon, ShapeSource, CircleLayer, Symbol
     </ShapeSource>
   );
 }
+
+// ── Legend data for external use ──────────────────────────────────────────────
+
+export const WAVE_LEGEND_STOPS = [
+  { color: '#1A237E', label: '0m' },
+  { color: '#2196F3', label: '1m' },
+  { color: '#00BCD4', label: '1.5m' },
+  { color: '#4CAF50', label: '2m' },
+  { color: '#FFC107', label: '3m' },
+  { color: '#FF5722', label: '4m' },
+  { color: '#D50000', label: '4m+' },
+];

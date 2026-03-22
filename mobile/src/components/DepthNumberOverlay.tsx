@@ -30,6 +30,8 @@ interface Props {
   units?: 'metric' | 'imperial';
   ShapeSource: any;
   SymbolLayer: any;
+  onLoadStart?: () => void;
+  onLoadEnd?: () => void;
 }
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -177,6 +179,8 @@ export function DepthNumberOverlay({
   units = 'imperial',
   ShapeSource,
   SymbolLayer,
+  onLoadStart,
+  onLoadEnd,
 }: Props) {
   const [geoJSON, setGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
   const lastCenter = useRef<{ lat: number; lon: number } | null>(null);
@@ -202,6 +206,7 @@ export function DepthNumberOverlay({
 
     loadingRef.current = true;
     lastCenter.current = { lat: centerLat, lon: centerLon };
+    onLoadStart?.();
 
     try {
       const soundings = await getDepthSoundings(centerLat, centerLon);
@@ -216,8 +221,9 @@ export function DepthNumberOverlay({
       // Keep previous data
     } finally {
       loadingRef.current = false;
+      onLoadEnd?.();
     }
-  }, [units]);
+  }, [units, onLoadStart, onLoadEnd]);
 
   useEffect(() => {
     if (zoom < MIN_ZOOM) {
@@ -239,17 +245,17 @@ export function DepthNumberOverlay({
             'interpolate',
             ['linear'],
             ['zoom'],
-            13, 9,
-            15, 11,
-            17, 14,
+            13, 12,
+            15, 14,
+            17, 17,
           ],
           textColor: ['get', 'textColor'],
-          textHaloColor: 'rgba(255, 255, 255, 0.8)',
-          textHaloWidth: 0.8,
-          textFont: ['Open Sans Regular'],
+          textHaloColor: 'rgba(255, 255, 255, 0.95)',
+          textHaloWidth: 1.5,
+          textFont: ['Open Sans Bold'],
           textAllowOverlap: false,
           textIgnorePlacement: false,
-          textPadding: 8,
+          textPadding: 6,
           textOptional: true,
         }}
       />

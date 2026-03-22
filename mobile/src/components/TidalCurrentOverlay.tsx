@@ -42,6 +42,8 @@ interface Props {
   ShapeSource: any;
   CircleLayer: any;
   SymbolLayer: any;
+  onLoadStart?: () => void;
+  onLoadEnd?: () => void;
 }
 
 // ── Constants ────────────────────────────────────────────────────
@@ -259,12 +261,15 @@ export function TidalCurrentOverlay({
   ShapeSource,
   CircleLayer,
   SymbolLayer,
+  onLoadStart,
+  onLoadEnd,
 }: Props) {
   const [geoJSON, setGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
   const lastCenter = useRef<{ lat: number; lon: number } | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadPredictions = async (centerLat: number, centerLon: number) => {
+    onLoadStart?.();
     try {
       const stations = await findNearbyCurrentStations(centerLat, centerLon);
       if (stations.length === 0) {
@@ -285,6 +290,8 @@ export function TidalCurrentOverlay({
       lastCenter.current = { lat: centerLat, lon: centerLon };
     } catch (err) {
       console.warn('[TidalCurrentOverlay] Load failed:', err);
+    } finally {
+      onLoadEnd?.();
     }
   };
 
@@ -322,21 +329,38 @@ export function TidalCurrentOverlay({
         id="tidal-currents-source"
         shape={geoJSON}
       >
+        {/* Outer glow for visibility */}
+        <CircleLayer
+          id="tidal-currents-glow"
+          style={{
+            circleRadius: [
+              'interpolate', ['linear'], ['get', 'speedKnots'],
+              0, 20,
+              1, 28,
+              2, 36,
+              3, 44,
+            ],
+            circleColor: ['get', 'color'],
+            circleOpacity: 0.15,
+            circleBlur: 0.7,
+          }}
+        />
+
         {/* Base circle at each station */}
         <CircleLayer
           id="tidal-currents-circle"
           style={{
             circleRadius: [
               'interpolate', ['linear'], ['get', 'speedKnots'],
-              0, 4,
-              1, 6,
-              2, 8,
-              3, 10,
+              0, 8,
+              1, 12,
+              2, 16,
+              3, 20,
             ],
             circleColor: ['get', 'color'],
             circleOpacity: 0.85,
             circleStrokeColor: '#FFFFFF',
-            circleStrokeWidth: 1.5,
+            circleStrokeWidth: 2,
           }}
         />
 
@@ -344,28 +368,34 @@ export function TidalCurrentOverlay({
         <SymbolLayer
           id="tidal-currents-arrow"
           style={{
-            iconImage: 'arrow-up', // Use built-in arrow or fallback
-            iconSize: ['get', 'arrowSize'],
+            iconImage: 'triangle-11',
+            iconSize: [
+              'interpolate', ['linear'], ['get', 'speedKnots'],
+              0, 0.8,
+              1, 1.0,
+              2, 1.3,
+              3, 1.6,
+            ],
             iconRotate: ['get', 'directionDeg'],
             iconRotationAlignment: 'map',
             iconAllowOverlap: true,
-            iconColor: ['get', 'color'],
+            iconColor: '#FFFFFF',
             iconOpacity: 0.9,
           }}
         />
 
-        {/* Speed label at zoom 10+ */}
+        {/* Speed label at zoom 9+ */}
         {showLabels && (
           <SymbolLayer
             id="tidal-currents-label"
             style={{
               textField: ['get', 'speedLabel'],
-              textSize: 10,
+              textSize: 12,
               textFont: ['Open Sans Bold'],
-              textColor: ['get', 'color'],
-              textHaloColor: '#FFFFFF',
-              textHaloWidth: 1.5,
-              textOffset: [0, 1.5],
+              textColor: '#FFFFFF',
+              textHaloColor: ['get', 'color'],
+              textHaloWidth: 2,
+              textOffset: [0, 2.0],
               textAllowOverlap: false,
             }}
           />
@@ -377,12 +407,12 @@ export function TidalCurrentOverlay({
             id="tidal-currents-state"
             style={{
               textField: ['get', 'stateLabel'],
-              textSize: 9,
-              textFont: ['Open Sans Regular'],
+              textSize: 10,
+              textFont: ['Open Sans Bold'],
               textColor: palette.textSecondary,
               textHaloColor: '#FFFFFF',
-              textHaloWidth: 1,
-              textOffset: [0, 2.5],
+              textHaloWidth: 1.5,
+              textOffset: [0, 3.0],
               textAllowOverlap: false,
             }}
           />

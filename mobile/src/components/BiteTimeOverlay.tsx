@@ -24,6 +24,8 @@ interface Props {
   ShapeSource: any;
   CircleLayer: any;
   SymbolLayer: any;
+  onLoadStart?: () => void;
+  onLoadEnd?: () => void;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -90,13 +92,17 @@ export function BiteTimeOverlay({
   ShapeSource,
   CircleLayer,
   SymbolLayer,
+  onLoadStart,
+  onLoadEnd,
 }: Props) {
   const [geoJSON, setGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
 
   useEffect(() => {
     if (spots.length === 0) return;
+    onLoadStart?.();
     setGeoJSON(buildGeoJSON(spots));
-  }, [spots, lat, lon]);
+    onLoadEnd?.();
+  }, [spots, lat, lon, onLoadStart, onLoadEnd]);
 
   // Refresh every 15 minutes (bite score changes hourly)
   useEffect(() => {
@@ -111,27 +117,36 @@ export function BiteTimeOverlay({
   return (
     <>
       <ShapeSource id="bite-time-source" shape={geoJSON}>
-        {/* Pulsing outer ring for hot spots */}
+        {/* Outer glow for all spots */}
         <CircleLayer
           id="bite-glow"
-          filter={['>=', ['get', 'score'], 70]}
           style={{
-            circleRadius: 22,
+            circleRadius: [
+              'interpolate', ['linear'], ['get', 'score'],
+              0, 24,
+              50, 32,
+              100, 44,
+            ],
             circleColor: ['get', 'color'],
-            circleOpacity: 0.2,
-            circleBlur: 0.6,
+            circleOpacity: [
+              'interpolate', ['linear'], ['get', 'score'],
+              0, 0.1,
+              50, 0.15,
+              100, 0.25,
+            ],
+            circleBlur: 0.7,
           }}
         />
         {/* Main bite score circle */}
         <CircleLayer
           id="bite-dots"
           style={{
-            circleRadius: 14,
+            circleRadius: 16,
             circleColor: ['get', 'color'],
-            circleOpacity: 0.55,
-            circleStrokeWidth: 2,
-            circleStrokeColor: ['get', 'color'],
-            circleStrokeOpacity: 0.85,
+            circleOpacity: 0.7,
+            circleStrokeWidth: 2.5,
+            circleStrokeColor: '#FFFFFF',
+            circleStrokeOpacity: 0.9,
           }}
         />
         {/* Bite status label */}
@@ -139,11 +154,11 @@ export function BiteTimeOverlay({
           id="bite-labels"
           style={{
             textField: ['get', 'label'],
-            textSize: 10,
+            textSize: 11,
             textColor: '#FFFFFF',
             textHaloColor: ['get', 'color'],
-            textHaloWidth: 1.3,
-            textAllowOverlap: false,
+            textHaloWidth: 2,
+            textAllowOverlap: true,
             textFont: ['Open Sans Bold'],
           }}
         />

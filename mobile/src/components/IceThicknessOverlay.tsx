@@ -25,6 +25,8 @@ interface Props {
   ShapeSource: any;
   CircleLayer: any;
   SymbolLayer: any;
+  onLoadStart?: () => void;
+  onLoadEnd?: () => void;
 }
 
 interface IceLakeFeature {
@@ -89,7 +91,7 @@ function buildGeoJSON(features: IceLakeFeature[]): GeoJSON.FeatureCollection {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function IceThicknessOverlay({ lat, lon, ShapeSource, CircleLayer, SymbolLayer }: Props) {
+export function IceThicknessOverlay({ lat, lon, ShapeSource, CircleLayer, SymbolLayer, onLoadStart, onLoadEnd }: Props) {
   const [geoJSON, setGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
   const lastCenter = useRef<{ lat: number; lon: number } | null>(null);
   const loadingRef = useRef(false);
@@ -104,6 +106,7 @@ export function IceThicknessOverlay({ lat, lon, ShapeSource, CircleLayer, Symbol
 
     loadingRef.current = true;
     lastCenter.current = { lat: centerLat, lon: centerLon };
+    onLoadStart?.();
 
     try {
       // Generate a grid of sample points around the user location
@@ -167,8 +170,9 @@ export function IceThicknessOverlay({ lat, lon, ShapeSource, CircleLayer, Symbol
       console.warn('[OpenCatch] Ice overlay error:', err);
     } finally {
       loadingRef.current = false;
+      onLoadEnd?.();
     }
-  }, []);
+  }, [onLoadStart, onLoadEnd]);
 
   useEffect(() => {
     fetchData(lat, lon);
@@ -179,26 +183,51 @@ export function IceThicknessOverlay({ lat, lon, ShapeSource, CircleLayer, Symbol
   return (
     <>
       <ShapeSource id="ice-thickness-source" shape={geoJSON}>
+        {/* Outer glow for heat-map effect */}
+        <CircleLayer
+          id="ice-thickness-glow"
+          style={{
+            circleRadius: 36,
+            circleColor: ['get', 'circleColor'],
+            circleOpacity: 0.18,
+            circleBlur: 0.8,
+          }}
+        />
         <CircleLayer
           id="ice-thickness-circles"
           style={{
-            circleRadius: 18,
+            circleRadius: 22,
             circleColor: ['get', 'circleColor'],
-            circleOpacity: 0.35,
-            circleStrokeWidth: 1.5,
-            circleStrokeColor: ['get', 'circleColor'],
-            circleStrokeOpacity: 0.7,
+            circleOpacity: 0.5,
+            circleStrokeWidth: 2.5,
+            circleStrokeColor: '#FFFFFF',
+            circleStrokeOpacity: 0.8,
           }}
         />
         <SymbolLayer
           id="ice-thickness-labels"
           style={{
             textField: ['get', 'thicknessLabel'],
-            textSize: 11,
+            textSize: 13,
+            textColor: '#FFFFFF',
+            textHaloColor: ['get', 'circleColor'],
+            textHaloWidth: 2,
+            textAllowOverlap: true,
+            textFont: ['Open Sans Bold'],
+          }}
+        />
+        {/* Safety label below the circle */}
+        <SymbolLayer
+          id="ice-thickness-safety"
+          minZoomLevel={8}
+          style={{
+            textField: ['get', 'safetyLabel'],
+            textSize: 10,
             textColor: '#FFFFFF',
             textHaloColor: ['get', 'circleColor'],
             textHaloWidth: 1.5,
-            textAllowOverlap: true,
+            textOffset: [0, 2.5],
+            textAllowOverlap: false,
             textFont: ['Open Sans Bold'],
           }}
         />
