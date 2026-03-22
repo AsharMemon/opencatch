@@ -118,6 +118,11 @@ import { DepthNumberOverlay } from '../components/DepthNumberOverlay';
 import { MarineGasOverlay } from '../components/MarineGasOverlay';
 import { OceanFishingSpotsOverlay } from '../components/OceanFishingSpotsOverlay';
 import { TidalCurrentOverlay } from '../components/TidalCurrentOverlay';
+import { DraftAccessibilityOverlay } from '../components/DraftAccessibilityOverlay';
+import { IceThicknessOverlay } from '../components/IceThicknessOverlay';
+import { FishingPressureOverlay } from '../components/FishingPressureOverlay';
+import { BiteTimeOverlay } from '../components/BiteTimeOverlay';
+import { getDefaultBoat } from '../services/boatProfile';
 import { aisReceiver } from '../services/aisWifiReceiver';
 import {
   trackRecorder,
@@ -2742,6 +2747,22 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   // Tidal current overlay (coastal only)
   const [tidalCurrentEnabled, setTidalCurrentEnabled] = useState(false);
 
+  // ── New map-integrated overlays ──
+  const [iceThicknessEnabled, setIceThicknessEnabled] = useState(false);
+  const [fishingPressureOverlayEnabled, setFishingPressureOverlayEnabled] = useState(false);
+  const [biteTimeOverlayEnabled, setBiteTimeOverlayEnabled] = useState(false);
+
+  // Draft accessibility overlay (shows safe/caution/danger based on boat draft)
+  const [draftAccessEnabled, setDraftAccessEnabled] = useState(false);
+  const [boatDraftFt, setBoatDraftFt] = useState<number>(3); // default 3ft
+
+  // Load boat draft from profile on mount
+  useEffect(() => {
+    getDefaultBoat().then((boat) => {
+      if (boat?.draftFt && boat.draftFt > 0) setBoatDraftFt(boat.draftFt);
+    }).catch(() => { /* use default */ });
+  }, []);
+
   // AIS WiFi receiver overlay
   const [aisWifiEnabled, setAisWifiEnabled] = useState(false);
   const [aisWifiGeoJSON, setAisWifiGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
@@ -4509,8 +4530,57 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       ],
     },
     {
-      title: 'Fishing',
+      title: 'Fishing Intelligence',
       tools: [
+        {
+          key: 'bite-time',
+          label: 'Bite Activity',
+          icon: 'flame-outline',
+          description: 'Color-code spots by current bite score',
+          isActive: biteTimeOverlayEnabled,
+          onPress: () => setBiteTimeOverlayEnabled((prev) => !prev),
+          infoCard: biteTimeOverlayEnabled
+            ? {
+                primary: 'Spots colored by bite score',
+                secondary: 'Green = hot, Red = slow',
+                icon: 'flame',
+                color: '#2E7D32',
+              } as OverlayInfoCard
+            : null,
+        },
+        {
+          key: 'fishing-pressure',
+          label: 'Fishing Pressure',
+          icon: 'people-outline',
+          description: 'Heat map of crowding at spots',
+          isActive: fishingPressureOverlayEnabled,
+          onPress: () => setFishingPressureOverlayEnabled((prev) => !prev),
+          infoCard: fishingPressureOverlayEnabled
+            ? {
+                primary: 'Pressure overlay active',
+                secondary: 'Green = empty, Red = packed',
+                icon: 'people',
+                color: '#EF5350',
+              } as OverlayInfoCard
+            : null,
+        },
+        {
+          key: 'ice-thickness',
+          label: 'Ice Thickness',
+          icon: 'snow-outline',
+          description: 'Estimated ice depth across lakes',
+          isActive: iceThicknessEnabled,
+          visible: isWinterSeason,
+          onPress: () => setIceThicknessEnabled((prev) => !prev),
+          infoCard: iceThicknessEnabled
+            ? {
+                primary: 'Ice thickness overlay active',
+                secondary: 'Red <4", Green 8-12", Blue 12"+',
+                icon: 'snow',
+                color: '#0D47A1',
+              } as OverlayInfoCard
+            : null,
+        },
         {
           key: 'ocean-spots',
           label: 'Ocean Fishing Spots',
@@ -4532,6 +4602,22 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           description: 'Nautical chart depth soundings',
           isActive: depthNumbersEnabled,
           onPress: () => setDepthNumbersEnabled((prev) => !prev),
+        },
+        {
+          key: 'draft-access',
+          label: 'Draft Accessibility',
+          icon: 'boat-outline',
+          description: `Safe/caution/danger for ${boatDraftFt}ft draft`,
+          isActive: draftAccessEnabled,
+          onPress: () => setDraftAccessEnabled((prev) => !prev),
+          infoCard: draftAccessEnabled
+            ? {
+                primary: `Draft: ${boatDraftFt}ft`,
+                secondary: 'Green = safe, Orange = caution, Red = danger',
+                icon: 'boat',
+                color: '#4CAF50',
+              } as OverlayInfoCard
+            : null,
         },
         {
           key: 'nav-aids-tool',
@@ -4753,11 +4839,59 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           />
         )}
 
+        {/* Ice thickness overlay (winter, northern latitudes) */}
+        {iceThicknessEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+          <IceThicknessOverlay
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            ShapeSource={ShapeSource}
+            CircleLayer={CircleLayer}
+            SymbolLayer={SymbolLayer}
+          />
+        )}
+
+        {/* Fishing pressure heat map overlay */}
+        {fishingPressureOverlayEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+          <FishingPressureOverlay
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            spots={locations.map((l) => ({ id: l.id, lat: l.lat, lon: l.lon, name: l.name }))}
+            ShapeSource={ShapeSource}
+            CircleLayer={CircleLayer}
+            SymbolLayer={SymbolLayer}
+          />
+        )}
+
+        {/* Bite time activity overlay */}
+        {biteTimeOverlayEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+          <BiteTimeOverlay
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            spots={locations.map((l) => ({ id: l.id, lat: l.lat, lon: l.lon, name: l.name }))}
+            ShapeSource={ShapeSource}
+            CircleLayer={CircleLayer}
+            SymbolLayer={SymbolLayer}
+          />
+        )}
+
         {/* Tidal current overlay (coastal only) */}
         {tidalCurrentEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
           <TidalCurrentOverlay
             lat={userLocation.lat}
             lon={userLocation.lon}
+            zoom={currentZoom}
+            ShapeSource={ShapeSource}
+            CircleLayer={CircleLayer}
+            SymbolLayer={SymbolLayer}
+          />
+        )}
+
+        {/* Draft accessibility overlay (safe/caution/danger for boat draft) */}
+        {draftAccessEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+          <DraftAccessibilityOverlay
+            lat={userLocation.lat}
+            lon={userLocation.lon}
+            draftFt={boatDraftFt}
             zoom={currentZoom}
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}

@@ -49,6 +49,7 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
+import pandas as pd
 
 logging.basicConfig(
     level=logging.INFO,
@@ -131,6 +132,38 @@ E84_STAC_URL = "https://earth-search.aws.element84.com/v1"
 
 # ── Step 1: Fetch ICESat-2 depths via SlideRule ─────────────────────
 
+def _subdivide_bbox(bbox, max_deg=1.0):
+    """
+    Subdivide a large bounding box into smaller tiles to stay under
+    SlideRule's CMR granule limit (300 per query).
+    Each sub-tile is at most max_deg x max_deg.
+    """
+    lon_min, lat_min, lon_max, lat_max = bbox
+    tiles = []
+    lat = lat_min
+    while lat < lat_max:
+        lon = lon_min
+        while lon < lon_max:
+            tiles.append([
+                lon,
+                lat,
+                min(lon + max_deg, lon_max),
+                min(lat + max_deg, lat_max),
+            ])
+            lon += max_deg
+        lat += max_deg
+    return tiles
+
+
+# Time windows to keep CMR hits under 300 per query
+TIME_WINDOWS = [
+    ("2019-01-01", "2020-06-30"),
+    ("2020-07-01", "2021-12-31"),
+    ("2022-01-01", "2023-06-30"),
+    ("2023-07-01", "2025-12-31"),
+]
+
+
 def fetch_icesat2_all_regions(
     regions: list[str] | None = None,
     max_depth_m: float = 50.0,
@@ -141,8 +174,13 @@ def fetch_icesat2_all_regions(
     cache_dir: Optional[Path] = None,
     priority_cutoff: int = 99,
 ) -> "gpd.GeoDataFrame":
-    """Fetch ICESat-2 inland water depths for all regions via SlideRule."""
+    """Fetch ICESat-2 inland water depths for all regions via SlideRule.
+
+    Subdivides large bboxes into 1-degree tiles and splits time into
+    18-month windows to stay under SlideRule's 300-granule CMR limit.
+    """
     import geopandas as gpd
+    import pandas as pd
     from sliderule import sliderule, icesat2
 
     sliderule.init("slideruleearth.io", verbose=False)
@@ -172,41 +210,45 @@ def fetch_icesat2_all_regions(
         if cache_dir:
             cache_file = cache_dir / f"icesat2_{name}.parquet"
             if cache_file.exists():
-                gdf = gpd.read_parquet(cache_file)
-                log.info(f"  Cache hit: {name} ({len(gdf)} points)")
-                all_gdfs.append(gdf)
-                total_points += len(gdf)
-                continue
+                try:
+                    gdf = gpd.read_parquet(cache_file)
+                    log.info(f"  Cache hit: {name} ({len(gdf)} points)")
+                    all_gdfs.append(gdf)
+                    total_points += len(gdf)
+                    continue
+                except Exception:
+                    pass
 
         log.info(f"Querying SlideRule for {name} (bbox={bbox}, priority={info['priority']})...")
 
-        poly = [
-            {"lon": bbox[0], "lat": bbox[1]},
-            {"lon": bbox[2], "lat": bbox[1]},
-            {"lon": bbox[2], "lat": bbox[3]},
-            {"lon": bbox[0], "lat": bbox[3]},
-            {"lon": bbox[0], "lat": bbox[1]},
-        ]
+        # Subdivide bbox into 1-degree tiles
+        tiles = _subdivide_bbox(bbox, max_deg=1.0)
+        log.info(f"  Split into {len(tiles)} sub-tiles x {len(TIME_WINDOWS)} time windows")
 
-        # Try ATL06-SR first (more data)
-        gdf_atl06 = _query_atl06(icesat2, poly, min_confidence, min_photons,
-                                  time_start, time_end, max_depth_m, name)
+        region_parts = []
 
-        # Also try ATL13 (explicit bathymetry where available)
-        gdf_atl13 = _query_atl13(icesat2, poly, time_start, time_end,
-                                  max_depth_m, name)
+        for tile_idx, tile_bbox in enumerate(tiles):
+            for t_start, t_end in TIME_WINDOWS:
+                poly = [
+                    {"lon": tile_bbox[0], "lat": tile_bbox[1]},
+                    {"lon": tile_bbox[2], "lat": tile_bbox[1]},
+                    {"lon": tile_bbox[2], "lat": tile_bbox[3]},
+                    {"lon": tile_bbox[0], "lat": tile_bbox[3]},
+                    {"lon": tile_bbox[0], "lat": tile_bbox[1]},
+                ]
 
-        # Merge
-        parts = []
-        if gdf_atl06 is not None and len(gdf_atl06) > 0:
-            gdf_atl06["source"] = "atl06"
-            parts.append(gdf_atl06)
-        if gdf_atl13 is not None and len(gdf_atl13) > 0:
-            gdf_atl13["source"] = "atl13"
-            parts.append(gdf_atl13)
+                gdf_part = _query_atl06(icesat2, poly, min_confidence, min_photons,
+                                        t_start, t_end, max_depth_m,
+                                        f"{name}_t{tile_idx}_{t_start[:4]}")
 
-        if parts:
-            gdf = gpd.pd.concat(parts, ignore_index=True)
+                if gdf_part is not None and len(gdf_part) > 0:
+                    gdf_part["source"] = "atl06"
+                    region_parts.append(gdf_part)
+
+                time.sleep(1)  # Rate limit between queries
+
+        if region_parts:
+            gdf = pd.concat(region_parts, ignore_index=True)
             # De-duplicate by proximity (within ~20m)
             gdf = _deduplicate_points(gdf, tolerance_deg=0.0002)
 
@@ -220,16 +262,16 @@ def fetch_icesat2_all_regions(
         else:
             log.warning(f"  {name}: no depth data returned")
 
-        time.sleep(2)  # Rate limit
-
     if not all_gdfs:
         log.error("No ICESat-2 data fetched from any region!")
+        import geopandas as gpd
         return gpd.GeoDataFrame()
 
-    combined = gpd.pd.concat(all_gdfs, ignore_index=True)
+    combined = pd.concat(all_gdfs, ignore_index=True)
     log.info(f"\nTotal ICESat-2 depth points: {len(combined):,}")
-    log.info(f"Depth range: {combined['depth_m'].min():.1f} - {combined['depth_m'].max():.1f}m")
-    log.info(f"Mean depth: {combined['depth_m'].mean():.1f}m")
+    if "depth_m" in combined.columns and len(combined) > 0:
+        log.info(f"Depth range: {combined['depth_m'].min():.1f} - {combined['depth_m'].max():.1f}m")
+        log.info(f"Mean depth: {combined['depth_m'].mean():.1f}m")
 
     return combined
 
@@ -288,7 +330,8 @@ def _query_atl06(icesat2, poly, min_confidence, min_photons,
                 group["depth_m"] = (max_h - group["h_mean"]).clip(0, max_depth_m)
                 depths.append(group)
             if depths:
-                gdf = gpd.pd.concat(depths, ignore_index=True) if len(depths) > 1 else depths[0]
+                import pandas as _pd
+                gdf = _pd.concat(depths, ignore_index=True) if len(depths) > 1 else depths[0]
             else:
                 return None
         else:
@@ -319,48 +362,9 @@ def _query_atl06(icesat2, poly, min_confidence, min_photons,
         return None
 
 
-def _query_atl13(icesat2, poly, time_start, time_end, max_depth_m, name):
-    """Query ATL13 inland water body product for explicit bathymetric returns."""
-    try:
-        params = {
-            "poly": poly,
-            "t0": time_start,
-            "t1": time_end,
-        }
-        gdf = icesat2.atl13p(params)
-
-        if gdf is None or len(gdf) == 0:
-            return None
-
-        log.info(f"  {name} ATL13: {len(gdf)} segments")
-
-        gdf = gdf.copy()
-        gdf["lat"] = gdf.geometry.y
-        gdf["lon"] = gdf.geometry.x
-
-        if "ht_water_surf" in gdf.columns and "ht_bathy" in gdf.columns:
-            valid = (
-                gdf["ht_bathy"].notna()
-                & (gdf["ht_bathy"] < gdf["ht_water_surf"])
-            )
-            gdf = gdf[valid].copy()
-            gdf["depth_m"] = gdf["ht_water_surf"] - gdf["ht_bathy"]
-            gdf = gdf[gdf["depth_m"].between(0.1, max_depth_m)]
-
-            if "qf_bathy" in gdf.columns:
-                gdf["quality"] = gdf["qf_bathy"].clip(1, 4)
-            else:
-                gdf["quality"] = 3
-
-            keep = ["geometry", "lat", "lon", "depth_m", "quality"]
-            gdf = gdf[[c for c in keep if c in gdf.columns]].reset_index(drop=True)
-            return gdf
-        else:
-            return None
-
-    except Exception as e:
-        log.warning(f"  ATL13 query failed for {name}: {e}")
-        return None
+## NOTE: ATL13 (atl13p) is not available in the current SlideRule version.
+## When SlideRule adds ATL13 support, add a _query_atl13 function here
+## to get explicit bathymetric bottom returns (ht_water_surf - ht_bathy).
 
 
 def _deduplicate_points(gdf, tolerance_deg: float = 0.0002):

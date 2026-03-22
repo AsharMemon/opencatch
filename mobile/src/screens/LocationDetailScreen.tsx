@@ -858,6 +858,38 @@ export function LocationDetailScreen({ route, navigation }: Props) {
 
       {/* ── Integrated Feature Cards ─────────────────────────────────── */}
 
+      {/* Quick Actions -- contextual bait + ice fishing links */}
+      <View style={styles.quickActionsRow}>
+        <Pressable
+          style={styles.quickActionBtn}
+          onPress={() => navigation.navigate('BaitGuide', {
+            spotName: location.name,
+            spotLat: location.lat,
+            spotLon: location.lon,
+          })}
+        >
+          <Ionicons name="bug-outline" size={18} color={palette.accent} />
+          <Text style={styles.quickActionText}>Best Bait Now</Text>
+        </Pressable>
+        {/* Show ice fishing link in winter for northern spots */}
+        {location.lat > 40 && (new Date().getMonth() >= 10 || new Date().getMonth() <= 2) && (
+          <Pressable
+            style={styles.quickActionBtn}
+            onPress={() => navigation.navigate('IceFishing')}
+          >
+            <Ionicons name="snow-outline" size={18} color="#0D47A1" />
+            <Text style={styles.quickActionText}>Ice Conditions</Text>
+          </Pressable>
+        )}
+        <Pressable
+          style={styles.quickActionBtn}
+          onPress={() => navigation.navigate('KnotGuide')}
+        >
+          <Ionicons name="link-outline" size={18} color={palette.textSecondary} />
+          <Text style={styles.quickActionText}>Knot Guide</Text>
+        </Pressable>
+      </View>
+
       {/* Best Times — next 3 days */}
       {biteForecasts.length > 0 && (
         <BestTimesCard forecasts={biteForecasts} />
@@ -1114,6 +1146,29 @@ const styles = StyleSheet.create({
   breakdownList: {
     gap: 12,
   },
+  // ── Quick Actions ──
+  quickActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  quickActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: palette.surface,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  quickActionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: palette.text,
+  },
+
   depthMapPlaceholder: {
     height: 160,
     borderRadius: 8,

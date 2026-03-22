@@ -124,6 +124,10 @@ const PRO_TIPS: Record<string, string[]> = {
 export function BaitGuideScreen({ route }: any) {
   const allSpecies = useMemo(() => getAllSpecies(), []);
   const initialSpecies = route?.params?.species ?? allSpecies[0]?.id ?? 'largemouth-bass';
+  const spotName = route?.params?.spotName as string | undefined;
+  const spotLat = route?.params?.spotLat as number | undefined;
+  const spotLon = route?.params?.spotLon as number | undefined;
+  const isContextual = !!spotName;
 
   const [selectedSpecies, setSelectedSpecies] = useState<string>(initialSpecies);
   const [season, setSeason] = useState<Season>(getCurrentSeason());
@@ -162,9 +166,21 @@ export function BaitGuideScreen({ route }: any) {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      {/* Header */}
-      <Text style={styles.screenTitle}>Bait Guide</Text>
-      <Text style={styles.subtitle}>Species-specific bait and lure recommendations</Text>
+      {/* Header -- contextual when arriving from a spot */}
+      {isContextual ? (
+        <View style={styles.contextBanner}>
+          <Ionicons name="location" size={16} color={palette.accent} />
+          <View style={styles.contextBannerText}>
+            <Text style={styles.screenTitle}>Best Bait Now</Text>
+            <Text style={styles.subtitle}>at {spotName}</Text>
+          </View>
+        </View>
+      ) : (
+        <>
+          <Text style={styles.screenTitle}>Bait Guide</Text>
+          <Text style={styles.subtitle}>Species-specific bait and lure recommendations</Text>
+        </>
+      )}
 
       {/* Species Selector */}
       <ScrollView
@@ -790,6 +806,17 @@ const styles = StyleSheet.create({
   speciesInfoCard: {
     marginTop: spacing.sm,
   },
+  // ── Context Banner ──
+  contextBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: spacing.sm,
+  },
+  contextBannerText: {
+    flex: 1,
+  },
+
   scientificName: {
     fontSize: typography.bodySmall,
     color: palette.textMuted,

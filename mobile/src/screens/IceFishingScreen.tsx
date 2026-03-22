@@ -1,3 +1,21 @@
+/**
+ * OpenCatch -- Ice Fishing Screen (Redesigned)
+ *
+ * Map-integrated ice fishing tool. Instead of a static info page, this screen
+ * helps anglers make actionable decisions:
+ *
+ * 1. "Show on Map" -- activates the ice thickness overlay on the map
+ * 2. "Find Ice Fishing Near Me" -- filters map to safe ice lakes
+ * 3. Contextual conditions at user's location with safety-first design
+ * 4. Species tips and checklist moved to collapsible sections
+ *
+ * Research-backed redesign:
+ * - Anglers want to FIND spots, not just read about ice (In-Depth Outdoors forums)
+ * - Real-time ice condition verification is the #1 request (Reddit, ice fishing forums)
+ * - Safety-first approach matches DNR and fishing community best practices
+ * - Equipment checklist is used pre-trip, not in the field -- moved to bottom
+ */
+
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -9,6 +27,7 @@ import {
 } from 'react-native';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
 import { hapticLight } from '../utils/haptics';
@@ -27,6 +46,7 @@ import {
 // ── Main Screen ──────────────────────────────────────────────────
 
 export function IceFishingScreen() {
+  const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [condition, setCondition] = useState<IceCondition | null>(null);
@@ -34,6 +54,9 @@ export function IceFishingScreen() {
   const [checklist, setChecklist] = useState<IceEquipmentItem[]>([]);
   const [expandedSpecies, setExpandedSpecies] = useState<string | null>(null);
   const [showChecklist, setShowChecklist] = useState(false);
+  const [showSpecies, setShowSpecies] = useState(false);
+  const [userLat, setUserLat] = useState<number | null>(null);
+  const [userLon, setUserLon] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -50,6 +73,8 @@ export function IceFishingScreen() {
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const lat = loc.coords.latitude;
       const lon = loc.coords.longitude;
+      setUserLat(lat);
+      setUserLon(lon);
 
       const [iceData, iceOutData] = await Promise.all([
         getIceThickness(lat, lon),
@@ -78,6 +103,15 @@ export function IceFishingScreen() {
     );
   }, []);
 
+  const handleShowOnMap = useCallback(() => {
+    hapticLight();
+    // Navigate back to map and activate the ice thickness overlay
+    navigation.navigate('Tabs', {
+      screen: 'MapTab',
+      params: { activateOverlay: 'ice-thickness' },
+    });
+  }, [navigation]);
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -102,22 +136,84 @@ export function IceFishingScreen() {
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Safety Badge */}
+        {/* ── Map Action Buttons ── */}
+        <View style={styles.mapActions}>
+          <Pressable
+            style={styles.mapActionPrimary}
+            onPress={handleShowOnMap}
+          >
+            <Ionicons name="map" size={20} color="#FFFFFF" />
+            <View style={styles.mapActionTextCol}>
+              <Text style={styles.mapActionTitle}>View Ice Map</Text>
+              <Text style={styles.mapActionSub}>See thickness across all lakes</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#FFFFFF80" />
+          </Pressable>
+
+          <View style={styles.mapActionRow}>
+            <Pressable
+              style={styles.mapActionSecondary}
+              onPress={() => {
+                hapticLight();
+                navigation.navigate('Tabs', {
+                  screen: 'MapTab',
+                  params: { activateOverlay: 'ice-thickness', filterSafe: true },
+                });
+              }}
+            >
+              <Ionicons name="shield-checkmark" size={18} color={palette.success} />
+              <Text style={styles.mapActionSecText}>Safe Lakes Only</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.mapActionSecondary}
+              onPress={() => {
+                hapticLight();
+                navigation.navigate('Tabs', {
+                  screen: 'MapTab',
+                  params: { activateOverlay: 'ice-thickness', showAccess: true },
+                });
+              }}
+            >
+              <Ionicons name="car" size={18} color={palette.accent} />
+              <Text style={styles.mapActionSecText}>Access Points</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* ── Safety Badge ── */}
         {condition && <SafetyBadge condition={condition} />}
 
-        {/* Ice Thickness Card */}
+        {/* ── Ice Thickness Card ── */}
         {condition && <ThicknessCard condition={condition} />}
 
-        {/* Safety Guide */}
+        {/* ── Safety Guide ── */}
         {condition && <SafetyGuide condition={condition} />}
 
-        {/* Ice-Out Prediction */}
+        {/* ── Ice-Out Prediction ── */}
         {iceOut && iceOut.estimatedDate && <IceOutCard prediction={iceOut} />}
 
-        {/* Winter Species Tips */}
+        {/* ── Winter Species Tips (collapsible) ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Winter Species Tips</Text>
-          {WINTER_SPECIES_TIPS.map((tip) => (
+          <Pressable
+            style={styles.sectionToggle}
+            onPress={() => {
+              hapticLight();
+              setShowSpecies((p) => !p);
+            }}
+          >
+            <View style={styles.sectionToggleLeft}>
+              <Ionicons name="fish-outline" size={20} color={palette.accent} />
+              <Text style={styles.sectionTitle}>Winter Species Tips</Text>
+            </View>
+            <Ionicons
+              name={showSpecies ? 'chevron-up' : 'chevron-down'}
+              size={18}
+              color={palette.textMuted}
+            />
+          </Pressable>
+
+          {showSpecies && WINTER_SPECIES_TIPS.map((tip) => (
             <SpeciesTipCard
               key={tip.species}
               tip={tip}
@@ -132,16 +228,16 @@ export function IceFishingScreen() {
           ))}
         </View>
 
-        {/* Equipment Checklist */}
+        {/* ── Equipment Checklist (collapsible) ── */}
         <View style={styles.section}>
           <Pressable
-            style={styles.checklistHeader}
+            style={styles.sectionToggle}
             onPress={() => {
               hapticLight();
               setShowChecklist((p) => !p);
             }}
           >
-            <View style={styles.checklistHeaderLeft}>
+            <View style={styles.sectionToggleLeft}>
               <Ionicons name="checkbox-outline" size={20} color={palette.accent} />
               <Text style={styles.sectionTitle}>Equipment Checklist</Text>
             </View>
@@ -274,7 +370,7 @@ function ThicknessCard({ condition }: { condition: IceCondition }) {
             <Text style={styles.detailText}>
               {isNaN(condition.recentAvgTempF)
                 ? 'Temp unavailable'
-                : `Avg ${Math.round(condition.recentAvgTempF)}°F (7-day)`}
+                : `Avg ${Math.round(condition.recentAvgTempF)}\u00B0F (7-day)`}
             </Text>
           </View>
           <View style={styles.detailRow}>
@@ -454,7 +550,58 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  // Safety Badge
+  // ── Map Action Buttons ──
+  mapActions: {
+    gap: 10,
+  },
+  mapActionPrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: palette.accent,
+    borderRadius: 14,
+    padding: 16,
+    gap: 14,
+    shadowColor: palette.accent,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  mapActionTextCol: {
+    flex: 1,
+  },
+  mapActionTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  mapActionSub: {
+    color: '#FFFFFFA0',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  mapActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  mapActionSecondary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: palette.surface,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  mapActionSecText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: palette.text,
+  },
+
+  // ── Safety Badge ──
   safetyBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -486,7 +633,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // Cards
+  // ── Cards ──
   card: {
     backgroundColor: palette.surface,
     borderRadius: 14,
@@ -512,7 +659,7 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
   },
 
-  // Thickness
+  // ── Thickness ──
   thicknessRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -544,7 +691,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 
-  // Threshold bar
+  // ── Threshold bar ──
   thresholdBar: {
     gap: 8,
     marginTop: 4,
@@ -566,7 +713,7 @@ const styles = StyleSheet.create({
     color: palette.textMuted,
   },
 
-  // Ice-out
+  // ── Ice-out ──
   iceOutRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -594,7 +741,7 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
 
-  // Section
+  // ── Section ──
   section: {
     gap: 10,
   },
@@ -602,8 +749,19 @@ const styles = StyleSheet.create({
     ...typeStyles.sectionHeader,
     color: palette.text,
   },
+  sectionToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  sectionToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
 
-  // Species tips
+  // ── Species tips ──
   speciesCard: {
     backgroundColor: palette.surface,
     borderRadius: 12,
@@ -668,17 +826,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 
-  // Checklist
-  checklistHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  checklistHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
+  // ── Checklist ──
   checklistProgress: {
     flexDirection: 'row',
     alignItems: 'center',

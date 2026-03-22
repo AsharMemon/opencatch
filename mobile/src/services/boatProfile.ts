@@ -40,6 +40,7 @@ export interface BoatProfile {
   fuelCapacity?: number; // gallons
   maxCapacity?: number;  // persons
   photo?: string;        // URI
+  draftFt?: number;      // draft depth in feet (for draft accessibility overlay)
   isDefault: boolean;
   createdAt: number;
 }

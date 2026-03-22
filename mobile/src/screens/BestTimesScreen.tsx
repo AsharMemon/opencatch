@@ -9,7 +9,7 @@
  * and 7-day weekly overview.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -19,10 +19,12 @@ import {
   Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import Svg, { Circle, Line, Rect, Text as SvgText } from 'react-native-svg';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
+import { hapticLight } from '../utils/haptics';
 import {
   getDailyBiteForecast,
   getWeeklyBiteForecast,
@@ -211,9 +213,18 @@ function WeeklyOverview({ forecasts }: { forecasts: DailyBiteForecast[] }) {
 // ── Main Screen ──────────────────────────────────────────────────────────────
 
 export function BestTimesScreen() {
+  const navigation = useNavigation<any>();
   const [forecast, setForecast] = useState<DailyBiteForecast | null>(null);
   const [weekly, setWeekly] = useState<DailyBiteForecast[]>([]);
   const [locationLabel, setLocationLabel] = useState('');
+
+  const handleShowOnMap = useCallback(() => {
+    hapticLight();
+    navigation.navigate('Tabs', {
+      screen: 'MapTab',
+      params: { activateOverlay: 'bite-time' },
+    });
+  }, [navigation]);
 
   useEffect(() => {
     let cancelled = false;
@@ -255,6 +266,16 @@ export function BestTimesScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      {/* Map Action */}
+      <Pressable style={styles.mapActionPrimary} onPress={handleShowOnMap}>
+        <Ionicons name="map" size={20} color="#FFFFFF" />
+        <View style={styles.mapActionTextCol}>
+          <Text style={styles.mapActionTitle}>Bite Map</Text>
+          <Text style={styles.mapActionSub}>See which spots are hot right now</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color="#FFFFFF80" />
+      </Pressable>
+
       {/* Overall Rating Hero */}
       <View style={styles.heroCard}>
         {locationLabel ? (
@@ -577,5 +598,33 @@ const styles = StyleSheet.create({
     color: palette.textMuted,
     textAlign: 'center',
     padding: 20,
+  },
+
+  // ── Map Action ──
+  mapActionPrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: palette.accent,
+    borderRadius: 14,
+    padding: 16,
+    gap: 14,
+    shadowColor: palette.accent,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  mapActionTextCol: {
+    flex: 1,
+  },
+  mapActionTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  mapActionSub: {
+    color: '#FFFFFFA0',
+    fontSize: 12,
+    marginTop: 2,
   },
 });

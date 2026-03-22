@@ -8,17 +8,20 @@
  * OpenCatch EXCEEDS with hourly breakdown, factor analysis, and avoidance tips.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import Svg, { Rect, Text as SvgText, Line } from 'react-native-svg';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
+import { hapticLight } from '../utils/haptics';
 import {
   getCurrentPressure,
   getHourlyPressure,
@@ -122,6 +125,7 @@ function FactorRow({ factor }: { factor: PressureFactor }) {
 // ── Main Screen ──────────────────────────────────────────────────────────────
 
 export function FishingPressureScreen() {
+  const navigation = useNavigation<any>();
   const [forecast, setForecast] = useState<PressureForecast | null>(null);
 
   useEffect(() => {
@@ -131,12 +135,45 @@ export function FishingPressureScreen() {
 
   const currentHour = new Date().getHours();
 
+  const handleShowOnMap = useCallback(() => {
+    hapticLight();
+    navigation.navigate('Tabs', {
+      screen: 'MapTab',
+      params: { activateOverlay: 'fishing-pressure' },
+    });
+  }, [navigation]);
+
+  const handleFindUncrowded = useCallback(() => {
+    hapticLight();
+    navigation.navigate('Tabs', {
+      screen: 'MapTab',
+      params: { activateOverlay: 'fishing-pressure', filterUncrowded: true },
+    });
+  }, [navigation]);
+
   if (!forecast) return <View style={styles.screen} />;
 
   const { overall, hourly, recommendation } = forecast;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      {/* Map Action Buttons */}
+      <View style={styles.mapActions}>
+        <Pressable style={styles.mapActionPrimary} onPress={handleShowOnMap}>
+          <Ionicons name="map" size={20} color="#FFFFFF" />
+          <View style={styles.mapActionTextCol}>
+            <Text style={styles.mapActionTitle}>Pressure Heat Map</Text>
+            <Text style={styles.mapActionSub}>See crowding across all spots</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#FFFFFF80" />
+        </Pressable>
+        <Pressable style={styles.findUncrowdedBtn} onPress={handleFindUncrowded}>
+          <Ionicons name="leaf-outline" size={18} color={palette.success} />
+          <Text style={styles.findUncrowdedText}>Find Uncrowded Spots</Text>
+          <Ionicons name="chevron-forward" size={16} color={palette.textMuted} />
+        </Pressable>
+      </View>
+
       {/* Hero Card */}
       <View style={[styles.heroCard, { borderColor: overall.color + '30' }]}>
         <View style={[styles.heroIconCircle, { backgroundColor: overall.color + '15' }]}>
@@ -362,5 +399,52 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: palette.text,
     lineHeight: 20,
+  },
+
+  // ── Map Action Buttons ──
+  mapActions: {
+    gap: 10,
+  },
+  mapActionPrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: palette.accent,
+    borderRadius: 14,
+    padding: 16,
+    gap: 14,
+    shadowColor: palette.accent,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  mapActionTextCol: {
+    flex: 1,
+  },
+  mapActionTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  mapActionSub: {
+    color: '#FFFFFFA0',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  findUncrowdedBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: palette.surface,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  findUncrowdedText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: palette.text,
   },
 });
