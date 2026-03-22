@@ -980,6 +980,363 @@ function createHybridStyle(baseStyle: any): object {
 
 const HYBRID_STYLE = createHybridStyle(BATHYMETRY_STYLE);
 
+// ── OpenCatch Branded Map Style ──────────────────────────────────
+// Light cream land with subtle infrastructure outlines, soft blue
+// depth contours on water. The signature OpenCatch aesthetic.
+const OPENCATCH_STYLE: object = {
+  version: 8,
+  name: 'OpenCatch',
+  glyphs: GLYPH_URL,
+  sprite: 'https://tiles.openfreemap.org/sprites/ofm_f384/ofm',
+  sources: {
+    'openmaptiles': {
+      type: 'vector',
+      url: 'https://tiles.openfreemap.org/planet',
+    },
+    'gebco-contours': {
+      type: 'raster',
+      tiles: [
+        'https://tiles.arcgis.com/tiles/C8EMgrsFcRFL6LrL/arcgis/rest/services/GEBCO_contours/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      maxzoom: 12,
+    },
+  },
+  layers: [
+    // ── Background — off-white / cream (palette.background) ─────
+    {
+      id: 'background',
+      type: 'background',
+      paint: {
+        'background-color': '#FAFAF7',
+      },
+    },
+
+    // ── Water base — soft blue gradient ─────────────────────────
+    {
+      id: 'water-base',
+      type: 'fill',
+      source: 'openmaptiles',
+      'source-layer': 'water',
+      paint: {
+        'fill-color': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          0, '#B8D4E8',
+          4, '#A8CCE4',
+          6, '#8CBCDA',
+          8, '#74AECE',
+          10, '#5E9FC2',
+          14, '#4A90B8',
+        ],
+        'fill-opacity': 0.85,
+      },
+    },
+
+    // ── Depth contour band glow ─────────────────────────────────
+    {
+      id: 'water-depth-glow',
+      type: 'fill',
+      source: 'openmaptiles',
+      'source-layer': 'water',
+      paint: {
+        'fill-color': '#5E9FC2',
+        'fill-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          0, 0,
+          5, 0.06,
+          8, 0.12,
+          12, 0.04,
+        ],
+      },
+    },
+
+    // ── GEBCO bathymetry contour overlay ─────────────────────────
+    {
+      id: 'gebco-contour-overlay',
+      type: 'raster',
+      source: 'gebco-contours',
+      paint: {
+        'raster-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          0, 0.2,
+          6, 0.35,
+          10, 0.25,
+          14, 0.15,
+        ],
+        'raster-contrast': 0.0,
+        'raster-brightness-min': 0.15,
+        'raster-brightness-max': 0.85,
+      },
+      minzoom: 0,
+      maxzoom: 12,
+    },
+
+    // ── Landcover — very subtle differentiation ─────────────────
+    {
+      id: 'landcover',
+      type: 'fill',
+      source: 'openmaptiles',
+      'source-layer': 'landcover',
+      paint: {
+        'fill-color': [
+          'match',
+          ['get', 'class'],
+          'grass', '#F2F0EA',
+          'wood', '#EEEDEA',
+          'ice', '#F5F5F5',
+          'crop', '#F3F1EA',
+          '#FAFAF7',
+        ],
+        'fill-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          6, 0.3,
+          10, 0.6,
+        ],
+      },
+    },
+
+    // ── Landuse — barely visible ────────────────────────────────
+    {
+      id: 'landuse',
+      type: 'fill',
+      source: 'openmaptiles',
+      'source-layer': 'landuse',
+      paint: {
+        'fill-color': [
+          'match',
+          ['get', 'class'],
+          'park', '#EFF3EA',
+          'cemetery', '#F0EFEA',
+          'hospital', '#F5F0EE',
+          'school', '#F5F3EE',
+          'industrial', '#F0EEEA',
+          '#FAFAF7',
+        ],
+        'fill-opacity': 0.4,
+      },
+    },
+
+    // ── Waterway lines ──────────────────────────────────────────
+    {
+      id: 'waterway',
+      type: 'line',
+      source: 'openmaptiles',
+      'source-layer': 'waterway',
+      paint: {
+        'line-color': '#8CBCDA',
+        'line-width': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          4, 0.3,
+          8, 0.8,
+          14, 2,
+        ],
+        'line-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          4, 0.3,
+          8, 0.6,
+          14, 0.8,
+        ],
+      },
+    },
+
+    // ── Roads — very subtle gray outlines ───────────────────────
+    {
+      id: 'road-motorway',
+      type: 'line',
+      source: 'openmaptiles',
+      'source-layer': 'transportation',
+      filter: ['==', ['get', 'class'], 'motorway'],
+      paint: {
+        'line-color': '#DCDCDC',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 6, 0.5, 10, 1.2, 14, 2.5],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0.3, 10, 0.5],
+      },
+      minzoom: 6,
+    },
+    {
+      id: 'road-trunk-primary',
+      type: 'line',
+      source: 'openmaptiles',
+      'source-layer': 'transportation',
+      filter: ['in', ['get', 'class'], ['literal', ['trunk', 'primary']]],
+      paint: {
+        'line-color': '#E0E0E0',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.4, 12, 1, 14, 2],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.2, 12, 0.5],
+      },
+      minzoom: 8,
+    },
+    {
+      id: 'road-secondary',
+      type: 'line',
+      source: 'openmaptiles',
+      'source-layer': 'transportation',
+      filter: ['in', ['get', 'class'], ['literal', ['secondary', 'tertiary']]],
+      paint: {
+        'line-color': '#E5E5E5',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.3, 14, 1.2],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 10, 0.15, 14, 0.4],
+      },
+      minzoom: 10,
+    },
+    {
+      id: 'road-minor',
+      type: 'line',
+      source: 'openmaptiles',
+      'source-layer': 'transportation',
+      filter: ['in', ['get', 'class'], ['literal', ['minor', 'service', 'path', 'track']]],
+      paint: {
+        'line-color': '#EBEBEB',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.2, 16, 0.8],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0.1, 16, 0.35],
+      },
+      minzoom: 12,
+    },
+
+    // ── Buildings — very faint outlines ─────────────────────────
+    {
+      id: 'buildings',
+      type: 'fill',
+      source: 'openmaptiles',
+      'source-layer': 'building',
+      paint: {
+        'fill-color': '#F0EFEC',
+        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 13, 0, 15, 0.3],
+        'fill-outline-color': '#E0E0E0',
+      },
+      minzoom: 13,
+    },
+
+    // ── Parking areas — subtle outlines ─────────────────────────
+    {
+      id: 'parking',
+      type: 'fill',
+      source: 'openmaptiles',
+      'source-layer': 'landuse',
+      filter: ['==', ['get', 'class'], 'parking'],
+      paint: {
+        'fill-color': '#F0EFEC',
+        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 13, 0, 15, 0.25],
+        'fill-outline-color': '#DCDCDC',
+      },
+      minzoom: 13,
+    },
+
+    // ── Place labels — minimal, dark text ───────────────────────
+    {
+      id: 'place-city',
+      type: 'symbol',
+      source: 'openmaptiles',
+      'source-layer': 'place',
+      filter: ['==', ['get', 'class'], 'city'],
+      layout: {
+        'text-field': '{name:latin}',
+        'text-font': ['Open Sans Regular'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 4, 10, 8, 14, 12, 16],
+        'text-max-width': 8,
+      },
+      paint: {
+        'text-color': '#6B6B65',
+        'text-halo-color': '#FAFAF7',
+        'text-halo-width': 1.5,
+        'text-opacity': ['interpolate', ['linear'], ['zoom'], 4, 0.6, 8, 0.9],
+      },
+      minzoom: 4,
+    },
+    {
+      id: 'place-town',
+      type: 'symbol',
+      source: 'openmaptiles',
+      'source-layer': 'place',
+      filter: ['==', ['get', 'class'], 'town'],
+      layout: {
+        'text-field': '{name:latin}',
+        'text-font': ['Open Sans Regular'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 6, 9, 10, 12, 14, 14],
+        'text-max-width': 7,
+      },
+      paint: {
+        'text-color': '#8A8A85',
+        'text-halo-color': '#FAFAF7',
+        'text-halo-width': 1.2,
+      },
+      minzoom: 7,
+    },
+    {
+      id: 'place-village',
+      type: 'symbol',
+      source: 'openmaptiles',
+      'source-layer': 'place',
+      filter: ['in', ['get', 'class'], ['literal', ['village', 'suburb', 'neighbourhood']]],
+      layout: {
+        'text-field': '{name:latin}',
+        'text-font': ['Open Sans Regular'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 10, 9, 14, 12],
+        'text-max-width': 6,
+      },
+      paint: {
+        'text-color': '#A0A098',
+        'text-halo-color': '#FAFAF7',
+        'text-halo-width': 1,
+      },
+      minzoom: 10,
+    },
+
+    // ── Water labels ────────────────────────────────────────────
+    {
+      id: 'water-label',
+      type: 'symbol',
+      source: 'openmaptiles',
+      'source-layer': 'water_name',
+      layout: {
+        'text-field': '{name:latin}',
+        'text-font': ['Open Sans Italic'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 6, 10, 10, 13, 14, 15],
+        'text-max-width': 6,
+      },
+      paint: {
+        'text-color': '#4A7FA0',
+        'text-halo-color': 'rgba(255,255,255,0.6)',
+        'text-halo-width': 1,
+      },
+      minzoom: 5,
+    },
+
+    // ── Road labels — subtle ────────────────────────────────────
+    {
+      id: 'road-label',
+      type: 'symbol',
+      source: 'openmaptiles',
+      'source-layer': 'transportation_name',
+      layout: {
+        'text-field': '{name:latin}',
+        'text-font': ['Open Sans Regular'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 12, 9, 16, 11],
+        'symbol-placement': 'line',
+        'text-max-angle': 30,
+      },
+      paint: {
+        'text-color': '#B5B5B0',
+        'text-halo-color': '#FAFAF7',
+        'text-halo-width': 1,
+      },
+      minzoom: 13,
+    },
+  ],
+};
+
 // ── Night Mode Map Style ──────────────────────────────────────────
 // Dark-adapted colors for nighttime on-the-water use.
 // Inspired by Navionics night mode — low glare, preserves scotopic vision.
@@ -2285,8 +2642,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [loading, setLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
 
-  // Map style selection — default to hybrid (satellite land + bathymetry water)
-  const [mapStyle, setMapStyle] = useState<MapStyleKey>('hybrid');
+  // Map style selection — default to OpenCatch (cream land + depth contours)
+  const [mapStyle, setMapStyle] = useState<MapStyleKey>('opencatch');
   const [layerPickerVisible, setLayerPickerVisible] = useState(false);
 
   // Which set of markers to show
@@ -4262,15 +4619,17 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         ref={mapRef}
         style={styles.map}
         mapStyle={
-          mapStyle === 'night'
-            ? NIGHT_STYLE
-            : mapStyle === 'hybrid'
-              ? HYBRID_STYLE
-              : mapStyle === 'bathymetry'
-                ? BATHYMETRY_STYLE
-                : mapStyle === 'nautical-chart'
-                  ? ALT_STYLES['satellite']
-                  : ALT_STYLES[mapStyle]
+          mapStyle === 'opencatch'
+            ? OPENCATCH_STYLE
+            : mapStyle === 'night'
+              ? NIGHT_STYLE
+              : mapStyle === 'hybrid'
+                ? HYBRID_STYLE
+                : mapStyle === 'bathymetry'
+                  ? BATHYMETRY_STYLE
+                  : mapStyle === 'nautical-chart'
+                    ? ALT_STYLES['satellite']
+                    : ALT_STYLES[mapStyle]
         }
         logoEnabled={false}
         attributionEnabled={false}
