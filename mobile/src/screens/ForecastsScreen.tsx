@@ -294,12 +294,10 @@ async function fetchOpenMeteoForecast(lat: number, lon: number): Promise<DayFore
     try {
       const aqiMap = await fetchAqi(lat, lon);
       for (const forecast of forecasts) {
-        // Find date key for this forecast day
         const d = new Date();
         const idx = forecasts.indexOf(forecast);
         d.setDate(d.getDate() + idx);
         const dateKey = d.toISOString().slice(0, 10);
-        // Also try matching by date from the entry
         for (const [key, aqiValues] of aqiMap) {
           const keyDate = new Date(key + 'T12:00:00');
           if (keyDate.getDate() === forecast.date && keyDate.getDay() === ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(forecast.dayLabel)) {
@@ -309,7 +307,6 @@ async function fetchOpenMeteoForecast(lat: number, lon: number): Promise<DayFore
             break;
           }
         }
-        // Simpler fallback: just match sequentially
         if (!forecast.hourly[0]?.aqi) {
           const allKeys = [...aqiMap.keys()].sort();
           if (allKeys[idx]) {
@@ -330,7 +327,6 @@ async function fetchOpenMeteoForecast(lat: number, lon: number): Promise<DayFore
     return forecasts;
   } catch (err) {
     clearTimeout(timeoutId);
-    // Return cached data if available, even if stale
     if (forecastCache?.data) {
       return forecastCache.data;
     }
@@ -338,350 +334,7 @@ async function fetchOpenMeteoForecast(lat: number, lon: number): Promise<DayFore
   }
 }
 
-// ── Row definitions — matches FishAngler layout ─────────────────────────────
-
-type RowKey = 'timezone' | 'fishForecast' | 'conditions' | 'cloudCover' | 'visibility' |
-              'airTemp' | 'pressure' | 'precipitation' | 'precAccum' | 'snowAccum' |
-              'humidity' | 'uvIndex' | 'aqi';
-
-interface RowConfig {
-  key: RowKey;
-  icon: string;
-  label: string;
-  sublabel?: string;
-  getValue: (h: HourlyData) => string | number;
-  getColor?: (h: HourlyData) => string | undefined;
-  getBgColor?: (h: HourlyData) => string | undefined;
-  renderCustom?: (h: HourlyData) => React.ReactNode;
-  height?: number;
-}
-
-function fishScoreBg(score: number): string {
-  if (score >= 50) return '#4A6741';  // Dark olive green
-  if (score >= 30) return '#6B7F44';  // Olive
-  if (score >= 15) return '#8B9550';  // Muted olive
-  return '#5A5A50';                    // Gray-olive
-}
-
-function fishScoreText(score: number): string {
-  return '#FFFFFF';
-}
-
-function tempBg(temp: number): string {
-  if (temp >= 35) return '#E53935';
-  if (temp >= 30) return '#FB8C00';
-  if (temp >= 25) return '#FDD835';
-  if (temp >= 20) return '#C8E6C9';
-  if (temp >= 15) return '#B3E5FC';
-  return '#90CAF9';
-}
-
-function tempText(temp: number): string {
-  if (temp >= 30) return '#FFFFFF';
-  return '#1A1A18';
-}
-
-function pressureBg(_p: number): string {
-  return '#4DB6AC';  // Teal
-}
-
-function uvBg(uv: number): string {
-  if (uv >= 8) return '#E53935';
-  if (uv >= 6) return '#FB8C00';
-  if (uv >= 3) return '#FDD835';
-  if (uv >= 1) return '#A5D6A7';
-  return 'transparent';
-}
-
-function uvText(uv: number): string {
-  if (uv >= 6) return '#FFFFFF';
-  return '#1A1A18';
-}
-
-function aqiBg(aqi: number | undefined): string {
-  if (aqi === undefined) return 'transparent';
-  if (aqi <= 50) return '#4CAF50';   // Green — Good
-  if (aqi <= 100) return '#FDD835';  // Yellow — Moderate
-  if (aqi <= 150) return '#FB8C00';  // Orange — Unhealthy for Sensitive
-  if (aqi <= 200) return '#E53935';  // Red — Unhealthy
-  return '#7B1FA2';                   // Purple — Very Unhealthy
-}
-
-function aqiText(aqi: number | undefined): string {
-  if (aqi === undefined) return '#1A1A18';
-  if (aqi <= 50) return '#FFFFFF';
-  if (aqi <= 100) return '#1A1A18';
-  return '#FFFFFF';
-}
-
-const ROWS: RowConfig[] = [
-  {
-    key: 'timezone',
-    icon: 'time-outline',
-    label: 'Time · 1 Hour',
-    getValue: (h) => h.hour,
-    height: 32,
-  },
-  {
-    key: 'fishForecast',
-    icon: 'fish-outline',
-    label: 'Fish Forecast',
-    getValue: (h) => `${h.fishScore}%`,
-    getBgColor: (h) => fishScoreBg(h.fishScore),
-    getColor: () => '#FFFFFF',
-    height: 48,
-  },
-  {
-    key: 'conditions',
-    icon: 'partly-sunny-outline',
-    label: 'Conditions',
-    sublabel: '',
-    getValue: () => '',
-    renderCustom: (h) => (
-      <Ionicons name={h.conditionIcon as any} size={20} color="#FB8C00" />
-    ),
-    height: 48,
-  },
-  {
-    key: 'cloudCover',
-    icon: 'cloud-outline',
-    label: 'Cloud Cover (%)',
-    getValue: (h) => `${h.cloudCover}%`,
-  },
-  {
-    key: 'visibility',
-    icon: 'eye-outline',
-    label: 'Visibility (km)',
-    getValue: (h) => `${h.visibility}`,
-  },
-  {
-    key: 'airTemp',
-    icon: 'thermometer-outline',
-    label: 'Air Temp (°C)',
-    getValue: (h) => `${h.airTemp}°`,
-    getBgColor: (h) => tempBg(h.airTemp),
-    getColor: (h) => tempText(h.airTemp),
-  },
-  {
-    key: 'pressure',
-    icon: 'speedometer-outline',
-    label: 'Air Pressure (Pa)',
-    getValue: (h) => `${h.pressure}`,
-    getBgColor: () => pressureBg(0),
-    getColor: () => '#FFFFFF',
-    height: 48,
-  },
-  {
-    key: 'precipitation',
-    icon: 'rainy-outline',
-    label: 'Precipitation (mm)',
-    getValue: (h) => h.precipitation > 0 ? `${h.precipitation}` : '-',
-  },
-  {
-    key: 'precAccum',
-    icon: 'water-outline',
-    label: 'Prec Accum (mm)',
-    getValue: (h) => h.precAccum > 0 ? `${h.precAccum}` : '-',
-  },
-  {
-    key: 'snowAccum',
-    icon: 'snow-outline',
-    label: 'Snow Accum (cm)',
-    getValue: (h) => h.snowAccum > 0 ? `${h.snowAccum}` : '-',
-  },
-  {
-    key: 'humidity',
-    icon: 'water',
-    label: 'Humidity (%)',
-    getValue: (h) => `${h.humidity}%`,
-  },
-  {
-    key: 'uvIndex',
-    icon: 'sunny-outline',
-    label: 'UV Index',
-    getValue: (h) => `${h.uvIndex}`,
-    getBgColor: (h) => uvBg(h.uvIndex),
-    getColor: (h) => uvText(h.uvIndex),
-  },
-  {
-    key: 'aqi',
-    icon: 'leaf-outline',
-    label: 'Air Quality (AQI)',
-    getValue: (h) => h.aqi !== undefined ? `${h.aqi}` : '-',
-    getBgColor: (h) => aqiBg(h.aqi),
-    getColor: (h) => aqiText(h.aqi),
-  },
-];
-
-// ── Column widths ───────────────────────────────────────────────────────────
-
-const LABEL_COL_WIDTH = 140;
-const DATA_COL_WIDTH = 72;
-const ROW_HEIGHT = 36;
-
-// ── Sub-components ──────────────────────────────────────────────────────────
-
-function DaySelector({
-  days,
-  selectedIdx,
-  onSelect,
-}: {
-  days: DayForecast[];
-  selectedIdx: number;
-  onSelect: (i: number) => void;
-}) {
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={s.dayRow}
-    >
-      {days.map((d, i) => {
-        const isActive = i === selectedIdx;
-        return (
-          <Pressable
-            key={i}
-            style={[s.dayPill, isActive && s.dayPillActive]}
-            onPress={() => onSelect(i)}
-          >
-            <Text style={[s.dayPillLabel, isActive && s.dayPillLabelActive]}>
-              {d.dayLabel}
-            </Text>
-            <Text style={[s.dayPillDate, isActive && s.dayPillDateActive]}>
-              {d.date}
-            </Text>
-            <Ionicons
-              name={d.weatherIcon as any}
-              size={18}
-              color={isActive ? '#FB8C00' : palette.textMuted}
-            />
-          </Pressable>
-        );
-      })}
-    </ScrollView>
-  );
-}
-
-// Pressure sparkline between the pressure value row and the next row
-function PressureSparkline({ hourly }: { hourly: HourlyData[] }) {
-  const w = hourly.length * DATA_COL_WIDTH;
-  const h = 24;
-  const values = hourly.map((hr) => hr.pressure);
-  const min = Math.min(...values) - 50;
-  const max = Math.max(...values) + 50;
-
-  const pts = values.map((v, i) => {
-    const x = i * DATA_COL_WIDTH + DATA_COL_WIDTH / 2;
-    const y = h - ((v - min) / (max - min || 1)) * (h - 4) - 2;
-    return { x, y };
-  });
-
-  const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-
-  return (
-    <View style={s.sparklineRow}>
-      <View style={{ width: LABEL_COL_WIDTH }} />
-      <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-        <Path
-          d={pathD}
-          stroke="#FB8C00"
-          strokeWidth={2}
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        {pts.map((p, i) => (
-          <Circle key={i} cx={p.x} cy={p.y} r={3} fill="#FB8C00" />
-        ))}
-      </Svg>
-    </View>
-  );
-}
-
-// Single data row in the grid
-function DataRow({ row, hourly }: { row: RowConfig; hourly: HourlyData[] }) {
-  const height = row.height || ROW_HEIGHT;
-
-  return (
-    <View style={[s.dataRow, { height }]}>
-      {/* Fixed label column */}
-      <View style={[s.labelCell, { height }]}>
-        <Ionicons name={row.icon as any} size={14} color={palette.textSecondary} />
-        <View style={{ flex: 1 }}>
-          <Text style={s.labelText} numberOfLines={1}>{row.label}</Text>
-          {row.sublabel ? (
-            <Text style={s.sublabelText}>{row.sublabel}</Text>
-          ) : null}
-        </View>
-      </View>
-
-      {/* Scrollable data cells — these scroll together */}
-      {hourly.map((h, i) => {
-        const bgColor = row.getBgColor?.(h);
-        const textColor = row.getColor?.(h) || palette.text;
-        const value = row.getValue(h);
-
-        return (
-          <View
-            key={i}
-            style={[
-              s.dataCell,
-              { width: DATA_COL_WIDTH, height },
-              bgColor ? { backgroundColor: bgColor } : null,
-              h.isNow ? s.nowColumnHighlight : null,
-            ]}
-          >
-            {row.renderCustom ? (
-              row.renderCustom(h)
-            ) : (
-              <Text
-                style={[
-                  s.dataCellText,
-                  { color: textColor },
-                  row.key === 'fishForecast' ? s.fishScoreText : null,
-                ]}
-                numberOfLines={1}
-              >
-                {value}
-              </Text>
-            )}
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
-// Hour header row
-function HourHeaderRow({ hourly }: { hourly: HourlyData[] }) {
-  return (
-    <View style={[s.dataRow, { height: 28 }]}>
-      <View style={[s.labelCell, { height: 28 }]}>
-        <Text style={s.hourHeaderLabel}>Hour</Text>
-      </View>
-      {hourly.map((h, i) => (
-        <View
-          key={i}
-          style={[
-            s.hourHeaderCell,
-            h.isNow ? s.nowColumnHeader : null,
-          ]}
-        >
-          {h.isNow ? (
-            <>
-              <Text style={s.nowLabel}>Now</Text>
-              <Ionicons name="caret-down" size={8} color={palette.accent} />
-            </>
-          ) : (
-            <Text style={s.hourLabel}>{h.hour}</Text>
-          )}
-        </View>
-      ))}
-    </View>
-  );
-}
-
-// ── Helpers for Extended Outlook ──────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
 const DAYS_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -691,26 +344,6 @@ function windDirectionLabel(deg: number): string {
   return dirs[Math.round(deg / 45) % 8];
 }
 
-function moonPhaseIcon(phase: string): string {
-  if (phase.includes('New')) return 'moon-outline';
-  if (phase.includes('Full')) return 'moon';
-  if (phase.includes('Waxing Crescent') || phase.includes('Waning Crescent')) return 'moon-outline';
-  return 'moon';
-}
-
-function dayQualityColor(score: number): string {
-  if (score >= 55) return '#2E7D32';  // green — great
-  if (score >= 35) return '#C4841D';  // amber — fair
-  return '#C44B4B';                   // red — poor
-}
-
-function dayQualityBg(score: number): string {
-  if (score >= 55) return 'rgba(46,125,50,0.06)';
-  if (score >= 35) return 'rgba(196,132,29,0.06)';
-  return 'rgba(196,75,75,0.06)';
-}
-
-// Compute summary stats for a day from its hourly data
 function computeDaySummary(day: DayForecast) {
   const temps = day.hourly.map((h) => h.airTemp);
   const hi = Math.max(...temps);
@@ -721,164 +354,303 @@ function computeDaySummary(day: DayForecast) {
   const avgWindDir = windDirs.length > 0 ? Math.round(windDirs.reduce((a, b) => a + b, 0) / windDirs.length) : 0;
   const maxPrecipChance = Math.max(...day.hourly.map((h) => h.precipitation));
   const avgScore = Math.round(day.hourly.reduce((a, h) => a + h.fishScore, 0) / day.hourly.length);
-  return { hi, lo, avgWind, avgWindDir, maxPrecipChance, avgScore };
+  const maxHumidity = Math.max(...day.hourly.map((h) => h.humidity));
+  const pressures = day.hourly.map((h) => h.pressure / 100); // Pa to hPa
+  const avgPressure = Math.round(pressures.reduce((a, b) => a + b, 0) / pressures.length);
+  const pressureTrend = pressures.length > 1 ? pressures[pressures.length - 1] - pressures[0] : 0;
+  const maxUV = Math.max(...day.hourly.map((h) => h.uvIndex));
+  return { hi, lo, avgWind, avgWindDir, maxPrecipChance, avgScore, maxHumidity, avgPressure, pressureTrend, maxUV };
 }
 
-function DayOutlookCard({
-  day,
-  dayIndex,
-  bite,
-}: {
+function scoreGaugeColor(score: number): string {
+  if (score >= 60) return '#2E7D32';
+  if (score >= 45) return '#66BB6A';
+  if (score >= 30) return '#FFA726';
+  if (score >= 15) return '#FB8C00';
+  return '#C44B4B';
+}
+
+function scoreLabel(score: number): string {
+  if (score >= 60) return 'Great';
+  if (score >= 45) return 'Good';
+  if (score >= 30) return 'Fair';
+  if (score >= 15) return 'Slow';
+  return 'Poor';
+}
+
+function pressureTrendLabel(trend: number): string {
+  if (trend > 1.5) return 'Rising';
+  if (trend < -1.5) return 'Falling';
+  return 'Steady';
+}
+
+function pressureTrendIcon(trend: number): string {
+  if (trend > 1.5) return 'trending-up-outline';
+  if (trend < -1.5) return 'trending-down-outline';
+  return 'remove-outline';
+}
+
+function aqiLabel(aqi: number | undefined): string {
+  if (aqi === undefined) return '-';
+  if (aqi <= 50) return 'Good';
+  if (aqi <= 100) return 'Moderate';
+  if (aqi <= 150) return 'Unhealthy (Sens.)';
+  if (aqi <= 200) return 'Unhealthy';
+  return 'Very Unhealthy';
+}
+
+function aqiColor(aqi: number | undefined): string {
+  if (aqi === undefined) return palette.textMuted;
+  if (aqi <= 50) return '#4CAF50';
+  if (aqi <= 100) return '#FDD835';
+  if (aqi <= 150) return '#FB8C00';
+  if (aqi <= 200) return '#E53935';
+  return '#7B1FA2';
+}
+
+function moonPhaseIcon(phase: string): string {
+  if (phase.includes('New')) return 'moon-outline';
+  if (phase.includes('Full')) return 'moon';
+  if (phase.includes('Waxing Crescent') || phase.includes('Waning Crescent')) return 'moon-outline';
+  return 'moon';
+}
+
+// ── Bite Score Gauge (SVG arc) ───────────────────────────────────────────────
+
+function BiteScoreGauge({ score, size = 130 }: { score: number; size?: number }) {
+  const strokeWidth = 10;
+  const radius = (size - strokeWidth) / 2;
+  const cx = size / 2;
+  const cy = size / 2;
+  const circumference = 2 * Math.PI * radius;
+  // Arc from 225deg to -45deg (270deg total sweep, bottom-center gap)
+  const sweepAngle = 270;
+  const arcLength = (sweepAngle / 360) * circumference;
+  const filledLength = (score / 100) * arcLength;
+  const color = scoreGaugeColor(score);
+
+  // Start angle: 135deg (bottom-left)
+  const startAngle = 135;
+  const endAngle = startAngle + sweepAngle;
+
+  const polarToCartesian = (angle: number) => {
+    const rad = (angle * Math.PI) / 180;
+    return { x: cx + radius * Math.cos(rad), y: cy + radius * Math.sin(rad) };
+  };
+
+  const start = polarToCartesian(startAngle);
+  const end = polarToCartesian(endAngle);
+
+  const largeArc = sweepAngle > 180 ? 1 : 0;
+  const trackPath = `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y}`;
+
+  return (
+    <View style={{ alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {/* Track */}
+        <Path
+          d={trackPath}
+          stroke={palette.borderLight}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeLinecap="round"
+        />
+        {/* Filled arc */}
+        <Path
+          d={trackPath}
+          stroke={color}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${filledLength} ${arcLength - filledLength}`}
+        />
+      </Svg>
+      {/* Center text */}
+      <View style={StyleSheet.absoluteFill as any}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 4 }}>
+          <Text style={{ fontSize: 36, fontWeight: '800', color }}>{score}</Text>
+          <Text style={{ fontSize: 12, color: palette.textMuted, fontWeight: '600', marginTop: -2 }}>
+            {scoreLabel(score)}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ── Hourly Chip ─────────────────────────────────────────────────────────────
+
+function HourlyChip({ data }: { data: HourlyData }) {
+  const color = scoreGaugeColor(data.fishScore);
+  return (
+    <View style={[st.hourlyChip, data.isNow && st.hourlyChipNow]}>
+      <Text style={[st.hourlyChipHour, data.isNow && { color: palette.accent, fontWeight: '800' }]}>
+        {data.hour}
+      </Text>
+      <Ionicons name={data.conditionIcon as any} size={18} color={data.isNow ? palette.accent : palette.textMuted} />
+      <View style={[st.hourlyScoreDot, { backgroundColor: color }]}>
+        <Text style={st.hourlyScoreText}>{data.fishScore}</Text>
+      </View>
+      <Text style={st.hourlyTemp}>{data.airTemp}°</Text>
+    </View>
+  );
+}
+
+// ── Daily Forecast Row ──────────────────────────────────────────────────────
+
+function DailyRow({ day, dayIndex, bite, isExpanded, onToggle }: {
   day: DayForecast;
   dayIndex: number;
   bite: BiteFC | null;
+  isExpanded: boolean;
+  onToggle: () => void;
 }) {
   const today = new Date();
   const cardDate = new Date();
   cardDate.setDate(today.getDate() + dayIndex);
 
-  const dayName = dayIndex === 0 ? 'Today' : dayIndex === 1 ? 'Tomorrow' : DAYS_FULL[cardDate.getDay()];
-  const dateStr = `${MONTHS_SHORT[cardDate.getMonth()]} ${cardDate.getDate()}`;
-
-  const { hi, lo, avgWind, avgWindDir, maxPrecipChance, avgScore } = computeDaySummary(day);
+  const dayName = dayIndex === 0 ? 'Today' : dayIndex === 1 ? 'Tmrw' : day.dayLabel;
+  const { hi, lo, avgWind, avgWindDir, maxPrecipChance, avgScore, maxHumidity, avgPressure, pressureTrend, maxUV } = computeDaySummary(day);
   const overallScore = bite?.overallRating ?? avgScore;
-  const qColor = dayQualityColor(overallScore);
-  const qBg = dayQualityBg(overallScore);
-
+  const color = scoreGaugeColor(overallScore);
   const bestWindowStr = bite?.bestWindow?.label ?? null;
   const moonLabel = bite?.moonPhase ?? '';
   const sunriseStr = bite ? formatHour(Math.round(bite.sunrise)) : '';
   const sunsetStr = bite ? formatHour(Math.round(bite.sunset)) : '';
 
+  // Score bar width (0-100 mapped to 0-60%)
+  const barWidth = Math.max(8, (overallScore / 100) * 60);
+
   return (
-    <View style={[os.card, { backgroundColor: qBg, borderLeftColor: qColor }]}>
-      {/* Top row: day + date + score */}
-      <View style={os.cardHeader}>
-        <View style={{ flex: 1 }}>
-          <Text style={os.dayName}>{dayName}</Text>
-          <Text style={os.dateStr}>{dateStr}</Text>
+    <Pressable onPress={onToggle} style={st.dailyRow}>
+      {/* Main row */}
+      <View style={st.dailyRowMain}>
+        <View style={st.dailyDayCol}>
+          <Text style={st.dailyDayName}>{dayName}</Text>
+          <Text style={st.dailyDate}>{cardDate.getDate()}</Text>
         </View>
-        <View style={[os.scoreBadge, { backgroundColor: qColor }]}>
-          <Ionicons name="fish-outline" size={14} color="#FFF" />
-          <Text style={os.scoreText}>{overallScore}%</Text>
+
+        <Ionicons name={day.weatherIcon as any} size={20} color={palette.textMuted} style={{ width: 24 }} />
+
+        <View style={st.dailyScoreBarCol}>
+          <View style={[st.dailyScoreBar, { width: `${barWidth}%`, backgroundColor: color }]} />
+          <Text style={[st.dailyScoreVal, { color }]}>{overallScore}</Text>
         </View>
+
+        <View style={st.dailyTemps}>
+          <Text style={st.dailyHi}>{hi}°</Text>
+          <Text style={st.dailyLo}>{lo}°</Text>
+        </View>
+
+        <View style={st.dailyWindCol}>
+          <Ionicons name="flag-outline" size={12} color={palette.textMuted} />
+          <Text style={st.dailyWindText}>{avgWind}</Text>
+        </View>
+
+        <Ionicons
+          name={isExpanded ? 'chevron-up' : 'chevron-down'}
+          size={14}
+          color={palette.textDim}
+        />
       </View>
 
-      {/* Middle row: weather icon + temps + wind + precip */}
-      <View style={os.metricsRow}>
-        <View style={os.metric}>
-          <Ionicons name={day.weatherIcon as any} size={22} color="#FB8C00" />
-          <Text style={os.metricValue}>{hi}° / {lo}°</Text>
-          <Text style={os.metricLabel}>Hi / Lo</Text>
-        </View>
-
-        <View style={os.metric}>
-          <Ionicons name="flag-outline" size={18} color={palette.textSecondary} />
-          <Text style={os.metricValue}>{avgWind} km/h {windDirectionLabel(avgWindDir)}</Text>
-          <Text style={os.metricLabel}>Wind</Text>
-        </View>
-
-        <View style={os.metric}>
-          <Ionicons name="rainy-outline" size={18} color={palette.textSecondary} />
-          <Text style={os.metricValue}>{maxPrecipChance > 0 ? `${maxPrecipChance.toFixed(1)} mm` : 'None'}</Text>
-          <Text style={os.metricLabel}>Precip</Text>
-        </View>
-      </View>
-
-      {/* Bottom row: best window + moon + sunrise/sunset */}
-      <View style={os.bottomRow}>
-        {bestWindowStr && (
-          <View style={os.chip}>
-            <Ionicons name="time-outline" size={12} color={qColor} />
-            <Text style={[os.chipText, { color: qColor }]}>{bestWindowStr}</Text>
+      {/* Expanded detail */}
+      {isExpanded && (
+        <View style={st.dailyExpanded}>
+          <View style={st.detailGrid}>
+            <DetailChip icon="water-outline" label="Precip" value={maxPrecipChance > 0 ? `${maxPrecipChance.toFixed(1)}mm` : 'None'} />
+            <DetailChip icon="speedometer-outline" label="Pressure" value={`${avgPressure} hPa`} />
+            <DetailChip icon={pressureTrendIcon(pressureTrend)} label="Trend" value={pressureTrendLabel(pressureTrend)} />
+            <DetailChip icon="water" label="Humidity" value={`${maxHumidity}%`} />
+            <DetailChip icon="sunny-outline" label="UV Index" value={`${maxUV}`} />
+            <DetailChip icon="flag-outline" label="Wind" value={`${avgWind} km/h ${windDirectionLabel(avgWindDir)}`} />
           </View>
-        )}
 
-        {moonLabel !== '' && (
-          <View style={os.chip}>
-            <Ionicons name={moonPhaseIcon(moonLabel) as any} size={12} color={palette.textMuted} />
-            <Text style={os.chipText}>{moonLabel}</Text>
+          {/* Bite windows + moon/sun */}
+          <View style={st.dailyChipsRow}>
+            {bestWindowStr && (
+              <View style={st.infoChip}>
+                <Ionicons name="time-outline" size={11} color={color} />
+                <Text style={[st.infoChipText, { color }]}>{bestWindowStr}</Text>
+              </View>
+            )}
+            {moonLabel !== '' && (
+              <View style={st.infoChip}>
+                <Ionicons name={moonPhaseIcon(moonLabel) as any} size={11} color={palette.textMuted} />
+                <Text style={st.infoChipText}>{moonLabel}</Text>
+              </View>
+            )}
+            {sunriseStr !== '' && (
+              <View style={st.infoChip}>
+                <Ionicons name="sunny-outline" size={11} color="#FB8C00" />
+                <Text style={st.infoChipText}>{sunriseStr} / {sunsetStr}</Text>
+              </View>
+            )}
           </View>
-        )}
+        </View>
+      )}
+    </Pressable>
+  );
+}
 
-        {sunriseStr !== '' && (
-          <View style={os.chip}>
-            <Ionicons name="sunny-outline" size={12} color="#FB8C00" />
-            <Text style={os.chipText}>{sunriseStr} / {sunsetStr}</Text>
-          </View>
-        )}
+function DetailChip({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <View style={st.detailChip}>
+      <Ionicons name={icon as any} size={13} color={palette.textMuted} />
+      <View>
+        <Text style={st.detailChipLabel}>{label}</Text>
+        <Text style={st.detailChipValue}>{value}</Text>
       </View>
     </View>
   );
 }
 
-// ── Skeleton Grid (loading placeholder matching the hourly grid) ──────────────
+// ── Expandable Condition Card ───────────────────────────────────────────────
 
-const SKELETON_HOURS = 12;
-const SKELETON_ROWS = ['time', 'fish', 'cond', 'cloud', 'vis', 'temp', 'pres', 'prec'] as const;
-
-function SkeletonGridRow({ height = ROW_HEIGHT }: { height?: number }) {
+function ConditionCard({
+  title,
+  icon,
+  children,
+  defaultExpanded = false,
+}: {
+  title: string;
+  icon: string;
+  children: React.ReactNode;
+  defaultExpanded?: boolean;
+}) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   return (
-    <View style={{ flexDirection: 'row', height }}>
-      {Array.from({ length: SKELETON_HOURS }).map((_, i) => (
-        <View key={i} style={{ width: DATA_COL_WIDTH, height, justifyContent: 'center', alignItems: 'center' }}>
-          <SkeletonLoader width={DATA_COL_WIDTH - 12} height={height - 12} borderRadius={4} />
-        </View>
-      ))}
-    </View>
+    <Pressable onPress={() => setExpanded(!expanded)} style={st.condCard}>
+      <View style={st.condCardHeader}>
+        <Ionicons name={icon as any} size={16} color={palette.accent} />
+        <Text style={st.condCardTitle}>{title}</Text>
+        <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={14} color={palette.textDim} />
+      </View>
+      {expanded && <View style={st.condCardBody}>{children}</View>}
+    </Pressable>
   );
 }
 
-function ForecastSkeletonGrid() {
-  return (
-    <View style={s.screen}>
-      {/* Header skeleton */}
-      <View style={[s.header, { paddingTop: 56 }]}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16 }}>
-          <SkeletonLoader width={22} height={22} borderRadius={11} />
-          <View style={{ flex: 1, gap: 6 }}>
-            <SkeletonLoader width="60%" height={18} borderRadius={4} />
-            <SkeletonLoader width="35%" height={12} borderRadius={3} />
-          </View>
-          <SkeletonLoader width={22} height={22} borderRadius={11} />
-        </View>
-        {/* Toggle skeleton */}
-        <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
-          <SkeletonLoader width="100%" height={36} borderRadius={10} />
-        </View>
-        {/* Day pills skeleton */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingTop: 8 }}>
-          {Array.from({ length: 7 }).map((_, i) => (
-            <SkeletonLoader key={i} width={52} height={64} borderRadius={12} />
-          ))}
-        </ScrollView>
-      </View>
+// ── Skeleton ────────────────────────────────────────────────────────────────
 
-      {/* Grid skeleton */}
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-        <View style={{ flexDirection: 'row' }}>
-          {/* Label column skeleton */}
-          <View style={{ width: LABEL_COL_WIDTH, backgroundColor: palette.background }}>
-            {SKELETON_ROWS.map((key, i) => {
-              const h = key === 'fish' || key === 'pres' ? 48 : key === 'time' ? 32 : ROW_HEIGHT;
-              return (
-                <View key={i} style={{ height: h, justifyContent: 'center', paddingLeft: 12 }}>
-                  <SkeletonLoader width={LABEL_COL_WIDTH - 24} height={14} borderRadius={3} />
-                </View>
-              );
-            })}
-          </View>
-          {/* Data columns skeleton */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
-            <View>
-              {SKELETON_ROWS.map((key, i) => {
-                const h = key === 'fish' || key === 'pres' ? 48 : key === 'time' ? 32 : ROW_HEIGHT;
-                return <SkeletonGridRow key={i} height={h} />;
-              })}
-            </View>
-          </ScrollView>
-        </View>
+function ForecastSkeleton() {
+  return (
+    <View style={st.screen}>
+      <View style={{ alignItems: 'center', paddingTop: 24, gap: 12 }}>
+        <SkeletonLoader width={130} height={130} borderRadius={65} />
+        <SkeletonLoader width="60%" height={14} borderRadius={4} />
+        <SkeletonLoader width="40%" height={12} borderRadius={3} />
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 20 }} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <SkeletonLoader key={i} width={56} height={90} borderRadius={12} />
+        ))}
       </ScrollView>
+      <View style={{ padding: 16, gap: 8, marginTop: 12 }}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <SkeletonLoader key={i} width="100%" height={48} borderRadius={10} />
+        ))}
+      </View>
     </View>
   );
 }
@@ -886,8 +658,6 @@ function ForecastSkeletonGrid() {
 // ── Main Screen ──────────────────────────────────────────────────────────────
 
 export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
-  const [selectedDayIdx, setSelectedDayIdx] = useState(0);
-  const [viewMode, setViewMode] = useState<ViewMode>('Daily');
   const [weekForecast, setWeekForecast] = useState<DayForecast[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -895,9 +665,9 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
   const [userLon, setUserLon] = useState<number | null>(null);
   const [locationName, setLocationName] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
+  const [expandedDayIdx, setExpandedDayIdx] = useState<number | null>(null);
 
-  // Fade-in animation when data first arrives
+  // Fade-in animation
   const dataFadeAnim = useRef(new Animated.Value(0)).current;
   const hasAnimatedIn = useRef(false);
 
@@ -940,7 +710,6 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
         : 'Unable to load forecast. Pull down to retry.';
       setError(msg);
 
-      // Auto-retry once on network failure
       if (!isRetry) {
         setTimeout(() => fetchForecast(lat, lon, true), 3000);
         return;
@@ -969,7 +738,7 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
           setLocationName(parts.join(', ') || null);
         }
       } catch {
-        // Silently fail — coords will be shown instead
+        // Silently fail
       }
     })();
     return () => { cancelled = true; };
@@ -978,7 +747,7 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
   const handleRefresh = useCallback(async () => {
     if (userLat == null || userLon == null) return;
     setRefreshing(true);
-    forecastCache = null; // Bust cache for manual refresh
+    forecastCache = null;
     await fetchForecast(userLat, userLon);
     setRefreshing(false);
   }, [userLat, userLon, fetchForecast]);
@@ -1005,7 +774,7 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
     })();
   }, [fetchForecast]);
 
-  // Fade in data smoothly when it first arrives
+  // Fade in data
   useEffect(() => {
     if (weekForecast.length > 0 && !hasAnimatedIn.current) {
       hasAnimatedIn.current = true;
@@ -1017,304 +786,282 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
     }
   }, [weekForecast.length, dataFadeAnim]);
 
-  const selectedDay = weekForecast[selectedDayIdx];
-  const hourly = selectedDay?.hourly ?? [];
+  // Derive current data
+  const todayForecast = weekForecast[0];
+  const todayHourly = todayForecast?.hourly ?? [];
+  const nowData = todayHourly.find((h) => h.isNow) ?? todayHourly[0];
+  const todaySummary = todayForecast ? computeDaySummary(todayForecast) : null;
+  const currentScore = biteForecast?.overallRating ?? todaySummary?.avgScore ?? 0;
 
-  // Scroll to "Now" column on mount
-  const handleScrollLayout = () => {
-    const nowIdx = hourly.findIndex((h) => h.isNow);
-    if (nowIdx > 0 && scrollRef.current) {
-      scrollRef.current.scrollTo({ x: Math.max(0, (nowIdx - 1) * DATA_COL_WIDTH), animated: false });
+  // Build next 12 hours from now
+  const nowIdx = todayHourly.findIndex((h) => h.isNow);
+  const upcomingHours: HourlyData[] = [];
+  if (nowIdx >= 0) {
+    for (let i = nowIdx; i < todayHourly.length && upcomingHours.length < 12; i++) {
+      upcomingHours.push(todayHourly[i]);
     }
-  };
-
-  // Loading state — skeleton grid matching the real hourly layout
-  if (loading && weekForecast.length === 0) {
-    return <ForecastSkeletonGrid />;
+    // If we need more, pull from tomorrow
+    if (upcomingHours.length < 12 && weekForecast[1]) {
+      const remaining = 12 - upcomingHours.length;
+      for (let i = 0; i < Math.min(remaining, weekForecast[1].hourly.length); i++) {
+        upcomingHours.push(weekForecast[1].hourly[i]);
+      }
+    }
+  } else if (todayHourly.length > 0) {
+    for (let i = 0; i < Math.min(12, todayHourly.length); i++) {
+      upcomingHours.push(todayHourly[i]);
+    }
   }
 
-  // Error state with no cached data
+  // Loading state
+  if (loading && weekForecast.length === 0) {
+    return <ForecastSkeleton />;
+  }
+
+  // Error state
   if (error && weekForecast.length === 0) {
     return (
-      <View style={[s.screen, s.centerContent]}>
+      <View style={[st.screen, st.centerContent]}>
         <Ionicons name="cloud-offline-outline" size={48} color={palette.textDim} />
-        <Text style={s.errorTitle}>{error}</Text>
+        <Text style={st.errorTitle}>{error}</Text>
         <Pressable
-          style={s.retryButton}
+          style={st.retryButton}
           onPress={() => userLat != null && userLon != null && fetchForecast(userLat, userLon)}
         >
-          <Text style={s.retryText}>Retry</Text>
+          <Text style={st.retryText}>Retry</Text>
         </Pressable>
       </View>
     );
   }
 
   return (
-    <Animated.View style={[s.screen, { opacity: dataFadeAnim }]}>
-      {/* Header */}
-      <View style={s.header}>
-        <View style={s.headerTop}>
-          <Ionicons name="location-outline" size={22} color={palette.accent} />
-          <View style={s.headerCenter}>
-            <Text style={s.headerTitle} numberOfLines={1}>
-              {locationName ? `Forecast for ${locationName}` : 'Forecast'}
-            </Text>
-            <Text style={s.headerCoords}>
-              {userLat != null && userLon != null
-                ? `${userLat.toFixed(4)}, ${userLon.toFixed(4)}`
-                : 'Locating...'}
-            </Text>
-          </View>
-          <Pressable onPress={handleRefresh}>
-            {refreshing ? (
-              <ActivityIndicator size="small" color={palette.accent} />
-            ) : (
-              <Ionicons name="refresh-outline" size={22} color={palette.text} />
-            )}
-          </Pressable>
-        </View>
-
-        {/* Daily / Extended toggle */}
-        <View style={s.modeToggle}>
-          {([['Daily', 'Hourly'], ['Extended', '14-Day Extended']] as [ViewMode, string][]).map(([mode, label]) => (
-            <Pressable
-              key={mode}
-              style={[s.modeToggleBtn, viewMode === mode && s.modeToggleBtnActive]}
-              onPress={() => setViewMode(mode)}
-            >
-              <Text style={[s.modeToggleText, viewMode === mode && s.modeToggleTextActive]}>
-                {label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {/* Day selector — only in hourly mode */}
-        {viewMode === 'Daily' && weekForecast.length > 0 && (
-          <DaySelector
-            days={weekForecast}
-            selectedIdx={selectedDayIdx}
-            onSelect={setSelectedDayIdx}
-          />
-        )}
-      </View>
-
-      {/* Error banner (shown over cached data) */}
-      {error && weekForecast.length > 0 && (
-        <View style={s.errorBanner}>
-          <Ionicons name="warning-outline" size={14} color={palette.warning} />
-          <Text style={s.errorBannerText}>Showing cached data. {error}</Text>
-        </View>
-      )}
-
-      {/* ── Extended 14-Day Outlook View ─────────────────────────────── */}
-      {viewMode === 'Extended' && weekForecast.length > 0 && (
-        <ScrollView
-          style={s.verticalScroll}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ padding: 12, paddingBottom: 100, gap: 10 }}
-        >
-          <Text style={os.sectionTitle}>14-Day Extended Forecast</Text>
-          {weekForecast.map((day, i) => (
-            <DayOutlookCard
-              key={i}
-              day={day}
-              dayIndex={i}
-              bite={weeklyBite[i] ?? null}
-            />
-          ))}
-        </ScrollView>
-      )}
-
-      {/* ── Hourly Grid View (existing) ─────────────────────────────── */}
-      {viewMode === 'Daily' && hourly.length > 0 && (
-        <ScrollView
-          style={s.verticalScroll}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={{ flexDirection: 'row' }}>
-            {/* Fixed left label column */}
-            <View style={{ width: LABEL_COL_WIDTH, zIndex: 2, backgroundColor: palette.background }}>
-              <View style={[s.labelCell, { height: 28 }]}>
-                <Text style={s.hourHeaderLabel}>Hour</Text>
+    <Animated.View style={[st.screen, { opacity: dataFadeAnim }]}>
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
+        {/* ── Top: Score Gauge + Summary ──────────────────────────── */}
+        <View style={st.heroSection}>
+          <View style={st.heroRow}>
+            <BiteScoreGauge score={currentScore} />
+            <View style={st.heroSummary}>
+              <View style={st.locationRow}>
+                <Ionicons name="location-outline" size={14} color={palette.accent} />
+                <Text style={st.locationText} numberOfLines={1}>
+                  {locationName ?? 'Current Location'}
+                </Text>
+                <Pressable onPress={handleRefresh} hitSlop={12}>
+                  {refreshing ? (
+                    <ActivityIndicator size="small" color={palette.accent} />
+                  ) : (
+                    <Ionicons name="refresh-outline" size={16} color={palette.textMuted} />
+                  )}
+                </Pressable>
               </View>
-              {ROWS.map((row) => (
-                <React.Fragment key={row.key}>
-                  <View style={[s.labelCell, { height: row.height || ROW_HEIGHT }]}>
-                    <Ionicons name={row.icon as any} size={14} color={palette.textSecondary} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.labelText} numberOfLines={1}>{row.label}</Text>
-                      {row.sublabel ? <Text style={s.sublabelText}>{row.sublabel}</Text> : null}
-                    </View>
-                  </View>
-                  {row.key === 'pressure' && <View style={[s.sparklineRow, { height: 24 }]} />}
-                </React.Fragment>
-              ))}
-              <View style={{ height: 16 }} />
+              {nowData && (
+                <>
+                  <Text style={st.heroCondition}>{nowData.condition}</Text>
+                  <Text style={st.heroTemp}>{nowData.airTemp}°C</Text>
+                  <Text style={st.heroWind}>
+                    {nowData.windSpeed ?? 0} km/h {nowData.windDirection != null ? windDirectionLabel(nowData.windDirection) : ''}
+                  </Text>
+                </>
+              )}
+              {biteForecast?.bestWindow && (
+                <View style={st.heroBestTime}>
+                  <Ionicons name="time-outline" size={11} color="#2E7D32" />
+                  <Text style={st.heroBestTimeText}>
+                    Best: {biteForecast.bestWindow.label}
+                  </Text>
+                </View>
+              )}
             </View>
+          </View>
+        </View>
 
-            {/* Scrollable right data columns */}
+        {/* Error banner over cached data */}
+        {error && weekForecast.length > 0 && (
+          <View style={st.errorBanner}>
+            <Ionicons name="warning-outline" size={14} color={palette.warning} />
+            <Text style={st.errorBannerText}>Showing cached data. {error}</Text>
+          </View>
+        )}
+
+        {/* ── Hourly Scroll ──────────────────────────────────────── */}
+        {upcomingHours.length > 0 && (
+          <View style={st.sectionWrap}>
+            <Text style={st.sectionTitle}>Next 12 Hours</Text>
             <ScrollView
-              ref={scrollRef}
               horizontal
               showsHorizontalScrollIndicator={false}
-              onLayout={handleScrollLayout}
-              style={{ flex: 1 }}
-              contentContainerStyle={{ width: hourly.length * DATA_COL_WIDTH }}
+              contentContainerStyle={st.hourlyScroll}
             >
-              <View>
-                {/* Hour header (data only, no label) */}
-                <View style={[s.dataRow, { height: 28 }]}>
-                  {hourly.map((h, i) => (
-                    <View key={i} style={[s.hourHeaderCell, h.isNow ? s.nowColumnHeader : null]}>
-                      {h.isNow ? (
-                        <>
-                          <Text style={s.nowLabel}>Now</Text>
-                          <Ionicons name="caret-down" size={8} color={palette.accent} />
-                        </>
-                      ) : (
-                        <Text style={s.hourLabel}>{h.hour}</Text>
-                      )}
-                    </View>
-                  ))}
-                </View>
-
-                {/* Data rows (data cells only, no labels) */}
-                {ROWS.map((row) => {
-                  const height = row.height || ROW_HEIGHT;
-                  return (
-                    <React.Fragment key={row.key}>
-                      <View style={[s.dataRow, { height }]}>
-                        {hourly.map((h, i) => {
-                          const bgColor = row.getBgColor?.(h);
-                          const textColor = row.getColor?.(h) || palette.text;
-                          const value = row.getValue(h);
-                          return (
-                            <View
-                              key={i}
-                              style={[s.dataCell, { width: DATA_COL_WIDTH, height }, bgColor ? { backgroundColor: bgColor } : null, h.isNow ? s.nowColumnHighlight : null]}
-                            >
-                              {row.renderCustom ? row.renderCustom(h) : (
-                                <Text style={[s.dataCellText, { color: textColor }]} numberOfLines={1}>{value}</Text>
-                              )}
-                            </View>
-                          );
-                        })}
-                      </View>
-                      {row.key === 'pressure' && <PressureSparkline hourly={hourly} />}
-                    </React.Fragment>
-                  );
-                })}
-
-                <View style={{ height: 16 }} />
-              </View>
+              {upcomingHours.map((h, i) => (
+                <HourlyChip key={i} data={h} />
+              ))}
             </ScrollView>
           </View>
+        )}
 
-          {/* ── Inline Insight Sections ─────────────────────────────────── */}
-
-          {/* Best Fishing Windows Today */}
-          {biteForecast && biteForecast.windows.length > 0 && (
-            <View style={s.insightCard}>
-              <Text style={s.insightTitle}>Best Fishing Windows Today</Text>
-              {/* Hour timeline bar */}
-              <View style={s.timelineBar}>
-                {biteForecast.hourlyScores.map((score, h) => (
-                  <View
-                    key={h}
-                    style={[
-                      s.timelineSegment,
-                      {
-                        backgroundColor:
-                          score >= 60 ? '#2E7D32'
-                          : score >= 45 ? '#66BB6A'
-                          : score >= 30 ? '#FFA726'
-                          : 'rgba(0,0,0,0.06)',
-                      },
-                    ]}
-                  />
-                ))}
-              </View>
-              <View style={s.timelineLabels}>
-                <Text style={s.timelineLabel}>12A</Text>
-                <Text style={s.timelineLabel}>6A</Text>
-                <Text style={s.timelineLabel}>12P</Text>
-                <Text style={s.timelineLabel}>6P</Text>
-                <Text style={s.timelineLabel}>12A</Text>
-              </View>
-              {/* Window pills */}
-              <View style={s.windowPills}>
-                {biteForecast.windows.slice(0, 3).map((w, i) => {
-                  const qualityColor = w.quality === 'prime' ? '#2E7D32' : w.quality === 'good' ? '#66BB6A' : '#FFA726';
-                  return (
-                    <View key={i} style={[s.windowPill, { borderColor: qualityColor + '40' }]}>
-                      <View style={[s.windowDot, { backgroundColor: qualityColor }]} />
-                      <Text style={s.windowLabel}>{w.label}</Text>
-                      <Text style={[s.windowQuality, { color: qualityColor }]}>
-                        {w.quality.charAt(0).toUpperCase() + w.quality.slice(1)}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
-              {biteForecast.windows[0]?.reasons?.length > 0 && (
-                <Text style={s.insightDetail}>
-                  {biteForecast.windows[0].reasons.join(' \u00B7 ')}
-                </Text>
-              )}
+        {/* ── 7-Day Forecast ─────────────────────────────────────── */}
+        {weekForecast.length > 0 && (
+          <View style={st.sectionWrap}>
+            <Text style={st.sectionTitle}>
+              {weekForecast.length > 7 ? `${weekForecast.length}-Day Forecast` : '7-Day Forecast'}
+            </Text>
+            <View style={st.dailyList}>
+              {weekForecast.slice(0, 14).map((day, i) => (
+                <DailyRow
+                  key={i}
+                  day={day}
+                  dayIndex={i}
+                  bite={weeklyBite[i] ?? null}
+                  isExpanded={expandedDayIdx === i}
+                  onToggle={() => setExpandedDayIdx(expandedDayIdx === i ? null : i)}
+                />
+              ))}
             </View>
-          )}
+          </View>
+        )}
 
-          {/* Fishing Pressure */}
-          {pressureInfo && (
-            <View style={s.insightCard}>
-              <Text style={s.insightTitle}>Fishing Pressure</Text>
-              <View style={s.pressureRow}>
-                <Ionicons name={pressureInfo.icon as any} size={20} color={pressureInfo.color} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.pressureLevel, { color: pressureInfo.color }]}>
-                    {pressureInfo.label}
-                  </Text>
-                  <Text style={s.pressureDesc}>{pressureInfo.description}</Text>
-                </View>
-              </View>
-              {pressureInfo.peakHours.length > 0 && (
-                <Text style={s.insightDetail}>
-                  Peak hours: {pressureInfo.peakHours.join(', ')}
-                </Text>
-              )}
-            </View>
-          )}
+        {/* ── Condition Detail Cards ──────────────────────────────── */}
 
-          {/* Water Conditions */}
-          {waterData && waterData.insights.length > 0 && (
-            <View style={s.insightCard}>
-              <Text style={s.insightTitle}>Water Conditions</Text>
-              <View style={s.waterGrid}>
-                {waterData.insights.slice(0, 4).map((insight) => (
-                  <View key={insight.label} style={s.waterItem}>
-                    <Ionicons name={insight.icon as any} size={16} color={insight.color} />
-                    <Text style={s.waterItemLabel}>{insight.label}</Text>
-                    <Text style={[s.waterItemValue, { color: insight.color }]}>
+        {/* Water Conditions */}
+        {waterData && waterData.insights.length > 0 && (
+          <ConditionCard title="Water Conditions" icon="water-outline" defaultExpanded>
+            <View style={st.detailGrid}>
+              {waterData.insights.slice(0, 6).map((insight) => (
+                <View key={insight.label} style={st.detailChip}>
+                  <Ionicons name={insight.icon as any} size={13} color={insight.color} />
+                  <View>
+                    <Text style={st.detailChipLabel}>{insight.label}</Text>
+                    <Text style={[st.detailChipValue, { color: insight.color }]}>
                       {insight.value}{insight.unit}
                     </Text>
                   </View>
-                ))}
-              </View>
-              <Text style={s.insightDetail}>{waterData.fishingImpact}</Text>
+                </View>
+              ))}
             </View>
-          )}
+            {waterData.fishingImpact ? (
+              <Text style={st.condCardDetail}>{waterData.fishingImpact}</Text>
+            ) : null}
+          </ConditionCard>
+        )}
 
-          <View style={{ height: 100 }} />
-        </ScrollView>
-      )}
+        {/* Weather / Pressure */}
+        {todaySummary && (
+          <ConditionCard title="Weather" icon="partly-sunny-outline">
+            <View style={st.detailGrid}>
+              <DetailChip icon="speedometer-outline" label="Pressure" value={`${todaySummary.avgPressure} hPa`} />
+              <DetailChip icon={pressureTrendIcon(todaySummary.pressureTrend)} label="Trend" value={pressureTrendLabel(todaySummary.pressureTrend)} />
+              <DetailChip icon="water" label="Humidity" value={`${todaySummary.maxHumidity}%`} />
+              <DetailChip icon="sunny-outline" label="UV Max" value={`${todaySummary.maxUV}`} />
+              <DetailChip icon="eye-outline" label="Visibility" value={nowData ? `${nowData.visibility} km` : '-'} />
+              <DetailChip icon="cloud-outline" label="Cloud" value={nowData ? `${nowData.cloudCover}%` : '-'} />
+            </View>
+            {nowData?.aqi !== undefined && (
+              <View style={st.aqiRow}>
+                <Ionicons name="leaf-outline" size={13} color={aqiColor(nowData.aqi)} />
+                <Text style={st.detailChipLabel}>Air Quality</Text>
+                <Text style={[st.detailChipValue, { color: aqiColor(nowData.aqi) }]}>
+                  {nowData.aqi} - {aqiLabel(nowData.aqi)}
+                </Text>
+              </View>
+            )}
+          </ConditionCard>
+        )}
+
+        {/* Moon / Sun / Solunar */}
+        {biteForecast && (
+          <ConditionCard title="Moon & Sun" icon="moon-outline">
+            <View style={st.detailGrid}>
+              {biteForecast.moonPhase !== '' && (
+                <DetailChip icon={moonPhaseIcon(biteForecast.moonPhase)} label="Moon" value={biteForecast.moonPhase} />
+              )}
+              <DetailChip icon="sunny-outline" label="Sunrise" value={formatHour(Math.round(biteForecast.sunrise))} />
+              <DetailChip icon="moon-outline" label="Sunset" value={formatHour(Math.round(biteForecast.sunset))} />
+            </View>
+          </ConditionCard>
+        )}
+
+        {/* Best Fishing Windows */}
+        {biteForecast && biteForecast.windows.length > 0 && (
+          <ConditionCard title="Bite Windows" icon="fish-outline" defaultExpanded>
+            {/* Hour timeline bar */}
+            <View style={st.timelineBar}>
+              {biteForecast.hourlyScores.map((score, h) => (
+                <View
+                  key={h}
+                  style={[
+                    st.timelineSegment,
+                    {
+                      backgroundColor:
+                        score >= 60 ? '#2E7D32'
+                        : score >= 45 ? '#66BB6A'
+                        : score >= 30 ? '#FFA726'
+                        : 'rgba(0,0,0,0.06)',
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+            <View style={st.timelineLabels}>
+              <Text style={st.timelineLabel}>12A</Text>
+              <Text style={st.timelineLabel}>6A</Text>
+              <Text style={st.timelineLabel}>12P</Text>
+              <Text style={st.timelineLabel}>6P</Text>
+              <Text style={st.timelineLabel}>12A</Text>
+            </View>
+            <View style={st.windowPills}>
+              {biteForecast.windows.slice(0, 3).map((w, i) => {
+                const qualityColor = w.quality === 'prime' ? '#2E7D32' : w.quality === 'good' ? '#66BB6A' : '#FFA726';
+                return (
+                  <View key={i} style={[st.windowPill, { borderColor: qualityColor + '40' }]}>
+                    <View style={[st.windowDot, { backgroundColor: qualityColor }]} />
+                    <Text style={st.windowLabel}>{w.label}</Text>
+                    <Text style={[st.windowQuality, { color: qualityColor }]}>
+                      {w.quality.charAt(0).toUpperCase() + w.quality.slice(1)}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+            {biteForecast.windows[0]?.reasons?.length > 0 && (
+              <Text style={st.condCardDetail}>
+                {biteForecast.windows[0].reasons.join(' \u00B7 ')}
+              </Text>
+            )}
+          </ConditionCard>
+        )}
+
+        {/* Fishing Pressure */}
+        {pressureInfo && (
+          <ConditionCard title="Fishing Pressure" icon="people-outline">
+            <View style={st.pressureRow}>
+              <Ionicons name={pressureInfo.icon as any} size={18} color={pressureInfo.color} />
+              <View style={{ flex: 1 }}>
+                <Text style={[st.pressureLevel, { color: pressureInfo.color }]}>
+                  {pressureInfo.label}
+                </Text>
+                <Text style={st.condCardDetail}>{pressureInfo.description}</Text>
+              </View>
+            </View>
+            {pressureInfo.peakHours.length > 0 && (
+              <Text style={st.condCardDetail}>
+                Peak hours: {pressureInfo.peakHours.join(', ')}
+              </Text>
+            )}
+          </ConditionCard>
+        )}
+      </ScrollView>
     </Animated.View>
   );
 }
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
+const st = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: palette.background,
@@ -1324,11 +1071,6 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 24,
-  },
-  loadingText: {
-    color: palette.textMuted,
-    fontSize: 14,
-    marginTop: 8,
   },
   errorTitle: {
     color: palette.text,
@@ -1363,225 +1105,300 @@ const s = StyleSheet.create({
     flex: 1,
   },
 
-  // Header
-  header: {
-    backgroundColor: palette.surface,
-    paddingTop: 56,
+  // ── Hero Section ──────────────────────────────────────────────
+  heroSection: {
+    paddingTop: 52,
+    paddingHorizontal: 16,
     paddingBottom: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: palette.border,
-    gap: 10,
   },
-  headerTop: {
+  heroRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
     gap: 16,
   },
-  headerCenter: {
+  heroSummary: {
     flex: 1,
-    alignItems: 'center',
+    gap: 3,
   },
-  headerTitle: {
-    ...typeStyles.navHeader,
-    color: palette.text,
-  },
-  headerCoords: {
-    color: palette.textMuted,
-    fontSize: 12,
-    marginTop: 2,
-  },
-
-  // Mode toggle
-  modeToggle: {
+  locationRow: {
     flexDirection: 'row',
-    marginHorizontal: 16,
-    backgroundColor: palette.surfaceRaised,
-    borderRadius: 10,
-    padding: 3,
-  },
-  modeToggleBtn: {
-    flex: 1,
-    paddingVertical: 8,
     alignItems: 'center',
-    borderRadius: 8,
-  },
-  modeToggleBtnActive: {
-    backgroundColor: palette.surface,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  modeToggleText: {
-    color: palette.textMuted,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  modeToggleTextActive: {
-    color: palette.text,
-    fontWeight: '700',
-  },
-
-  // Day selector
-  dayRow: {
-    paddingHorizontal: 12,
     gap: 4,
+    marginBottom: 4,
   },
-  dayPill: {
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 16,
-    gap: 2,
-    minWidth: 52,
-  },
-  dayPillActive: {
-    backgroundColor: '#D6EAF5',
-    borderRadius: 16,
-  },
-  dayPillLabel: {
+  locationText: {
+    flex: 1,
+    fontSize: 13,
     color: palette.textSecondary,
-    fontSize: 12,
     fontWeight: '600',
   },
-  dayPillLabelActive: {
-    color: palette.accent,
+  heroCondition: {
+    fontSize: 16,
     fontWeight: '700',
-  },
-  dayPillDate: {
     color: palette.text,
-    fontSize: 18,
-    fontWeight: '700',
   },
-  dayPillDateActive: {
-    color: palette.accent,
+  heroTemp: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: palette.text,
+    letterSpacing: -0.5,
   },
-
-  // Vertical scroll
-  verticalScroll: {
-    flex: 1,
+  heroWind: {
+    fontSize: 12,
+    color: palette.textMuted,
+    fontWeight: '500',
   },
-
-  // Data grid
-  dataRow: {
+  heroBestTime: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+    backgroundColor: 'rgba(46,125,50,0.08)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  heroBestTimeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#2E7D32',
+  },
+
+  // ── Sections ──────────────────────────────────────────────────
+  sectionWrap: {
+    marginTop: 16,
+  },
+  sectionTitle: {
+    fontFamily: fonts.serif,
+    fontSize: 17,
+    color: palette.text,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+
+  // ── Hourly Scroll ─────────────────────────────────────────────
+  hourlyScroll: {
+    paddingHorizontal: 12,
+    gap: 6,
+  },
+  hourlyChip: {
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    width: 56,
+    gap: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  hourlyChipNow: {
+    backgroundColor: palette.accentLight,
+    borderWidth: 1,
+    borderColor: palette.accent + '30',
+  },
+  hourlyChipHour: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: palette.textSecondary,
+  },
+  hourlyScoreDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hourlyScoreText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  hourlyTemp: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: palette.text,
+  },
+
+  // ── Daily List ────────────────────────────────────────────────
+  dailyList: {
+    marginHorizontal: 12,
+    backgroundColor: palette.surface,
+    borderRadius: 14,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  dailyRow: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: palette.borderLight,
   },
-
-  // Label column (fixed left)
-  labelCell: {
-    width: LABEL_COL_WIDTH,
+  dailyRowMain: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 8,
+  },
+  dailyDayCol: {
+    width: 36,
+    alignItems: 'center',
+  },
+  dailyDayName: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: palette.text,
+  },
+  dailyDate: {
+    fontSize: 10,
+    color: palette.textMuted,
+    fontWeight: '500',
+  },
+  dailyScoreBarCol: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
-    backgroundColor: palette.surface,
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: palette.borderLight,
   },
-  labelText: {
-    color: palette.textSecondary,
-    fontSize: 11,
-    fontWeight: '600',
+  dailyScoreBar: {
+    height: 6,
+    borderRadius: 3,
+    minWidth: 8,
   },
-  sublabelText: {
-    color: palette.textMuted,
-    fontSize: 9,
-  },
-
-  // Data cells
-  dataCell: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: 'rgba(0,0,0,0.04)',
-  },
-  dataCellText: {
+  dailyScoreVal: {
     fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  fishScoreText: {
-    fontSize: 14,
     fontWeight: '800',
   },
-
-  // Now column
-  nowColumnHighlight: {
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderLeftColor: palette.accent,
-    borderRightColor: palette.accent,
-  },
-  nowColumnHeader: {
-    backgroundColor: palette.accentLight,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderLeftColor: palette.accent,
-    borderRightColor: palette.accent,
-  },
-  nowLabel: {
-    color: palette.accent,
-    fontSize: 11,
-    fontWeight: '800',
-  },
-
-  // Hour header
-  hourHeaderCell: {
-    width: DATA_COL_WIDTH,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: palette.surface,
-  },
-  hourHeaderLabel: {
-    color: palette.textMuted,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  hourLabel: {
-    color: palette.textSecondary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-
-  // Pressure sparkline
-  sparklineRow: {
+  dailyTemps: {
     flexDirection: 'row',
-    height: 28,
-    backgroundColor: '#FFF8E1',
+    gap: 4,
+    width: 52,
+    justifyContent: 'flex-end',
+  },
+  dailyHi: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: palette.text,
+  },
+  dailyLo: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: palette.textMuted,
+  },
+  dailyWindCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    width: 32,
+  },
+  dailyWindText: {
+    fontSize: 11,
+    color: palette.textMuted,
+    fontWeight: '600',
   },
 
-  // ── Inline Insight Cards ──────────────────────────────────────────
-  insightCard: {
+  // ── Daily Expanded ────────────────────────────────────────────
+  dailyExpanded: {
+    paddingHorizontal: 14,
+    paddingBottom: 12,
+    gap: 8,
+  },
+  dailyChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  infoChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: palette.surfaceRaised,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  infoChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: palette.textSecondary,
+  },
+
+  // ── Detail Grid ───────────────────────────────────────────────
+  detailGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  detailChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: palette.surfaceRaised,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+  detailChipLabel: {
+    fontSize: 10,
+    color: palette.textMuted,
+    fontWeight: '500',
+  },
+  detailChipValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: palette.text,
+  },
+
+  // ── Condition Cards ───────────────────────────────────────────
+  condCard: {
     backgroundColor: palette.surface,
     marginHorizontal: 12,
     marginTop: 12,
-    borderRadius: 12,
-    padding: 16,
-    gap: 10,
+    borderRadius: 14,
+    padding: 14,
     shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    elevation: 1,
   },
-  insightTitle: {
+  condCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  condCardTitle: {
+    flex: 1,
     fontFamily: fonts.serif,
     fontSize: 15,
     color: palette.text,
-    fontWeight: '400',
   },
-  insightDetail: {
+  condCardBody: {
+    marginTop: 12,
+    gap: 10,
+  },
+  condCardDetail: {
     fontSize: 12,
     color: palette.textMuted,
     lineHeight: 16,
   },
 
-  // Timeline bar
+  // ── AQI Row ───────────────────────────────────────────────────
+  aqiRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+
+  // ── Timeline ──────────────────────────────────────────────────
   timelineBar: {
     flexDirection: 'row',
     height: 14,
@@ -1604,7 +1421,7 @@ const s = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Window pills
+  // ── Window Pills ──────────────────────────────────────────────
   windowPills: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1635,7 +1452,7 @@ const s = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // Pressure inline
+  // ── Pressure Row ──────────────────────────────────────────────
   pressureRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -1644,126 +1461,5 @@ const s = StyleSheet.create({
   pressureLevel: {
     fontSize: 15,
     fontWeight: '700',
-  },
-  pressureDesc: {
-    fontSize: 12,
-    color: palette.textSecondary,
-    marginTop: 2,
-    lineHeight: 16,
-  },
-
-  // Water conditions grid
-  waterGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  waterItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: palette.surfaceRaised,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  waterItemLabel: {
-    fontSize: 11,
-    color: palette.textMuted,
-    fontWeight: '500',
-  },
-  waterItemValue: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-});
-
-// ── Extended Outlook styles ───────────────────────────────────────────────
-
-const os = StyleSheet.create({
-  sectionTitle: {
-    fontFamily: fonts.serifBold,
-    fontSize: 20,
-    color: palette.text,
-    marginBottom: 4,
-    letterSpacing: -0.3,
-  },
-  card: {
-    backgroundColor: palette.surface,
-    borderRadius: 14,
-    padding: 14,
-    gap: 10,
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dayName: {
-    fontFamily: fonts.serif,
-    fontSize: 16,
-    color: palette.text,
-  },
-  dateStr: {
-    fontSize: 12,
-    color: palette.textMuted,
-    marginTop: 1,
-  },
-  scoreBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  scoreText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  metricsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  metric: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 3,
-  },
-  metricValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: palette.text,
-    textAlign: 'center',
-  },
-  metricLabel: {
-    fontSize: 10,
-    color: palette.textMuted,
-    fontWeight: '500',
-  },
-  bottomRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: palette.surfaceRaised,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  chipText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: palette.textSecondary,
   },
 });

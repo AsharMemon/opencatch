@@ -230,8 +230,9 @@ const ALERT_REFRESH_MS = 30 * 60 * 1000;
 
 // ── Map style identifiers ────────────────────────────────────────
 
-type MapStyleKey = 'hybrid' | 'bathymetry' | 'satellite' | 'outdoors' | 'topo' | 'night' | 'nautical-chart';
+type MapStyleKey = 'opencatch' | 'hybrid' | 'bathymetry' | 'satellite' | 'outdoors' | 'topo' | 'night' | 'nautical-chart';
 const MAP_STYLE_LABELS: Record<MapStyleKey, string> = {
+  opencatch: 'OpenCatch',
   hybrid: 'Hybrid',
   bathymetry: 'Bathymetry',
   satellite: 'Satellite',
@@ -241,6 +242,7 @@ const MAP_STYLE_LABELS: Record<MapStyleKey, string> = {
   'nautical-chart': 'Nautical Chart',
 };
 const MAP_STYLE_IONICONS: Record<MapStyleKey, string> = {
+  opencatch: 'fish-outline',
   hybrid: 'earth-outline',
   bathymetry: 'water-outline',
   satellite: 'planet-outline',
@@ -249,7 +251,7 @@ const MAP_STYLE_IONICONS: Record<MapStyleKey, string> = {
   night: 'moon-outline',
   'nautical-chart': 'boat-outline',
 };
-const MAP_STYLE_KEYS: MapStyleKey[] = ['hybrid', 'bathymetry', 'satellite', 'outdoors', 'topo', 'night', 'nautical-chart'];
+const MAP_STYLE_KEYS: MapStyleKey[] = ['opencatch', 'hybrid', 'bathymetry', 'satellite', 'outdoors', 'topo', 'night', 'nautical-chart'];
 
 // NOAA nautical chart raster tile URL
 const NOAA_CHART_TILE_URL = 'https://tileservice.charts.noaa.gov/tiles/50000_1/{z}/{x}/{y}.png';
@@ -1883,7 +1885,7 @@ function LayerPicker({ visible, currentStyle, activeOverlays, showQualityPins, u
     <>
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       <Animated.View style={[styles.layerPickerCard, { opacity: fadeAnim }]}>
-        <ScrollView style={{ maxHeight: 460 }} showsVerticalScrollIndicator={false} bounces={false}>
+        <ScrollView style={{ maxHeight: 520 }} showsVerticalScrollIndicator={false} bounces={false}>
           <Text style={styles.layerSectionTitle}>MAP STYLE</Text>
           {MAP_STYLE_KEYS.filter((key) => {
             // Only show nautical chart option when near coast
@@ -2300,6 +2302,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [marinaPOIs, setMarinaPOIs] = useState<MarinaPOI[]>([]);
   const [marinasLoading, setMarinasLoading] = useState(false);
   const [selectedMarina, setSelectedMarina] = useState<MarinaPOI | null>(null);
+  // POI type filters — when non-empty, only show these types on the map
+  const [poiTypeFilters, setPOITypeFilters] = useState<Set<MarinaPOIType>>(new Set());
   const marinaFetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMarinaCenter = useRef<{ lat: number; lon: number } | null>(null);
 
@@ -3156,9 +3160,14 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     })),
   }), [waypoints, search]);
 
+  const filteredMarinaPOIs = useMemo(() => {
+    if (poiTypeFilters.size === 0) return marinaPOIs;
+    return marinaPOIs.filter((poi) => poiTypeFilters.has(poi.type));
+  }, [marinaPOIs, poiTypeFilters]);
+
   const marinaGeoJSON = useMemo((): GeoJSON.FeatureCollection => ({
     type: 'FeatureCollection',
-    features: marinaPOIs.map((poi) => ({
+    features: filteredMarinaPOIs.map((poi) => ({
       type: 'Feature',
       id: poi.id,
       geometry: {
@@ -3176,7 +3185,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         color: MARINA_POI_CONFIG[poi.type]?.color ?? '#2563EB',
       },
     })),
-  }), [marinaPOIs]);
+  }), [filteredMarinaPOIs]);
 
   const accessGeoJSON = useMemo(
     () => accessPointsToGeoJSON(accessPoints),
@@ -3724,6 +3733,21 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const handleToggleLayerPicker = useCallback(() => {
     setLayerPickerVisible((prev) => !prev);
   }, []);
+
+  /** Toggle a POI type filter and auto-enable the marinas layer */
+  const togglePOIType = useCallback((type: MarinaPOIType) => {
+    setPOITypeFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+    // Auto-enable marina fetching when a filter is toggled on
+    if (!marinasEnabled) setMarinasEnabled(true);
+  }, [marinasEnabled]);
 
   const handleToggleOverlay = useCallback((key: string) => {
     setActiveOverlays((prev) => {
@@ -5854,10 +5878,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         showQualityPins={showQualityPins}
         userLocation={userLocation}
         poiFilters={[
-          { key: 'marinas', label: 'Marinas', ionicon: 'boat-outline', isActive: marinasEnabled, onToggle: () => setMarinasEnabled((p) => !p) },
-          { key: 'marine-gas', label: 'Fuel Docks', ionicon: 'flame-outline', isActive: marineGasEnabled, onToggle: () => setMarineGasEnabled((p) => !p) },
+          { key: 'marinas', label: 'Marinas', ionicon: 'boat-outline', isActive: marinasEnabled && (poiTypeFilters.size === 0 || poiTypeFilters.has('marina')), onToggle: () => togglePOIType('marina') },
+          { key: 'fuel-docks', label: 'Fuel Docks', ionicon: 'flame-outline', isActive: marineGasEnabled, onToggle: () => setMarineGasEnabled((p) => !p) },
           { key: 'boat-launches', label: 'Boat Launches', ionicon: 'trail-sign-outline', isActive: accessEnabled, onToggle: () => setAccessEnabled((p) => !p) },
-          { key: 'tackle-shops', label: 'Tackle Shops', ionicon: 'cart-outline', isActive: activeOverlays.has('tackle-shops'), onToggle: () => handleToggleOverlay('tackle-shops') },
+          { key: 'tackle-shops', label: 'Tackle Shops', ionicon: 'cart-outline', isActive: marinasEnabled && poiTypeFilters.has('tackle_shop'), onToggle: () => togglePOIType('tackle_shop') },
         ]}
         onSelectStyle={setMapStyle}
         onToggleOverlay={handleToggleOverlay}
