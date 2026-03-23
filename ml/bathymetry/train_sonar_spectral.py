@@ -683,7 +683,6 @@ def train_ensemble(df: pd.DataFrame, output_dir: Path):
         reg_lambda=1.0,
         min_child_weight=5,
         num_leaves=127,
-        device="gpu",
         random_state=42,
         verbose=-1,
     )
