@@ -56,9 +56,11 @@ from tqdm import tqdm
 sys.path.insert(0, str(Path(__file__).parent))
 try:
     from sdb_preprocessing import SDBPreprocessor, compute_sdb_features_array
+    from physics_features import PhysicsFeatureExtractor
 except ImportError:
     sys.path.insert(0, "/root")
     from sdb_preprocessing import SDBPreprocessor
+    from physics_features import PhysicsFeatureExtractor
 
 logging.basicConfig(
     level=logging.INFO,
@@ -400,6 +402,14 @@ def process_single_lake(lake_dir: str, stac_client) -> Optional[pd.DataFrame]:
             return None
 
         result = pd.DataFrame(processed)
+        physics_input_cols = [col for col in ["blue", "green", "red", "nir", "rededge1"] if col in result.columns]
+        if {"blue", "green", "red"}.issubset(physics_input_cols):
+            # Avoid target leakage: do not expose depth_m while deriving physics features.
+            physics_df = result[physics_input_cols].copy()
+            physics_extractor = PhysicsFeatureExtractor()
+            physics_df = physics_extractor.compute_features_df(physics_df, prefix="phys_")
+            phys_cols = [col for col in physics_df.columns if col.startswith("phys_")]
+            result = pd.concat([result.reset_index(drop=True), physics_df[phys_cols].reset_index(drop=True)], axis=1)
         return result
 
     except Exception as e:

@@ -723,6 +723,10 @@ def main():
                        help="Max lakes to fetch")
     parser.add_argument("--rate-limit", type=float, default=0.3,
                        help="Seconds between API requests")
+    parser.add_argument("--water-body-type", choices=["all", "lake", "reservoir"],
+                       default="all",
+                       help="Filter by water body type: all, lake (PLD type=1), "
+                            "reservoir (PLD type=2)")
     args = parser.parse_args()
 
     os.makedirs(args.output, exist_ok=True)
@@ -753,6 +757,15 @@ def main():
     if not lake_ids:
         log.error("No PLD lake IDs discovered. Cannot proceed.")
         return
+
+    # Filter by water body type if requested
+    # PLD lake_id format: CBBNNNNNNT where T = type (1=lake, 2=reservoir)
+    if args.water_body_type == "reservoir":
+        lake_ids = [lid for lid in lake_ids if str(lid).endswith("2")]
+        log.info(f"Filtered to {len(lake_ids)} reservoirs (PLD type=2)")
+    elif args.water_body_type == "lake":
+        lake_ids = [lid for lid in lake_ids if str(lid).endswith("1")]
+        log.info(f"Filtered to {len(lake_ids)} natural lakes (PLD type=1)")
 
     lake_ids = lake_ids[:args.max_lakes]
     log.info(f"Processing {len(lake_ids)} lakes")

@@ -63,6 +63,7 @@ S2_BANDS_V2 = [
 # 9=cloud_high, 10=cirrus, 11=snow
 SCL_CLEAR = {4, 5, 6}       # Clear pixels (veg, soil, water)
 SCL_CLOUD = {7, 8, 9, 10}   # Cloud pixels to mask
+SCL_BAD = {0, 1, 3, 7, 8, 9, 10, 11}  # no-data, saturated, shadow, cloud, snow
 
 # Planetary Computer STAC
 # Element84 Earth Search — free, no auth, S3 COGs, much more reliable
@@ -343,16 +344,20 @@ def build_composite_for_lake(
     # Cloud mask from SCL
     scl = data["scl"].values  # (T, H, W)
     cloud_mask = np.zeros_like(scl, dtype=bool)
-    for scl_val in SCL_CLOUD:
+    for scl_val in SCL_BAD:
         cloud_mask |= (scl == scl_val)
 
+    # Also treat non-positive reflectance as unusable signal.
+    signal_mask = np.any(stack > 0, axis=1)
+    invalid_mask = cloud_mask | (~signal_mask)
+
     # Debug: log pre-masking stats
-    pre_valid = np.isfinite(stack[:, 0]).mean()
+    pre_valid = (np.isfinite(stack[:, 0]) & (stack[:, 0] > 0)).mean()
     cloud_pct = cloud_mask.mean()
     log.info(f"  {lake_name}: pre-mask valid={pre_valid:.0%}, cloud={cloud_pct:.0%}")
 
-    # Mask cloudy pixels
-    stack[cloud_mask[:, np.newaxis].repeat(len(S2_BANDS_V2), axis=1)] = np.nan
+    # Mask cloudy / invalid pixels
+    stack[invalid_mask[:, np.newaxis].repeat(len(S2_BANDS_V2), axis=1)] = np.nan
 
     post_valid = np.isfinite(stack[:, 0]).mean()
     log.info(f"  {lake_name}: post-mask valid={post_valid:.0%}")
@@ -370,11 +375,16 @@ def build_composite_for_lake(
     # Check for sufficient valid pixels (in the center region, not edges)
     ch, cw = composite.shape[1] // 4, composite.shape[2] // 4
     center = composite[0, ch:-ch, cw:-cw] if ch > 0 and cw > 0 else composite[0]
-    valid_frac = np.isfinite(center).mean()
+    valid_frac = (np.isfinite(center) & (center > 0)).mean()
     if valid_frac < 0.1:  # Lowered from 0.3 — even 10% is usable
         log.warning(f"  {lake_name}: only {valid_frac:.0%} valid pixels after masking")
         return None
     log.info(f"  {lake_name}: {valid_frac:.0%} valid pixels (center region)")
+
+    spectral_nonzero = np.count_nonzero(composite[: len(S2_BANDS_V2)])
+    if spectral_nonzero == 0:
+        log.warning(f"  {lake_name}: composite has zero spectral signal after masking; skipping")
+        return None
 
     # Fill remaining NaN with 0
     composite = np.nan_to_num(composite, nan=0.0)

@@ -496,16 +496,161 @@ class AutoEncoderModel(BaseModel):
             return depth.cpu().numpy()
 
 
+# ── Pre-Trained Model Wrappers ───────────────────────────────────────
+
+class HybridSonarModel(BaseModel):
+    """Wrapper for the pre-trained hybrid sonar+spectral model.
+
+    Loads artifacts from train_hybrid_sonar.py output directory and
+    runs inference through the trained pipeline.
+    """
+
+    name = "hybrid_sonar"
+    requires_spectral = True
+
+    def __init__(self, model_dir: str = "/data/models/hybrid_sonar"):
+        self.model_dir = Path(model_dir)
+        self._direct_model = None
+        self._log_model = None
+        self._config = None
+
+    def fit(self, X_train, y_train, X_val, y_val):
+        """Load pre-trained models instead of training from scratch."""
+        import pickle
+
+        config_path = self.model_dir / "config.json"
+        if config_path.exists():
+            with open(config_path) as f:
+                self._config = json.load(f)
+
+        # Find best direct model
+        for path in sorted(self.model_dir.glob("stage2_direct_*.pkl")):
+            try:
+                with open(path, "rb") as f:
+                    self._direct_model = pickle.load(f)
+                log.info(f"  HybridSonarModel loaded: {path.name}")
+                break
+            except Exception as e:
+                log.warning(f"  Could not load {path}: {e}")
+
+        # Find log-depth model
+        for path in sorted(self.model_dir.glob("stage2_log_depth_*.pkl")):
+            try:
+                with open(path, "rb") as f:
+                    self._log_model = pickle.load(f)
+                log.info(f"  HybridSonarModel loaded log model: {path.name}")
+                break
+            except Exception:
+                pass
+
+        if self._direct_model is None:
+            log.warning("  HybridSonarModel: no pre-trained model found, will return NaN")
+
+    def predict(self, X):
+        if self._direct_model is None:
+            return np.full(len(X), np.nan)
+
+        direct = np.clip(self._direct_model.predict(X), 0, 60)
+
+        if self._log_model is not None:
+            log_pred = np.clip(np.expm1(self._log_model.predict(X)), 0, 60)
+            alpha = np.clip(direct / 20.0, 0.0, 0.7)
+            return (1.0 - alpha) * direct + alpha * log_pred
+        return direct
+
+
+class TerrainPriorModel(BaseModel):
+    """Wrapper for the terrain depth prior model.
+
+    Predicts depth from surrounding DEM terrain features. Works for
+    turbid and deep lakes where spectral models fail.
+    """
+
+    name = "terrain_prior"
+    requires_spectral = False
+    requires_morphometric = True
+
+    def __init__(self, model_dir: str = "/data/models/terrain_depth"):
+        self.model_dir = Path(model_dir)
+        self._model = None
+
+    def fit(self, X_train, y_train, X_val, y_val):
+        """Load pre-trained terrain U-Net model."""
+        model_path = self.model_dir / "best_model.pt"
+        if model_path.exists():
+            try:
+                import torch
+                from terrain_depth_model import TerrainDepthUNet
+                self._model = TerrainDepthUNet()
+                self._model.load_state_dict(torch.load(model_path, map_location="cpu"))
+                self._model.eval()
+                log.info(f"  TerrainPriorModel loaded: {model_path}")
+            except Exception as e:
+                log.warning(f"  TerrainPriorModel load failed: {e}")
+        else:
+            log.warning(f"  TerrainPriorModel: no model at {model_path}")
+
+    def predict(self, X):
+        if self._model is None:
+            return np.full(len(X), np.nan)
+        import torch
+        with torch.no_grad():
+            X_t = torch.tensor(X.values if hasattr(X, 'values') else X, dtype=torch.float32)
+            return np.clip(self._model(X_t).numpy(), 0, 60)
+
+
+class TransferLearningModel(BaseModel):
+    """Wrapper for K-donor morphometric transfer learning.
+
+    Uses morphometric similarity to transfer depth profiles from
+    surveyed lakes to unsurveyed ones.
+    """
+
+    name = "transfer_learning"
+    requires_spectral = False
+    requires_morphometric = True
+
+    def __init__(self, k: int = 5):
+        self.k = k
+        self._donor_depths = None
+        self._nn = None
+        self._scaler = None
+
+    def fit(self, X_train, y_train, X_val, y_val):
+        """Build donor lake index from training data."""
+        from sklearn.neighbors import NearestNeighbors
+
+        self._scaler = StandardScaler()
+        X_scaled = self._scaler.fit_transform(X_train)
+        self._nn = NearestNeighbors(n_neighbors=min(self.k, len(X_train)), metric="euclidean")
+        self._nn.fit(X_scaled)
+        self._donor_depths = y_train.copy()
+        log.info(f"  TransferLearningModel: {len(X_train)} donor lakes, k={self.k}")
+
+    def predict(self, X):
+        if self._nn is None or self._scaler is None:
+            return np.full(len(X), np.nan)
+
+        X_scaled = self._scaler.transform(X.values if hasattr(X, 'values') else X)
+        dists, inds = self._nn.kneighbors(X_scaled)
+        weights = 1.0 / (dists + 1e-3)
+        weights = weights / weights.sum(axis=1, keepdims=True)
+        return np.sum(weights * self._donor_depths[inds], axis=1)
+
+
 # ── Model Registry ───────────────────────────────────────────────────
 
 MODEL_REGISTRY = {
-    "xgboost":      lambda **kw: XGBoostModel(**kw),
-    "rf":           lambda **kw: RandomForestModel(**kw),
-    "kan":          lambda **kw: KANModel(**kw),
-    "stumpf":       lambda **kw: StumpfModel(),
-    "lyzenga":      lambda **kw: LyzengaModel(),
-    "morphometric": lambda **kw: MorphometricModel(),
-    "autoencoder":  lambda **kw: AutoEncoderModel(**kw),
+    "xgboost":          lambda **kw: XGBoostModel(**kw),
+    "rf":               lambda **kw: RandomForestModel(**kw),
+    "kan":              lambda **kw: KANModel(**kw),
+    "stumpf":           lambda **kw: StumpfModel(),
+    "lyzenga":          lambda **kw: LyzengaModel(),
+    "morphometric":     lambda **kw: MorphometricModel(),
+    "autoencoder":      lambda **kw: AutoEncoderModel(**kw),
+    "hybrid_sonar":     lambda **kw: HybridSonarModel(**kw),
+    "terrain_prior":    lambda **kw: TerrainPriorModel(**kw),
+    "transfer_learning": lambda **kw: TransferLearningModel(**kw),
 }
 
 

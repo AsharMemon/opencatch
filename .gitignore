@@ -21,3 +21,17 @@ mobile/node_modules/
 castline/validation/artifacts/*.tmp
 catboost_info/
 lightning_logs/
+data/bathymetry/
+
+# Large data files (served from B2, not git)
+data/bathymetry/**/*.geojson
+data/bathymetry/**/*.zip
+data/bathymetry/**/*.parquet
+*.pmtiles
+*.pkl
+*.cbm
+infra/martin/tiles/
+castline/validation/data/assembled/*.csv
+castline/validation/data/raw/**/*.csv
+castline/models/*.pkl
+castline/models/*.cbm

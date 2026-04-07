@@ -6,3 +6,22 @@ postgres:
   auto_publish:
     tables: true
     functions: false
+
+# PMTiles bathymetry contours (15 tilesets, 640 MB)
+pmtiles:
+  sources:
+    mn_contours: /tiles/mn_contours.pmtiles
+    on_contours: /tiles/on_contours.pmtiles
+    mi_contours: /tiles/mi_contours.pmtiles
+    nh_contours: /tiles/nh_contours.pmtiles
+    fl_contours: /tiles/fl_contours.pmtiles
+    ab_contours: /tiles/ab_contours.pmtiles
+    mt_contours: /tiles/mt_contours.pmtiles
+    wa_contours: /tiles/wa_contours.pmtiles
+    ma_contours: /tiles/ma_contours.pmtiles
+    ne_contours: /tiles/ne_contours.pmtiles
+    vt_contours: /tiles/vt_contours.pmtiles
+    ia_contours: /tiles/ia_contours.pmtiles
+    lagos_contours: /tiles/lagos_contours.pmtiles
+    mb_contours: /tiles/mb_contours.pmtiles
+    sk_contours: /tiles/sk_contours.pmtiles

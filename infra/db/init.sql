@@ -65,10 +65,19 @@ CREATE TABLE IF NOT EXISTS bathymetry_contours (
     id SERIAL PRIMARY KEY,
     lake_id INTEGER REFERENCES locations(id),
     depth_ft FLOAT NOT NULL,
-    geom GEOMETRY(MultiLineString, 4326) NOT NULL
+    depth_m FLOAT,
+    geom GEOMETRY(Geometry, 4326) NOT NULL,  -- MultiLineString OR MultiPolygon (filled contours)
+    source VARCHAR(50),                       -- mn_dnr_survey | ml_tier1 | cudem | gebco | nhdplus
+    rmse_m FLOAT,                            -- estimated accuracy in meters
+    confidence FLOAT,                        -- 0.0-1.0
+    contour_quality VARCHAR(20),             -- survey | high | moderate | coarse | estimate
+    water_body_type VARCHAR(20),             -- lake | river | ocean | reservoir
+    attribution TEXT                         -- e.g. "MN DNR Lake Survey Program"
 );
 CREATE INDEX IF NOT EXISTS idx_bathy_geom ON bathymetry_contours USING GIST(geom);
 CREATE INDEX IF NOT EXISTS idx_bathy_lake ON bathymetry_contours (lake_id);
+CREATE INDEX IF NOT EXISTS idx_bathy_quality ON bathymetry_contours (contour_quality);
+CREATE INDEX IF NOT EXISTS idx_bathy_source ON bathymetry_contours (source);
 
 CREATE TABLE IF NOT EXISTS nhd_flowlines (
     id SERIAL PRIMARY KEY,

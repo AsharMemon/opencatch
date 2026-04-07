@@ -474,6 +474,61 @@ def generate_filled_contours(
     return {"type": "FeatureCollection", "features": features}
 
 
+# ── Point-Level Ensemble (for production orchestrator) ───────────────
+
+def point_level_ensemble(
+    base_predictions: dict[str, np.ndarray],
+    y_true: Optional[np.ndarray] = None,
+    meta_model: Optional[object] = None,
+) -> tuple[np.ndarray, np.ndarray, dict]:
+    """
+    Combine point-level predictions from multiple models using Ridge stacking.
+
+    This is the point-level analog of uncertainty_weighted_ensemble.
+    Used by run_lake_production.py for cross-lake prediction.
+
+    Args:
+        base_predictions: Dict mapping model name -> predicted depth array
+        y_true: If provided, fit the meta-learner (training mode)
+        meta_model: If provided, use this pre-fitted model (inference mode)
+
+    Returns:
+        (ensemble_pred, ensemble_std, model_weights_or_meta_model)
+    """
+    from sklearn.linear_model import Ridge
+
+    names = sorted(base_predictions.keys())
+    # Stack predictions, replacing NaN with 0
+    X_stack = np.column_stack([
+        np.nan_to_num(base_predictions[name], nan=0.0) for name in names
+    ])
+
+    if y_true is not None and meta_model is None:
+        # Training mode: fit Ridge meta-learner
+        valid = np.isfinite(y_true)
+        meta = Ridge(alpha=1.0, positive=True, fit_intercept=True)
+        meta.fit(X_stack[valid], y_true[valid])
+        pred = np.clip(meta.predict(X_stack), 0, 60)
+        residuals = y_true[valid] - pred[valid]
+        std = np.full(len(pred), float(np.std(residuals)))
+        weights = {name: float(w) for name, w in zip(names, meta.coef_)}
+        weights["intercept"] = float(meta.intercept_)
+        log.info(f"Point-level ensemble weights: {weights}")
+        return pred, std, {"meta_model": meta, "weights": weights, "feature_names": names}
+
+    elif meta_model is not None:
+        # Inference mode: use pre-fitted meta-learner
+        pred = np.clip(meta_model.predict(X_stack), 0, 60)
+        std = np.full(len(pred), 2.0)  # Placeholder uncertainty
+        return pred, std, {}
+
+    else:
+        # Simple average fallback
+        pred = np.nanmean(X_stack, axis=1)
+        std = np.nanstd(X_stack, axis=1)
+        return np.clip(pred, 0, 60), std, {name: 1.0 / len(names) for name in names}
+
+
 # ── Main Prediction Pipeline ─────────────────────────────────────────
 
 def predict_lake(

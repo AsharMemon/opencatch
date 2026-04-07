@@ -71,6 +71,7 @@ services:
       DATABASE_URL: postgresql://castline:castline@db:5432/castline
     volumes:
       - ./martin/config.yaml:/config.yaml
+      - ./martin/tiles:/tiles
     command: ["--config", "/config.yaml"]
     depends_on:
       db:

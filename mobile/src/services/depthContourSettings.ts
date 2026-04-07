@@ -228,3 +228,107 @@ export async function resetContourSettings(): Promise<DepthContourSettings> {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
   return defaults;
 }
+
+// ── Confidence-Adaptive Styling ──────────────────────────────────────────────
+
+/**
+ * Contour quality levels from the bathymetry pipeline.
+ * Each contour polygon carries a `contour_quality` property.
+ */
+export type ContourQuality = 'survey' | 'high' | 'moderate' | 'coarse' | 'estimate';
+
+/**
+ * Build MapLibre line style that adapts to data confidence.
+ * Survey data gets solid, thick lines. Estimates get thin, dashed lines.
+ */
+export function buildConfidenceLineWidth(): any[] {
+  return [
+    'match',
+    ['get', 'contour_quality'],
+    'survey', 2.0,
+    'high', 1.5,
+    'moderate', 1.0,
+    'coarse', 0.7,
+    'estimate', 0.5,
+    1.0, // fallback
+  ];
+}
+
+/**
+ * Build MapLibre line opacity that fades with lower confidence.
+ */
+export function buildConfidenceLineOpacity(): any[] {
+  return [
+    'interpolate',
+    ['linear'],
+    ['coalesce', ['get', 'confidence'], 0.5],
+    0.0, 0.25,
+    0.3, 0.5,
+    0.7, 0.8,
+    1.0, 1.0,
+  ];
+}
+
+/**
+ * Build MapLibre fill opacity for filled contours.
+ * Higher confidence = more opaque fills.
+ */
+export function buildConfidenceFillOpacity(baseOpacity: number): any[] {
+  return [
+    'interpolate',
+    ['linear'],
+    ['coalesce', ['get', 'confidence'], 0.5],
+    0.0, baseOpacity * 0.3,
+    0.5, baseOpacity * 0.6,
+    1.0, baseOpacity,
+  ];
+}
+
+/**
+ * Data quality overlay colors (green = survey, red = estimate).
+ * Used for the "Data Quality" toggle layer.
+ */
+export const DATA_QUALITY_COLORS: Record<ContourQuality, string> = {
+  survey: '#4CAF50',    // green
+  high: '#8BC34A',      // light green
+  moderate: '#FFC107',  // yellow
+  coarse: '#FF9800',    // orange
+  estimate: '#F44336',  // red
+};
+
+/**
+ * Build the data quality overlay fill-color expression.
+ */
+export function buildDataQualityColorExpression(): any[] {
+  return [
+    'match',
+    ['get', 'contour_quality'],
+    'survey', DATA_QUALITY_COLORS.survey,
+    'high', DATA_QUALITY_COLORS.high,
+    'moderate', DATA_QUALITY_COLORS.moderate,
+    'coarse', DATA_QUALITY_COLORS.coarse,
+    'estimate', DATA_QUALITY_COLORS.estimate,
+    '#9E9E9E', // fallback gray
+  ];
+}
+
+/**
+ * Get human-readable source label for display.
+ */
+export function getSourceLabel(source: string): string {
+  const labels: Record<string, string> = {
+    mn_dnr_survey: 'MN DNR Survey',
+    wi_dnr_survey: 'WI DNR Survey',
+    mi_dnr_survey: 'MI DNR Survey',
+    cudem: 'NOAA Chart',
+    gebco: 'Global Ocean Chart',
+    emodnet: 'European Chart',
+    ml_tier1: 'Satellite Model',
+    ml_tier2: 'Satellite Estimate',
+    ml_tier3: 'Basin Estimate',
+    nhdplus: 'River Estimate',
+    morphometric: 'Shape Estimate',
+    '3d_lakes': 'Global Lake Model',
+  };
+  return labels[source] || source;
+}

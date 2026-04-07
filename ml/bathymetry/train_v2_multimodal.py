@@ -48,7 +48,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.cuda.amp import GradScaler, autocast
-from torch.utils.data import DataLoader, Dataset, random_split
+from torch.utils.data import DataLoader, Dataset
 
 logging.basicConfig(
     level=logging.INFO,
@@ -533,12 +533,13 @@ class MultiModalBathyDataset(Dataset):
         patch_size: int = 256,
         augment: bool = True,
         crops_per_lake: int = 16,
+        samples: Optional[list[dict]] = None,
     ):
         self.data_dir = Path(data_dir)
         self.patch_size = patch_size
         self.augment = augment
         self.crops_per_lake = crops_per_lake
-        self.samples = self._scan()
+        self.samples = samples if samples is not None else self._scan()
         log.info(f"Dataset: {len(self.samples)} lakes, {len(self)} total crops")
 
     def _scan(self) -> list[dict]:
@@ -557,6 +558,7 @@ class MultiModalBathyDataset(Dataset):
                 "mask": lake_dir / "mask.tif",
                 "shoreline": lake_dir / "shoreline.tif",
                 "sparse": False,
+                "lake_id": lake_dir.name,
             })
 
         # Sparse labels (ICESat-2)
@@ -573,6 +575,7 @@ class MultiModalBathyDataset(Dataset):
                     "mask": lake_dir / "mask.tif",
                     "shoreline": lake_dir / "shoreline.tif",
                     "sparse": True,
+                    "lake_id": lake_dir.name,
                 })
 
         if not samples:
@@ -662,6 +665,7 @@ class MultiModalBathyDataset(Dataset):
             "water_mask": torch.from_numpy(water_mask[np.newaxis]),
             "shoreline": torch.from_numpy(shoreline[np.newaxis]),
             "label_mask": torch.from_numpy(label_mask[np.newaxis]),
+            "lake_id": sample.get("lake_id"),
         }
 
     def _augment(
@@ -734,6 +738,64 @@ def compute_metrics(
     return {"rmse": rmse, "mae": mae, "r2": r2}
 
 
+def split_samples_by_lake(
+    samples: list[dict],
+    val_frac: float = 0.2,
+    seed: int = 42,
+) -> tuple[list[dict], list[dict]]:
+    """Split samples by lake so no lake leaks between train and validation."""
+    lake_ids = sorted({s["lake_id"] for s in samples})
+    rng = np.random.default_rng(seed)
+    rng.shuffle(lake_ids)
+
+    n_val = max(1, int(round(len(lake_ids) * val_frac)))
+    val_lakes = set(lake_ids[:n_val])
+
+    train_samples = [s for s in samples if s["lake_id"] not in val_lakes]
+    val_samples = [s for s in samples if s["lake_id"] in val_lakes]
+    return train_samples, val_samples
+
+
+def audit_spectral_coverage(
+    samples: list[dict],
+    max_lakes: int = 32,
+) -> None:
+    """
+    Audit whether Sentinel-2 bands are actually populated.
+
+    We've seen training directories where the DEM channels were present but
+    the first 10 Sentinel-2 bands were all zero, which silently turns the
+    multimodal model into a terrain-only model.
+    """
+    if not samples:
+        return
+
+    import rasterio
+
+    checked = 0
+    zero_s2 = 0
+    for sample in samples[:max_lakes]:
+        try:
+            with rasterio.open(sample["composite"]) as src:
+                composite = src.read()
+            if np.count_nonzero(composite[:N_S2_BANDS]) == 0:
+                zero_s2 += 1
+            checked += 1
+        except Exception:
+            continue
+
+    if checked == 0:
+        return
+
+    frac = zero_s2 / checked
+    if frac > 0:
+        log.warning(
+            f"S2 coverage audit: {zero_s2}/{checked} sampled lakes have zero-valued "
+            f"Sentinel-2 bands. This will cap spectral performance until composites "
+            f"are rebuilt."
+        )
+
+
 # ── Training Loop ────────────────────────────────────────────────────
 
 def train(args: argparse.Namespace) -> None:
@@ -759,13 +821,32 @@ def train(args: argparse.Namespace) -> None:
         log.error("Expected structure: <lake_dir>/composite.tif + depth.tif")
         return
 
-    # Split: 80/20
-    n_val_lakes = max(1, len(dataset.samples) // 5)
-    n_train_lakes = len(dataset.samples) - n_val_lakes
-    n_val = n_val_lakes * args.crops_per_lake
-    n_train = len(dataset) - n_val
+    audit_spectral_coverage(dataset.samples)
 
-    train_ds, val_ds = random_split(dataset, [n_train, n_val])
+    # Honest split: by lake, not by random crop.
+    train_samples, val_samples = split_samples_by_lake(
+        dataset.samples,
+        val_frac=0.2,
+        seed=args.seed,
+    )
+    train_ds = MultiModalBathyDataset(
+        args.data_dir,
+        patch_size=args.patch_size,
+        augment=True,
+        crops_per_lake=args.crops_per_lake,
+        samples=train_samples,
+    )
+    val_ds = MultiModalBathyDataset(
+        args.data_dir,
+        patch_size=args.patch_size,
+        augment=False,
+        crops_per_lake=args.crops_per_lake,
+        samples=val_samples,
+    )
+    n_train_lakes = len(train_samples)
+    n_val_lakes = len(val_samples)
+    n_train = len(train_ds)
+    n_val = len(val_ds)
 
     train_loader = DataLoader(
         train_ds,
@@ -1080,6 +1161,8 @@ def main():
                         help="Random crops per lake per epoch")
     parser.add_argument("--workers", type=int, default=4,
                         help="DataLoader workers")
+    parser.add_argument("--seed", type=int, default=42,
+                        help="Random seed for the lake-level train/val split")
     parser.add_argument("--device", type=str, default="cuda",
                         help="Compute device (cuda/cpu)")
 

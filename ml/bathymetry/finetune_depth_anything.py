@@ -45,7 +45,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.amp import GradScaler, autocast
-from torch.utils.data import DataLoader, Dataset, random_split
+from torch.utils.data import DataLoader, Dataset
 
 logging.basicConfig(
     level=logging.INFO,
@@ -210,12 +210,13 @@ class SatelliteDepthDataset(Dataset):
         patch_size: int = 384,  # DA V2 prefers larger patches
         augment: bool = True,
         crops_per_lake: int = 16,
+        samples: Optional[list[dict]] = None,
     ):
         self.data_dir = Path(data_dir)
         self.patch_size = patch_size
         self.augment = augment
         self.crops_per_lake = crops_per_lake
-        self.samples = self._scan()
+        self.samples = samples if samples is not None else self._scan()
 
     def _scan(self) -> list[dict]:
         """Find composite + depth pairs."""
@@ -226,6 +227,7 @@ class SatelliteDepthDataset(Dataset):
                 samples.append({
                     "composite": composite_path,
                     "depth": depth_path,
+                    "lake_id": composite_path.parent.name,
                 })
         log.info(f"Found {len(samples)} training lakes for DA V2")
         return samples
@@ -290,6 +292,7 @@ class SatelliteDepthDataset(Dataset):
             "pixel_values": torch.from_numpy(rgb_norm.astype(np.float32)),
             "depth": torch.from_numpy(depth[np.newaxis].astype(np.float32)),
             "label_mask": torch.from_numpy(label_mask[np.newaxis].astype(np.float32)),
+            "lake_id": sample.get("lake_id"),
         }
 
     def _augment(
@@ -329,6 +332,24 @@ class SatelliteDepthDataset(Dataset):
         return rgb, depth, mask
 
 
+def split_samples_by_lake(
+    samples: list[dict],
+    val_frac: float = 0.2,
+    seed: int = 42,
+) -> tuple[list[dict], list[dict]]:
+    """Split training samples by lake_id to avoid crop-level leakage."""
+    lake_ids = sorted({sample["lake_id"] for sample in samples})
+    rng = np.random.default_rng(seed)
+    rng.shuffle(lake_ids)
+
+    n_val = max(1, int(round(len(lake_ids) * val_frac)))
+    val_lakes = set(lake_ids[:n_val])
+
+    train_samples = [s for s in samples if s["lake_id"] not in val_lakes]
+    val_samples = [s for s in samples if s["lake_id"] in val_lakes]
+    return train_samples, val_samples
+
+
 # ── Training ─────────────────────────────────────────────────────────
 
 def train(args: argparse.Namespace) -> None:
@@ -364,10 +385,27 @@ def train(args: argparse.Namespace) -> None:
         log.error(f"No training data found in {args.data_dir}")
         return
 
-    n_val = max(1, len(dataset.samples) // 5)
-    n_val_crops = n_val * args.crops_per_lake
-    n_train_crops = len(dataset) - n_val_crops
-    train_ds, val_ds = random_split(dataset, [n_train_crops, n_val_crops])
+    train_samples, val_samples = split_samples_by_lake(
+        dataset.samples,
+        val_frac=0.2,
+        seed=args.seed,
+    )
+    train_ds = SatelliteDepthDataset(
+        args.data_dir,
+        patch_size=args.patch_size,
+        augment=True,
+        crops_per_lake=args.crops_per_lake,
+        samples=train_samples,
+    )
+    val_ds = SatelliteDepthDataset(
+        args.data_dir,
+        patch_size=args.patch_size,
+        augment=False,
+        crops_per_lake=args.crops_per_lake,
+        samples=val_samples,
+    )
+    n_train_crops = len(train_ds)
+    n_val_crops = len(val_ds)
 
     train_loader = DataLoader(
         train_ds, batch_size=args.batch_size, shuffle=True,
@@ -629,6 +667,8 @@ def main():
                         help="Random crops per lake")
     parser.add_argument("--workers", type=int, default=4,
                         help="DataLoader workers")
+    parser.add_argument("--seed", type=int, default=42,
+                        help="Random seed for lake-level train/val split")
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--resume", action="store_true", default=True)
     parser.add_argument("--no-resume", dest="resume", action="store_false")
