@@ -180,44 +180,69 @@ class ContourTilePipeline:
         gdf = gpd.read_file(contour_path)
         log.info(f"  Loaded {len(gdf)} features")
 
+        if len(gdf) == 0:
+            raise ValueError(f"No features found in {contour_path}")
+
         # Validate geometries
         invalid = ~gdf.geometry.is_valid
         if invalid.any():
             log.info(f"  Fixing {invalid.sum()} invalid geometries")
             gdf.loc[invalid, "geometry"] = gdf.loc[invalid, "geometry"].apply(make_valid)
 
-        # Add layer type
-        gdf["_layer"] = "contour_fills"
+        geom_types = gdf.geometry.geom_type.fillna("")
+        frames = []
 
-        # Compute area for zoom-dependent visibility
-        gdf_proj = gdf.to_crs(epsg=3857)
-        gdf["_area_m2"] = gdf_proj.geometry.area
+        polygon_mask = geom_types.str.contains("Polygon")
+        if polygon_mask.any():
+            fills = gdf.loc[polygon_mask].copy()
+            fills["_layer"] = fills.get("_layer", "contour_fills")
 
-        # Zoom-dependent min-area thresholds (sq metres on screen)
-        # At zoom 5, hide polygons < 50000 m2; at zoom 16, show everything
-        gdf["_minzoom"] = 5  # default
-        gdf.loc[gdf["_area_m2"] < 500, "_minzoom"] = 14
-        gdf.loc[(gdf["_area_m2"] >= 500) & (gdf["_area_m2"] < 5000), "_minzoom"] = 12
-        gdf.loc[(gdf["_area_m2"] >= 5000) & (gdf["_area_m2"] < 50000), "_minzoom"] = 9
-        gdf.loc[gdf["_area_m2"] >= 50000, "_minzoom"] = 5
+            fills_proj = fills.to_crs(epsg=3857)
+            fills["_area_m2"] = fills_proj.geometry.area
+            fills["_minzoom"] = 5
+            fills.loc[fills["_area_m2"] < 500, "_minzoom"] = 14
+            fills.loc[(fills["_area_m2"] >= 500) & (fills["_area_m2"] < 5000), "_minzoom"] = 12
+            fills.loc[(fills["_area_m2"] >= 5000) & (fills["_area_m2"] < 50000), "_minzoom"] = 9
+            fills.loc[fills["_area_m2"] >= 50000, "_minzoom"] = 5
+            fills.loc[fills["_area_m2"] > 100_000, "geometry"] = (
+                fills.loc[fills["_area_m2"] > 100_000, "geometry"].simplify(0.00005)
+            )
+            fills = fills.drop(columns=[c for c in ["_area_m2"] if c in fills.columns])
+            frames.append(fills)
 
-        # Simplify large geometries for efficiency
-        gdf.loc[gdf["_area_m2"] > 100_000, "geometry"] = (
-            gdf.loc[gdf["_area_m2"] > 100_000, "geometry"].simplify(0.00005)
-        )
+            lines_gdf = fills.copy()
+            lines_gdf["geometry"] = lines_gdf.geometry.boundary
+            lines_gdf["_layer"] = "contour_lines"
+            frames.append(lines_gdf)
 
-        # Drop internal area column before export
-        cols_to_drop = ["_area_m2"]
-        gdf = gdf.drop(columns=[c for c in cols_to_drop if c in gdf.columns])
+        line_mask = geom_types.str.contains("LineString")
+        if line_mask.any():
+            lines = gdf.loc[line_mask].copy()
+            lines["_layer"] = lines.get("_layer", "contour_lines")
+            lines_proj = lines.to_crs(epsg=3857)
+            lines["_length_m"] = lines_proj.geometry.length
+            lines["_minzoom"] = 5
+            lines.loc[lines["_length_m"] < 50, "_minzoom"] = 14
+            lines.loc[(lines["_length_m"] >= 50) & (lines["_length_m"] < 250), "_minzoom"] = 12
+            lines.loc[(lines["_length_m"] >= 250) & (lines["_length_m"] < 1000), "_minzoom"] = 9
+            lines = lines.drop(columns=[c for c in ["_length_m"] if c in lines.columns])
+            frames.append(lines)
 
-        # Build line features from polygon boundaries
-        lines_gdf = gdf.copy()
-        lines_gdf["geometry"] = lines_gdf.geometry.boundary
-        lines_gdf["_layer"] = "contour_lines"
+        point_mask = geom_types.str.contains("Point")
+        if point_mask.any():
+            points = gdf.loc[point_mask].copy()
+            points["_layer"] = points.get("_layer", "depth_labels")
+            if "minzoom" in points.columns:
+                points["_minzoom"] = points["minzoom"]
+            else:
+                points["_minzoom"] = 10
+            frames.append(points)
 
-        # Combine fills + lines
+        if not frames:
+            raise ValueError(f"Unsupported geometry types in {contour_path}: {sorted(set(geom_types))}")
+
         combined = gpd.GeoDataFrame(
-            __import__("pandas").concat([gdf, lines_gdf], ignore_index=True),
+            __import__("pandas").concat(frames, ignore_index=True),
             crs=gdf.crs,
         )
 
@@ -293,6 +318,7 @@ class ContourTilePipeline:
             "--detect-shared-borders",
             "--no-tile-compression",  # let CDN handle compression
             "--force",
+            "--layer=contours",
             f"--name=OpenCatch Contours",
             f"--description=Bathymetry contour tiles for OpenCatch",
             f"--attribution=OpenCatch",
