@@ -117,6 +117,13 @@ export interface BoatRouteProfile {
   fuelPricePerGallon: number;
 }
 
+export interface RouteProbeResult {
+  onWater: boolean;
+  depthM: number | null;
+}
+
+export type RouteProbe = (point: LatLng) => Promise<RouteProbeResult>;
+
 // ── Storage ──────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = '@opencatch/saved_routes';
@@ -156,6 +163,112 @@ function interpolateSegment(from: LatLng, to: LatLng, intervalNm: number = 0.1):
     });
   }
   return points;
+}
+
+function offsetPointNm(from: LatLng, to: LatLng, offsetNm: number, side: 1 | -1): LatLng {
+  const meanLatRad = ((from.lat + to.lat) / 2) * Math.PI / 180;
+  const dx = (to.lon - from.lon) * Math.cos(meanLatRad);
+  const dy = to.lat - from.lat;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = (-dy / len) * side;
+  const ny = (dx / len) * side;
+  const midpoint = {
+    lat: (from.lat + to.lat) / 2,
+    lon: (from.lon + to.lon) / 2,
+  };
+  const offsetDegLat = offsetNm / 60;
+  const offsetDegLon = offsetDegLat / Math.max(Math.cos(meanLatRad), 0.2);
+  return {
+    lat: midpoint.lat + ny * offsetDegLat,
+    lon: midpoint.lon + nx * offsetDegLon,
+  };
+}
+
+async function scoreRoutePath(
+  path: LatLng[],
+  draftMeters: number,
+  probe: RouteProbe,
+): Promise<{ score: number; minDepthM: number | null; landHits: number; shallowHits: number }> {
+  let landHits = 0;
+  let shallowHits = 0;
+  let minDepthM: number | null = null;
+
+  for (let i = 0; i < path.length - 1; i++) {
+    const samples = interpolateSegment(path[i], path[i + 1], 0.15);
+    for (const sample of samples) {
+      const result = await probe(sample);
+      if (!result.onWater) {
+        landHits += 1;
+        continue;
+      }
+      if (typeof result.depthM === 'number' && Number.isFinite(result.depthM)) {
+        minDepthM = minDepthM == null ? result.depthM : Math.min(minDepthM, result.depthM);
+        if (result.depthM < draftMeters) {
+          shallowHits += 2;
+        } else if (result.depthM < draftMeters + 0.5) {
+          shallowHits += 1;
+        }
+      }
+    }
+  }
+
+  const totalNm = path.slice(1).reduce((sum, point, index) => {
+    return sum + calculateDistance(
+      { lat: path[index].lat, lon: path[index].lon },
+      { lat: point.lat, lon: point.lon },
+    );
+  }, 0);
+
+  return {
+    score: landHits * 1000 + shallowHits * 120 + totalNm * 4,
+    minDepthM,
+    landHits,
+    shallowHits,
+  };
+}
+
+export async function autorouteWaypoints(
+  waypoints: LatLng[],
+  draftMeters: number,
+  probe: RouteProbe,
+): Promise<LatLng[]> {
+  if (waypoints.length < 2) return waypoints;
+
+  const routed: LatLng[] = [waypoints[0]];
+
+  for (let i = 0; i < waypoints.length - 1; i++) {
+    const start = routed[routed.length - 1];
+    const end = waypoints[i + 1];
+    const direct = [start, end];
+    const directScore = await scoreRoutePath(direct, draftMeters, probe);
+
+    let bestPath = direct;
+    let bestScore = directScore.score;
+
+    const segmentNm = calculateDistance(
+      { lat: start.lat, lon: start.lon },
+      { lat: end.lat, lon: end.lon },
+    );
+    const offsets = [0.25, 0.5, 1, 2, Math.min(Math.max(segmentNm * 0.2, 0.75), 3)];
+
+    for (const offsetNm of offsets) {
+      for (const side of [1, -1] as const) {
+        const mid = offsetPointNm(start, end, offsetNm, side);
+        const candidate = [start, mid, end];
+        const candidateScore = await scoreRoutePath(candidate, draftMeters, probe);
+        if (candidateScore.score < bestScore) {
+          bestPath = candidate;
+          bestScore = candidateScore.score;
+        }
+      }
+    }
+
+    for (const point of bestPath.slice(1)) {
+      routed.push(point);
+    }
+  }
+
+  return routed;
 }
 
 /**

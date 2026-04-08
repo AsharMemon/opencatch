@@ -184,13 +184,14 @@ import {
   type DepthContourSettings,
 } from '../services/depthContourSettings';
 import {
-  MARTIN_CONTOUR_SOURCES,
+  getMartinContourSourcesForBounds,
   getBathyLayerIds,
   getDepthFromRenderedFeatures,
   getLakeAttributionFromRenderedFeatures,
   formatDepth as formatContourDepth,
   getQualityIcon as getContourQualityIcon,
   getColorForDepth,
+  type SourceBounds as ContourSourceBounds,
   type DepthResult as ContourDepthResult,
   type LakeAttribution as ContourLakeAttribution,
 } from '../services/contourMapService';
@@ -213,6 +214,7 @@ import { MapLongPressMenu, type LongPressAction, type LongPressCoordinate } from
 import { MapInfoBar, type AnchorWatchInfo, type RouteNavInfo } from '../components/MapInfoBar';
 import {
   calculateRouteMetrics,
+  autorouteWaypoints,
   checkRouteDepth,
   createRoute,
   getDefaultBoatRouteProfile,
@@ -288,6 +290,39 @@ function makeRoutePointGeoJSON(points: RouteLatLng[]): GeoJSON.FeatureCollection
         coordinates: [point.lon, point.lat],
       },
     })),
+  };
+}
+
+function toContourBounds(bounds: any): ContourSourceBounds | null {
+  if (!Array.isArray(bounds) || !Array.isArray(bounds[0]) || !Array.isArray(bounds[1])) {
+    return null;
+  }
+
+  const lonA = Number(bounds[0][0]);
+  const latA = Number(bounds[0][1]);
+  const lonB = Number(bounds[1][0]);
+  const latB = Number(bounds[1][1]);
+
+  if (![lonA, latA, lonB, latB].every(Number.isFinite)) {
+    return null;
+  }
+
+  return {
+    minLon: Math.min(lonA, lonB),
+    minLat: Math.min(latA, latB),
+    maxLon: Math.max(lonA, lonB),
+    maxLat: Math.max(latA, latB),
+  };
+}
+
+function estimateBoundsFromCenter(center: RouteLatLng, zoom: number): ContourSourceBounds {
+  const latSpan = 180 / Math.pow(2, Math.max(zoom - 1, 1));
+  const lonSpan = latSpan * Math.max(Math.cos((center.lat * Math.PI) / 180), 0.35);
+  return {
+    minLon: center.lon - lonSpan,
+    minLat: center.lat - latSpan / 2,
+    maxLon: center.lon + lonSpan,
+    maxLat: center.lat + latSpan / 2,
   };
 }
 
@@ -2718,11 +2753,13 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [plannedRoute, setPlannedRoute] = useState<PlannedRoute | null>(null);
   const [routeMetrics, setRouteMetrics] = useState<RouteMetrics | null>(null);
   const [routeWarnings, setRouteWarnings] = useState<ShallowWarning[]>([]);
+  const [routeAlerts, setRouteAlerts] = useState<string[]>([]);
   const [routeBoatProfile, setRouteBoatProfile] = useState<BoatRouteProfile | null>(null);
   const [routeDepthChecking, setRouteDepthChecking] = useState(false);
   const [routeNavActive, setRouteNavActive] = useState(false);
   const [routeNavIndex, setRouteNavIndex] = useState(1);
   const [routeNavInfo, setRouteNavInfo] = useState<RouteNavInfo | undefined>(undefined);
+  const [visibleContourBounds, setVisibleContourBounds] = useState<ContourSourceBounds | null>(null);
 
   // Compass heading
   const [compassMode, setCompassMode] = useState<CompassMode>('static');
@@ -3064,6 +3101,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     setPlannedRoute(null);
     setRouteMetrics(null);
     setRouteWarnings([]);
+    setRouteAlerts([]);
   }, []);
 
   const handleSavePlannedRoute = useCallback(async () => {
@@ -3077,6 +3115,33 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     }
   }, [plannedRoute, routeName]);
 
+  const probeRoutePoint = useCallback(async (point: RouteLatLng) => {
+    if (!mapRef.current?.getPointInView || !mapRef.current?.queryRenderedFeaturesAtPoint) {
+      return { onWater: true, depthM: null };
+    }
+
+    try {
+      const screenPoint = await mapRef.current.getPointInView([point.lon, point.lat]);
+      const waterResult = await mapRef.current.queryRenderedFeaturesAtPoint(
+        screenPoint,
+        undefined,
+        ['water', 'water-polygon', 'waterway'],
+      );
+      const bathyResult = await mapRef.current.queryRenderedFeaturesAtPoint(
+        screenPoint,
+        undefined,
+        [...getBathyLayerIds('fill'), ...getBathyLayerIds('line')],
+      );
+      const depth = getDepthFromRenderedFeatures(bathyResult);
+      return {
+        onWater: !!waterResult?.features?.length,
+        depthM: depth?.depthM ?? null,
+      };
+    } catch {
+      return { onWater: true, depthM: null };
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -3084,6 +3149,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       setPlannedRoute(null);
       setRouteMetrics(null);
       setRouteWarnings([]);
+      setRouteAlerts([]);
       if (routePoints.length < 2) {
         setRouteNavActive(false);
         setRouteNavIndex(1);
@@ -3092,16 +3158,31 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       return undefined;
     }
 
-    const baseRoute = createRoute(routePoints, routeName || undefined);
-    const baseMetrics = calculateRouteMetrics(baseRoute, routeBoatProfile);
-    const seededRoute = { ...baseRoute, metrics: baseMetrics };
-
-    setPlannedRoute(seededRoute);
-    setRouteMetrics(baseMetrics);
-    setRouteWarnings(baseMetrics.shallowWarnings);
     setRouteDepthChecking(true);
 
-    checkRouteDepth(seededRoute, routeBoatProfile.draftMeters)
+    Promise.resolve()
+      .then(async () => {
+        const routedWaypoints = await autorouteWaypoints(
+          routePoints,
+          routeBoatProfile.draftMeters,
+          probeRoutePoint,
+        );
+        const rerouted = routedWaypoints.length > routePoints.length;
+        const baseRoute = createRoute(routedWaypoints, routeName || undefined);
+        const baseMetrics = calculateRouteMetrics(baseRoute, routeBoatProfile);
+        const seededRoute = { ...baseRoute, metrics: baseMetrics };
+        if (!cancelled) {
+          setPlannedRoute(seededRoute);
+          setRouteMetrics(baseMetrics);
+          setRouteWarnings(baseMetrics.shallowWarnings);
+          setRouteAlerts(
+            rerouted
+              ? ['Auto-adjusted around land or shallow water where possible']
+              : [],
+          );
+        }
+        return checkRouteDepth(seededRoute, routeBoatProfile.draftMeters);
+      })
       .then(({ route, warnings }) => {
         if (cancelled) return;
         const metrics = calculateRouteMetrics(route, routeBoatProfile);
@@ -3112,6 +3193,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       .catch(() => {
         if (!cancelled) {
           setRouteWarnings([]);
+          setRouteAlerts([]);
         }
       })
       .finally(() => {
@@ -3123,7 +3205,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     return () => {
       cancelled = true;
     };
-  }, [routeBoatProfile, routeName, routePoints]);
+  }, [probeRoutePoint, routeBoatProfile, routeName, routePoints]);
 
   useEffect(() => {
     if (!routeNavActive || !plannedRoute || !userLocation) {
@@ -4047,6 +4129,15 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     if (zoom !== undefined) setCurrentZoom(zoom);
     const bearing = feature?.properties?.heading ?? feature?.properties?.bearing;
     if (bearing !== undefined) setCompassHeading(bearing);
+    if (feature?.properties?.visibleBounds) {
+      const nextBounds = toContourBounds(feature.properties.visibleBounds);
+      if (nextBounds) {
+        setVisibleContourBounds(nextBounds);
+      }
+    } else if (feature?.geometry?.coordinates && zoom !== undefined) {
+      const [lon, lat] = feature.geometry.coordinates as [number, number];
+      setVisibleContourBounds(estimateBoundsFromCenter({ lat, lon }, zoom));
+    }
 
     // Frame-skip: only run heavy work (network fetches, persistence) every 3rd call
     regionChangeCounter.current += 1;
@@ -4103,6 +4194,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         try {
           const bounds = await mapRef.current?.getVisibleBounds();
           if (bounds) {
+            const nextBounds = toContourBounds(bounds);
+            if (nextBounds) {
+              setVisibleContourBounds(nextBounds);
+            }
             // bounds = [[ne_lon, ne_lat], [sw_lon, sw_lat]]
             const bbox: BoundingBox = {
               south: bounds[1][1],
@@ -4128,6 +4223,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           if (feature?.geometry?.coordinates) {
             const [cLon, cLat] = feature.geometry.coordinates;
             const span = 180 / Math.pow(2, z);
+            setVisibleContourBounds({
+              minLat: cLat - span / 2,
+              minLon: cLon - span,
+              maxLat: cLat + span / 2,
+              maxLon: cLon + span,
+            });
             fetchDiscoveredSpots({
               south: cLat - span / 2,
               west: cLon - span,
@@ -4535,7 +4636,11 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             const bathyResult = await mapRef.current?.queryRenderedFeaturesAtPoint(
               screenPt,
               undefined,
-              getBathyLayerIds('fill'),
+              [
+                ...getBathyLayerIds('fill'),
+                ...getBathyLayerIds('line'),
+                ...getBathyLayerIds('label'),
+              ],
             );
             const depthResult = getDepthFromRenderedFeatures(bathyResult);
             if (depthResult) {
@@ -4627,13 +4732,13 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     WAYPOINT_ICONS.find((i) => i.key === wpIcon)?.ionicon ?? 'location';
 
   const routeLineGeoJSON = useMemo(
-    () => makeRouteLineGeoJSON(routePoints),
-    [routePoints],
+    () => makeRouteLineGeoJSON(plannedRoute?.waypoints.map((wp) => wp.position) ?? routePoints),
+    [plannedRoute, routePoints],
   );
 
   const routePointGeoJSON = useMemo(
-    () => makeRoutePointGeoJSON(routePoints),
-    [routePoints],
+    () => makeRoutePointGeoJSON(plannedRoute?.waypoints.map((wp) => wp.position) ?? routePoints),
+    [plannedRoute, routePoints],
   );
 
   const isVectorOverlayReady = useCallback(
@@ -5227,6 +5332,21 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     !!focusedLocation ||
     !!selectedContourDepth;
 
+  const activeContourSources = useMemo(() => {
+    if (visibleContourBounds) {
+      return getMartinContourSourcesForBounds(visibleContourBounds);
+    }
+    if (userLocation) {
+      return getMartinContourSourcesForBounds(
+        estimateBoundsFromCenter({ lat: userLocation.lat, lon: userLocation.lon }, currentZoom || DEFAULT_ZOOM),
+      );
+    }
+    return getMartinContourSourcesForBounds(null);
+  }, [currentZoom, userLocation, visibleContourBounds]);
+  const shouldRenderLocalBathymetry =
+    activeOverlays.has('local-bathymetry') || routeMode || routePoints.length > 0;
+  const bathyOpacityScale = activeOverlays.has('local-bathymetry') ? 1 : 0.42;
+
   // ── Render ───────────────────────────────────────────────────────
   if (Platform.OS === 'web') {
     return (
@@ -5590,12 +5710,13 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         })}
 
         {/* Bathymetry contour overlays from Martin PMTiles */}
-        {activeOverlays.has('local-bathymetry') &&
+        {shouldRenderLocalBathymetry &&
           VectorSource &&
           FillLayer &&
           LineLayer &&
+          SymbolLayer &&
           (() => {
-            return MARTIN_CONTOUR_SOURCES.map(({ id: src }) => (
+            return activeContourSources.map(({ id: src }) => (
               <VectorSource
                 key={src}
                 id={`bathy-${src}`}
@@ -5605,15 +5726,17 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                 <FillLayer
                   id={`bathy-fill-${src}`}
                   sourceLayerID="contours"
+                  filter={['==', '$type', 'Polygon'] as any}
                   style={{
                     fillColor: bathymetryFillExpression,
-                    fillOpacity: contourSettings.opacity * 0.88,
+                    fillOpacity: contourSettings.opacity * 0.88 * bathyOpacityScale,
                     fillOutlineColor: '#1B5674',
                   }}
                 />
                 <LineLayer
                   id={`bathy-line-shadow-${src}`}
                   sourceLayerID="contours"
+                  filter={['==', ['get', 'feature_kind'], 'contour_line'] as any}
                   style={{
                     lineColor: '#12384F',
                     lineWidth: [
@@ -5625,12 +5748,13 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                       11, 1.8,
                       14, 2.4,
                     ] as any,
-                    lineOpacity: contourSettings.opacity * 0.22,
+                    lineOpacity: contourSettings.opacity * 0.22 * bathyOpacityScale,
                   }}
                 />
                 <LineLayer
                   id={`bathy-line-${src}`}
                   sourceLayerID="contours"
+                  filter={['==', ['get', 'feature_kind'], 'contour_line'] as any}
                   style={{
                     lineColor: '#1B5F81',
                     lineWidth: [
@@ -5642,9 +5766,36 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                       11, 1.05,
                       14, 1.45,
                     ] as any,
-                    lineOpacity: contourSettings.opacity * 0.9,
+                    lineOpacity: contourSettings.opacity * 0.9 * bathyOpacityScale,
                   }}
                 />
+                {contourSettings.showLabels && (
+                  <SymbolLayer
+                    id={`bathy-label-${src}`}
+                    sourceLayerID="contours"
+                    filter={['==', ['get', 'feature_kind'], 'depth_label'] as any}
+                    minZoomLevel={9}
+                    style={{
+                      textField: ['coalesce', ['get', 'label'], ['to-string', ['get', 'depth_ft']]] as any,
+                      textSize: [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        9, 10,
+                        12, 11.5,
+                        15, 13,
+                      ] as any,
+                      textColor: '#143C52',
+                      textHaloColor: '#F8F1E6',
+                      textHaloWidth: 1.2,
+                      textOpacity: contourSettings.opacity * 0.95 * bathyOpacityScale,
+                      textFont: FONT_STACKS.bold,
+                      textAllowOverlap: false,
+                      textIgnorePlacement: false,
+                      textOptional: true,
+                    }}
+                  />
+                )}
               </VectorSource>
             ));
           })()
@@ -6892,13 +7043,31 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             </View>
             <View style={styles.routePlannerMetricPill}>
               <Ionicons
-                name={routeWarnings.length > 0 ? 'warning-outline' : routeDepthChecking ? 'time-outline' : 'water-outline'}
+                name={
+                  routeDepthChecking
+                    ? 'time-outline'
+                    : routeAlerts.length > 0
+                      ? 'git-branch-outline'
+                      : routeWarnings.length > 0
+                        ? 'warning-outline'
+                        : 'water-outline'
+                }
                 size={12}
-                color={routeWarnings.length > 0 ? '#C96A18' : '#1565C0'}
+                color={
+                  routeDepthChecking
+                    ? '#1565C0'
+                    : routeAlerts.length > 0
+                      ? '#2E7D32'
+                      : routeWarnings.length > 0
+                        ? '#C96A18'
+                        : '#1565C0'
+                }
               />
               <Text style={styles.routePlannerMetricText}>
                 {routeDepthChecking
                   ? 'Checking depth'
+                  : routeAlerts.length > 0
+                    ? 'Auto-routed'
                   : routeWarnings.length > 0
                     ? `${routeWarnings.length} shallow`
                     : 'Depth clear'}

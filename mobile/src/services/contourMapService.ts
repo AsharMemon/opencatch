@@ -32,21 +32,34 @@ const PAPERCUT_BLUES = [
 
 const DEPTH_BREAKS_FT = [0, 3, 6, 10, 15, 25, 40, 60];
 
-export const MARTIN_CONTOUR_SOURCES: { id: string; label: string }[] = [
-  { id: 'mn_contours', label: 'Minnesota' },
-  { id: 'on_contours', label: 'Ontario' },
-  { id: 'qc_contours', label: 'Quebec' },
-  { id: 'mi_contours', label: 'Michigan' },
-  { id: 'nh_contours', label: 'New Hampshire' },
-  { id: 'fl_contours', label: 'Florida' },
-  { id: 'ab_contours', label: 'Alberta' },
-  { id: 'mt_contours', label: 'Montana' },
-  { id: 'wa_contours', label: 'Washington' },
-  { id: 'ma_contours', label: 'Massachusetts' },
-  { id: 'ne_contours', label: 'Nebraska' },
-  { id: 'vt_contours', label: 'Vermont' },
-  { id: 'ia_contours', label: 'Iowa' },
-  { id: 'lagos_contours', label: 'LAGOS-US' },
+export interface SourceBounds {
+  minLon: number;
+  minLat: number;
+  maxLon: number;
+  maxLat: number;
+}
+
+export interface MartinContourSource {
+  id: string;
+  label: string;
+  bounds?: SourceBounds;
+}
+
+export const MARTIN_CONTOUR_SOURCES: MartinContourSource[] = [
+  { id: 'mn_contours', label: 'Minnesota', bounds: { minLon: -97.5, minLat: 43.0, maxLon: -89.0, maxLat: 49.8 } },
+  { id: 'on_contours', label: 'Ontario', bounds: { minLon: -95.5, minLat: 41.5, maxLon: -74.0, maxLat: 57.8 } },
+  { id: 'qc_contours', label: 'Quebec', bounds: { minLon: -80.5, minLat: 44.0, maxLon: -56.0, maxLat: 63.5 } },
+  { id: 'mi_contours', label: 'Michigan', bounds: { minLon: -91.0, minLat: 41.5, maxLon: -82.0, maxLat: 48.8 } },
+  { id: 'nh_contours', label: 'New Hampshire', bounds: { minLon: -72.8, minLat: 42.4, maxLon: -70.5, maxLat: 45.5 } },
+  { id: 'fl_contours', label: 'Florida', bounds: { minLon: -87.8, minLat: 24.0, maxLon: -79.5, maxLat: 31.5 } },
+  { id: 'ab_contours', label: 'Alberta', bounds: { minLon: -121.0, minLat: 48.8, maxLon: -109.0, maxLat: 60.2 } },
+  { id: 'mt_contours', label: 'Montana', bounds: { minLon: -116.5, minLat: 44.0, maxLon: -103.5, maxLat: 49.5 } },
+  { id: 'wa_contours', label: 'Washington', bounds: { minLon: -125.5, minLat: 45.3, maxLon: -116.5, maxLat: 49.3 } },
+  { id: 'ma_contours', label: 'Massachusetts', bounds: { minLon: -73.8, minLat: 41.0, maxLon: -69.5, maxLat: 43.1 } },
+  { id: 'ne_contours', label: 'Nebraska', bounds: { minLon: -104.5, minLat: 39.5, maxLon: -95.0, maxLat: 43.2 } },
+  { id: 'vt_contours', label: 'Vermont', bounds: { minLon: -73.6, minLat: 42.6, maxLon: -71.3, maxLat: 45.2 } },
+  { id: 'ia_contours', label: 'Iowa', bounds: { minLon: -97.3, minLat: 40.2, maxLon: -89.8, maxLat: 43.8 } },
+  { id: 'lagos_contours', label: 'LAGOS-US', bounds: { minLon: -127.0, minLat: 24.0, maxLon: -65.0, maxLat: 50.0 } },
 ];
 
 export type BathyLayerKind = 'source' | 'fill' | 'line' | 'label';
@@ -214,6 +227,20 @@ export async function resetContourConfig(): Promise<ContourMapConfig> {
 
 export function getAvailableTilesets(): { id: string; label: string }[] {
   return [...MARTIN_CONTOUR_SOURCES];
+}
+
+function intersects(a: SourceBounds, b: SourceBounds): boolean {
+  return !(a.maxLon < b.minLon || a.minLon > b.maxLon || a.maxLat < b.minLat || a.minLat > b.maxLat);
+}
+
+export function getMartinContourSourcesForBounds(bounds: SourceBounds | null): MartinContourSource[] {
+  if (!bounds) {
+    return MARTIN_CONTOUR_SOURCES.filter((source) => source.id === 'lagos_contours');
+  }
+
+  const primary = MARTIN_CONTOUR_SOURCES.filter((source) => source.bounds && intersects(source.bounds, bounds));
+  if (primary.length > 0) return primary;
+  return MARTIN_CONTOUR_SOURCES.filter((source) => source.id === 'lagos_contours');
 }
 
 export function hasContoursInView(map: any): boolean {
