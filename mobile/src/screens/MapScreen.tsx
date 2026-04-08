@@ -4450,8 +4450,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const currentMonth = new Date().getMonth() + 1; // 1-12
   const isWinterSeason = currentMonth >= 11 || currentMonth <= 3;
   const isNearCoastNow = userLocation ? isNearCoast(userLocation.lat, userLocation.lon) : false;
+  const bathymetryColorStops = useMemo(() => getColorStops(contourSettings), [contourSettings]);
   const bathymetryLegendStops = useMemo(() => {
-    const colors = getColorStops(contourSettings);
+    const colors = bathymetryColorStops;
     return [
       { color: colors[0] ?? '#D6EAF8', label: '0-3' },
       { color: colors[2] ?? colors[1] ?? '#85C1E9', label: '3-10' },
@@ -4459,7 +4460,26 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       { color: colors[6] ?? colors[5] ?? '#2471A3', label: '25-60' },
       { color: colors[7] ?? colors[6] ?? '#1A5276', label: '60+' },
     ];
-  }, [contourSettings]);
+  }, [bathymetryColorStops]);
+  const bathymetryFillExpression = useMemo(() => {
+    const colors = bathymetryColorStops;
+    const c0 = colors[0] ?? '#D6EAF8';
+    const c1 = colors[1] ?? c0;
+    const c2 = colors[2] ?? c1;
+    const c3 = colors[3] ?? c2;
+    const c4 = colors[4] ?? c3;
+    const c5 = colors[5] ?? c4;
+    return [
+      'step',
+      ['coalesce', ['get', 'depth_ft'], 0],
+      c0,
+      3, c1,
+      6, c2,
+      10, c3,
+      15, c4,
+      25, c5,
+    ] as any;
+  }, [bathymetryColorStops]);
 
   const mapToolGroups: MapToolGroup[] = [
     {
@@ -5306,26 +5326,43 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                   id={`bathy-fill-${src}`}
                   sourceLayerID="contours"
                   style={{
-                    fillColor: ['coalesce', ['get', 'fill_color'], '#85C1E9'] as any,
-                    fillOpacity: contourSettings.opacity * 0.82,
-                    fillOutlineColor: '#1A5276',
+                    fillColor: bathymetryFillExpression,
+                    fillOpacity: contourSettings.opacity * 0.88,
+                    fillOutlineColor: '#1B5674',
+                  }}
+                />
+                <LineLayer
+                  id={`bathy-line-shadow-${src}`}
+                  sourceLayerID="contours"
+                  style={{
+                    lineColor: '#12384F',
+                    lineWidth: [
+                      'interpolate',
+                      ['linear'],
+                      ['zoom'],
+                      5, 0.9,
+                      8, 1.25,
+                      11, 1.8,
+                      14, 2.4,
+                    ] as any,
+                    lineOpacity: contourSettings.opacity * 0.22,
                   }}
                 />
                 <LineLayer
                   id={`bathy-line-${src}`}
                   sourceLayerID="contours"
                   style={{
-                    lineColor: '#1A5276',
+                    lineColor: '#1B5F81',
                     lineWidth: [
                       'interpolate',
                       ['linear'],
                       ['zoom'],
-                      5, 0.5,
-                      8, 0.8,
-                      11, 1.15,
-                      14, 1.6,
+                      5, 0.45,
+                      8, 0.75,
+                      11, 1.05,
+                      14, 1.45,
                     ] as any,
-                    lineOpacity: contourSettings.opacity * 0.78,
+                    lineOpacity: contourSettings.opacity * 0.9,
                   }}
                 />
               </VectorSource>

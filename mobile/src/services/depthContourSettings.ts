@@ -48,7 +48,7 @@ export interface DepthContourSettings {
 
 export const DEFAULT_CONTOUR_SETTINGS: DepthContourSettings = {
   interval: 5,
-  colorScheme: 'classic-blue',
+  colorScheme: 'papercut',
   opacity: 0.85,
   showLabels: true,
   customColors: {
