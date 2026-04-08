@@ -13,7 +13,12 @@ Supported today
 - Alberta (`ab_contours.geojson`)      -> tile-ready contour lines + labels
 - Florida (`fl_contours.geojson`)      -> tile-ready contour lines + labels
 - Michigan (`mi_full_contours.geojson`)-> tile-ready contour lines + labels
+- Massachusetts (`ma_contours.geojson`)-> tile-ready contour lines + labels
+- Montana (`mt_contours.geojson`)      -> tile-ready contour lines + labels
+- Ontario (`on_contours.geojson`)      -> tile-ready contour lines + labels
+- Quebec (`qc_contours.geojson`)       -> tile-ready contour lines + labels
 - Vermont (`vt_data.geojson`)          -> tile-ready contour lines + labels
+- Washington (`wa_contours.geojson`)   -> tile-ready contour lines + labels
 - Iowa (`ia_contours.geojson`)         -> lake summary polygons only (not tile-ready)
 - Saskatchewan (`sk_contours.geojson`) -> survey index points only
 - Manitoba (`mb_data.geojson`)         -> waterbody/survey index points only
@@ -21,7 +26,7 @@ Supported today
 Usage
 -----
 python normalize_survey_geojson.py \
-    --sources ab,fl,mi,vt,ia,sk,mb \
+    --sources ab,fl,mi,ma,mt,on,qc,vt,wa,ia,sk,mb \
     --output-dir /Users/Ashar/Documents/fish/data/bathymetry/normalized
 """
 
@@ -91,6 +96,46 @@ SOURCES: Dict[str, SourceConfig] = {
         tile_ready=True,
         notes="Contour lines with depth in feet; statewide IDs preserved as lake_id.",
     ),
+    "ma": SourceConfig(
+        source_id="ma",
+        input_path=Path("/Users/Ashar/Documents/fish/data/bathymetry/gdal_exports/ma_contours.geojson"),
+        output_mode="contour_lines",
+        source_name="ma_survey",
+        attribution="MassWildlife Inland Bathymetry",
+        default_lake_name="Massachusetts survey lake",
+        tile_ready=True,
+        notes="Contour lines exported from statewide shapefile. Depth values are documented in feet.",
+    ),
+    "mt": SourceConfig(
+        source_id="mt",
+        input_path=Path("/Users/Ashar/Documents/fish/data/bathymetry/gdal_exports/mt_contours.geojson"),
+        output_mode="contour_lines",
+        source_name="mt_survey",
+        attribution="Montana FWP Lake Bathymetry",
+        default_lake_name="Montana survey lake",
+        tile_ready=True,
+        notes="Contour lines exported from statewide shapefile. Metadata documents contour depth in feet.",
+    ),
+    "on": SourceConfig(
+        source_id="on",
+        input_path=Path("/Users/Ashar/Documents/fish/data/bathymetry/gdal_exports/on_contours.geojson"),
+        output_mode="contour_lines",
+        source_name="on_survey",
+        attribution="Ontario Fish Habitat Bathymetry",
+        default_lake_name="Ontario survey lake",
+        tile_ready=True,
+        notes="Contour lines exported from FGDB. DEPTH values are normalized from negative metres.",
+    ),
+    "qc": SourceConfig(
+        source_id="qc",
+        input_path=Path("/Users/Ashar/Documents/fish/data/bathymetry/gdal_exports/qc_contours.geojson"),
+        output_mode="contour_lines",
+        source_name="qc_survey",
+        attribution="Quebec Government Lake Bathymetry",
+        default_lake_name="Quebec survey lake",
+        tile_ready=True,
+        notes="Contour lines exported from FGDB with named waterbodies and depths in metres.",
+    ),
     "vt": SourceConfig(
         source_id="vt",
         input_path=Path("/Users/Ashar/Documents/fish/data/bathymetry/vt/vt_data.geojson"),
@@ -100,6 +145,16 @@ SOURCES: Dict[str, SourceConfig] = {
         default_lake_name="Vermont survey lake",
         tile_ready=True,
         notes="Contour lines with depth in feet and lake names in GeoJSON.",
+    ),
+    "wa": SourceConfig(
+        source_id="wa",
+        input_path=Path("/Users/Ashar/Documents/fish/data/bathymetry/gdal_exports/wa_contours.geojson"),
+        output_mode="contour_lines",
+        source_name="wa_survey",
+        attribution="Washington Lake Bathymetry",
+        default_lake_name="Washington survey lake",
+        tile_ready=True,
+        notes="Contour lines exported from statewide geodatabase. Depth values are treated as feet.",
     ),
     "ia": SourceConfig(
         source_id="ia",
@@ -355,10 +410,45 @@ def standard_props(config: SourceConfig, feature: dict, props: dict) -> Optional
         lake_name = f"Michigan survey lake {statewide}"
         depth_ft = safe_float(props.get("DEPTH"))
         depth_m = round(depth_ft * FT_TO_M, 3) if depth_ft is not None else None
+    elif source_id == "ma":
+        lake_name = props.get("NAME") or config.default_lake_name
+        palis_id = props.get("PALIS_ID") or feature.get("id") or slugify(lake_name)
+        lake_id = f"ma-{palis_id}"
+        depth_ft = safe_float(props.get("DEPTH"))
+        depth_m = round(depth_ft * FT_TO_M, 3) if depth_ft is not None else None
+    elif source_id == "mt":
+        lake_name = props.get("LAKENAME") or config.default_lake_name
+        llid = props.get("LLID") or feature.get("id") or slugify(lake_name)
+        lake_id = f"mt-{llid}"
+        depth_ft = safe_float(props.get("CONTOUR"))
+        depth_m = round(depth_ft * FT_TO_M, 3) if depth_ft is not None else None
+        survey_date = props.get("LASTEDIT") or props.get("CREATED")
+    elif source_id == "on":
+        ogf_id = props.get("OGF_ID") or feature.get("id") or "unknown"
+        lake_id = f"on-{ogf_id}"
+        lake_name = f"Ontario survey lake {ogf_id}"
+        depth_m = safe_float(props.get("DEPTH"))
+        if depth_m is not None:
+            depth_m = abs(depth_m)
+            depth_ft = round(depth_m * M_TO_FT, 1)
+        survey_date = props.get("SURVEY_DATE") or props.get("EFFECTIVE_DATETIME")
+    elif source_id == "qc":
+        lake_name = props.get("HYDRONYME") or config.default_lake_name
+        raw_id = props.get("NO_LCE_L") or props.get("NO_RSVL") or feature.get("id") or slugify(lake_name)
+        lake_id = f"qc-{raw_id}"
+        depth_m = safe_float(props.get("PROFONDEUR_M"))
+        depth_ft = round(depth_m * M_TO_FT, 1) if depth_m is not None else None
+        survey_date = props.get("ANNEE")
     elif source_id == "vt":
         lake_name = props.get("LakeName") or config.default_lake_name
         lake_id = f"vt-{slugify(lake_name)}-{props.get('index', feature.get('id', 'unknown'))}"
         depth_ft = safe_float(props.get("DepthInFeet"))
+        depth_m = round(depth_ft * FT_TO_M, 3) if depth_ft is not None else None
+    elif source_id == "wa":
+        lake_name = props.get("GNIS_Name") or config.default_lake_name
+        reach = props.get("ReachCode") or feature.get("id") or slugify(lake_name)
+        lake_id = f"wa-{reach}"
+        depth_ft = safe_float(props.get("Depth"))
         depth_m = round(depth_ft * FT_TO_M, 3) if depth_ft is not None else None
     elif source_id == "ia":
         lake_name = props.get("LakeName") or props.get("GNIS_Name") or config.default_lake_name
@@ -534,7 +624,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Normalize raw GeoJSON bathymetry sources.")
     parser.add_argument(
         "--sources",
-        default="ab,fl,mi,vt,ia,sk,mb",
+        default="ab,fl,mi,ma,mt,on,qc,vt,wa,ia,sk,mb",
         help="Comma-separated source ids or 'all'",
     )
     parser.add_argument(
