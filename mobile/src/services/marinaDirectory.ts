@@ -34,7 +34,11 @@ export interface MarinaPOI {
 
 // ── Constants ────────────────────────────────────────────────────
 
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+const OVERPASS_URLS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://lz4.overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+];
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 // ── Cache ────────────────────────────────────────────────────────
@@ -84,16 +88,24 @@ function buildOverpassQuery(
 (
   node["leisure"="marina"]${around};
   way["leisure"="marina"]${around};
+  node["seamark:type"="harbour"]${around};
+  way["seamark:type"="harbour"]${around};
+  node["harbour"="yes"]${around};
+  way["harbour"="yes"]${around};
   node["shop"="fishing"]${around};
   node["shop"="bait"]${around};
   node["shop"="tackle"]${around};
+  node["shop"="boat"]${around};
   node["amenity"="boat_rental"]${around};
+  node["amenity"="boat_sharing"]${around};
   node["leisure"="fishing"]${around};
   way["leisure"="fishing"]${around};
   node["man_made"="pier"]["fishing"="yes"]${around};
   way["man_made"="pier"]["fishing"="yes"]${around};
   node["leisure"="slipway"]${around};
   way["leisure"="slipway"]${around};
+  node["waterway"="dock"]${around};
+  way["waterway"="dock"]${around};
 );
 out center body;
 `.trim();
@@ -119,8 +131,9 @@ out center body;
 
 function classifyElement(tags: Record<string, string>): MarinaPOIType {
   if (tags.leisure === 'marina') return 'marina';
+  if (tags['seamark:type'] === 'harbour' || tags.harbour === 'yes') return 'marina';
   if (tags.leisure === 'slipway') return 'boat_ramp';
-  if (tags.amenity === 'boat_rental') return 'boat_rental';
+  if (tags.amenity === 'boat_rental' || tags.amenity === 'boat_sharing') return 'boat_rental';
   if (tags.shop === 'fishing' || tags.shop === 'tackle') return 'tackle_shop';
   if (tags.shop === 'bait') return 'bait_shop';
   if (tags.man_made === 'pier') return 'fishing_pier';
@@ -142,7 +155,8 @@ function extractAmenities(tags: Record<string, string>): string[] {
   if (tags.ice === 'yes') amenities.push('Ice');
   if (tags.wifi === 'yes' || tags.internet_access === 'yes') amenities.push('Wi-Fi');
   if (tags.shop === 'bait' || tags.bait === 'yes') amenities.push('Live bait');
-  if (tags.boat_rental === 'yes' || tags.amenity === 'boat_rental') amenities.push('Boat rental');
+  if (tags.shop === 'boat') amenities.push('Boat shop');
+  if (tags.boat_rental === 'yes' || tags.amenity === 'boat_rental' || tags.amenity === 'boat_sharing') amenities.push('Boat rental');
   return amenities;
 }
 
@@ -191,18 +205,29 @@ function elementToPOI(el: OverpassElement): MarinaPOI | null {
 // ── Overpass fetch wrapper ───────────────────────────────────────
 
 async function runOverpassQuery(query: string): Promise<OverpassElement[]> {
-  const response = await fetch(OVERPASS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `data=${encodeURIComponent(query)}`,
-  });
+  let lastError: Error | null = null;
 
-  if (!response.ok) {
-    throw new Error(`Overpass API error: ${response.status} ${response.statusText}`);
+  for (const endpoint of OVERPASS_URLS) {
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `data=${encodeURIComponent(query)}`,
+      });
+
+      if (!response.ok) {
+        lastError = new Error(`Overpass API error: ${response.status} ${response.statusText}`);
+        continue;
+      }
+
+      const json = await response.json();
+      return (json.elements ?? []) as OverpassElement[];
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+    }
   }
 
-  const json = await response.json();
-  return (json.elements ?? []) as OverpassElement[];
+  throw lastError ?? new Error('Overpass API failed');
 }
 
 // ── Public API ───────────────────────────────────────────────────

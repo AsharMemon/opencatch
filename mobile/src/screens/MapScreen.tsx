@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Svg, { Circle, Line, Text as SvgText, G, Polygon } from 'react-native-svg';
 import {
+  Alert,
   ActivityIndicator,
   Animated,
   AppState,
@@ -209,7 +210,20 @@ import { MapToolsDrawer, type MapToolGroup, type OverlayInfoCard } from '../comp
 import { MapOverlayLoadingBanner } from '../components/MapOverlayLoadingBanner';
 import { CoachMarks } from '../components/CoachMarks';
 import { MapLongPressMenu, type LongPressAction, type LongPressCoordinate } from '../components/MapLongPressMenu';
-import { MapInfoBar, type AnchorWatchInfo } from '../components/MapInfoBar';
+import { MapInfoBar, type AnchorWatchInfo, type RouteNavInfo } from '../components/MapInfoBar';
+import {
+  calculateRouteMetrics,
+  checkRouteDepth,
+  createRoute,
+  getDefaultBoatRouteProfile,
+  getNextWaypointNav,
+  saveRoute,
+  type BoatRouteProfile,
+  type LatLng as RouteLatLng,
+  type Route as PlannedRoute,
+  type RouteMetrics,
+  type ShallowWarning,
+} from '../services/routePlanner';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -240,6 +254,41 @@ function closestSnap(value: number, velocity: number = 0): number {
   return SNAP_POINTS.reduce((prev, curr) =>
     Math.abs(curr - projected) < Math.abs(prev - projected) ? curr : prev,
   );
+}
+
+function makeRouteLineGeoJSON(points: RouteLatLng[]): GeoJSON.FeatureCollection | null {
+  if (points.length < 2) return null;
+  return {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'LineString',
+          coordinates: points.map((point) => [point.lon, point.lat]),
+        },
+      },
+    ],
+  };
+}
+
+function makeRoutePointGeoJSON(points: RouteLatLng[]): GeoJSON.FeatureCollection | null {
+  if (!points.length) return null;
+  return {
+    type: 'FeatureCollection',
+    features: points.map((point, index) => ({
+      type: 'Feature',
+      properties: {
+        index: index + 1,
+        label: index === 0 ? 'START' : index === points.length - 1 ? 'END' : `WP ${index}`,
+      },
+      geometry: {
+        type: 'Point',
+        coordinates: [point.lon, point.lat],
+      },
+    })),
+  };
 }
 
 // ── Weather alert banner colors by severity ─────────────────────
@@ -369,6 +418,7 @@ const FONT_STACKS = {
 // Bathymetry contours now deployed at 24.199.80.77 (tiles.opencatch.app)
 const DEFAULT_VECTOR_OVERLAYS = new Set([
   'local-bathymetry',
+  'depth-contours',
   'public-lands',
   'access-points',
   'parking',
@@ -2277,7 +2327,7 @@ function LayerPicker({ visible, currentStyle, activeOverlays: _activeOverlays, s
     <>
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       <Animated.View style={[styles.layerPickerCard, { opacity: fadeAnim }]}>
-        <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false} bounces={false}>
+        <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false} bounces={false}>
           <Text style={styles.layerSectionTitle}>MAP STYLE</Text>
           {MAP_STYLE_KEYS.filter((key) => {
             // Only show nautical chart option when near coast
@@ -2330,17 +2380,6 @@ function LayerPicker({ visible, currentStyle, activeOverlays: _activeOverlays, s
             </View>
             {showQualityPins && <Ionicons name="checkmark" size={16} color={palette.accent} />}
           </Pressable>
-
-          <View style={styles.layerDivider} />
-          <View style={styles.layerPickerHintCard}>
-            <View style={styles.layerPickerHintHeader}>
-              <Ionicons name="build-outline" size={16} color={palette.accent} />
-              <Text style={styles.layerPickerHintTitle}>Overlay controls moved</Text>
-            </View>
-            <Text style={styles.layerPickerHintText}>
-              Weather, contour, navigation, and POI layers now live in the side tools drawer so this panel stays compact.
-            </Text>
-          </View>
         </ScrollView>
       </Animated.View>
     </>
@@ -2672,6 +2711,19 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [measureMode, setMeasureMode] = useState(false);
   const [measurePoints, setMeasurePoints] = useState<[number, number][]>([]);
 
+  // Route planner — map-native route creation/editing
+  const [routeMode, setRouteMode] = useState(false);
+  const [routePoints, setRoutePoints] = useState<RouteLatLng[]>([]);
+  const [routeName, setRouteName] = useState('');
+  const [plannedRoute, setPlannedRoute] = useState<PlannedRoute | null>(null);
+  const [routeMetrics, setRouteMetrics] = useState<RouteMetrics | null>(null);
+  const [routeWarnings, setRouteWarnings] = useState<ShallowWarning[]>([]);
+  const [routeBoatProfile, setRouteBoatProfile] = useState<BoatRouteProfile | null>(null);
+  const [routeDepthChecking, setRouteDepthChecking] = useState(false);
+  const [routeNavActive, setRouteNavActive] = useState(false);
+  const [routeNavIndex, setRouteNavIndex] = useState(1);
+  const [routeNavInfo, setRouteNavInfo] = useState<RouteNavInfo | undefined>(undefined);
+
   // Compass heading
   const [compassMode, setCompassMode] = useState<CompassMode>('static');
   const [compassHeading, setCompassHeading] = useState(0);
@@ -2751,6 +2803,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     getDefaultBoat().then((boat) => {
       if (boat?.draftFt && boat.draftFt > 0) setBoatDraftFt(boat.draftFt);
     }).catch(() => { /* use default */ });
+  }, []);
+
+  useEffect(() => {
+    getDefaultBoatRouteProfile()
+      .then(setRouteBoatProfile)
+      .catch(() => {});
   }, []);
 
   // Dynamic Depths overlay (tide-adjusted charted depths)
@@ -2935,6 +2993,172 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     loadAnnotations().then(setAnnotations);
     loadContourSettings().then(setContourSettings);
   }, []);
+
+  const openRouteBuilder = useCallback((seedPoint?: RouteLatLng, seedLabel?: string) => {
+    setRouteMode(true);
+    setMapToolsDrawerOpen(false);
+    setLayerPickerVisible(false);
+    if (measureMode) {
+      setMeasureMode(false);
+      setMeasurePoints([]);
+    }
+    if (annotationMode) {
+      setAnnotationMode(false);
+      setArrowStart(null);
+    }
+    clearSelectedContour();
+    setFocusedLocation(null);
+    setSelectedMarkerId(null);
+    setSelectedMarina(null);
+    setHighlightedAccessPoints([]);
+    setHighlightedAccessSummary(null);
+    setContextualTips([]);
+    setContextualTipsDismissed(false);
+
+    setRoutePoints((prev) => {
+      const next = [...prev];
+      if (next.length === 0 && userLocation) {
+        next.push({ lat: userLocation.lat, lon: userLocation.lon });
+      }
+      if (seedPoint) {
+        const last = next[next.length - 1];
+        const isDuplicate =
+          !!last &&
+          Math.abs(last.lat - seedPoint.lat) < 1e-6 &&
+          Math.abs(last.lon - seedPoint.lon) < 1e-6;
+        if (!isDuplicate) {
+          next.push(seedPoint);
+        }
+      }
+      return next;
+    });
+
+    if (seedLabel) {
+      setRouteName((prev) => prev || `Route to ${seedLabel}`);
+    }
+  }, [
+    annotationMode,
+    clearSelectedContour,
+    measureMode,
+    userLocation,
+  ]);
+
+  const handleUndoRoutePoint = useCallback(() => {
+    setRoutePoints((prev) => {
+      if (prev.length <= 1) {
+        setRouteNavActive(false);
+        setRouteNavInfo(undefined);
+        return [];
+      }
+      return prev.slice(0, -1);
+    });
+  }, []);
+
+  const handleClearRoutePlan = useCallback(() => {
+    setRouteMode(false);
+    setRouteNavActive(false);
+    setRouteNavIndex(1);
+    setRouteNavInfo(undefined);
+    setRoutePoints([]);
+    setRouteName('');
+    setPlannedRoute(null);
+    setRouteMetrics(null);
+    setRouteWarnings([]);
+  }, []);
+
+  const handleSavePlannedRoute = useCallback(async () => {
+    if (!plannedRoute) return;
+    try {
+      const saved = await saveRoute(plannedRoute, routeName || undefined);
+      setRouteName(saved.name);
+      Alert.alert('Route Saved', `${saved.name} is ready from the map anytime.`);
+    } catch {
+      Alert.alert('Could not save route', 'Try again in a moment.');
+    }
+  }, [plannedRoute, routeName]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!routeBoatProfile || routePoints.length < 2) {
+      setPlannedRoute(null);
+      setRouteMetrics(null);
+      setRouteWarnings([]);
+      if (routePoints.length < 2) {
+        setRouteNavActive(false);
+        setRouteNavIndex(1);
+        setRouteNavInfo(undefined);
+      }
+      return undefined;
+    }
+
+    const baseRoute = createRoute(routePoints, routeName || undefined);
+    const baseMetrics = calculateRouteMetrics(baseRoute, routeBoatProfile);
+    const seededRoute = { ...baseRoute, metrics: baseMetrics };
+
+    setPlannedRoute(seededRoute);
+    setRouteMetrics(baseMetrics);
+    setRouteWarnings(baseMetrics.shallowWarnings);
+    setRouteDepthChecking(true);
+
+    checkRouteDepth(seededRoute, routeBoatProfile.draftMeters)
+      .then(({ route, warnings }) => {
+        if (cancelled) return;
+        const metrics = calculateRouteMetrics(route, routeBoatProfile);
+        setPlannedRoute({ ...route, metrics });
+        setRouteMetrics(metrics);
+        setRouteWarnings(warnings);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setRouteWarnings([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setRouteDepthChecking(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [routeBoatProfile, routeName, routePoints]);
+
+  useEffect(() => {
+    if (!routeNavActive || !plannedRoute || !userLocation) {
+      setRouteNavInfo(undefined);
+      return;
+    }
+
+    const nextIndex = Math.min(
+      Math.max(routeNavIndex, 1),
+      Math.max(plannedRoute.waypoints.length - 1, 1),
+    );
+    const nav = getNextWaypointNav(
+      { lat: userLocation.lat, lon: userLocation.lon },
+      plannedRoute,
+      nextIndex,
+    );
+
+    if (!nav) {
+      setRouteNavInfo(undefined);
+      return;
+    }
+
+    const cruiseSpeed = Math.max(routeBoatProfile?.cruiseSpeedKnots ?? 18, 0.5);
+    setRouteNavInfo({
+      active: true,
+      nextWaypointName: plannedRoute.waypoints[nextIndex]?.label ?? `WP ${nextIndex}`,
+      distanceMeters: nav.distanceNm * 1852,
+      bearingDeg: nav.bearing,
+      etaMinutes: (nav.distanceNm / cruiseSpeed) * 60,
+    });
+
+    if (nav.distanceNm < 0.05 && !nav.isLastWaypoint) {
+      setRouteNavIndex((prev) => Math.min(prev + 1, plannedRoute.waypoints.length - 1));
+    }
+  }, [plannedRoute, routeBoatProfile, routeNavActive, routeNavIndex, userLocation]);
 
   useEffect(() => {
     if (!ENABLE_EXPERIMENTAL_VECTOR_OVERLAYS || !TILE_SERVER_DEPLOYED) {
@@ -3613,7 +3837,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     }
     setMarinasLoading(true);
     try {
-      const pois = await fetchNearbyMarinas(lat, lon, 25_000);
+      const radiusMeters = currentZoom < 7 ? 45_000 : currentZoom < 10 ? 25_000 : 14_000;
+      const pois = await fetchNearbyMarinas(lat, lon, radiusMeters);
       setMarinaPOIs(pois);
       lastMarinaCenter.current = { lat, lon };
     } catch {
@@ -3621,7 +3846,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     } finally {
       setMarinasLoading(false);
     }
-  }, []);
+  }, [currentZoom]);
 
   // When marinas are toggled on, fetch for current map center
   useEffect(() => {
@@ -3784,9 +4009,11 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     }
     setAccessLoading(true);
     try {
+      const accessRadius = currentZoom < 8 ? 22_000 : currentZoom < 11 ? 15_000 : 9_000;
+      const trailRadius = currentZoom < 8 ? 16_000 : currentZoom < 11 ? 10_000 : 6_000;
       const [points, trails] = await Promise.all([
-        fetchNearbyAccessPoints(lat, lon, 15_000),
-        fetchNearbyTrails(lat, lon, 10_000),
+        fetchNearbyAccessPoints(lat, lon, accessRadius),
+        fetchNearbyTrails(lat, lon, trailRadius),
       ]);
       setAccessPoints(points);
       setAccessTrailGeoJSON(trailsToGeoJSON(trails));
@@ -3796,7 +4023,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     } finally {
       setAccessLoading(false);
     }
-  }, []);
+  }, [currentZoom]);
 
   useEffect(() => {
     if (!accessEnabled) {
@@ -4125,11 +4352,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         });
         break;
       case 'add-to-route':
-        navigation.navigate('RoutePlanner', {
-          destinationLat: coordinate.latitude,
-          destinationLon: coordinate.longitude,
-          destinationName: 'Pinned Route Point',
-        });
+        openRouteBuilder(
+          { lat: coordinate.latitude, lon: coordinate.longitude },
+          'Pinned Route Point',
+        );
         break;
       case 'whats-here':
         // Fly to location and enable marinas/access points
@@ -4148,7 +4374,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         break;
     }
     setLongPressMenuVisible(false);
-  }, [navigation, marinasEnabled, accessEnabled]);
+  }, [accessEnabled, marinasEnabled, navigation, openRouteBuilder]);
 
   const handleToggleLayerPicker = useCallback(() => {
     setLayerPickerVisible((prev) => !prev);
@@ -4222,6 +4448,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   }, []);
 
   const handleMapPress = useCallback((event?: any) => {
+    if (routeMode && event?.geometry?.coordinates) {
+      const [lng, lat] = event.geometry.coordinates as [number, number];
+      openRouteBuilder({ lat, lon: lng });
+      return;
+    }
+
     if (measureMode && event?.geometry?.coordinates) {
       const [lng, lat] = event.geometry.coordinates as [number, number];
       setMeasurePoints((prev) => [...prev, [lat, lng]]);
@@ -4388,11 +4620,21 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     // Clear contextual tips (Feature 1)
     setContextualTips([]);
     setContextualTipsDismissed(false);
-  }, [measureMode, annotationMode, annotationTool, annotationColor, annotationIcon, arrowStart, handleSaveAnnotation, activeOverlays, currentZoom, animateSheetTo, clearSelectedContour]);
+  }, [routeMode, openRouteBuilder, measureMode, annotationMode, annotationTool, annotationColor, annotationIcon, arrowStart, handleSaveAnnotation, activeOverlays, currentZoom, animateSheetTo, clearSelectedContour]);
 
   // ── Derived ─────────────────────────────────────────────────────
   const waypointIonicon = (wpIcon: WaypointIcon): string =>
     WAYPOINT_ICONS.find((i) => i.key === wpIcon)?.ionicon ?? 'location';
+
+  const routeLineGeoJSON = useMemo(
+    () => makeRouteLineGeoJSON(routePoints),
+    [routePoints],
+  );
+
+  const routePointGeoJSON = useMemo(
+    () => makeRoutePointGeoJSON(routePoints),
+    [routePoints],
+  );
 
   const isVectorOverlayReady = useCallback(
     (overlayKey: string) => {
@@ -4504,6 +4746,22 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           legendUnit: '(ft)',
         },
         {
+          key: 'ocean-depth-layer',
+          label: 'Ocean Depth Lines',
+          icon: 'navigate-circle-outline',
+          description: 'GEBCO contour lines for oceans, coasts, and Great Lakes',
+          isActive: activeOverlays.has('depth-contours'),
+          onPress: () => handleToggleOverlay('depth-contours'),
+          infoCard: activeOverlays.has('depth-contours')
+            ? {
+                primary: 'Ocean depth contours active',
+                secondary: 'Great for coasts, inlets, and offshore structure',
+                icon: 'navigate-circle',
+                color: '#1F6FB2',
+              } as OverlayInfoCard
+            : null,
+        },
+        {
           key: 'public-lands-layer',
           label: 'Public Lands',
           icon: 'leaf-outline',
@@ -4553,11 +4811,28 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           key: 'route-planner',
           label: 'Route Planner',
           icon: 'navigate-outline',
-          description: 'Plan, edit, and navigate a route from the map',
+          description: routeMode
+            ? 'Tap the map to add route points'
+            : routePoints.length > 0
+              ? 'Edit or continue the active route on the map'
+              : 'Tap-to-build routes directly on the map',
+          isActive: routeMode || routePoints.length > 0,
           onPress: () => {
-            navigation.navigate('RoutePlanner');
+            if (routeMode) {
+              setRouteMode(false);
+            } else {
+              openRouteBuilder();
+            }
             setMapToolsDrawerOpen(false);
           },
+          infoCard: routeMetrics
+            ? {
+                primary: `${routeMetrics.totalDistanceMi.toFixed(1)} mi · ${routePoints.length} pts`,
+                secondary: routeNavActive ? 'Live route guidance active' : 'Tap map to keep editing',
+                icon: 'navigate',
+                color: '#1565C0',
+              } as OverlayInfoCard
+            : null,
         },
       ],
     },
@@ -4945,7 +5220,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     activeOverlays.has('no-wake-zones'),
     activeOverlays.has('artificial-reefs'),
   ].filter(Boolean).length;
-  const shouldHideCompass = mapToolsDrawerOpen || layerPickerVisible || !!focusedLocation || !!selectedContourDepth;
+  const shouldHideCompass =
+    mapToolsDrawerOpen ||
+    layerPickerVisible ||
+    routeMode ||
+    !!focusedLocation ||
+    !!selectedContourDepth;
 
   // ── Render ───────────────────────────────────────────────────────
   if (Platform.OS === 'web') {
@@ -5543,6 +5823,60 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           </>
         )}
 
+        {(routeLineGeoJSON || routePointGeoJSON) &&
+          ShapeSource &&
+          LineLayer &&
+          CircleLayer &&
+          SymbolLayer && (
+          <>
+            {routeLineGeoJSON && (
+              <ShapeSource id="route-line-source" shape={routeLineGeoJSON as any}>
+                <LineLayer
+                  id="route-line-shadow"
+                  style={{
+                    lineColor: 'rgba(10, 47, 78, 0.28)',
+                    lineWidth: 6,
+                    lineOpacity: 0.9,
+                  }}
+                />
+                <LineLayer
+                  id="route-line"
+                  style={{
+                    lineColor: '#1F6FB2',
+                    lineWidth: 3.2,
+                    lineOpacity: 0.96,
+                  }}
+                />
+              </ShapeSource>
+            )}
+
+            {routePointGeoJSON && (
+              <ShapeSource id="route-point-source" shape={routePointGeoJSON as any}>
+                <CircleLayer
+                  id="route-point-layer"
+                  style={{
+                    circleRadius: 8,
+                    circleColor: '#FFFFFF',
+                    circleStrokeColor: '#1F6FB2',
+                    circleStrokeWidth: 3,
+                  }}
+                />
+                <SymbolLayer
+                  id="route-point-labels"
+                  style={{
+                    textField: ['to-string', ['get', 'index']] as any,
+                    textColor: '#1F6FB2',
+                    textSize: 11,
+                    textFont: FONT_STACKS.bold,
+                    textAllowOverlap: true,
+                    textIgnorePlacement: true,
+                  }}
+                />
+              </ShapeSource>
+            )}
+          </>
+        )}
+
         {/* Fishing location markers — clustered for smooth zoomed-out rendering */}
         {markerMode === 'locations' && ShapeSource && CircleLayer && SymbolLayer && (
           <ShapeSource
@@ -5882,18 +6216,21 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             );
           })}
 
-        {/* Wind arrow overlay */}
-        {windEnabled && windGeoJSON && ShapeSource && SymbolLayer && (
+        {/* Wind overlay */}
+        {windEnabled && windGeoJSON && ShapeSource && CircleLayer && SymbolLayer && (
           <ShapeSource id="wind-arrow-source" shape={windGeoJSON}>
-            <SymbolLayer
-              id="wind-arrow-layer"
+            <CircleLayer
+              id="wind-point-layer"
               style={{
-                iconImage: 'triangle-11',
-                iconSize: 1.2,
-                iconRotate: ['get', 'iconRotation'],
-                iconAllowOverlap: true,
-                iconIgnorePlacement: true,
-                iconColor: [
+                circleRadius: [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  4, 4,
+                  7, 5.5,
+                  10, 7,
+                ] as any,
+                circleColor: [
                   'interpolate',
                   ['linear'],
                   ['get', 'speedMph'],
@@ -5902,7 +6239,33 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                   24, '#FF9800',
                   38, '#F44336',
                 ],
-                iconOpacity: 0.85,
+                circleOpacity: 0.92,
+                circleStrokeColor: '#FFFFFF',
+                circleStrokeWidth: 1.2,
+              }}
+            />
+            <SymbolLayer
+              id="wind-arrow-layer"
+              style={{
+                textField: [
+                  'concat',
+                  ['to-string', ['round', ['get', 'speedMph']]],
+                  ' mph',
+                ] as any,
+                textAllowOverlap: true,
+                textIgnorePlacement: true,
+                textSize: [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  4, 0,
+                  6, 10,
+                  9, 11.5,
+                ] as any,
+                textColor: '#18354A',
+                textHaloColor: 'rgba(255,255,255,0.92)',
+                textHaloWidth: 1.2,
+                textOffset: [0, 1.35] as any,
               }}
             />
           </ShapeSource>
@@ -6481,6 +6844,128 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         </View>
       )}
 
+      {(routeMode || routePoints.length > 0) && (
+        <View style={styles.routePlannerCard}>
+          <View style={styles.routePlannerHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.routePlannerTitle}>
+                {routeName || 'Route Builder'}
+              </Text>
+              <Text style={styles.routePlannerSubtitle} numberOfLines={1}>
+                {routeMode
+                  ? 'Tap the map to add route points. Drag the map, then keep tapping to shape your line.'
+                  : routeMetrics
+                    ? `${routePoints.length} points · ${routeMetrics.totalDistanceMi.toFixed(1)} mi · ETA ${routeMetrics.adjustedTimeLabel}`
+                    : routePoints.length > 0
+                      ? `${routePoints.length} point${routePoints.length === 1 ? '' : 's'} placed`
+                      : 'Start by tapping the map'}
+              </Text>
+            </View>
+            <Pressable
+              style={styles.routePlannerClose}
+              onPress={() => {
+                if (routeMode) {
+                  setRouteMode(false);
+                } else {
+                  handleClearRoutePlan();
+                }
+              }}
+            >
+              <Ionicons
+                name={routeMode ? 'checkmark' : 'close'}
+                size={16}
+                color={routeMode ? '#1565C0' : palette.textSecondary}
+              />
+            </Pressable>
+          </View>
+
+          <View style={styles.routePlannerMetricRow}>
+            <View style={styles.routePlannerMetricPill}>
+              <Ionicons name="pin-outline" size={12} color="#1565C0" />
+              <Text style={styles.routePlannerMetricText}>{routePoints.length} pts</Text>
+            </View>
+            <View style={styles.routePlannerMetricPill}>
+              <Ionicons name="resize-outline" size={12} color="#1565C0" />
+              <Text style={styles.routePlannerMetricText}>
+                {routeMetrics ? `${routeMetrics.totalDistanceMi.toFixed(1)} mi` : 'Tap to start'}
+              </Text>
+            </View>
+            <View style={styles.routePlannerMetricPill}>
+              <Ionicons
+                name={routeWarnings.length > 0 ? 'warning-outline' : routeDepthChecking ? 'time-outline' : 'water-outline'}
+                size={12}
+                color={routeWarnings.length > 0 ? '#C96A18' : '#1565C0'}
+              />
+              <Text style={styles.routePlannerMetricText}>
+                {routeDepthChecking
+                  ? 'Checking depth'
+                  : routeWarnings.length > 0
+                    ? `${routeWarnings.length} shallow`
+                    : 'Depth clear'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.routePlannerActionRow}>
+            <Pressable
+              style={[styles.routePlannerActionBtn, routeMode && styles.routePlannerActionBtnPrimary]}
+              onPress={() => {
+                if (routeMode) {
+                  setRouteMode(false);
+                } else {
+                  openRouteBuilder();
+                }
+              }}
+            >
+              <Ionicons
+                name={routeMode ? 'checkmark' : 'create-outline'}
+                size={14}
+                color={routeMode ? '#FFFFFF' : palette.textSecondary}
+              />
+              <Text style={[styles.routePlannerActionText, routeMode && styles.routePlannerActionTextPrimary]}>
+                {routeMode ? 'Done' : 'Edit'}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={styles.routePlannerActionBtn}
+              onPress={handleUndoRoutePoint}
+              disabled={routePoints.length === 0}
+            >
+              <Ionicons name="arrow-undo-outline" size={14} color={palette.textSecondary} />
+              <Text style={styles.routePlannerActionText}>Undo</Text>
+            </Pressable>
+            <Pressable
+              style={styles.routePlannerActionBtn}
+              onPress={handleSavePlannedRoute}
+              disabled={!plannedRoute}
+            >
+              <Ionicons name="bookmark-outline" size={14} color={palette.textSecondary} />
+              <Text style={styles.routePlannerActionText}>Save</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.routePlannerActionBtn, routeNavActive && styles.routePlannerActionBtnPrimary]}
+              onPress={() => {
+                if (!routeNavActive) {
+                  setRouteNavIndex(1);
+                }
+                setRouteMode(false);
+                setRouteNavActive((prev) => !prev);
+              }}
+              disabled={!plannedRoute || routePoints.length < 2}
+            >
+              <Ionicons
+                name={routeNavActive ? 'pause-outline' : 'navigate-outline'}
+                size={14}
+                color={routeNavActive ? '#FFFFFF' : palette.textSecondary}
+              />
+              <Text style={[styles.routePlannerActionText, routeNavActive && styles.routePlannerActionTextPrimary]}>
+                {routeNavActive ? 'Stop' : 'Start'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
       {/* Measure mode banner */}
       {measureMode && (
         <View style={styles.measureBanner}>
@@ -6944,11 +7429,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             <Pressable
               style={[styles.focusedDetailsBtn, { backgroundColor: '#3B82C4', flex: 1 }]}
               onPress={() => {
-                navigation.navigate('RoutePlanner', {
-                  destinationLat: focusedLocation.lat,
-                  destinationLon: focusedLocation.lon,
-                  destinationName: focusedLocation.name,
-                });
+                openRouteBuilder(
+                  { lat: focusedLocation.lat, lon: focusedLocation.lon },
+                  focusedLocation.name,
+                );
               }}
             >
               <Ionicons name="navigate-outline" size={16} color="#FFFFFF" />
@@ -6969,8 +7453,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       )}
 
       {/* Quick Action FAB */}
-      {!focusedLocation && (
+      {!focusedLocation && !mapToolsDrawerOpen && !routeMode && (
         <QuickActionFAB
+          bottomOffset={Platform.OS === 'ios' ? 136 : 102}
           actions={[
             {
               key: 'catch',
@@ -7027,10 +7512,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       />
 
       {/* Persistent map info bar — speed, heading, GPS accuracy */}
-      {!focusedLocation && (
+      {!focusedLocation && !mapToolsDrawerOpen && !layerPickerVisible && (
         <MapInfoBar
-          bottomOffset={Platform.OS === 'ios' ? 100 : 72}
+          bottomOffset={Platform.OS === 'ios' ? 108 : 82}
+          rightInset={112}
           anchorWatch={anchorStatus.active ? { active: true, driftMeters: anchorStatus.driftDistance, radiusMeters: anchorStatus.watch?.radiusMeters ?? 30 } as AnchorWatchInfo : undefined}
+          routeNav={routeNavInfo}
         />
       )}
 
@@ -7800,10 +8287,11 @@ const styles = StyleSheet.create({
     top: Platform.OS === 'ios' ? 170 : 130,
     right: 16,
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    paddingVertical: 8,
-    minWidth: 220,
-    maxHeight: '70%',
+    borderRadius: 12,
+    paddingVertical: 6,
+    minWidth: 188,
+    maxWidth: 224,
+    maxHeight: '62%',
     shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 16,
@@ -7812,12 +8300,12 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   layerSectionTitle: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: palette.textMuted,
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 4,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 3,
     letterSpacing: 0.8,
   },
   layerDivider: {
@@ -7830,7 +8318,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   overlayDescription: {
-    fontSize: 11,
+    fontSize: 10,
     color: palette.textMuted,
     marginTop: 1,
   },
@@ -7885,15 +8373,15 @@ const styles = StyleSheet.create({
   layerPickerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   layerPickerRowActive: {
     backgroundColor: palette.accentDim,
   },
   layerPickerLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
     color: palette.textSecondary,
     flex: 1,
@@ -8216,6 +8704,91 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     marginTop: 1,
+  },
+  routePlannerCard: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 108 : 88,
+    left: 16,
+    right: 72,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
+    zIndex: 9,
+    gap: 10,
+  },
+  routePlannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  routePlannerTitle: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  routePlannerSubtitle: {
+    color: palette.textMuted,
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  routePlannerClose: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: palette.surfaceRaised,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  routePlannerMetricRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  routePlannerMetricPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#F5F8FB',
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  routePlannerMetricText: {
+    color: palette.textSecondary,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  routePlannerActionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  routePlannerActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: palette.surfaceRaised,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  routePlannerActionBtnPrimary: {
+    backgroundColor: '#1565C0',
+  },
+  routePlannerActionText: {
+    color: palette.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  routePlannerActionTextPrimary: {
+    color: '#FFFFFF',
   },
   measureActions: {
     position: 'absolute',

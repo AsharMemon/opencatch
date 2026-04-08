@@ -21,9 +21,15 @@ interface FABAction {
 
 interface QuickActionFABProps {
   actions: FABAction[];
+  bottomOffset?: number;
+  rightOffset?: number;
 }
 
-export function QuickActionFAB({ actions }: QuickActionFABProps) {
+export function QuickActionFAB({
+  actions,
+  bottomOffset = Platform.OS === 'ios' ? 128 : 96,
+  rightOffset = 16,
+}: QuickActionFABProps) {
   const [expanded, setExpanded] = useState(false);
   const animation = useRef(new Animated.Value(0)).current;
   const rotation = animation.interpolate({
@@ -57,7 +63,7 @@ export function QuickActionFAB({ actions }: QuickActionFABProps) {
   };
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
+    <View style={[styles.container, { bottom: bottomOffset, right: rightOffset }]} pointerEvents="box-none">
       {/* Backdrop */}
       {expanded && (
         <Pressable style={styles.backdrop} onPress={toggleMenu} />
@@ -121,8 +127,6 @@ export function QuickActionFAB({ actions }: QuickActionFABProps) {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 110 : 80,
-    right: 16,
     alignItems: 'flex-end',
     zIndex: 50,
     // Ensure enough width for labels + icon without clipping

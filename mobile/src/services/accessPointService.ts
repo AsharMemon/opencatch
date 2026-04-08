@@ -66,7 +66,11 @@ export const ACCESS_POINT_CONFIG: Record<AccessPointType, AccessPointStyle> = {
 
 // ── Constants ────────────────────────────────────────────────────
 
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+const OVERPASS_URLS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://lz4.overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+];
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 // ── Cache ────────────────────────────────────────────────────────
@@ -137,12 +141,18 @@ function buildOverpassQuery(
   node["seamark:type"="slipway"]${area};
   node["waterway"="boat_ramp"]${area};
   way["waterway"="boat_ramp"]${area};
+  node["waterway"="dock"]${area};
+  way["waterway"="dock"]${area};
+  node["waterway"="canoe_put_in"]${area};
 
   // Shore fishing access
   node["leisure"="fishing"]${area};
   way["leisure"="fishing"]${area};
   node["sport"="fishing"]["access"!="private"]${area};
+  node["man_made"="pier"]["fishing"="yes"]${area};
+  way["man_made"="pier"]["fishing"="yes"]${area};
   node["access"="yes"]["waterway"]${area};
+  node["leisure"="picnic_table"]${area};
 
   // Kayak / canoe launches
   node["canoe"="put_in"]${area};
@@ -179,13 +189,18 @@ function classifyElement(tags: Record<string, string>): AccessPointType {
   if (
     tags.leisure === 'slipway' ||
     tags['seamark:type'] === 'slipway' ||
-    tags.waterway === 'boat_ramp'
+    tags.waterway === 'boat_ramp' ||
+    tags.waterway === 'dock'
   ) {
     // Distinguish kayak launches from motorboat ramps
     if (tags.boat && /canoe|kayak/i.test(tags.boat)) return 'kayak_launch';
     return 'boat_launch';
   }
-  if (tags.canoe === 'put_in' || (tags.sport === 'canoe' && tags.leisure !== 'fishing')) {
+  if (
+    tags.canoe === 'put_in' ||
+    tags.waterway === 'canoe_put_in' ||
+    (tags.sport === 'canoe' && tags.leisure !== 'fishing')
+  ) {
     return 'kayak_launch';
   }
   if (tags.amenity === 'parking') return 'parking';
@@ -275,18 +290,29 @@ function elementToAccessPoint(el: OverpassElement): AccessPoint | null {
 // ── Fetch wrapper ───────────────────────────────────────────────
 
 async function runOverpassQuery(query: string): Promise<OverpassElement[]> {
-  const response = await fetch(OVERPASS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `data=${encodeURIComponent(query)}`,
-  });
+  let lastError: Error | null = null;
 
-  if (!response.ok) {
-    throw new Error(`Overpass API error: ${response.status} ${response.statusText}`);
+  for (const endpoint of OVERPASS_URLS) {
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `data=${encodeURIComponent(query)}`,
+      });
+
+      if (!response.ok) {
+        lastError = new Error(`Overpass API error: ${response.status} ${response.statusText}`);
+        continue;
+      }
+
+      const json = await response.json();
+      return (json.elements ?? []) as OverpassElement[];
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+    }
   }
 
-  const json = await response.json();
-  return (json.elements ?? []) as OverpassElement[];
+  throw lastError ?? new Error('Overpass API failed');
 }
 
 // ── De-duplication by proximity ──────────────────────────────────

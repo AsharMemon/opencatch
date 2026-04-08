@@ -54,6 +54,8 @@ export interface RouteNavInfo {
 interface MapInfoBarProps {
   /** Positioned above tab bar — pass bottom offset */
   bottomOffset?: number;
+  leftInset?: number;
+  rightInset?: number;
   anchorWatch?: AnchorWatchInfo;
   routeNav?: RouteNavInfo;
 }
@@ -77,7 +79,13 @@ function formatDistance(meters: number): string {
   return `${mi.toFixed(1)} mi`;
 }
 
-export function MapInfoBar({ bottomOffset = 0, anchorWatch, routeNav }: MapInfoBarProps) {
+export function MapInfoBar({
+  bottomOffset = 0,
+  leftInset = 12,
+  rightInset = 108,
+  anchorWatch,
+  routeNav,
+}: MapInfoBarProps) {
   const [gps, setGps] = useState<GPSInfo | null>(null);
   const [expanded, setExpanded] = useState(false);
   const expandAnim = useRef(new Animated.Value(0)).current;
@@ -147,7 +155,16 @@ export function MapInfoBar({ bottomOffset = 0, anchorWatch, routeNav }: MapInfoB
   const showRoute = routeNav?.active;
 
   return (
-    <View style={[styles.container, { bottom: bottomOffset }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          bottom: bottomOffset,
+          left: leftInset,
+          right: rightInset,
+        },
+      ]}
+    >
       <Pressable style={styles.bar} onPress={toggleExpand}>
         {/* Main row: speed, heading, accuracy */}
         <View style={styles.mainRow}>
@@ -271,15 +288,16 @@ export function MapInfoBar({ bottomOffset = 0, anchorWatch, routeNav }: MapInfoB
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    left: 12,
-    right: 12,
     zIndex: 50,
   },
   bar: {
+    alignSelf: 'flex-start',
     backgroundColor: 'rgba(255, 255, 255, 0.94)',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 8,
+    minWidth: 214,
+    maxWidth: 296,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 10,
