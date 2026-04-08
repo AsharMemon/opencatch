@@ -800,7 +800,7 @@ export const api = {
         predicted_weight_lb: 0,
         historical_avg_lb: 0,
       },
-      explanation: 'Score unavailable — connect to the server for real-time predictions.',
+      explanation: 'Live predictions are temporarily unavailable. Showing saved map data and local conditions while the connection recovers.',
     };
 
     return requestWithFallback('/api/v1/predict', mockFallback, {

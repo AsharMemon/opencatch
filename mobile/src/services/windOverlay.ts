@@ -63,7 +63,10 @@ const CACHE_TTL_MS = 30 * 60 * 1000;
 const DEFAULT_RADIUS_DEG = 1.0;
 
 /** Default spacing between grid points in degrees. */
-const DEFAULT_SPACING_DEG = 0.5;
+const DEFAULT_SPACING_DEG = 0.35;
+
+/** Number of coordinate pairs to batch into a single Open-Meteo request. */
+const BATCH_SIZE = 24;
 
 // ── Cache ────────────────────────────────────────────────────────
 
@@ -127,32 +130,41 @@ function buildGridCoords(
  * Fetch wind data for a single coordinate from Open-Meteo.
  * Returns `null` on any network or parsing error so the caller can skip it.
  */
-async function fetchSinglePoint(
-  lat: number,
-  lon: number,
-): Promise<WindPoint | null> {
+async function fetchBatch(
+  coords: { lat: number; lon: number }[],
+): Promise<WindPoint[]> {
   try {
+    const lats = coords.map((c) => c.lat.toFixed(4)).join(',');
+    const lons = coords.map((c) => c.lon.toFixed(4)).join(',');
     const url =
-      `${OPEN_METEO_BASE}?latitude=${lat}&longitude=${lon}` +
+      `${OPEN_METEO_BASE}?latitude=${lats}&longitude=${lons}` +
       '&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m' +
       '&wind_speed_unit=mph';
 
     const res = await fetch(url);
-    if (!res.ok) return null;
+    if (!res.ok) return [];
 
-    const json: OpenMeteoCurrentResponse = await res.json();
-    const current = json.current;
-    if (!current) return null;
+    const json = await res.json();
+    const items: OpenMeteoCurrentResponse[] = Array.isArray(json) ? json : [json];
+    const results: WindPoint[] = [];
 
-    return {
-      lat,
-      lon,
-      speedMph: current.wind_speed_10m ?? 0,
-      directionDeg: current.wind_direction_10m ?? 0,
-      gustMph: current.wind_gusts_10m ?? undefined,
-    };
+    for (let idx = 0; idx < items.length; idx++) {
+      const current = items[idx]?.current;
+      const coord = coords[idx];
+      if (!current || !coord) continue;
+
+      results.push({
+        lat: coord.lat,
+        lon: coord.lon,
+        speedMph: current.wind_speed_10m ?? 0,
+        directionDeg: current.wind_direction_10m ?? 0,
+        gustMph: current.wind_gusts_10m ?? undefined,
+      });
+    }
+
+    return results;
   } catch {
-    return null;
+    return [];
   }
 }
 
@@ -179,15 +191,13 @@ export async function fetchWindGrid(
   if (cached) return cached;
 
   const coords = buildGridCoords(centerLat, centerLon, radiusDeg, spacingDeg);
+  const points: WindPoint[] = [];
 
-  // Fetch all points concurrently.
-  const results = await Promise.all(
-    coords.map((c) => fetchSinglePoint(c.lat, c.lon)),
-  );
-
-  const points: WindPoint[] = results.filter(
-    (p): p is WindPoint => p !== null,
-  );
+  for (let i = 0; i < coords.length; i += BATCH_SIZE) {
+    const batch = coords.slice(i, i + BATCH_SIZE);
+    const batchPoints = await fetchBatch(batch);
+    points.push(...batchPoints);
+  }
 
   const grid: WindGridData = {
     points,

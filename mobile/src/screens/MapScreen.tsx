@@ -112,7 +112,6 @@ import { SpeedCourseHUD } from '../components/SpeedCourseHUD';
 import { NoWakeZoneOverlay } from '../components/NoWakeZoneOverlay';
 import { NavigationAidsOverlay } from '../components/NavigationAidsOverlay';
 import { ArtificialReefOverlay } from '../components/ArtificialReefOverlay';
-import { WindOverlayAnimated } from '../components/WindOverlayAnimated';
 import { WaveOverlayAnimated } from '../components/WaveOverlayAnimated';
 import { DepthNumberOverlay } from '../components/DepthNumberOverlay';
 import { MarineGasOverlay } from '../components/MarineGasOverlay';
@@ -128,7 +127,6 @@ import { IceThicknessOverlay } from '../components/IceThicknessOverlay';
 import { FishingPressureOverlay } from '../components/FishingPressureOverlay';
 import { BiteTimeOverlay } from '../components/BiteTimeOverlay';
 import { SSTOverlay } from '../components/SSTOverlay';
-import { OverlayLegend } from '../components/OverlayLegend';
 import { WAVE_LEGEND_STOPS } from '../components/WaveOverlayAnimated';
 import { SST_LEGEND_STOPS } from '../components/SSTOverlay';
 import { PRESSURE_LEGEND_STOPS } from '../components/FishingPressureOverlay';
@@ -178,10 +176,6 @@ import {
   loadContourSettings,
   saveContourSettings,
   resetContourSettings,
-  buildContourColorExpression,
-  buildContourWidthExpression,
-  buildConfidenceFillOpacity,
-  buildConfidenceLineOpacity,
   getColorStops,
   CONTOUR_INTERVALS,
   COLOR_SCHEMES,
@@ -380,6 +374,13 @@ const DEFAULT_VECTOR_OVERLAYS = new Set([
   'parking',
   'trails',
 ]);
+
+const WIND_LEGEND_STOPS = [
+  { color: '#4CAF50', label: 'Calm' },
+  { color: '#FFC107', label: 'Moderate' },
+  { color: '#FF9800', label: 'Strong' },
+  { color: '#F44336', label: 'Storm' },
+];
 
 // Waypoint icon mappings (Ionicons instead of emoji)
 const WAYPOINT_ICONS: { key: WaypointIcon; label: string; ionicon: string }[] = [
@@ -2259,7 +2260,7 @@ interface LayerPickerProps {
   onClose: () => void;
 }
 
-function LayerPicker({ visible, currentStyle, activeOverlays, showQualityPins, userLocation: pickerUserLoc, poiFilters, onSelectStyle, onToggleOverlay, onToggleQualityPins, onClose }: LayerPickerProps) {
+function LayerPicker({ visible, currentStyle, activeOverlays: _activeOverlays, showQualityPins, userLocation: pickerUserLoc, poiFilters: _poiFilters, onSelectStyle, onToggleOverlay: _onToggleOverlay, onToggleQualityPins, onClose }: LayerPickerProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -2276,7 +2277,7 @@ function LayerPicker({ visible, currentStyle, activeOverlays, showQualityPins, u
     <>
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       <Animated.View style={[styles.layerPickerCard, { opacity: fadeAnim }]}>
-        <ScrollView style={{ maxHeight: 520 }} showsVerticalScrollIndicator={false} bounces={false}>
+        <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false} bounces={false}>
           <Text style={styles.layerSectionTitle}>MAP STYLE</Text>
           {MAP_STYLE_KEYS.filter((key) => {
             // Only show nautical chart option when near coast
@@ -2331,68 +2332,15 @@ function LayerPicker({ visible, currentStyle, activeOverlays, showQualityPins, u
           </Pressable>
 
           <View style={styles.layerDivider} />
-          <Text style={styles.layerSectionTitle}>OVERLAYS</Text>
-          {OVERLAY_LAYERS.filter((layer) => {
-            // Contextual filtering: only show relevant overlays (Gaigg Ch.4 — reduce data overload)
-            if (layer.context === 'coastal') {
-              return pickerUserLoc ? isNearCoast(pickerUserLoc.lat, pickerUserLoc.lon) : false;
-            }
-            if (layer.context === 'winter') {
-              const m = new Date().getMonth() + 1;
-              return m >= 11 || m <= 3;
-            }
-            return true;
-          }).map((layer) => {
-            const isActive = activeOverlays.has(layer.key);
-            return (
-              <Pressable
-                key={layer.key}
-                style={[styles.layerPickerRow, isActive && styles.layerPickerRowActive]}
-                onPress={() => onToggleOverlay(layer.key)}
-              >
-                <Ionicons
-                  name={layer.ionicon as any}
-                  size={18}
-                  color={isActive ? palette.accent : palette.textSecondary}
-                />
-                <View style={styles.overlayLabelArea}>
-                  <Text
-                    style={[
-                      styles.layerPickerLabel,
-                      isActive && styles.layerPickerLabelActive,
-                    ]}
-                  >
-                    {layer.label}
-                  </Text>
-                  <Text style={styles.overlayDescription}>{layer.description}</Text>
-                </View>
-                {isActive && <Ionicons name="checkmark" size={16} color={palette.accent} />}
-              </Pressable>
-            );
-          })}
-
-          {/* POI filter chips — Google Maps style */}
-          <View style={styles.layerDivider} />
-          <Text style={styles.layerSectionTitle}>POINTS OF INTEREST</Text>
-          <View style={styles.poiChipRow}>
-            {poiFilters.map((filter) => (
-              <Pressable
-                key={filter.key}
-                style={[styles.poiChip, filter.isActive && styles.poiChipActive]}
-                onPress={filter.onToggle}
-              >
-                <Ionicons
-                  name={filter.ionicon as any}
-                  size={15}
-                  color={filter.isActive ? '#FFFFFF' : palette.textSecondary}
-                />
-                <Text style={[styles.poiChipLabel, filter.isActive && styles.poiChipLabelActive]}>
-                  {filter.label}
-                </Text>
-              </Pressable>
-            ))}
+          <View style={styles.layerPickerHintCard}>
+            <View style={styles.layerPickerHintHeader}>
+              <Ionicons name="build-outline" size={16} color={palette.accent} />
+              <Text style={styles.layerPickerHintTitle}>Overlay controls moved</Text>
+            </View>
+            <Text style={styles.layerPickerHintText}>
+              Weather, contour, navigation, and POI layers now live in the side tools drawer so this panel stays compact.
+            </Text>
           </View>
-
         </ScrollView>
       </Animated.View>
     </>
@@ -2657,7 +2605,7 @@ const COMPASS_SIZE = 52;
 const COMPASS_HALF = COMPASS_SIZE / 2;
 function CompassRoseSvg() { const r = COMPASS_HALF - 2; const tickR = r - 3; const labelR = r - 11; const cardinals = [{ label: 'N', angle: 0 },{ label: 'E', angle: 90 },{ label: 'S', angle: 180 },{ label: 'W', angle: 270 }]; return (<Svg width={COMPASS_SIZE} height={COMPASS_SIZE}><G origin={`${COMPASS_HALF}, ${COMPASS_HALF}`}><Circle cx={COMPASS_HALF} cy={COMPASS_HALF} r={r} stroke={palette.border} strokeWidth={1} fill="none" />{Array.from({ length: 12 }).map((_, i) => { const a = i * 30; const rad = (a * Math.PI) / 180; const iC = a % 90 === 0; const iR = iC ? tickR - 5 : tickR - 3; return (<Line key={a} x1={COMPASS_HALF + Math.sin(rad) * iR} y1={COMPASS_HALF - Math.cos(rad) * iR} x2={COMPASS_HALF + Math.sin(rad) * tickR} y2={COMPASS_HALF - Math.cos(rad) * tickR} stroke={iC ? palette.text : palette.textMuted} strokeWidth={iC ? 1.5 : 0.8} />); })}<Polygon points={`${COMPASS_HALF},${COMPASS_HALF - r + 1} ${COMPASS_HALF - 3},${COMPASS_HALF - r + 8} ${COMPASS_HALF + 3},${COMPASS_HALF - r + 8}`} fill="#C44B4B" />{cardinals.map(({ label, angle }) => { const rad = (angle * Math.PI) / 180; return (<SvgText key={label} x={COMPASS_HALF + Math.sin(rad) * labelR} y={COMPASS_HALF - Math.cos(rad) * labelR + 3.5} fontSize={label === 'N' ? 9 : 7} fontWeight={label === 'N' ? '700' : '600'} fill={label === 'N' ? '#C44B4B' : palette.textSecondary} textAnchor="middle">{label}</SvgText>); })}<Circle cx={COMPASS_HALF} cy={COMPASS_HALF} r={2} fill={palette.accent} /></G></Svg>); }
 function CompassWidget({ heading, mode, onToggleMode }: { heading: number; mode: CompassMode; onToggleMode: () => void }) { const animatedRotation = useRef(new Animated.Value(0)).current; const lastH = useRef(0); useEffect(() => { let d = heading - lastH.current; if (d > 180) d -= 360; if (d < -180) d += 360; const t = lastH.current + d; lastH.current = t; Animated.timing(animatedRotation, { toValue: -t, duration: 250, useNativeDriver: true }).start(); }, [heading, animatedRotation]); const rotI = animatedRotation.interpolate({ inputRange: [-720, 720], outputRange: ['-720deg', '720deg'] }); const cardinal = degreesToCardinal(heading); const degLabel = `${Math.round(((heading % 360) + 360) % 360)}\u00B0`; return (<Pressable style={[cwStyles.container, mode === 'heading' && cwStyles.containerActive]} onPress={onToggleMode} accessibilityLabel={`Compass: ${degLabel} ${cardinal}. Tap to toggle heading mode.`}><Animated.View style={{ transform: [{ rotate: rotI }] }}><CompassRoseSvg /></Animated.View><View style={cwStyles.readout}><Text style={cwStyles.degrees}>{degLabel}</Text><Text style={cwStyles.cardinal}>{cardinal}</Text></View>{mode === 'heading' && <View style={cwStyles.trackingDot} />}</Pressable>); }
-const cwStyles = StyleSheet.create({ container: { position: 'absolute', top: Platform.OS === 'ios' ? 155 : 115, left: 16, width: COMPASS_SIZE + 8, alignItems: 'center', backgroundColor: palette.surface, borderRadius: (COMPASS_SIZE + 8) / 2, paddingVertical: 4, paddingHorizontal: 4, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 }, containerActive: { borderWidth: 1.5, borderColor: palette.accent }, readout: { flexDirection: 'row', alignItems: 'baseline', gap: 2, marginTop: 1, marginBottom: 2 }, degrees: { fontSize: 10, fontWeight: '700', color: palette.text }, cardinal: { fontSize: 8, fontWeight: '600', color: palette.textSecondary }, trackingDot: { position: 'absolute', top: 4, right: 4, width: 6, height: 6, borderRadius: 3, backgroundColor: palette.accent } });
+const cwStyles = StyleSheet.create({ container: { position: 'absolute', top: Platform.OS === 'ios' ? 210 : 170, left: 16, width: COMPASS_SIZE + 8, alignItems: 'center', backgroundColor: palette.surface, borderRadius: (COMPASS_SIZE + 8) / 2, paddingVertical: 4, paddingHorizontal: 4, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4, zIndex: 4 }, containerActive: { borderWidth: 1.5, borderColor: palette.accent }, readout: { flexDirection: 'row', alignItems: 'baseline', gap: 2, marginTop: 1, marginBottom: 2 }, degrees: { fontSize: 10, fontWeight: '700', color: palette.text }, cardinal: { fontSize: 8, fontWeight: '600', color: palette.textSecondary }, trackingDot: { position: 'absolute', top: 4, right: 4, width: 6, height: 6, borderRadius: 3, backgroundColor: palette.accent } });
 
 // ── MapScreen ─────────────────────────────────────────────────────
 
@@ -2762,10 +2710,6 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const accessFetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAccessCenter = useRef<{ lat: number; lon: number } | null>(null);
 
-  // Animated wind overlay (enhanced)
-  const [windAnimatedEnabled, setWindAnimatedEnabled] = useState(false);
-  const [windAnimatedLoading, setWindAnimatedLoading] = useState(false);
-
   // Wave height overlay (coastal only)
   const [waveEnabled, setWaveEnabled] = useState(false);
   const [waveLoading, setWaveLoading] = useState(false);
@@ -2819,7 +2763,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   // ── Overlay loading banner state ──
   const overlayLoadingSet = React.useMemo(() => {
     const s = new Set<string>();
-    if (windAnimatedLoading) s.add('Wind');
+    if (windLoading) s.add('Wind');
     if (waveLoading) s.add('Wave');
     if (depthLoading) s.add('Depth');
     if (dynamicDepthLoading) s.add('Dynamic Depths');
@@ -2829,7 +2773,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     if (biteLoading) s.add('Bite');
     if (radarLoading) s.add('Radar');
     return s;
-  }, [windAnimatedLoading, waveLoading, depthLoading, dynamicDepthLoading, tidalLoading, iceLoading, pressureLoading, biteLoading, radarLoading]);
+  }, [windLoading, waveLoading, depthLoading, dynamicDepthLoading, tidalLoading, iceLoading, pressureLoading, biteLoading, radarLoading]);
 
   // USACE survey overlay (channel depths, locks, harbors)
   const [usaceSurveyEnabled, setUsaceSurveyEnabled] = useState(false);
@@ -3721,7 +3665,22 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const loadWindData = useCallback(async (lat: number, lon: number) => {
     setWindLoading(true);
     try {
-      const grid = await fetchWindGrid(lat, lon);
+      let radiusDeg = 1.0;
+      let spacingDeg = 0.35;
+      try {
+        const bounds = await mapRef.current?.getVisibleBounds?.();
+        if (bounds?.[0] && bounds?.[1]) {
+          const latSpan = Math.abs(bounds[0][1] - bounds[1][1]);
+          const lonSpan = Math.abs(bounds[0][0] - bounds[1][0]);
+          const span = Math.max(latSpan, lonSpan);
+          radiusDeg = Math.min(Math.max(span * 0.65, 0.6), 2.0);
+          spacingDeg = span < 0.8 ? 0.2 : span < 1.5 ? 0.28 : 0.4;
+        }
+      } catch {
+        // Fall back to default radius/spacing if visible bounds are unavailable.
+      }
+
+      const grid = await fetchWindGrid(lat, lon, radiusDeg, spacingDeg);
       const geoJSON = windGridToGeoJSON(grid);
       setWindGeoJSON(geoJSON);
       lastWindCenter.current = { lat, lon };
@@ -4166,9 +4125,11 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         });
         break;
       case 'add-to-route':
-        // For now, same as drop-pin — future route planning
-        setPendingCoord({ latitude: coordinate.latitude, longitude: coordinate.longitude });
-        setShowWaypointModal(true);
+        navigation.navigate('RoutePlanner', {
+          destinationLat: coordinate.latitude,
+          destinationLon: coordinate.longitude,
+          destinationName: 'Pinned Route Point',
+        });
         break;
       case 'whats-here':
         // Fly to location and enable marinas/access points
@@ -4489,8 +4450,49 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const currentMonth = new Date().getMonth() + 1; // 1-12
   const isWinterSeason = currentMonth >= 11 || currentMonth <= 3;
   const isNearCoastNow = userLocation ? isNearCoast(userLocation.lat, userLocation.lon) : false;
+  const bathymetryLegendStops = useMemo(() => {
+    const colors = getColorStops(contourSettings);
+    return [
+      { color: colors[0] ?? '#D6EAF8', label: '0-3' },
+      { color: colors[2] ?? colors[1] ?? '#85C1E9', label: '3-10' },
+      { color: colors[4] ?? colors[3] ?? '#3498DB', label: '10-25' },
+      { color: colors[6] ?? colors[5] ?? '#2471A3', label: '25-60' },
+      { color: colors[7] ?? colors[6] ?? '#1A5276', label: '60+' },
+    ];
+  }, [contourSettings]);
 
   const mapToolGroups: MapToolGroup[] = [
+    {
+      title: 'Map Layers',
+      tools: [
+        {
+          key: 'lake-depth-layer',
+          label: 'Lake Depth Contours',
+          icon: 'analytics-outline',
+          description: 'Survey-backed inland contour bands where available',
+          isActive: activeOverlays.has('local-bathymetry'),
+          onPress: () => handleToggleOverlay('local-bathymetry'),
+          infoCard: activeOverlays.has('local-bathymetry')
+            ? {
+                primary: 'Inland bathymetry active',
+                secondary: 'Best on survey-backed lakes; other lakes may stay coarse',
+                icon: 'water',
+                color: '#1565C0',
+              } as OverlayInfoCard
+            : null,
+          legendStops: bathymetryLegendStops,
+          legendUnit: '(ft)',
+        },
+        {
+          key: 'public-lands-layer',
+          label: 'Public Lands',
+          icon: 'leaf-outline',
+          description: 'Protected land and public access context',
+          isActive: activeOverlays.has('public-lands'),
+          onPress: () => handleToggleOverlay('public-lands'),
+        },
+      ],
+    },
     {
       title: 'Drawing & Measurement',
       tools: [
@@ -4527,6 +4529,16 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             setMapToolsDrawerOpen(false);
           },
         },
+        {
+          key: 'route-planner',
+          label: 'Route Planner',
+          icon: 'navigate-outline',
+          description: 'Plan, edit, and navigate a route from the map',
+          onPress: () => {
+            navigation.navigate('RoutePlanner');
+            setMapToolsDrawerOpen(false);
+          },
+        },
       ],
     },
     {
@@ -4542,23 +4554,15 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           onPress: () => setWindEnabled((prev) => !prev),
           infoCard: windEnabled && windGeoJSON?.features?.length > 0
             ? {
-                primary: `${windGeoJSON.features.length} wind vectors loaded`,
+                primary: `${windGeoJSON.features.length} wind vectors`,
                 secondary: lastWindCenter.current
-                  ? `Center: ${lastWindCenter.current.lat.toFixed(2)}, ${lastWindCenter.current.lon.toFixed(2)}`
+                  ? 'Viewport-aligned arrows, refreshed as you pan'
                   : undefined,
                 icon: 'flag',
                 color: '#1565C0',
               } as OverlayInfoCard
             : null,
-        },
-        {
-          key: 'wind-animated',
-          label: 'Wind (Animated)',
-          icon: 'cellular-outline',
-          description: 'Windy-style animated wind grid (knots)',
-          isActive: windAnimatedEnabled,
-          isLoading: windAnimatedLoading,
-          onPress: () => setWindAnimatedEnabled((prev) => !prev),
+          legendStops: WIND_LEGEND_STOPS,
         },
         {
           key: 'waves',
@@ -4569,6 +4573,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           isLoading: waveLoading,
           visible: isNearCoastNow,
           onPress: () => setWaveEnabled((prev) => !prev),
+          legendStops: WAVE_LEGEND_STOPS,
+          legendUnit: '(m)',
         },
         {
           key: 'radar',
@@ -4598,6 +4604,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           isLoading: tidalLoading,
           visible: isNearCoastNow,
           onPress: () => setTidalCurrentEnabled((prev) => !prev),
+          legendStops: TIDAL_LEGEND_STOPS,
         },
         {
           key: 'sst',
@@ -4615,6 +4622,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                 color: '#FF9800',
               } as OverlayInfoCard
             : null,
+          legendStops: SST_LEGEND_STOPS,
         },
       ],
     },
@@ -4684,6 +4692,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                 color: '#2E7D32',
               } as OverlayInfoCard
             : null,
+          legendStops: BITE_LEGEND_STOPS,
         },
         {
           key: 'fishing-pressure',
@@ -4701,6 +4710,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                 color: '#EF5350',
               } as OverlayInfoCard
             : null,
+          legendStops: PRESSURE_LEGEND_STOPS,
         },
         {
           key: 'ice-thickness',
@@ -4719,6 +4729,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                 color: '#0D47A1',
               } as OverlayInfoCard
             : null,
+          legendStops: ICE_LEGEND_STOPS,
         },
         {
           key: 'ocean-spots',
@@ -4885,6 +4896,36 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       ],
     },
   ];
+  const mapToolsActiveCount = [
+    measureMode,
+    annotationMode,
+    windEnabled,
+    radarEnabled,
+    marinasEnabled,
+    accessEnabled,
+    waveEnabled,
+    depthNumbersEnabled,
+    marineGasEnabled,
+    oceanSpotsEnabled,
+    terrain3DEnabled,
+    tidalCurrentEnabled,
+    aisWifiEnabled,
+    draftAccessEnabled,
+    dynamicDepthsEnabled,
+    usaceSurveyEnabled,
+    sstEnabled,
+    biteTimeOverlayEnabled,
+    fishingPressureOverlayEnabled,
+    iceThicknessEnabled,
+    seabedEnabled,
+    maritimeBoundariesEnabled,
+    activeOverlays.has('local-bathymetry'),
+    activeOverlays.has('public-lands'),
+    activeOverlays.has('nav-aids'),
+    activeOverlays.has('no-wake-zones'),
+    activeOverlays.has('artificial-reefs'),
+  ].filter(Boolean).length;
+  const shouldHideCompass = mapToolsDrawerOpen || layerPickerVisible || !!focusedLocation || !!selectedContourDepth;
 
   // ── Render ───────────────────────────────────────────────────────
   if (Platform.OS === 'web') {
@@ -4982,19 +5023,6 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
-          />
-        )}
-
-        {/* Animated wind overlay (enhanced Windy-style) */}
-        {windAnimatedEnabled && userLocation && ShapeSource && SymbolLayer && CircleLayer && (
-          <WindOverlayAnimated
-            lat={userLocation.lat}
-            lon={userLocation.lon}
-            ShapeSource={ShapeSource}
-            SymbolLayer={SymbolLayer}
-            CircleLayer={CircleLayer}
-            onLoadStart={() => setWindAnimatedLoading(true)}
-            onLoadEnd={() => setWindAnimatedLoading(false)}
           />
         )}
 
@@ -5279,7 +5307,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                   sourceLayerID="contours"
                   style={{
                     fillColor: ['coalesce', ['get', 'fill_color'], '#85C1E9'] as any,
-                    fillOpacity: contourSettings.opacity * 0.7,
+                    fillOpacity: contourSettings.opacity * 0.82,
+                    fillOutlineColor: '#1A5276',
                   }}
                 />
                 <LineLayer
@@ -5287,8 +5316,16 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                   sourceLayerID="contours"
                   style={{
                     lineColor: '#1A5276',
-                    lineWidth: 0.6,
-                    lineOpacity: contourSettings.opacity * 0.55,
+                    lineWidth: [
+                      'interpolate',
+                      ['linear'],
+                      ['zoom'],
+                      5, 0.5,
+                      8, 0.8,
+                      11, 1.15,
+                      14, 1.6,
+                    ] as any,
+                    lineOpacity: contourSettings.opacity * 0.78,
                   }}
                 />
               </VectorSource>
@@ -6307,43 +6344,40 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         </View>
       </View>
 
-      {/* Map layer toggle button */}
+      {/* Map style toggle button */}
       <Pressable
         style={styles.layerButton}
         onPress={handleToggleLayerPicker}
-        accessibilityLabel={`Map style: ${MAP_STYLE_LABELS[mapStyle]}. ${activeOverlays.size} overlays active. Tap to change.`}
+        accessibilityLabel={`Map style: ${MAP_STYLE_LABELS[mapStyle]}. Tap to change the basemap.`}
       >
         <Ionicons name="layers-outline" size={20} color={palette.textSecondary} />
-        {activeOverlays.size > 0 && (
-          <View style={styles.overlayBadge}>
-            <Text style={styles.overlayBadgeText}>{activeOverlays.size}</Text>
-          </View>
-        )}
       </Pressable>
 
       {/* Map Tools button — opens slide-out drawer (replaces 7 individual buttons) */}
       {/* Design: "Kitchen Sink" avoidance per Gaigg Ch.7 */}
       <Pressable
-        style={[styles.mapToolsButton, (measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || draftAccessEnabled || dynamicDepthsEnabled || usaceSurveyEnabled || sstEnabled) && styles.mapToolsButtonActive]}
+        style={[styles.mapToolsButton, mapToolsActiveCount > 0 && styles.mapToolsButtonActive]}
         onPress={() => setMapToolsDrawerOpen(true)}
         accessibilityLabel="Open map tools drawer"
       >
         <Ionicons
           name="build-outline"
           size={20}
-          color={(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || tidalCurrentEnabled || aisWifiEnabled || draftAccessEnabled || dynamicDepthsEnabled || usaceSurveyEnabled || sstEnabled) ? '#FFFFFF' : palette.textSecondary}
+          color={mapToolsActiveCount > 0 ? '#FFFFFF' : palette.textSecondary}
         />
-        {(measureMode || annotationMode || windEnabled || radarEnabled || marinasEnabled || accessEnabled || windAnimatedEnabled || waveEnabled || depthNumbersEnabled || marineGasEnabled || oceanSpotsEnabled || terrain3DEnabled || tidalCurrentEnabled || aisWifiEnabled || draftAccessEnabled || dynamicDepthsEnabled || usaceSurveyEnabled || sstEnabled) && (
+        {mapToolsActiveCount > 0 && (
           <View style={styles.mapToolsBadge}>
             <Text style={styles.mapToolsBadgeText}>
-              {[measureMode, annotationMode, windEnabled, radarEnabled, marinasEnabled, accessEnabled, windAnimatedEnabled, waveEnabled, depthNumbersEnabled, marineGasEnabled, oceanSpotsEnabled, terrain3DEnabled, tidalCurrentEnabled, aisWifiEnabled, draftAccessEnabled, dynamicDepthsEnabled, usaceSurveyEnabled, sstEnabled].filter(Boolean).length}
+              {mapToolsActiveCount}
             </Text>
           </View>
         )}
       </Pressable>
 
       {/* Compass heading widget — only visible when map is rotated */}
-      <CompassWidget heading={compassHeading} mode={compassMode} onToggleMode={handleToggleCompassMode} />
+      {!shouldHideCompass && (
+        <CompassWidget heading={compassHeading} mode={compassMode} onToggleMode={handleToggleCompassMode} />
+      )}
 
       {/* Overlay loading banner — shows when any overlay is fetching data */}
       <MapOverlayLoadingBanner loadingOverlays={overlayLoadingSet} />
@@ -6363,44 +6397,6 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       {/* Fishing time banner — shows when conditions are good */}
       {userLocation && (
         <FishingTimeBanner lat={userLocation.lat} lon={userLocation.lon} />
-      )}
-
-      {/* Access points legend banner */}
-      {accessEnabled && (
-        <View style={styles.accessBanner}>
-          <Ionicons name="trail-sign-outline" size={14} color="#16A34A" style={{ marginRight: 6 }} />
-          <Text style={styles.windBannerText}>Access</Text>
-          <View style={styles.windLegend}>
-            <View style={[styles.windLegendDot, { backgroundColor: '#EA580C' }]} />
-            <Text style={styles.windLegendLabel}>Launch</Text>
-            <View style={[styles.windLegendDot, { backgroundColor: '#2563EB' }]} />
-            <Text style={styles.windLegendLabel}>Parking</Text>
-            <View style={[styles.windLegendDot, { backgroundColor: '#16A34A' }]} />
-            <Text style={styles.windLegendLabel}>Trail</Text>
-            <View style={[styles.windLegendDot, { backgroundColor: '#0D9488' }]} />
-            <Text style={styles.windLegendLabel}>Shore</Text>
-          </View>
-          {accessLoading && <ActivityIndicator size="small" color="#16A34A" style={{ marginLeft: 8 }} />}
-        </View>
-      )}
-
-      {/* Wind speed legend banner */}
-      {windEnabled && (
-        <View style={styles.windBanner}>
-          <Ionicons name="flag-outline" size={14} color={palette.accent} style={{ marginRight: 6 }} />
-          <Text style={styles.windBannerText}>Wind</Text>
-          <View style={styles.windLegend}>
-            <View style={[styles.windLegendDot, { backgroundColor: '#4CAF50' }]} />
-            <Text style={styles.windLegendLabel}>Calm</Text>
-            <View style={[styles.windLegendDot, { backgroundColor: '#FFC107' }]} />
-            <Text style={styles.windLegendLabel}>Moderate</Text>
-            <View style={[styles.windLegendDot, { backgroundColor: '#FF9800' }]} />
-            <Text style={styles.windLegendLabel}>Strong</Text>
-            <View style={[styles.windLegendDot, { backgroundColor: '#F44336' }]} />
-            <Text style={styles.windLegendLabel}>Storm</Text>
-          </View>
-          {windLoading && <ActivityIndicator size="small" color={palette.accent} style={{ marginLeft: 8 }} />}
-        </View>
       )}
 
       {/* Precipitation radar controls */}
@@ -6429,26 +6425,6 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             ))}
           </View>
         </View>
-      )}
-
-      {/* ── Overlay Legends (Windy-style corner legends) ── */}
-      {waveEnabled && (
-        <OverlayLegend title="Wave Height" unit="(m)" stops={WAVE_LEGEND_STOPS} position="bottom-left" />
-      )}
-      {sstEnabled && (
-        <OverlayLegend title="Sea Surface Temp" stops={SST_LEGEND_STOPS} position="bottom-left" />
-      )}
-      {fishingPressureOverlayEnabled && (
-        <OverlayLegend title="Fishing Pressure" stops={PRESSURE_LEGEND_STOPS} position="bottom-left" />
-      )}
-      {iceThicknessEnabled && (
-        <OverlayLegend title="Ice Thickness" stops={ICE_LEGEND_STOPS} position="bottom-left" />
-      )}
-      {biteTimeOverlayEnabled && (
-        <OverlayLegend title="Bite Activity" stops={BITE_LEGEND_STOPS} position="bottom-left" />
-      )}
-      {tidalCurrentEnabled && (
-        <OverlayLegend title="Tidal Current" stops={TIDAL_LEGEND_STOPS} position="bottom-left" />
       )}
 
       {/* Storm cell warnings */}
@@ -6911,12 +6887,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             >
               <Ionicons name="bookmark-outline" size={15} color={palette.accent} />
             </Pressable>
-            <View style={{ flex: 1 }} />
-          </View>
-          {/* Main action buttons row */}
-          <View style={{ flexDirection: 'row', gap: 8 }}>
             <Pressable
-              style={[styles.focusedDetailsBtn, { backgroundColor: '#3B82C4', flex: 1 }]}
+              style={styles.focusedActionBtn}
               onPress={() => {
                 const url = Platform.select({
                   ios: `maps:?daddr=${focusedLocation.lat},${focusedLocation.lon}`,
@@ -6926,8 +6898,24 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                 if (url) Linking.openURL(url).catch(() => {});
               }}
             >
+              <Ionicons name="compass-outline" size={15} color={palette.accent} />
+            </Pressable>
+            <View style={{ flex: 1 }} />
+          </View>
+          {/* Main action buttons row */}
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable
+              style={[styles.focusedDetailsBtn, { backgroundColor: '#3B82C4', flex: 1 }]}
+              onPress={() => {
+                navigation.navigate('RoutePlanner', {
+                  destinationLat: focusedLocation.lat,
+                  destinationLon: focusedLocation.lon,
+                  destinationName: focusedLocation.name,
+                });
+              }}
+            >
               <Ionicons name="navigate-outline" size={16} color="#FFFFFF" />
-              <Text style={styles.focusedDetailsBtnText}>Directions</Text>
+              <Text style={styles.focusedDetailsBtnText}>Route Here</Text>
             </Pressable>
             <Pressable
               style={[styles.focusedDetailsBtn, { flex: 1 }]}
@@ -7876,6 +7864,33 @@ const styles = StyleSheet.create({
   layerPickerLabelActive: {
     color: palette.accent,
     fontWeight: '600',
+  },
+  layerPickerHintCard: {
+    marginHorizontal: 14,
+    marginTop: 10,
+    marginBottom: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: palette.surfaceRaised,
+    borderWidth: 1,
+    borderColor: palette.borderLight,
+    gap: 6,
+  },
+  layerPickerHintHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  layerPickerHintTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: palette.text,
+  },
+  layerPickerHintText: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: palette.textSecondary,
   },
 
   // ── Bottom sheet ────────────────────────────────────────────────

@@ -808,6 +808,10 @@ export function LocationDetailScreen({ route, navigation }: Props) {
   // If score is 0 (not yet computed) and prediction is still loading, show skeleton
   const scoreIsLoading = rawScore === 0 && predictionLoading;
   const safeScore = rawScore;
+  const isOfflinePredictionFallback =
+    !!prediction &&
+    prediction.confidence === 0 &&
+    (prediction.breakdown?.fishing_score ?? prediction.fishing_score ?? 0) === 0;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -860,8 +864,16 @@ export function LocationDetailScreen({ route, navigation }: Props) {
           </Text>
         </View>
       )}
-      {prediction && !predictionLoading && (
+      {prediction && !predictionLoading && !isOfflinePredictionFallback && (
         <LayerBreakdownCard prediction={prediction} />
+      )}
+      {isOfflinePredictionFallback && !predictionLoading && (
+        <View style={[styles.card, { alignItems: 'center', paddingVertical: 18, gap: 8 }]}>
+          <Ionicons name="cloud-offline-outline" size={20} color={palette.textMuted} />
+          <Text style={{ color: palette.textMuted, fontSize: 13, textAlign: 'center', lineHeight: 18 }}>
+            Live predictions are temporarily unavailable. You can still explore map layers, weather, and saved conditions for this spot.
+          </Text>
+        </View>
       )}
       {predictionError && !predictionLoading && !prediction && (
         <View style={[styles.card, { alignItems: 'center', paddingVertical: 16 }]}>
@@ -872,7 +884,7 @@ export function LocationDetailScreen({ route, navigation }: Props) {
       )}
 
       {/* AI Explanation */}
-      {(prediction?.explanation || location.explanation) && (
+      {!isOfflinePredictionFallback && (prediction?.explanation || location.explanation) && (
         <ExplanationCard explanation={prediction?.explanation ?? location.explanation ?? ''} />
       )}
 

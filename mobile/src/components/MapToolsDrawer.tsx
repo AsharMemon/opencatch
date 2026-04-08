@@ -42,6 +42,11 @@ export interface OverlayInfoCard {
   color?: string;
 }
 
+export interface MapToolLegendStop {
+  color: string;
+  label: string;
+}
+
 export interface MapTool {
   key: string;
   label: string;
@@ -56,6 +61,9 @@ export interface MapTool {
   visible?: boolean;
   /** Mini info card shown when this overlay is active */
   infoCard?: OverlayInfoCard | null;
+  /** Optional compact legend shown in the drawer when active */
+  legendStops?: MapToolLegendStop[];
+  legendUnit?: string;
 }
 
 export interface MapToolGroup {
@@ -223,6 +231,29 @@ export function MapToolsDrawer({ visible, onClose, toolGroups }: MapToolsDrawerP
                       </View>
                     </View>
                   )}
+                  {tool.isActive && tool.legendStops && tool.legendStops.length > 0 && (
+                    <View style={styles.legendCard}>
+                      <Text style={styles.legendTitle}>
+                        {tool.label}
+                        {tool.legendUnit ? ` ${tool.legendUnit}` : ''}
+                      </Text>
+                      <View style={styles.legendGradientRow}>
+                        {tool.legendStops.map((stop, idx) => (
+                          <View
+                            key={`${tool.key}-legend-${idx}`}
+                            style={[styles.legendSegment, { backgroundColor: stop.color }]}
+                          />
+                        ))}
+                      </View>
+                      <View style={styles.legendLabelRow}>
+                        {tool.legendStops.map((stop, idx) => (
+                          <Text key={`${tool.key}-label-${idx}`} style={styles.legendLabel} numberOfLines={1}>
+                            {stop.label}
+                          </Text>
+                        ))}
+                      </View>
+                    </View>
+                  )}
                   {tool.isActive && tool.isLoading && !tool.infoCard && (
                     <View style={styles.infoCard}>
                       <ActivityIndicator size="small" color={palette.accent} />
@@ -387,5 +418,44 @@ const styles = StyleSheet.create({
   infoCardSecondary: {
     fontSize: 10,
     color: palette.textMuted,
+  },
+  legendCard: {
+    marginLeft: 56,
+    marginRight: 10,
+    marginTop: 2,
+    marginBottom: 6,
+    backgroundColor: palette.surface,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.borderLight,
+  },
+  legendTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: palette.textSecondary,
+    marginBottom: 6,
+  },
+  legendGradientRow: {
+    flexDirection: 'row',
+    height: 10,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  legendSegment: {
+    flex: 1,
+    height: 10,
+  },
+  legendLabelRow: {
+    flexDirection: 'row',
+    marginTop: 4,
+    gap: 4,
+  },
+  legendLabel: {
+    flex: 1,
+    fontSize: 9,
+    color: palette.textMuted,
+    textAlign: 'center',
   },
 });
