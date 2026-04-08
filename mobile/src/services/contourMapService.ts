@@ -35,6 +35,7 @@ const DEPTH_BREAKS_FT = [0, 3, 6, 10, 15, 25, 40, 60];
 export const MARTIN_CONTOUR_SOURCES: { id: string; label: string }[] = [
   { id: 'mn_contours', label: 'Minnesota' },
   { id: 'on_contours', label: 'Ontario' },
+  { id: 'qc_contours', label: 'Quebec' },
   { id: 'mi_contours', label: 'Michigan' },
   { id: 'nh_contours', label: 'New Hampshire' },
   { id: 'fl_contours', label: 'Florida' },

@@ -12,6 +12,7 @@ pmtiles:
   sources:
     mn_contours: /tiles/mn_contours.pmtiles
     on_contours: /tiles/on_contours.pmtiles
+    qc_contours: /tiles/qc_contours.pmtiles
     mi_contours: /tiles/mi_contours.pmtiles
     nh_contours: /tiles/nh_contours.pmtiles
     fl_contours: /tiles/fl_contours.pmtiles

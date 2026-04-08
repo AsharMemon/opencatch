@@ -14,6 +14,7 @@ echo "Downloading bathymetry PMTiles to $TILE_DIR..."
 TILES=(
   mn_contours.pmtiles    # 152 MB — Minnesota (2,000 lakes)
   on_contours.pmtiles    # 278 MB — Ontario (11,000+ lakes)
+  qc_contours.pmtiles    # 200+ MB — Quebec bathymetry lines
   mi_contours.pmtiles    #  34 MB — Michigan (2,000+ lakes)
   nh_contours.pmtiles    #  33 MB — New Hampshire
   fl_contours.pmtiles    #  29 MB — Florida
