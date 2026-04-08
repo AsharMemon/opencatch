@@ -5278,64 +5278,19 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                   id={`bathy-fill-${src}`}
                   sourceLayerID="contours"
                   style={{
-                    fillColor: buildContourColorExpression(contourSettings) as any,
-                    fillOpacity: buildConfidenceFillOpacity(contourSettings.opacity * 0.72) as any,
+                    fillColor: ['coalesce', ['get', 'fill_color'], '#85C1E9'] as any,
+                    fillOpacity: contourSettings.opacity * 0.7,
                   }}
                 />
                 <LineLayer
                   id={`bathy-line-${src}`}
                   sourceLayerID="contours"
                   style={{
-                    lineColor: buildContourColorExpression(contourSettings) as any,
-                    lineWidth: buildContourWidthExpression(contourSettings) as any,
-                    lineOpacity: buildConfidenceLineOpacity() as any,
-                    lineDasharray: [
-                      'match',
-                      ['get', 'contour_quality'],
-                      'survey', ['literal', [1]],
-                      'high', ['literal', [1]],
-                      'moderate', ['literal', [6, 3]],
-                      'coarse', ['literal', [4, 4]],
-                      'estimate', ['literal', [2, 4]],
-                      ['literal', [4, 3]],
-                    ] as any,
+                    lineColor: '#1A5276',
+                    lineWidth: 0.6,
+                    lineOpacity: contourSettings.opacity * 0.55,
                   }}
                 />
-                {contourSettings.showLabels && SymbolLayer && (
-                  <SymbolLayer
-                    id={`bathy-label-${src}`}
-                    sourceLayerID="contours"
-                    minZoomLevel={10}
-                    filter={[
-                      'all',
-                      ['has', 'depth_ft'],
-                      ['>=', ['coalesce', ['get', 'confidence'], 0], 0.35],
-                      ['==', ['%', ['round', ['coalesce', ['get', 'depth_ft'], 0]], contourSettings.interval], 0],
-                    ] as any}
-                    style={{
-                      textField: [
-                        'concat',
-                        ['to-string', ['round', ['coalesce', ['get', 'depth_ft'], 0]]],
-                        ' ft',
-                      ] as any,
-                      textSize: [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        10, 10,
-                        12, 11.5,
-                        14, 13,
-                      ] as any,
-                      textColor: '#12344D',
-                      textHaloColor: 'rgba(255,255,255,0.92)',
-                      textHaloWidth: 1.25,
-                      textOpacity: contourSettings.opacity,
-                      textAllowOverlap: false,
-                      textOptional: true,
-                      symbolPlacement: 'point',
-                    }}
-                  />
-                )}
               </VectorSource>
             ));
           })()
