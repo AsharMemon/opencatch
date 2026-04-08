@@ -1,7 +1,9 @@
 import Constants from 'expo-constants';
 
 const PROD_API_URL = 'https://api.opencatch.app';
-const PROD_TILE_URL = 'https://tiles.opencatch.app';
+// Temporary production fallback until tiles.opencatch.app DNS/TLS is live.
+// Martin is currently reachable directly on the droplet IP.
+const PROD_TILE_URL = 'http://24.199.80.77:3000';
 
 function normalizeBaseUrl(value?: string | null): string | null {
   const trimmed = value?.trim();

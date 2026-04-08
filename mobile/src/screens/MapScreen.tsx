@@ -180,12 +180,25 @@ import {
   resetContourSettings,
   buildContourColorExpression,
   buildContourWidthExpression,
+  buildConfidenceFillOpacity,
+  buildConfidenceLineOpacity,
   getColorStops,
   CONTOUR_INTERVALS,
   COLOR_SCHEMES,
   DEFAULT_CONTOUR_SETTINGS,
   type DepthContourSettings,
 } from '../services/depthContourSettings';
+import {
+  MARTIN_CONTOUR_SOURCES,
+  getBathyLayerIds,
+  getDepthFromRenderedFeatures,
+  getLakeAttributionFromRenderedFeatures,
+  formatDepth as formatContourDepth,
+  getQualityIcon as getContourQualityIcon,
+  getColorForDepth,
+  type DepthResult as ContourDepthResult,
+  type LakeAttribution as ContourLakeAttribution,
+} from '../services/contourMapService';
 import {
   getAnchorStatus,
   addAnchorListener,
@@ -2696,6 +2709,13 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   // Selected marker for callout
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const [focusedLocation, setFocusedLocation] = useState<FishingLocation | null>(null);
+  const [selectedContourDepth, setSelectedContourDepth] = useState<ContourDepthResult | null>(null);
+  const [selectedContourLake, setSelectedContourLake] = useState<ContourLakeAttribution | null>(null);
+
+  const clearSelectedContour = useCallback(() => {
+    setSelectedContourDepth(null);
+    setSelectedContourLake(null);
+  }, []);
 
   // Map Tools drawer (progressive disclosure — avoids Kitchen Sink pattern)
   const [mapToolsDrawerOpen, setMapToolsDrawerOpen] = useState(false);
@@ -2778,21 +2798,6 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [biteTimeOverlayEnabled, setBiteTimeOverlayEnabled] = useState(false);
   const [biteLoading, setBiteLoading] = useState(false);
 
-  // ── Overlay loading banner state ──
-  const overlayLoadingSet = React.useMemo(() => {
-    const s = new Set<string>();
-    if (windAnimatedLoading) s.add('Wind');
-    if (waveLoading) s.add('Wave');
-    if (depthLoading) s.add('Depth');
-    if (dynamicDepthLoading) s.add('Dynamic Depths');
-    if (tidalLoading) s.add('Tidal');
-    if (iceLoading) s.add('Ice');
-    if (pressureLoading) s.add('Pressure');
-    if (biteLoading) s.add('Bite');
-    if (radarLoading) s.add('Radar');
-    return s;
-  }, [windAnimatedLoading, waveLoading, depthLoading, dynamicDepthLoading, tidalLoading, iceLoading, pressureLoading, biteLoading, radarLoading]);
-
   // Draft accessibility overlay (shows safe/caution/danger based on boat draft)
   const [draftAccessEnabled, setDraftAccessEnabled] = useState(false);
   const [boatDraftFt, setBoatDraftFt] = useState<number>(3); // default 3ft
@@ -2810,6 +2815,21 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [tideBadgeText, setTideBadgeText] = useState('');
   const [tideLevelM, setTideLevelM] = useState(0);
   const [tideStationName, setTideStationName] = useState<string | undefined>();
+
+  // ── Overlay loading banner state ──
+  const overlayLoadingSet = React.useMemo(() => {
+    const s = new Set<string>();
+    if (windAnimatedLoading) s.add('Wind');
+    if (waveLoading) s.add('Wave');
+    if (depthLoading) s.add('Depth');
+    if (dynamicDepthLoading) s.add('Dynamic Depths');
+    if (tidalLoading) s.add('Tidal');
+    if (iceLoading) s.add('Ice');
+    if (pressureLoading) s.add('Pressure');
+    if (biteLoading) s.add('Bite');
+    if (radarLoading) s.add('Radar');
+    return s;
+  }, [windAnimatedLoading, waveLoading, depthLoading, dynamicDepthLoading, tidalLoading, iceLoading, pressureLoading, biteLoading, radarLoading]);
 
   // USACE survey overlay (channel depths, locks, harbors)
   const [usaceSurveyEnabled, setUsaceSurveyEnabled] = useState(false);
@@ -3970,6 +3990,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const handleSearchSelectLocation = useCallback((locationId: string) => {
     const loc = allLocations.find((l) => l.id === locationId);
     if (!loc) return;
+    clearSelectedContour();
     setFocusedLocation(loc);
     setSelectedMarkerId(loc.id);
     cacheLocationDetail(loc);
@@ -3978,7 +3999,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       zoomLevel: 13,
       animationDuration: 800,
     });
-  }, [allLocations]);
+  }, [allLocations, clearSelectedContour]);
 
   const visibleLocations = useMemo(() => {
     return search.trim()
@@ -3998,6 +4019,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
   const handleMarkerPress = useCallback(
     (location: FishingLocation) => {
+      clearSelectedContour();
       setSelectedMarkerId(location.id);
       setFocusedLocation(location);
       // Pre-cache for faster LocationDetailScreen load
@@ -4067,7 +4089,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       setContextualWaterbodyName(location.name);
       setContextualTipsDismissed(false);
     },
-    [animateSheetTo, currentZoom],
+    [animateSheetTo, clearSelectedContour, currentZoom],
   );
 
   const handleCardPress = useCallback(
@@ -4191,12 +4213,15 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       const next = new Set(prev);
       if (next.has(key)) {
         next.delete(key);
+        if (key === 'local-bathymetry') {
+          clearSelectedContour();
+        }
       } else {
         next.add(key);
       }
       return next;
     });
-  }, []);
+  }, [clearSelectedContour]);
 
   const handleSaveWaypoint = useCallback(
     async (draft: Omit<Waypoint, 'id' | 'createdAt' | 'catches'>) => {
@@ -4306,11 +4331,40 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     if (event?.geometry?.coordinates && mapRef.current) {
       const [tappedLng, tappedLat] = event.geometry.coordinates as [number, number];
       (async () => {
+        const screenPt = event.properties?.screenPointX != null
+          ? [event.properties.screenPointX, event.properties.screenPointY]
+          : event.point?.x != null
+            ? [event.point.x, event.point.y]
+            : [SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2];
+
+        try {
+          if (activeOverlays.has('local-bathymetry')) {
+            const bathyResult = await mapRef.current?.queryRenderedFeaturesAtPoint(
+              screenPt,
+              undefined,
+              getBathyLayerIds('fill'),
+            );
+            const depthResult = getDepthFromRenderedFeatures(bathyResult);
+            if (depthResult) {
+              const lakeAttribution = getLakeAttributionFromRenderedFeatures(bathyResult);
+              setSelectedContourDepth(depthResult);
+              setSelectedContourLake(lakeAttribution);
+              setSelectedMarkerId(null);
+              setFocusedLocation(null);
+              setSelectedMarina(null);
+              setHighlightedAccessPoints([]);
+              setHighlightedAccessSummary(null);
+              setContextualTips([]);
+              setContextualTipsDismissed(false);
+              return;
+            }
+          }
+        } catch {
+          // Ignore bathymetry hit-test failures and fall through to generic water tap.
+        }
+
         try {
           const waterLayerIds = ['water', 'water-polygon', 'waterway'];
-          const screenPt = event.properties?.screenPointX != null
-            ? [event.properties.screenPointX, event.properties.screenPointY]
-            : [SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2];
           const result = await mapRef.current?.queryRenderedFeaturesAtPoint(
             screenPt, undefined, waterLayerIds,
           );
@@ -4339,6 +4393,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
               explanation: '',
               forecast: [],
             };
+            clearSelectedContour();
             setFocusedLocation(tmpLoc);
             cacheLocationDetail(tmpLoc);
             cameraRef.current?.setCamera({
@@ -4350,6 +4405,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             return;
           }
         } catch { /* queryRenderedFeatures unavailable */ }
+        clearSelectedContour();
         setSelectedMarkerId(null);
         setFocusedLocation(null);
         setSelectedMarina(null);
@@ -4361,6 +4417,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       return;
     }
 
+    clearSelectedContour();
     setSelectedMarkerId(null);
     setFocusedLocation(null);
     setSelectedMarina(null);
@@ -4370,7 +4427,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     // Clear contextual tips (Feature 1)
     setContextualTips([]);
     setContextualTipsDismissed(false);
-  }, [measureMode, annotationMode, annotationTool, annotationColor, annotationIcon, arrowStart, handleSaveAnnotation, currentZoom, animateSheetTo]);
+  }, [measureMode, annotationMode, annotationTool, annotationColor, annotationIcon, arrowStart, handleSaveAnnotation, activeOverlays, currentZoom, animateSheetTo, clearSelectedContour]);
 
   // ── Derived ─────────────────────────────────────────────────────
   const waypointIonicon = (wpIcon: WaypointIcon): string =>
@@ -5210,38 +5267,75 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           FillLayer &&
           LineLayer &&
           (() => {
-            // Martin serves each state as a separate PMTiles source
-            const BATHY_TILE_BASE = __DEV__ ? 'http://localhost:3000' : 'http://24.199.80.77:3000';
-            const BATHY_SOURCES = [
-              'mn_contours', 'on_contours', 'mi_contours', 'nh_contours',
-              'fl_contours', 'ab_contours', 'mt_contours', 'wa_contours',
-              'ma_contours', 'ne_contours', 'vt_contours', 'ia_contours',
-              'lagos_contours',
-            ];
-            return BATHY_SOURCES.map((src) => (
+            return MARTIN_CONTOUR_SOURCES.map(({ id: src }) => (
               <VectorSource
                 key={src}
                 id={`bathy-${src}`}
-                url={`${BATHY_TILE_BASE}/${src}`}
+                url={buildTileSourceUrl(src)!}
                 maxZoomLevel={16}
               >
                 <FillLayer
                   id={`bathy-fill-${src}`}
                   sourceLayerID="contours"
                   style={{
-                    fillColor: ['get', 'fill_color'] as any,
-                    fillOpacity: contourSettings.opacity * 0.7,
+                    fillColor: buildContourColorExpression(contourSettings) as any,
+                    fillOpacity: buildConfidenceFillOpacity(contourSettings.opacity * 0.72) as any,
                   }}
                 />
                 <LineLayer
                   id={`bathy-line-${src}`}
                   sourceLayerID="contours"
                   style={{
-                    lineColor: '#1A5276',
-                    lineWidth: 0.5,
-                    lineOpacity: contourSettings.opacity * 0.5,
+                    lineColor: buildContourColorExpression(contourSettings) as any,
+                    lineWidth: buildContourWidthExpression(contourSettings) as any,
+                    lineOpacity: buildConfidenceLineOpacity() as any,
+                    lineDasharray: [
+                      'match',
+                      ['get', 'contour_quality'],
+                      'survey', ['literal', [1]],
+                      'high', ['literal', [1]],
+                      'moderate', ['literal', [6, 3]],
+                      'coarse', ['literal', [4, 4]],
+                      'estimate', ['literal', [2, 4]],
+                      ['literal', [4, 3]],
+                    ] as any,
                   }}
                 />
+                {contourSettings.showLabels && SymbolLayer && (
+                  <SymbolLayer
+                    id={`bathy-label-${src}`}
+                    sourceLayerID="contours"
+                    minZoomLevel={10}
+                    filter={[
+                      'all',
+                      ['has', 'depth_ft'],
+                      ['>=', ['coalesce', ['get', 'confidence'], 0], 0.35],
+                      ['==', ['%', ['round', ['coalesce', ['get', 'depth_ft'], 0]], contourSettings.interval], 0],
+                    ] as any}
+                    style={{
+                      textField: [
+                        'concat',
+                        ['to-string', ['round', ['coalesce', ['get', 'depth_ft'], 0]]],
+                        ' ft',
+                      ] as any,
+                      textSize: [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        10, 10,
+                        12, 11.5,
+                        14, 13,
+                      ] as any,
+                      textColor: '#12344D',
+                      textHaloColor: 'rgba(255,255,255,0.92)',
+                      textHaloWidth: 1.25,
+                      textOpacity: contourSettings.opacity,
+                      textAllowOverlap: false,
+                      textOptional: true,
+                      symbolPlacement: 'point',
+                    }}
+                  />
+                )}
               </VectorSource>
             ));
           })()
@@ -6960,6 +7054,52 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         />
       )}
 
+      {selectedContourDepth && !focusedLocation && (
+        <View style={styles.contourDepthCard}>
+          <View style={styles.contourDepthHeader}>
+            <View
+              style={[
+                styles.contourDepthBadge,
+                { backgroundColor: getColorForDepth(selectedContourDepth.depthFt) },
+              ]}
+            >
+              <Ionicons name="water" size={15} color="#FFFFFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.contourDepthTitle} numberOfLines={1}>
+                {selectedContourLake?.lakeName || selectedContourDepth.lakeName || 'Bathymetry'}
+              </Text>
+              <Text style={styles.contourDepthSubtitle} numberOfLines={1}>
+                {selectedContourLake?.sourceLabel || selectedContourDepth.sourceLabel}
+                {' · '}
+                {(selectedContourLake?.quality || selectedContourDepth.quality).replace('_', ' ')}
+              </Text>
+            </View>
+            <Pressable onPress={clearSelectedContour} hitSlop={8} style={styles.contourDepthDismiss}>
+              <Ionicons name="close" size={16} color={palette.textMuted} />
+            </Pressable>
+          </View>
+          <View style={styles.contourDepthMetrics}>
+            <Text style={styles.contourDepthPrimary}>
+              {formatContourDepth(selectedContourDepth.depthFt, 'feet')}
+            </Text>
+            <Text style={styles.contourDepthSecondary}>
+              {formatContourDepth(selectedContourDepth.depthFt, 'meters')}
+            </Text>
+            <View style={styles.contourDepthQualityPill}>
+              <Ionicons
+                name={getContourQualityIcon(selectedContourLake?.quality || selectedContourDepth.quality) as any}
+                size={12}
+                color={palette.accentDeep}
+              />
+              <Text style={styles.contourDepthQualityText}>
+                {Math.round(selectedContourDepth.confidence * 100)}%
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+
       {/* Bottom sheet with location list (merged from Explore) */}
       {markerMode === 'locations' && (
         <Animated.View style={[styles.sheet, { height: sheetHeight }]}>
@@ -7278,6 +7418,84 @@ const styles = StyleSheet.create({
   },
   contextualTipDotActive: {
     backgroundColor: palette.accent,
+  },
+  contourDepthCard: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 148 : 118,
+    left: 12,
+    right: 76,
+    maxWidth: SCREEN_WIDTH - 88,
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    borderRadius: 14,
+    padding: 12,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 5,
+    zIndex: 6,
+  },
+  contourDepthHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  contourDepthBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contourDepthTitle: {
+    color: palette.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  contourDepthSubtitle: {
+    color: palette.textSecondary,
+    fontSize: 11,
+    marginTop: 1,
+    textTransform: 'capitalize',
+  },
+  contourDepthDismiss: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.surfaceRaised,
+  },
+  contourDepthMetrics: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  contourDepthPrimary: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  contourDepthSecondary: {
+    color: palette.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  contourDepthQualityPill: {
+    marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: palette.accentDim,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  contourDepthQualityText: {
+    color: palette.accentDeep,
+    fontSize: 11,
+    fontWeight: '700',
   },
   // Access summary pill (Feature 2)
   accessSummaryPill: {

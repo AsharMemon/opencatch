@@ -16,7 +16,19 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.opencatch.mobile"
+      "bundleIdentifier": "com.opencatch.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "OpenCatch uses your location to find nearby fishing spots and provide local conditions.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "OpenCatch uses your location to track fishing trips and find nearby spots.",
+        "NSCameraUsageDescription": "OpenCatch uses the camera to photograph your catches.",
+        "NSPhotoLibraryUsageDescription": "OpenCatch accesses your photos to attach catch images.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
+    },
+    "android": {
+      "usesCleartextTraffic": true
     },
     "plugins": [
       "expo-font",
@@ -25,12 +37,6 @@
       "expo-image-picker",
       "expo-splash-screen"
     ],
-    "infoPlist": {
-      "NSLocationWhenInUseUsageDescription": "OpenCatch uses your location to find nearby fishing spots and provide local conditions.",
-      "NSLocationAlwaysAndWhenInUseUsageDescription": "OpenCatch uses your location to track fishing trips and find nearby spots.",
-      "NSCameraUsageDescription": "OpenCatch uses the camera to photograph your catches.",
-      "NSPhotoLibraryUsageDescription": "OpenCatch accesses your photos to attach catch images."
-    },
     "extra": {
       "eas": {
         "projectId": "0ab7193d-926e-44e6-9d23-4bd4c8aef6d9"
