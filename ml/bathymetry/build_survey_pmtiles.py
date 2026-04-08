@@ -4,7 +4,8 @@ Build PMTiles from normalized survey GeoJSON outputs.
 
 This uses the manifest produced by `normalize_survey_geojson.py`, combines the
 normalized contour features plus any label points into a single GeoJSON
-FeatureCollection, and runs tippecanoe to create Martin-ready PMTiles.
+FeatureCollection, renders an intermediate MBTiles archive with tippecanoe, and
+then converts that archive into a real PMTiles v3 file.
 
 The resulting files are named `<source>_contours.pmtiles`, which matches the
 existing Martin registry and mobile contour source ids.
@@ -52,8 +53,9 @@ def combine_geojson(inputs: List[Path], output_path: Path) -> int:
     return count
 
 
-def build_pmtiles(input_geojson: Path, output_path: Path, min_zoom: int, max_zoom: int) -> None:
+def build_pmtiles(input_geojson: Path, output_path: Path, min_zoom: int, max_zoom: int, tmpdir: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    mbtiles_path = tmpdir / f"{output_path.stem}.mbtiles"
     cmd = [
         "tippecanoe",
         f"--minimum-zoom={min_zoom}",
@@ -68,11 +70,22 @@ def build_pmtiles(input_geojson: Path, output_path: Path, min_zoom: int, max_zoo
         "--description=Survey-backed bathymetry contour tiles for OpenCatch",
         "--attribution=OpenCatch",
         "-o",
-        str(output_path),
+        str(mbtiles_path),
         str(input_geojson),
     ]
     log.info("Running %s", " ".join(cmd))
     subprocess.run(cmd, check=True)
+    convert_cmd = [
+        "pmtiles",
+        "convert",
+        "--force",
+        "--tmpdir",
+        str(tmpdir),
+        str(mbtiles_path),
+        str(output_path),
+    ]
+    log.info("Running %s", " ".join(convert_cmd))
+    subprocess.run(convert_cmd, check=True)
 
 
 def select_tile_ready(manifest: List[dict], selected: List[str] | None) -> List[dict]:
@@ -126,7 +139,7 @@ def main() -> None:
             log.info("%s combined feature count: %s", source_id, feature_count)
 
             out_path = args.tile_dir / f"{source_id}_contours.pmtiles"
-            build_pmtiles(combined, out_path, args.min_zoom, args.max_zoom)
+            build_pmtiles(combined, out_path, args.min_zoom, args.max_zoom, Path(tmp))
             log.info("%s -> %s (%.1f MB)", source_id, out_path, out_path.stat().st_size / 1e6)
 
             if args.keep_combined:
