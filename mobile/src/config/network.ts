@@ -44,8 +44,6 @@ export const TILE_BASE_URL =
 
 /**
  * Whether the tile server (Martin) is deployed and reachable in production.
- * Flip to `true` once tiles.opencatch.app is live.
- * In dev mode this is always true (local Docker Martin).
+ * Bathymetry tiles deployed at 24.199.80.77 (tiles.opencatch.app).
  */
-export const TILE_SERVER_DEPLOYED: boolean =
-  !!process.env.EXPO_PUBLIC_TILE_SERVER_URL || __DEV__;
+export const TILE_SERVER_DEPLOYED: boolean = true;

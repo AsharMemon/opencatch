@@ -317,7 +317,7 @@ interface OverlayLayer {
 }
 
 const OVERLAY_LAYERS: OverlayLayer[] = [
-  { key: 'local-bathymetry', label: 'Lake Contours', ionicon: 'analytics-outline', description: 'Local bathymetry vector contours from PostGIS' },
+  { key: 'local-bathymetry', label: 'Lake Depth', ionicon: 'analytics-outline', description: 'Bathymetry depth contours (28K+ lakes)' },
   { key: 'public-lands', label: 'Public Lands', ionicon: 'leaf-outline', description: 'Protected and public-access lands overlay' },
   { key: 'access-points', label: 'Access Points', ionicon: 'fish-outline', description: 'Boat launches, shore access, campgrounds' },
   { key: 'parking', label: 'Parking', ionicon: 'car-outline', description: 'Parking lots and pull-offs near access' },
@@ -359,8 +359,9 @@ const FONT_STACKS = {
   bold: ['Open Sans Bold'],
 } as const;
 // Vector overlays enabled by default.
-// 'local-bathymetry' is OFF until tiles.opencatch.app is deployed.
+// Bathymetry contours now deployed at 24.199.80.77 (tiles.opencatch.app)
 const DEFAULT_VECTOR_OVERLAYS = new Set([
+  'local-bathymetry',
   'public-lands',
   'access-points',
   'parking',
@@ -1915,7 +1916,8 @@ const ALT_STYLES: Record<string, string> = {
 };
 
 const VECTOR_OVERLAY_LAYER_BY_KEY: Record<string, string> = {
-  'local-bathymetry': TILE_LAYER_NAMES.bathymetryContours,
+  // 'local-bathymetry' served directly from Martin PMTiles, not PostGIS
+  // Availability check bypassed — always available when Martin is up
   'public-lands': TILE_LAYER_NAMES.publicLands,
   'access-points': TILE_LAYER_NAMES.accessPoints,
   'parking': TILE_LAYER_NAMES.accessPoints,
@@ -5202,28 +5204,48 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           );
         })}
 
-        {/* Real vector-tile overlays from Martin/PostGIS */}
-        {ENABLE_EXPERIMENTAL_VECTOR_OVERLAYS &&
-          isVectorOverlayReady('local-bathymetry') &&
-          activeOverlays.has('local-bathymetry') &&
+        {/* Bathymetry contour overlays from Martin PMTiles */}
+        {activeOverlays.has('local-bathymetry') &&
           VectorSource &&
-          LineLayer && (
-          <VectorSource
-            id="local-bathymetry-source"
-            url={buildTileSourceUrl(TILE_LAYER_NAMES.bathymetryContours)!}
-            maxZoomLevel={14}
-          >
-            <LineLayer
-              id="local-bathymetry-lines"
-              sourceLayerID={TILE_LAYER_NAMES.bathymetryContours}
-              style={{
-                lineColor: buildContourColorExpression(contourSettings) as any,
-                lineWidth: buildContourWidthExpression(contourSettings) as any,
-                lineOpacity: contourSettings.opacity,
-              }}
-            />
-          </VectorSource>
-        )}
+          FillLayer &&
+          LineLayer &&
+          (() => {
+            // Martin serves each state as a separate PMTiles source
+            const BATHY_TILE_BASE = __DEV__ ? 'http://localhost:3000' : 'http://24.199.80.77:3000';
+            const BATHY_SOURCES = [
+              'mn_contours', 'on_contours', 'mi_contours', 'nh_contours',
+              'fl_contours', 'ab_contours', 'mt_contours', 'wa_contours',
+              'ma_contours', 'ne_contours', 'vt_contours', 'ia_contours',
+              'lagos_contours',
+            ];
+            return BATHY_SOURCES.map((src) => (
+              <VectorSource
+                key={src}
+                id={`bathy-${src}`}
+                url={`${BATHY_TILE_BASE}/${src}`}
+                maxZoomLevel={16}
+              >
+                <FillLayer
+                  id={`bathy-fill-${src}`}
+                  sourceLayerID="contours"
+                  style={{
+                    fillColor: ['get', 'fill_color'] as any,
+                    fillOpacity: contourSettings.opacity * 0.7,
+                  }}
+                />
+                <LineLayer
+                  id={`bathy-line-${src}`}
+                  sourceLayerID="contours"
+                  style={{
+                    lineColor: '#1A5276',
+                    lineWidth: 0.5,
+                    lineOpacity: contourSettings.opacity * 0.5,
+                  }}
+                />
+              </VectorSource>
+            ));
+          })()
+        }
 
         {ENABLE_EXPERIMENTAL_VECTOR_OVERLAYS &&
           isVectorOverlayReady('public-lands') &&
