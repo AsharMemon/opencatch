@@ -33,6 +33,7 @@ Tile-ready with lightweight normalization now:
 - Alberta contour GeoJSON
 - Florida contour GeoJSON
 - Michigan contour GeoJSON
+- Vermont contour GeoJSON
 
 Catalog/summary only for now:
 
@@ -48,6 +49,13 @@ Needs geospatial environment or format-specific parsing next:
 - Massachusetts shapefile + raster bundle
 - Montana shapefile
 - Wisconsin hypsography package
+
+Confirmed readable via GDAL/OpenFileGDB or shapefile tooling:
+
+- Ontario `BATHYMETRY_LINE` FGDB layer
+- Quebec `isobathes_l` FGDB layer
+- Washington `LakeBathymetryLine` FGDB layer
+- Massachusetts `DFWBATHY_ARC` shapefile layer
 
 ## Strategy
 
@@ -68,9 +76,9 @@ Only use the bathymetry model where no survey/contour source exists.
 
 ## Concrete Next Batch
 
-1. Normalize + tile Alberta, Florida, Michigan
-2. Add their generated tiles to Martin and the mobile source registry
-3. Parse Ontario/Quebec/Washington in a geospatial-enabled environment
+1. Finish the current normalized/tiled survey batch: Alberta, Michigan, Vermont, Florida
+2. Add the generated tiles to Martin and the mobile source registry
+3. Convert Ontario/Quebec/Washington/Massachusetts raw vector layers to normalized GeoJSON
 4. Add NOAA ENC / USACE IENC ingestion for coastal + river navigation coverage
 5. Continue expanding survey-backed provinces/states before pushing more ML-only coverage
 

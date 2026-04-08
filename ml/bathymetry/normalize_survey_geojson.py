@@ -13,6 +13,7 @@ Supported today
 - Alberta (`ab_contours.geojson`)      -> tile-ready contour lines + labels
 - Florida (`fl_contours.geojson`)      -> tile-ready contour lines + labels
 - Michigan (`mi_full_contours.geojson`)-> tile-ready contour lines + labels
+- Vermont (`vt_data.geojson`)          -> tile-ready contour lines + labels
 - Iowa (`ia_contours.geojson`)         -> lake summary polygons only (not tile-ready)
 - Saskatchewan (`sk_contours.geojson`) -> survey index points only
 - Manitoba (`mb_data.geojson`)         -> waterbody/survey index points only
@@ -20,7 +21,7 @@ Supported today
 Usage
 -----
 python normalize_survey_geojson.py \
-    --sources ab,fl,mi,ia,sk,mb \
+    --sources ab,fl,mi,vt,ia,sk,mb \
     --output-dir /Users/Ashar/Documents/fish/data/bathymetry/normalized
 """
 
@@ -90,6 +91,16 @@ SOURCES: Dict[str, SourceConfig] = {
         tile_ready=True,
         notes="Contour lines with depth in feet; statewide IDs preserved as lake_id.",
     ),
+    "vt": SourceConfig(
+        source_id="vt",
+        input_path=Path("/Users/Ashar/Documents/fish/data/bathymetry/vt/vt_data.geojson"),
+        output_mode="contour_lines",
+        source_name="vt_survey",
+        attribution="Vermont Fish and Wildlife Bathymetry",
+        default_lake_name="Vermont survey lake",
+        tile_ready=True,
+        notes="Contour lines with depth in feet and lake names in GeoJSON.",
+    ),
     "ia": SourceConfig(
         source_id="ia",
         input_path=Path("/Users/Ashar/Documents/fish/data/bathymetry/ia/ia_contours.geojson"),
@@ -138,57 +149,86 @@ class NormalizeResult:
 
 def iter_geojson_features(path: Path) -> Iterator[dict]:
     """Yield features from a GeoJSON FeatureCollection without loading all of it."""
-    decoder = json.JSONDecoder()
-    buffer = ""
-    pos = 0
-    in_features = False
-    eof = False
-
     with path.open("r", encoding="utf-8") as handle:
+        buffer = ""
+        in_features = False
+        collecting = False
+        feature_chars: list[str] = []
+        depth = 0
+        in_string = False
+        escape = False
+        eof = False
+
         while True:
-            if not eof and len(buffer) - pos < CHUNK_SIZE:
+            if not eof:
                 chunk = handle.read(CHUNK_SIZE)
                 if chunk:
-                    buffer = buffer[pos:] + chunk
-                    pos = 0
+                    buffer += chunk
                 else:
-                    buffer = buffer[pos:]
-                    pos = 0
                     eof = True
 
-            if not in_features:
-                idx = buffer.find('"features"')
-                if idx == -1:
-                    if eof:
-                        raise ValueError(f"Could not find features array in {path}")
-                    continue
-                bracket = buffer.find("[", idx)
-                if bracket == -1:
-                    if eof:
-                        raise ValueError(f"Could not find feature array start in {path}")
-                    continue
-                pos = bracket + 1
-                in_features = True
+            index = 0
+            while index < len(buffer):
+                ch = buffer[index]
 
-            while True:
-                while pos < len(buffer) and buffer[pos] in " \r\n\t,":
-                    pos += 1
-                if pos >= len(buffer):
-                    break
-                if buffer[pos] == "]":
-                    return
-                try:
-                    obj, end = decoder.raw_decode(buffer, pos)
-                except json.JSONDecodeError:
-                    if eof:
-                        raise
-                    break
-                yield obj
-                pos = end
-                if pos > CHUNK_SIZE:
-                    buffer = buffer[pos:]
-                    pos = 0
-                    break
+                if not in_features:
+                    marker = '"features"'
+                    marker_idx = buffer.find(marker, index)
+                    if marker_idx == -1:
+                        break
+                    bracket_idx = buffer.find("[", marker_idx + len(marker))
+                    if bracket_idx == -1:
+                        break
+                    in_features = True
+                    index = bracket_idx + 1
+                    continue
+
+                if not collecting:
+                    if ch in " \r\n\t,":
+                        index += 1
+                        continue
+                    if ch == "]":
+                        return
+                    if ch != "{":
+                        index += 1
+                        continue
+                    collecting = True
+                    feature_chars = ["{"]
+                    depth = 1
+                    in_string = False
+                    escape = False
+                    index += 1
+                    continue
+
+                feature_chars.append(ch)
+                if in_string:
+                    if escape:
+                        escape = False
+                    elif ch == "\\":
+                        escape = True
+                    elif ch == '"':
+                        in_string = False
+                else:
+                    if ch == '"':
+                        in_string = True
+                    elif ch == "{":
+                        depth += 1
+                    elif ch == "}":
+                        depth -= 1
+                        if depth == 0:
+                            yield json.loads("".join(feature_chars))
+                            collecting = False
+                            feature_chars = []
+                index += 1
+
+            buffer = buffer[index:]
+
+            if eof:
+                if collecting:
+                    raise ValueError(f"Unexpected EOF while parsing feature in {path}")
+                if not in_features:
+                    raise ValueError(f"Could not find features array in {path}")
+                return
 
 
 def ensure_dir(path: Path) -> None:
@@ -314,6 +354,11 @@ def standard_props(config: SourceConfig, feature: dict, props: dict) -> Optional
         lake_id = f"mi-{statewide}"
         lake_name = f"Michigan survey lake {statewide}"
         depth_ft = safe_float(props.get("DEPTH"))
+        depth_m = round(depth_ft * FT_TO_M, 3) if depth_ft is not None else None
+    elif source_id == "vt":
+        lake_name = props.get("LakeName") or config.default_lake_name
+        lake_id = f"vt-{slugify(lake_name)}-{props.get('index', feature.get('id', 'unknown'))}"
+        depth_ft = safe_float(props.get("DepthInFeet"))
         depth_m = round(depth_ft * FT_TO_M, 3) if depth_ft is not None else None
     elif source_id == "ia":
         lake_name = props.get("LakeName") or props.get("GNIS_Name") or config.default_lake_name
@@ -489,7 +534,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Normalize raw GeoJSON bathymetry sources.")
     parser.add_argument(
         "--sources",
-        default="ab,fl,mi,ia,sk,mb",
+        default="ab,fl,mi,vt,ia,sk,mb",
         help="Comma-separated source ids or 'all'",
     )
     parser.add_argument(
@@ -526,8 +571,28 @@ def main() -> None:
         )
 
     manifest_path = args.output_dir / "manifest.json"
+    existing: Dict[str, dict] = {}
+    if manifest_path.exists():
+        try:
+            for entry in json.loads(manifest_path.read_text()):
+                if isinstance(entry, dict) and entry.get("source_id"):
+                    existing[str(entry["source_id"])] = entry
+        except json.JSONDecodeError:
+            log.warning("Existing manifest is invalid JSON; rebuilding it from selected sources only.")
+
+    for result in results:
+        existing[result.source_id] = asdict(result)
+
+    ordered = []
+    for source_id in SOURCES:
+        if source_id in existing:
+            ordered.append(existing[source_id])
+    for source_id, entry in sorted(existing.items()):
+        if source_id not in SOURCES:
+            ordered.append(entry)
+
     with manifest_path.open("w", encoding="utf-8") as handle:
-        json.dump([asdict(r) for r in results], handle, indent=2)
+        json.dump(ordered, handle, indent=2)
     log.info("Wrote manifest: %s", manifest_path)
 
 
