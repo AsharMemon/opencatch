@@ -16,10 +16,12 @@ pmtiles:
     mi_contours: /tiles/mi_contours.pmtiles
     nh_contours: /tiles/nh_contours.pmtiles
     fl_contours: /tiles/fl_contours.pmtiles
+    il_contours: /tiles/il_contours.pmtiles
     ab_contours: /tiles/ab_contours.pmtiles
     mt_contours: /tiles/mt_contours.pmtiles
     wa_contours: /tiles/wa_contours.pmtiles
     ma_contours: /tiles/ma_contours.pmtiles
+    oh_contours: /tiles/oh_contours.pmtiles
     ne_contours: /tiles/ne_contours.pmtiles
     vt_contours: /tiles/vt_contours.pmtiles
     ia_contours: /tiles/ia_contours.pmtiles

@@ -18,11 +18,13 @@ TILES=(
   mi_contours.pmtiles    #  34 MB — Michigan (2,000+ lakes)
   nh_contours.pmtiles    #  33 MB — New Hampshire
   fl_contours.pmtiles    #  29 MB — Florida
+  il_contours.pmtiles    #  10-20 MB — Illinois
   lagos_contours.pmtiles #  35 MB — LAGOS nationwide (8,687 lakes)
   ab_contours.pmtiles    #  25 MB — Alberta
   mt_contours.pmtiles    #  16 MB — Montana
   wa_contours.pmtiles    #  13 MB — Washington
   ma_contours.pmtiles    #  12 MB — Massachusetts
+  oh_contours.pmtiles    # 9.4 MB — Ohio
   ne_contours.pmtiles    # 9.2 MB — Nebraska
   vt_contours.pmtiles    # 2.5 MB — Vermont
   ia_contours.pmtiles    # 1.9 MB — Iowa

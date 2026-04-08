@@ -16,6 +16,7 @@ import time
 import logging
 import argparse
 from pathlib import Path
+from urllib.parse import urlencode
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,17 +32,118 @@ HEADERS = {
 }
 
 
-def paginated_arcgis_download(base_url, output_path, name, max_features=50000, batch=1000):
-    """Download all features from an ArcGIS REST service with pagination."""
+def arcgis_layer_url(base_url):
+    return base_url[:-6] if base_url.endswith("/query") else base_url
+
+
+def arcgis_query_url(base_url, **params):
+    return f"{base_url}?{urlencode(params, doseq=True)}"
+
+
+def write_geojson(output_path, features):
+    with open(output_path, "w") as f:
+        json.dump({"type": "FeatureCollection", "features": features}, f)
+
+
+def download_arcgis_by_object_ids(base_url, name, batch=1000):
+    """Fallback for ArcGIS layers that do not support resultOffset pagination."""
+    layer_url = arcgis_layer_url(base_url)
+    ids_url = arcgis_query_url(
+        base_url,
+        where="1=1",
+        returnIdsOnly="true",
+        f="json",
+    )
+    try:
+        ids_resp = requests.get(ids_url, headers=HEADERS, timeout=120)
+        ids_resp.raise_for_status()
+        ids_data = ids_resp.json()
+        object_ids = ids_data.get("objectIds") or ids_data.get("objectids") or []
+    except Exception as e:
+        log.warning(f"  {name}: returnIdsOnly failed: {e}")
+        return []
+
+    if not object_ids:
+        return []
+
+    object_ids = sorted(object_ids)
     all_features = []
-    for offset in range(0, max_features, batch):
-        url = (
-            f"{base_url}?where=1%3D1&outFields=*&f=geojson"
-            f"&resultOffset={offset}&resultRecordCount={batch}"
+    object_id_field = ids_data.get("objectIdFieldName") or ids_data.get("objectIdFieldName".lower()) or "OBJECTID"
+    for i in range(0, len(object_ids), batch):
+        batch_ids = object_ids[i:i + batch]
+        url = arcgis_query_url(
+            base_url,
+            objectIds=",".join(str(v) for v in batch_ids),
+            outFields="*",
+            f="geojson",
         )
         try:
             r = requests.get(url, headers=HEADERS, timeout=120)
             if r.status_code != 200:
+                log.warning(f"  {name}: HTTP {r.status_code} for objectIds batch {i // batch + 1}")
+                return []
+            data = r.json()
+            features = data.get("features", [])
+            if not features:
+                log.warning(f"  {name}: empty objectIds batch {i // batch + 1}")
+                return []
+            returned_ids = {
+                (
+                    (feat.get("properties") or {}).get(object_id_field)
+                    or (feat.get("properties") or {}).get(object_id_field.lower())
+                    or feat.get("id")
+                )
+                for feat in features
+            }
+            requested_ids = set(batch_ids)
+            if not returned_ids or not returned_ids.issubset(requested_ids):
+                log.warning(
+                    f"  {name}: objectIds not respected on batch {i // batch + 1}; "
+                    "falling back to resultOffset pagination"
+                )
+                return []
+            all_features.extend(features)
+            log.info(f"  {name}: {len(all_features)} features via objectIds")
+        except Exception as e:
+            log.warning(f"  {name}: objectIds batch failed: {e}")
+            return []
+        time.sleep(0.4)
+
+    return all_features
+
+
+def paginated_arcgis_download(base_url, output_path, name, max_features=50000, batch=1000):
+    """Download all features from an ArcGIS REST service with pagination."""
+    all_features = []
+
+    # Prefer objectId batching when possible: it works on services that don't
+    # support resultOffset/resultRecordCount.
+    objectid_features = download_arcgis_by_object_ids(base_url, name, batch=batch)
+    if objectid_features:
+        write_geojson(output_path, objectid_features)
+        log.info(f"  {name}: SAVED {len(objectid_features)} features to {output_path}")
+        return len(objectid_features)
+
+    offset = 0
+    current_batch = batch
+    while offset < max_features:
+        url = arcgis_query_url(
+            base_url,
+            where="1=1",
+            outFields="*",
+            f="geojson",
+            resultOffset=offset,
+            resultRecordCount=current_batch,
+        )
+        try:
+            r = requests.get(url, headers=HEADERS, timeout=120)
+            if r.status_code != 200:
+                if current_batch > 25:
+                    current_batch = max(25, current_batch // 2)
+                    log.warning(
+                        f"  {name}: HTTP {r.status_code} at offset {offset}, retrying with batch {current_batch}"
+                    )
+                    continue
                 log.warning(f"  {name}: HTTP {r.status_code} at offset {offset}")
                 break
             data = r.json()
@@ -49,15 +151,22 @@ def paginated_arcgis_download(base_url, output_path, name, max_features=50000, b
             if not features:
                 break
             all_features.extend(features)
-            log.info(f"  {name}: {len(all_features)} features (offset {offset})")
+            log.info(f"  {name}: {len(all_features)} features (offset {offset}, batch {current_batch})")
+            offset += current_batch
+            current_batch = batch
         except Exception as e:
+            if current_batch > 25:
+                current_batch = max(25, current_batch // 2)
+                log.warning(
+                    f"  {name}: Error at offset {offset}: {e}; retrying with batch {current_batch}"
+                )
+                continue
             log.warning(f"  {name}: Error at offset {offset}: {e}")
             break
         time.sleep(0.5)  # Rate limit
 
     if all_features:
-        with open(output_path, "w") as f:
-            json.dump({"type": "FeatureCollection", "features": all_features}, f)
+        write_geojson(output_path, all_features)
         log.info(f"  {name}: SAVED {len(all_features)} features to {output_path}")
     else:
         log.warning(f"  {name}: NO FEATURES downloaded")
@@ -100,12 +209,14 @@ SOURCES = {
         "url": "https://nhgeodata.unh.edu/nhgeodata/rest/services/EDP/Bathymetry_Lakes/MapServer/1/query",
         "name": "New Hampshire GRANIT Bathymetry Polygons",
         "expected": 7351,
+        "batch": 250,
     },
     "NH_lines": {
         "type": "arcgis",
         "url": "https://nhgeodata.unh.edu/nhgeodata/rest/services/EDP/Bathymetry_Lakes/MapServer/0/query",
         "name": "New Hampshire GRANIT Bathymetry Lines",
         "expected": 9285,
+        "batch": 250,
     },
     "IA": {
         "type": "arcgis",
@@ -118,10 +229,11 @@ SOURCES = {
         "url": "https://maps.dnr.illinois.gov/geoservices/rest/services/WaterResources/LakeDepthAndCapacity/MapServer/0/query",
         "name": "Illinois DNR Lake Depth Contours",
         "expected": 4828,
+        "batch": 250,
     },
     "OH": {
         "type": "arcgis",
-        "url": "https://gis.ohiodnr.gov/arcgis/rest/services/OhioIT_ODNR/ODNR_DOW_Lakes_Bathymetry/MapServer/0/query",
+        "url": "https://gis2.ohiodnr.gov/ArcGIS/rest/services/DOW_Services/DOW_Lakes_Bathymetry/MapServer/0/query",
         "name": "Ohio DNR Lakes Bathymetry",
         "expected": 2809,
     },
@@ -156,7 +268,7 @@ SOURCES = {
         "url": "https://ndgishub.nd.gov/arcgis/rest/services/Applications/GNF_LakeContoursCached/MapServer/0/query",
         "name": "North Dakota Lake Contours",
         "expected": 4765,
-        "batch": 2000,
+        "batch": 250,
     },
     "SK": {
         "type": "arcgis",

@@ -244,9 +244,9 @@ let _cachedDiscoveryBbox: BoundingBox | null = null;
 let _cachedDiscoveryZoom: number = 0;
 
 // Bottom sheet snap points
-const SHEET_HIDDEN = 40; // Fully collapsed — just the drag handle visible
-const SHEET_PEEK = 100;
-const SHEET_COLLAPSED = 260;
+const SHEET_HIDDEN = 96; // Keep the compact status row visible at all times
+const SHEET_PEEK = 132;
+const SHEET_COLLAPSED = 276;
 const SHEET_EXPANDED = SCREEN_HEIGHT * 0.75;
 const SNAP_POINTS = [SHEET_HIDDEN, SHEET_PEEK, SHEET_COLLAPSED, SHEET_EXPANDED];
 const HANDLE_HEIGHT = 32;
@@ -324,6 +324,72 @@ function estimateBoundsFromCenter(center: RouteLatLng, zoom: number): ContourSou
     maxLon: center.lon + lonSpan,
     maxLat: center.lat + latSpan / 2,
   };
+}
+
+function hexToRgb(color: string): [number, number, number] {
+  const normalized = color.replace('#', '');
+  return [
+    parseInt(normalized.slice(0, 2), 16),
+    parseInt(normalized.slice(2, 4), 16),
+    parseInt(normalized.slice(4, 6), 16),
+  ];
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  const toHex = (value: number) => Math.round(Math.max(0, Math.min(255, value))).toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function mixHex(from: string, to: string, t: number): string {
+  const [r1, g1, b1] = hexToRgb(from);
+  const [r2, g2, b2] = hexToRgb(to);
+  return rgbToHex(
+    r1 + (r2 - r1) * t,
+    g1 + (g2 - g1) * t,
+    b1 + (b2 - b1) * t,
+  );
+}
+
+function darkenHex(color: string, amount = 0.18): string {
+  return mixHex(color, '#15384C', amount);
+}
+
+function lightenHex(color: string, amount = 0.18): string {
+  return mixHex(color, '#F7FBFE', amount);
+}
+
+function buildDepthBreaksFt(interval: number): number[] {
+  const base = Math.max(interval, 1);
+  return [
+    0,
+    base * 0.5,
+    base,
+    base * 1.5,
+    base * 2,
+    base * 3,
+    base * 4,
+    base * 6,
+    base * 8,
+    base * 12,
+    base * 18,
+    base * 28,
+  ].map((value) => Math.round(value * 10) / 10);
+}
+
+function sampleColorRamp(colors: string[], count: number): string[] {
+  if (colors.length === 0) return [];
+  if (colors.length === 1 || count <= 1) return [colors[0]];
+  const out: string[] = [];
+  const maxIndex = colors.length - 1;
+  for (let i = 0; i < count; i++) {
+    const t = (i / (count - 1)) * maxIndex;
+    const idx = Math.floor(t);
+    const frac = t - idx;
+    const start = colors[idx];
+    const end = colors[Math.min(idx + 1, maxIndex)];
+    out.push(frac <= 0 ? start : mixHex(start, end, frac));
+  }
+  return out;
 }
 
 // ── Weather alert banner colors by severity ─────────────────────
@@ -530,7 +596,7 @@ const BATHYMETRY_STYLE: object = {
       id: 'background',
       type: 'background',
       paint: {
-        'background-color': '#0a1628',
+        'background-color': '#F6F0E4',
       },
     },
 
@@ -548,14 +614,14 @@ const BATHYMETRY_STYLE: object = {
           'interpolate',
           ['linear'],
           ['zoom'],
-          0, '#08306b',   // zoomed out = deep ocean indigo
-          4, '#08519c',
-          6, '#2171b5',
-          8, '#4292c6',
-          10, '#6baed6',
-          14, '#9ecae1',  // zoomed in = shallow coastal blue
+          0, '#2A6F96',
+          4, '#2F7CA6',
+          6, '#4396BF',
+          8, '#65B2D1',
+          10, '#8DC9E0',
+          14, '#C6E4F2',
         ],
-        'fill-opacity': 0.92,
+        'fill-opacity': 0.96,
       },
     },
 
@@ -568,20 +634,83 @@ const BATHYMETRY_STYLE: object = {
       source: 'openmaptiles',
       'source-layer': 'water',
       paint: {
-        'fill-color': '#6baed6',
+        'fill-color': '#D7EDF7',
         'fill-opacity': [
           'interpolate',
           ['linear'],
           ['zoom'],
           0, 0,
           5, 0.08,
-          8, 0.15,
-          12, 0.05,
+          8, 0.14,
+          12, 0.07,
+        ],
+      },
+    },
+
+    {
+      id: 'water-edge-shadow',
+      type: 'fill',
+      source: 'openmaptiles',
+      'source-layer': 'water',
+      paint: {
+        'fill-color': '#215779',
+        'fill-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          0, 0.04,
+          5, 0.1,
+          8, 0.18,
+          12, 0.12,
         ],
       },
     },
 
     // ── GEBCO bathymetry contour raster overlay ─────────────────
+    {
+      id: 'gebco-contour-shadow',
+      type: 'raster',
+      source: 'gebco-contours',
+      paint: {
+        'raster-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          0, 0.2,
+          6, 0.32,
+          10, 0.28,
+          14, 0.18,
+        ],
+        'raster-contrast': 0.28,
+        'raster-saturation': -0.45,
+        'raster-brightness-min': 0.0,
+        'raster-brightness-max': 0.3,
+      },
+      minzoom: 0,
+      maxzoom: 12,
+    },
+    {
+      id: 'gebco-contour-mid',
+      type: 'raster',
+      source: 'gebco-contours',
+      paint: {
+        'raster-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          0, 0.18,
+          6, 0.28,
+          10, 0.22,
+          14, 0.12,
+        ],
+        'raster-contrast': 0.1,
+        'raster-saturation': -0.2,
+        'raster-brightness-min': 0.12,
+        'raster-brightness-max': 0.62,
+      },
+      minzoom: 0,
+      maxzoom: 12,
+    },
     {
       id: 'gebco-contour-overlay',
       type: 'raster',
@@ -591,14 +720,14 @@ const BATHYMETRY_STYLE: object = {
           'interpolate',
           ['linear'],
           ['zoom'],
-          0, 0.35,
-          6, 0.55,
-          10, 0.4,
-          14, 0.2,
+          0, 0.1,
+          6, 0.18,
+          10, 0.14,
+          14, 0.08,
         ],
-        'raster-contrast': 0.1,
+        'raster-contrast': 0.04,
         'raster-brightness-min': 0.0,
-        'raster-brightness-max': 0.7,
+        'raster-brightness-max': 0.92,
       },
       minzoom: 0,
       maxzoom: 12,
@@ -618,11 +747,11 @@ const BATHYMETRY_STYLE: object = {
         'fill-color': [
           'match',
           ['get', 'class'],
-          'grass', '#e8e4d0',
-          'wood', '#ddd8c4',
+          'grass', '#EDE7D8',
+          'wood', '#E4DCCB',
           'ice', '#eef4f8',
-          'crop', '#ebe7d3',
-          '#f5f0e1', // default warm beige
+          'crop', '#EEE7D6',
+          '#F6F0E4',
         ],
         'fill-opacity': [
           'interpolate',
@@ -647,7 +776,7 @@ const BATHYMETRY_STYLE: object = {
           'hospital', '#f0e8e4',
           'school', '#f0eee4',
           'industrial', '#e8e4dc',
-          '#f5f0e1',
+          '#F6F0E4',
         ],
         'fill-opacity': 0.5,
       },
@@ -659,7 +788,7 @@ const BATHYMETRY_STYLE: object = {
       'source-layer': 'landuse',
       filter: ['==', ['geometry-type'], 'Polygon'],
       paint: {
-        'fill-color': '#f5f0e1',
+        'fill-color': '#F6F0E4',
         'fill-opacity': 0.1,
       },
     },
@@ -675,22 +804,22 @@ const BATHYMETRY_STYLE: object = {
       source: 'openmaptiles',
       'source-layer': 'waterway',
       paint: {
-        'line-color': '#6baed6',
+        'line-color': '#2B7AA0',
         'line-width': [
           'interpolate',
           ['linear'],
           ['zoom'],
-          4, 0.4,
-          8, 1,
-          14, 2.5,
+          4, 0.6,
+          8, 1.3,
+          14, 3.0,
         ],
         'line-opacity': [
           'interpolate',
           ['linear'],
           ['zoom'],
-          4, 0.3,
-          8, 0.6,
-          14, 0.8,
+          4, 0.34,
+          8, 0.72,
+          14, 0.9,
         ],
       },
     },
@@ -1127,7 +1256,7 @@ const OPENCATCH_STYLE: object = {
       id: 'background',
       type: 'background',
       paint: {
-        'background-color': '#FAFAF7',
+        'background-color': '#F7F1E7',
       },
     },
 
@@ -1142,14 +1271,14 @@ const OPENCATCH_STYLE: object = {
           'interpolate',
           ['linear'],
           ['zoom'],
-          0, '#B8D4E8',
-          4, '#A8CCE4',
-          6, '#8CBCDA',
-          8, '#74AECE',
-          10, '#5E9FC2',
-          14, '#4A90B8',
+          0, '#D8ECF7',
+          4, '#C2E0F1',
+          6, '#A7D0E6',
+          8, '#80B8D7',
+          10, '#5E9DBF',
+          14, '#35769D',
         ],
-        'fill-opacity': 0.85,
+        'fill-opacity': 0.92,
       },
     },
 
@@ -1160,20 +1289,83 @@ const OPENCATCH_STYLE: object = {
       source: 'openmaptiles',
       'source-layer': 'water',
       paint: {
-        'fill-color': '#5E9FC2',
+        'fill-color': '#F3FAFD',
         'fill-opacity': [
           'interpolate',
           ['linear'],
           ['zoom'],
           0, 0,
-          5, 0.06,
-          8, 0.12,
-          12, 0.04,
+          5, 0.08,
+          8, 0.16,
+          12, 0.06,
+        ],
+      },
+    },
+
+    {
+      id: 'water-edge-shadow',
+      type: 'fill',
+      source: 'openmaptiles',
+      'source-layer': 'water',
+      paint: {
+        'fill-color': '#2A6B8F',
+        'fill-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          0, 0.03,
+          5, 0.08,
+          8, 0.14,
+          12, 0.1,
         ],
       },
     },
 
     // ── GEBCO bathymetry contour overlay ─────────────────────────
+    {
+      id: 'gebco-contour-shadow',
+      type: 'raster',
+      source: 'gebco-contours',
+      paint: {
+        'raster-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          0, 0.14,
+          6, 0.22,
+          10, 0.18,
+          14, 0.1,
+        ],
+        'raster-contrast': 0.2,
+        'raster-saturation': -0.35,
+        'raster-brightness-min': 0.0,
+        'raster-brightness-max': 0.34,
+      },
+      minzoom: 0,
+      maxzoom: 12,
+    },
+    {
+      id: 'gebco-contour-mid',
+      type: 'raster',
+      source: 'gebco-contours',
+      paint: {
+        'raster-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          0, 0.16,
+          6, 0.24,
+          10, 0.18,
+          14, 0.08,
+        ],
+        'raster-contrast': 0.06,
+        'raster-saturation': -0.15,
+        'raster-brightness-min': 0.18,
+        'raster-brightness-max': 0.68,
+      },
+      minzoom: 0,
+      maxzoom: 12,
+    },
     {
       id: 'gebco-contour-overlay',
       type: 'raster',
@@ -1183,14 +1375,14 @@ const OPENCATCH_STYLE: object = {
           'interpolate',
           ['linear'],
           ['zoom'],
-          0, 0.2,
-          6, 0.35,
-          10, 0.25,
-          14, 0.15,
+          0, 0.1,
+          6, 0.16,
+          10, 0.12,
+          14, 0.06,
         ],
-        'raster-contrast': 0.0,
-        'raster-brightness-min': 0.15,
-        'raster-brightness-max': 0.85,
+        'raster-contrast': 0.02,
+        'raster-brightness-min': 0.34,
+        'raster-brightness-max': 0.96,
       },
       minzoom: 0,
       maxzoom: 12,
@@ -1210,7 +1402,7 @@ const OPENCATCH_STYLE: object = {
           'wood', '#EEEDEA',
           'ice', '#F5F5F5',
           'crop', '#F3F1EA',
-          '#FAFAF7',
+          '#F7F1E7',
         ],
         'fill-opacity': [
           'interpolate',
@@ -1237,7 +1429,7 @@ const OPENCATCH_STYLE: object = {
           'hospital', '#F5F0EE',
           'school', '#F5F3EE',
           'industrial', '#F0EEEA',
-          '#FAFAF7',
+          '#F7F1E7',
         ],
         'fill-opacity': 0.4,
       },
@@ -1250,14 +1442,14 @@ const OPENCATCH_STYLE: object = {
       source: 'openmaptiles',
       'source-layer': 'waterway',
       paint: {
-        'line-color': '#8CBCDA',
+        'line-color': '#4F92B8',
         'line-width': [
           'interpolate',
           ['linear'],
           ['zoom'],
-          4, 0.3,
-          8, 0.8,
-          14, 2,
+          4, 0.45,
+          8, 1.05,
+          14, 2.35,
         ],
         'line-opacity': [
           'interpolate',
@@ -4797,36 +4989,61 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const currentMonth = new Date().getMonth() + 1; // 1-12
   const isWinterSeason = currentMonth >= 11 || currentMonth <= 3;
   const isNearCoastNow = userLocation ? isNearCoast(userLocation.lat, userLocation.lon) : false;
-  const bathymetryColorStops = useMemo(() => getColorStops(contourSettings), [contourSettings]);
+  const bathymetryDepthBreaks = useMemo(
+    () => buildDepthBreaksFt(contourSettings.interval),
+    [contourSettings.interval],
+  );
+  const bathymetryColorStops = useMemo(
+    () => sampleColorRamp(getColorStops(contourSettings), bathymetryDepthBreaks.length),
+    [bathymetryDepthBreaks.length, contourSettings],
+  );
+  const bathymetryShadowStops = useMemo(
+    () => bathymetryColorStops.map((color) => darkenHex(color, 0.24)),
+    [bathymetryColorStops],
+  );
+  const bathymetryHighlightStops = useMemo(
+    () => bathymetryColorStops.map((color) => lightenHex(color, 0.3)),
+    [bathymetryColorStops],
+  );
   const bathymetryLegendStops = useMemo(() => {
     const colors = bathymetryColorStops;
+    const labels = bathymetryDepthBreaks;
     return [
-      { color: colors[0] ?? '#D6EAF8', label: '0-3' },
-      { color: colors[2] ?? colors[1] ?? '#85C1E9', label: '3-10' },
-      { color: colors[4] ?? colors[3] ?? '#3498DB', label: '10-25' },
-      { color: colors[6] ?? colors[5] ?? '#2471A3', label: '25-60' },
-      { color: colors[7] ?? colors[6] ?? '#1A5276', label: '60+' },
+      { color: colors[0] ?? '#D6EAF8', label: `${Math.round(labels[0])}-${Math.round(labels[3])}` },
+      { color: colors[3] ?? colors[2] ?? '#85C1E9', label: `${Math.round(labels[3])}-${Math.round(labels[5])}` },
+      { color: colors[5] ?? colors[4] ?? '#3498DB', label: `${Math.round(labels[5])}-${Math.round(labels[8])}` },
+      { color: colors[8] ?? colors[7] ?? '#2471A3', label: `${Math.round(labels[8])}-${Math.round(labels[10])}` },
+      { color: colors[10] ?? colors[9] ?? '#1A5276', label: `${Math.round(labels[10])}+` },
     ];
-  }, [bathymetryColorStops]);
+  }, [bathymetryColorStops, bathymetryDepthBreaks]);
   const bathymetryFillExpression = useMemo(() => {
     const colors = bathymetryColorStops;
-    const c0 = colors[0] ?? '#D6EAF8';
-    const c1 = colors[1] ?? c0;
-    const c2 = colors[2] ?? c1;
-    const c3 = colors[3] ?? c2;
-    const c4 = colors[4] ?? c3;
-    const c5 = colors[5] ?? c4;
-    return [
-      'step',
-      ['coalesce', ['get', 'depth_ft'], 0],
-      c0,
-      3, c1,
-      6, c2,
-      10, c3,
-      15, c4,
-      25, c5,
-    ] as any;
-  }, [bathymetryColorStops]);
+    const breaks = bathymetryDepthBreaks;
+    const expression: any[] = ['interpolate', ['linear'], ['coalesce', ['get', 'depth_ft'], 0]];
+    for (let i = 0; i < Math.min(colors.length, breaks.length); i++) {
+      expression.push(breaks[i], colors[i] ?? colors[Math.max(0, i - 1)] ?? '#D6EAF8');
+    }
+    return expression as any;
+  }, [bathymetryColorStops, bathymetryDepthBreaks]);
+  const bathymetryShadowExpression = useMemo(() => {
+    const colors = bathymetryShadowStops;
+    const breaks = bathymetryDepthBreaks;
+    const expression: any[] = ['interpolate', ['linear'], ['coalesce', ['get', 'depth_ft'], 0]];
+    for (let i = 1; i < Math.min(colors.length, breaks.length); i++) {
+      expression.push(breaks[i - 1], colors[i - 1] ?? '#9BB5C8');
+      expression.push(breaks[i], colors[i] ?? colors[i - 1] ?? '#9BB5C8');
+    }
+    return expression as any;
+  }, [bathymetryDepthBreaks, bathymetryShadowStops]);
+  const bathymetryHighlightExpression = useMemo(() => {
+    const colors = bathymetryHighlightStops;
+    const breaks = bathymetryDepthBreaks;
+    const expression: any[] = ['interpolate', ['linear'], ['coalesce', ['get', 'depth_ft'], 0]];
+    for (let i = 0; i < Math.min(colors.length, breaks.length); i++) {
+      expression.push(breaks[i], colors[i] ?? colors[Math.max(0, i - 1)] ?? '#F0F7FC');
+    }
+    return expression as any;
+  }, [bathymetryDepthBreaks, bathymetryHighlightStops]);
 
   const mapToolGroups: MapToolGroup[] = [
     {
@@ -5688,11 +5905,50 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         {Array.from(activeOverlays).map((key) => {
           const url = OVERLAY_TILE_URLS[key];
           if (!url) return null;
+          if (key === 'depth-contours') {
+            return (
+              <RasterSource
+                key="src-depth-contours"
+                id="overlay-source-depth-contours"
+                tileUrlTemplates={[url]}
+                tileSize={256}
+              >
+                <RasterLayer
+                  id="overlay-layer-depth-contours-shadow"
+                  style={{
+                    rasterOpacity: 0.22,
+                    rasterContrast: 0.3,
+                    rasterSaturation: -0.5,
+                    rasterBrightnessMin: 0.0,
+                    rasterBrightnessMax: 0.26,
+                  }}
+                />
+                <RasterLayer
+                  id="overlay-layer-depth-contours-mid"
+                  style={{
+                    rasterOpacity: 0.32,
+                    rasterContrast: 0.12,
+                    rasterSaturation: -0.25,
+                    rasterBrightnessMin: 0.12,
+                    rasterBrightnessMax: 0.58,
+                  }}
+                />
+                <RasterLayer
+                  id="overlay-layer-depth-contours-core"
+                  style={{
+                    rasterOpacity: 0.2,
+                    rasterContrast: 0.05,
+                    rasterBrightnessMin: 0.36,
+                    rasterBrightnessMax: 0.98,
+                  }}
+                />
+              </RasterSource>
+            );
+          }
           const opacity =
             key === 'nautical' ? 0.7
             : key === 'shaded-relief' ? 0.5
             : key === 'water-flow' ? 0.7
-            : key === 'depth-contours' ? 0.8
             : 0.6;
           return (
             <RasterSource
@@ -5724,13 +5980,35 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                 maxZoomLevel={16}
               >
                 <FillLayer
+                  id={`bathy-fill-shadow-${src}`}
+                  sourceLayerID="contours"
+                  filter={['==', '$type', 'Polygon'] as any}
+                  style={{
+                    fillColor: bathymetryShadowExpression,
+                    fillOpacity: contourSettings.opacity * 0.28 * bathyOpacityScale,
+                    fillTranslate: [0, 3],
+                    fillTranslateAnchor: 'viewport',
+                  }}
+                />
+                <FillLayer
                   id={`bathy-fill-${src}`}
                   sourceLayerID="contours"
                   filter={['==', '$type', 'Polygon'] as any}
                   style={{
                     fillColor: bathymetryFillExpression,
                     fillOpacity: contourSettings.opacity * 0.88 * bathyOpacityScale,
-                    fillOutlineColor: '#1B5674',
+                    fillOutlineColor: 'rgba(18, 56, 79, 0.18)',
+                  }}
+                />
+                <FillLayer
+                  id={`bathy-fill-highlight-${src}`}
+                  sourceLayerID="contours"
+                  filter={['==', '$type', 'Polygon'] as any}
+                  style={{
+                    fillColor: bathymetryHighlightExpression,
+                    fillOpacity: contourSettings.opacity * 0.18 * bathyOpacityScale,
+                    fillTranslate: [0, -1],
+                    fillTranslateAnchor: 'viewport',
                   }}
                 />
                 <LineLayer
@@ -5748,7 +6026,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                       11, 1.8,
                       14, 2.4,
                     ] as any,
-                    lineOpacity: contourSettings.opacity * 0.22 * bathyOpacityScale,
+                    lineBlur: 1.5,
+                    lineTranslate: [0, 1.8],
+                    lineTranslateAnchor: 'viewport',
+                    lineOpacity: contourSettings.opacity * 0.3 * bathyOpacityScale,
                   }}
                 />
                 <LineLayer
@@ -5767,6 +6048,28 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                       14, 1.45,
                     ] as any,
                     lineOpacity: contourSettings.opacity * 0.9 * bathyOpacityScale,
+                    lineJoin: 'round',
+                    lineCap: 'round',
+                  }}
+                />
+                <LineLayer
+                  id={`bathy-line-crest-${src}`}
+                  sourceLayerID="contours"
+                  filter={['==', ['get', 'feature_kind'], 'contour_line'] as any}
+                  style={{
+                    lineColor: 'rgba(240, 248, 252, 0.78)',
+                    lineWidth: [
+                      'interpolate',
+                      ['linear'],
+                      ['zoom'],
+                      5, 0.12,
+                      8, 0.18,
+                      11, 0.24,
+                      14, 0.32,
+                    ] as any,
+                    lineOpacity: contourSettings.opacity * 0.55 * bathyOpacityScale,
+                    lineJoin: 'round',
+                    lineCap: 'round',
                   }}
                 />
                 {contourSettings.showLabels && (
@@ -7680,16 +7983,6 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         onClose={() => setLongPressMenuVisible(false)}
       />
 
-      {/* Persistent map info bar — speed, heading, GPS accuracy */}
-      {!focusedLocation && !mapToolsDrawerOpen && !layerPickerVisible && (
-        <MapInfoBar
-          bottomOffset={Platform.OS === 'ios' ? 108 : 82}
-          rightInset={112}
-          anchorWatch={anchorStatus.active ? { active: true, driftMeters: anchorStatus.driftDistance, radiusMeters: anchorStatus.watch?.radiusMeters ?? 30 } as AnchorWatchInfo : undefined}
-          routeNav={routeNavInfo}
-        />
-      )}
-
       {selectedContourDepth && !focusedLocation && (
         <View style={styles.contourDepthCard}>
           <View style={styles.contourDepthHeader}>
@@ -7739,9 +8032,19 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       {/* Bottom sheet with location list (merged from Explore) */}
       {markerMode === 'locations' && (
         <Animated.View style={[styles.sheet, { height: sheetHeight }]}>
-          <View style={styles.handleArea} {...panResponder.panHandlers}>
-            <View style={styles.dragHandle} />
-            <Text style={styles.handleHint}>—</Text>
+          <View style={styles.handleArea}>
+            <View style={styles.sheetGrabber} {...panResponder.panHandlers}>
+              <View style={styles.dragHandle} />
+              <Text style={styles.handleHint}>—</Text>
+            </View>
+            <View style={styles.sheetStatusWrap}>
+              <MapInfoBar
+                embedded
+                expandable={false}
+                anchorWatch={anchorStatus.active ? { active: true, driftMeters: anchorStatus.driftDistance, radiusMeters: anchorStatus.watch?.radiusMeters ?? 30 } as AnchorWatchInfo : undefined}
+                routeNav={routeNavInfo}
+              />
+            </View>
           </View>
 
           {/* Top picks row */}
@@ -8603,11 +8906,22 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   handleArea: {
-    height: 48,
+    paddingTop: 10,
+    paddingHorizontal: 14,
+    paddingBottom: 12,
+    gap: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(20, 60, 82, 0.08)',
+    backgroundColor: 'rgba(250, 247, 242, 0.96)',
+  },
+  sheetGrabber: {
+    height: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 10,
     cursor: 'grab' as any,
+  },
+  sheetStatusWrap: {
+    alignSelf: 'stretch',
   },
   dragHandle: {
     width: 36,

@@ -12,10 +12,13 @@ Supported today
 ---------------
 - Alberta (`ab_contours.geojson`)      -> tile-ready contour lines + labels
 - Florida (`fl_contours.geojson`)      -> tile-ready contour lines + labels
+- Illinois (`il_contours.geojson`)     -> tile-ready contour lines + labels
+- New Hampshire (`nh_contours.geojson`)-> tile-ready depth bands + labels
 - Michigan (`mi_full_contours.geojson`)-> tile-ready contour lines + labels
 - Massachusetts (`ma_contours.geojson`)-> tile-ready contour lines + labels
 - Montana (`mt_contours.geojson`)      -> tile-ready contour lines + labels
 - Ontario (`on_contours.geojson`)      -> tile-ready contour lines + labels
+- Ohio (`oh_contours.geojson`)         -> tile-ready contour lines + labels
 - Quebec (`qc_contours.geojson`)       -> tile-ready contour lines + labels
 - Vermont (`vt_data.geojson`)          -> tile-ready contour lines + labels
 - Washington (`wa_contours.geojson`)   -> tile-ready contour lines + labels
@@ -26,7 +29,7 @@ Supported today
 Usage
 -----
 python normalize_survey_geojson.py \
-    --sources ab,fl,mi,ma,mt,on,qc,vt,wa,ia,sk,mb \
+    --sources ab,fl,il,nh,mi,ma,mt,on,oh,qc,vt,wa,ia,sk,mb \
     --output-dir /Users/Ashar/Documents/fish/data/bathymetry/normalized
 """
 
@@ -86,6 +89,26 @@ SOURCES: Dict[str, SourceConfig] = {
         tile_ready=True,
         notes="Depth values are stored negative; normalized to positive depth.",
     ),
+    "il": SourceConfig(
+        source_id="il",
+        input_path=Path("/Users/Ashar/Documents/fish/data/bathymetry/il/il_contours.geojson"),
+        output_mode="contour_lines",
+        source_name="il_survey",
+        attribution="Illinois DNR Lake Depth Contours",
+        default_lake_name="Illinois survey lake",
+        tile_ready=True,
+        notes="Contour lines with depth stored in CONTOUR feet.",
+    ),
+    "nh": SourceConfig(
+        source_id="nh",
+        input_path=Path("/Users/Ashar/Documents/fish/data/bathymetry/nh/nh_contours.geojson"),
+        output_mode="depth_bands",
+        source_name="nh_survey",
+        attribution="New Hampshire GRANIT Bathymetry",
+        default_lake_name="New Hampshire survey lake",
+        tile_ready=True,
+        notes="Polygon depth bands with DEPTHMIN/DEPTHMAX values in feet.",
+    ),
     "mi": SourceConfig(
         source_id="mi",
         input_path=Path("/Users/Ashar/Documents/fish/data/bathymetry/mi/mi_full_contours.geojson"),
@@ -125,6 +148,16 @@ SOURCES: Dict[str, SourceConfig] = {
         default_lake_name="Ontario survey lake",
         tile_ready=True,
         notes="Contour lines exported from FGDB. DEPTH values are normalized from negative metres.",
+    ),
+    "oh": SourceConfig(
+        source_id="oh",
+        input_path=Path("/Users/Ashar/Documents/fish/data/bathymetry/oh/oh_contours.geojson"),
+        output_mode="contour_lines",
+        source_name="oh_survey",
+        attribution="Ohio DNR Lakes Bathymetry",
+        default_lake_name="Ohio survey lake",
+        tile_ready=True,
+        notes="Contour lines with negative depth values in feet; normalized to positive depth.",
     ),
     "qc": SourceConfig(
         source_id="qc",
@@ -404,6 +437,26 @@ def standard_props(config: SourceConfig, feature: dict, props: dict) -> Optional
         if depth_ft is None and depth_m is not None:
             depth_ft = round(depth_m * M_TO_FT, 1)
         survey_date = props.get("last_edited_date")
+    elif source_id == "nh":
+        lake_name = props.get("LAKE") or config.default_lake_name
+        raw_id = props.get("AU_ID") or feature.get("id") or slugify(lake_name)
+        lake_id = f"nh-{raw_id}"
+        depth_min_ft = safe_float(props.get("DEPTHMIN"))
+        depth_max_ft = safe_float(props.get("DEPTHMAX"))
+        if depth_min_ft is not None and depth_max_ft is not None:
+            depth_ft = round((depth_min_ft + depth_max_ft) / 2.0, 1)
+        elif depth_max_ft is not None:
+            depth_ft = round(depth_max_ft, 1)
+        elif depth_min_ft is not None:
+            depth_ft = round(depth_min_ft, 1)
+        depth_m = round(depth_ft * FT_TO_M, 3) if depth_ft is not None else None
+        survey_date = props.get("YEAR1")
+    elif source_id == "il":
+        raw_id = props.get("OBJECTID") or feature.get("id") or "unknown"
+        lake_id = f"il-{raw_id}"
+        lake_name = props.get("LAKE_NAME") or config.default_lake_name
+        depth_ft = safe_float(props.get("CONTOUR"))
+        depth_m = round(depth_ft * FT_TO_M, 3) if depth_ft is not None else None
     elif source_id == "mi":
         statewide = props.get("STATEWIDE_") or props.get("STATEWIDE1") or props.get("OBJECTID")
         lake_id = f"mi-{statewide}"
@@ -432,6 +485,15 @@ def standard_props(config: SourceConfig, feature: dict, props: dict) -> Optional
             depth_m = abs(depth_m)
             depth_ft = round(depth_m * M_TO_FT, 1)
         survey_date = props.get("SURVEY_DATE") or props.get("EFFECTIVE_DATETIME")
+    elif source_id == "oh":
+        lake_name = props.get("LAKE_NAME") or config.default_lake_name
+        raw_id = props.get("OBJECTID") or feature.get("id") or slugify(lake_name)
+        lake_id = f"oh-{raw_id}"
+        depth_ft = safe_float(props.get("DEPTH"))
+        if depth_ft is not None:
+            depth_ft = abs(depth_ft)
+            depth_m = round(depth_ft * FT_TO_M, 3)
+        survey_date = props.get("DT_ADDED")
     elif source_id == "qc":
         lake_name = props.get("HYDRONYME") or config.default_lake_name
         raw_id = props.get("NO_LCE_L") or props.get("NO_RSVL") or feature.get("id") or slugify(lake_name)
@@ -499,6 +561,24 @@ def normalize_feature(config: SourceConfig, feature: dict) -> Optional[dict]:
         if base["depth_m"] is None:
             return None
         base["feature_kind"] = "contour_line"
+    elif config.output_mode == "depth_bands":
+        if geom_type not in {"Polygon", "MultiPolygon"}:
+            return None
+        depth_min_ft = safe_float(props.get("DEPTHMIN"))
+        depth_max_ft = safe_float(props.get("DEPTHMAX"))
+        if depth_min_ft is None and depth_max_ft is None:
+            return None
+        base["feature_kind"] = "depth_band"
+        base["depth_min_ft"] = round(depth_min_ft, 1) if depth_min_ft is not None else None
+        base["depth_max_ft"] = round(depth_max_ft, 1) if depth_max_ft is not None else None
+        base["depth_min_m"] = round(depth_min_ft * FT_TO_M, 3) if depth_min_ft is not None else None
+        base["depth_max_m"] = round(depth_max_ft * FT_TO_M, 3) if depth_max_ft is not None else None
+        base["contour_interval_ft"] = safe_float(props.get("BATHY_INT"))
+        base["depth_band_label"] = (
+            f"{round(depth_min_ft)}-{round(depth_max_ft)} ft"
+            if depth_min_ft is not None and depth_max_ft is not None
+            else None
+        )
     elif config.output_mode == "lake_summary":
         if geom_type not in {"Polygon", "MultiPolygon"}:
             return None
@@ -537,8 +617,12 @@ def make_label_feature(feature: dict) -> Optional[dict]:
     props = dict(feature.get("properties") or {})
     depth_ft = props.get("depth_ft")
     depth_m = props.get("depth_m")
+    depth_min_ft = props.get("depth_min_ft")
+    depth_max_ft = props.get("depth_max_ft")
     label = None
-    if depth_ft is not None:
+    if depth_min_ft is not None and depth_max_ft is not None:
+        label = f"{round(float(depth_min_ft))}-{round(float(depth_max_ft))} ft"
+    elif depth_ft is not None:
         label = f"{round(float(depth_ft))} ft"
     elif depth_m is not None:
         label = f"{round(float(depth_m), 1)} m"
@@ -580,7 +664,7 @@ def normalize_source(config: SourceConfig, output_dir: Path) -> NormalizeResult:
     label_handle = None
 
     try:
-        if config.output_mode in {"contour_lines", "lake_summary", "survey_index"}:
+        if config.output_mode in {"contour_lines", "depth_bands", "lake_summary", "survey_index"}:
             line_handle = lines_path.open("w", encoding="utf-8")
             fc_start(line_handle)
             result.outputs["normalized"] = str(lines_path)

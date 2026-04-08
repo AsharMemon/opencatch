@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -29,6 +30,20 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 log = logging.getLogger("build_survey_pmtiles")
+
+
+def find_binary(name: str) -> str:
+    found = shutil.which(name)
+    if found:
+        return found
+    for candidate in (
+        f"/usr/local/bin/{name}",
+        f"/opt/homebrew/bin/{name}",
+        f"/usr/bin/{name}",
+    ):
+        if Path(candidate).exists():
+            return candidate
+    raise FileNotFoundError(f"Required binary not found: {name}")
 
 
 def load_manifest(path: Path) -> List[dict]:
@@ -56,8 +71,10 @@ def combine_geojson(inputs: List[Path], output_path: Path) -> int:
 def build_pmtiles(input_geojson: Path, output_path: Path, min_zoom: int, max_zoom: int, tmpdir: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     mbtiles_path = tmpdir / f"{output_path.stem}.mbtiles"
+    tippecanoe_bin = find_binary("tippecanoe")
+    pmtiles_bin = find_binary("pmtiles")
     cmd = [
-        "tippecanoe",
+        tippecanoe_bin,
         f"--minimum-zoom={min_zoom}",
         f"--maximum-zoom={max_zoom}",
         "--drop-densest-as-needed",
@@ -76,7 +93,7 @@ def build_pmtiles(input_geojson: Path, output_path: Path, min_zoom: int, max_zoo
     log.info("Running %s", " ".join(cmd))
     subprocess.run(cmd, check=True)
     convert_cmd = [
-        "pmtiles",
+        pmtiles_bin,
         "convert",
         "--force",
         "--tmpdir",

@@ -52,10 +52,12 @@ export const MARTIN_CONTOUR_SOURCES: MartinContourSource[] = [
   { id: 'mi_contours', label: 'Michigan', bounds: { minLon: -91.0, minLat: 41.5, maxLon: -82.0, maxLat: 48.8 } },
   { id: 'nh_contours', label: 'New Hampshire', bounds: { minLon: -72.8, minLat: 42.4, maxLon: -70.5, maxLat: 45.5 } },
   { id: 'fl_contours', label: 'Florida', bounds: { minLon: -87.8, minLat: 24.0, maxLon: -79.5, maxLat: 31.5 } },
+  { id: 'il_contours', label: 'Illinois', bounds: { minLon: -91.7, minLat: 36.8, maxLon: -87.0, maxLat: 42.6 } },
   { id: 'ab_contours', label: 'Alberta', bounds: { minLon: -121.0, minLat: 48.8, maxLon: -109.0, maxLat: 60.2 } },
   { id: 'mt_contours', label: 'Montana', bounds: { minLon: -116.5, minLat: 44.0, maxLon: -103.5, maxLat: 49.5 } },
   { id: 'wa_contours', label: 'Washington', bounds: { minLon: -125.5, minLat: 45.3, maxLon: -116.5, maxLat: 49.3 } },
   { id: 'ma_contours', label: 'Massachusetts', bounds: { minLon: -73.8, minLat: 41.0, maxLon: -69.5, maxLat: 43.1 } },
+  { id: 'oh_contours', label: 'Ohio', bounds: { minLon: -84.95, minLat: 38.35, maxLon: -80.45, maxLat: 42.35 } },
   { id: 'ne_contours', label: 'Nebraska', bounds: { minLon: -104.5, minLat: 39.5, maxLon: -95.0, maxLat: 43.2 } },
   { id: 'vt_contours', label: 'Vermont', bounds: { minLon: -73.6, minLat: 42.6, maxLon: -71.3, maxLat: 45.2 } },
   { id: 'ia_contours', label: 'Iowa', bounds: { minLon: -97.3, minLat: 40.2, maxLon: -89.8, maxLat: 43.8 } },
@@ -129,7 +131,15 @@ function toFeatures(input: any): any[] {
   return [];
 }
 
-function pickShallowestFeature(features: any[]): any | null {
+const QUALITY_RANK: Record<string, number> = {
+  survey: 5,
+  high: 4,
+  moderate: 3,
+  coarse: 2,
+  estimate: 1,
+};
+
+function pickBestFeature(features: any[]): any | null {
   const candidates = features.filter((feature) => {
     const depth = feature?.properties?.depth_ft;
     return typeof depth === 'number' && Number.isFinite(depth);
@@ -137,12 +147,17 @@ function pickShallowestFeature(features: any[]): any | null {
   if (!candidates.length) return null;
 
   let best = candidates[0];
-  let bestDepth = best.properties.depth_ft;
+  let bestScore =
+    (QUALITY_RANK[String(best?.properties?.contour_quality || 'estimate')] || 0) * 100000 -
+    Number(best?.properties?.depth_ft || 0);
   for (const feature of candidates) {
-    const depthFt = feature.properties.depth_ft;
-    if (depthFt < bestDepth) {
+    const quality = QUALITY_RANK[String(feature?.properties?.contour_quality || 'estimate')] || 0;
+    const depthFt = Number(feature?.properties?.depth_ft || 0);
+    const sourceBonus = String(feature?.properties?.source || '').includes('survey') ? 5000 : 0;
+    const score = quality * 100000 + sourceBonus - depthFt;
+    if (score > bestScore) {
       best = feature;
-      bestDepth = depthFt;
+      bestScore = score;
     }
   }
   return best;
@@ -153,7 +168,7 @@ function parseQuality(raw: any): ContourQuality {
 }
 
 export function getDepthFromRenderedFeatures(input: any): DepthResult | null {
-  const feature = pickShallowestFeature(toFeatures(input));
+  const feature = pickBestFeature(toFeatures(input));
   if (!feature) return null;
 
   const props = feature.properties ?? {};
@@ -234,17 +249,24 @@ function intersects(a: SourceBounds, b: SourceBounds): boolean {
 }
 
 export function getMartinContourSourcesForBounds(bounds: SourceBounds | null): MartinContourSource[] {
+  const lagos = MARTIN_CONTOUR_SOURCES.find((source) => source.id === 'lagos_contours');
   if (!bounds) {
-    return MARTIN_CONTOUR_SOURCES.filter((source) => source.id === 'lagos_contours');
+    return lagos ? [lagos] : [];
   }
 
-  const primary = MARTIN_CONTOUR_SOURCES.filter((source) => source.bounds && intersects(source.bounds, bounds));
+  const primary = MARTIN_CONTOUR_SOURCES.filter(
+    (source) => source.id !== 'lagos_contours' && source.bounds && intersects(source.bounds, bounds),
+  );
+  const includeLagos = !!(lagos?.bounds && intersects(lagos.bounds, bounds));
+  if (includeLagos) {
+    return lagos ? [...primary, lagos] : primary;
+  }
   if (primary.length > 0) return primary;
-  return MARTIN_CONTOUR_SOURCES.filter((source) => source.id === 'lagos_contours');
+  return lagos ? [lagos] : [];
 }
 
 export function hasContoursInView(map: any): boolean {
-  return getBathyLayerIds('fill').some((layerId) => {
+  return [...getBathyLayerIds('fill'), ...getBathyLayerIds('line')].some((layerId) => {
     try {
       return !!map?.getLayer?.(layerId);
     } catch {

@@ -47,9 +47,9 @@ export interface DepthContourSettings {
 // ── Defaults ───────────────────────────────────────────────────────────────────
 
 export const DEFAULT_CONTOUR_SETTINGS: DepthContourSettings = {
-  interval: 5,
+  interval: 2,
   colorScheme: 'papercut',
-  opacity: 0.85,
+  opacity: 0.9,
   showLabels: true,
   customColors: {
     shallow: '#9ECAE1',
@@ -88,7 +88,7 @@ export const COLOR_SCHEMES: ColorSchemeOption[] = [
     key: 'papercut',
     label: 'Papercut',
     description: 'Layered blue bands, topographic map look',
-    stops: ['#C5E1F5', '#9ED4F0', '#67B7DC', '#3B97C9', '#2D8AB8', '#145374'],
+    stops: ['#E6F3FA', '#CBE6F5', '#A7D2EB', '#79B8D9', '#4D98C0', '#2C739C', '#174C70'],
   },
   {
     key: 'thermal',

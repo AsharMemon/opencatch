@@ -58,6 +58,8 @@ interface MapInfoBarProps {
   rightInset?: number;
   anchorWatch?: AnchorWatchInfo;
   routeNav?: RouteNavInfo;
+  embedded?: boolean;
+  expandable?: boolean;
 }
 
 function degreesToCompass(deg: number): string {
@@ -85,6 +87,8 @@ export function MapInfoBar({
   rightInset = 108,
   anchorWatch,
   routeNav,
+  embedded = false,
+  expandable = true,
 }: MapInfoBarProps) {
   const [gps, setGps] = useState<GPSInfo | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -127,6 +131,7 @@ export function MapInfoBar({
 
   // Expand/collapse animation
   const toggleExpand = useCallback(() => {
+    if (!expandable) return;
     const toExpanded = !expanded;
     setExpanded(toExpanded);
     Animated.spring(expandAnim, {
@@ -158,14 +163,16 @@ export function MapInfoBar({
     <View
       style={[
         styles.container,
-        {
-          bottom: bottomOffset,
-          left: leftInset,
-          right: rightInset,
-        },
+        embedded
+          ? styles.containerEmbedded
+          : {
+              bottom: bottomOffset,
+              left: leftInset,
+              right: rightInset,
+            },
       ]}
     >
-      <Pressable style={styles.bar} onPress={toggleExpand}>
+      <Pressable style={[styles.bar, embedded && styles.barEmbedded]} onPress={toggleExpand}>
         {/* Main row: speed, heading, accuracy */}
         <View style={styles.mainRow}>
           {/* Speed */}
@@ -237,16 +244,24 @@ export function MapInfoBar({
           )}
 
           {/* Expand chevron */}
-          <Ionicons
-            name={expanded ? 'chevron-down' : 'chevron-up'}
-            size={14}
-            color={palette.textDim}
-            style={{ marginLeft: 4 }}
-          />
+          {expandable && (
+            <Ionicons
+              name={expanded ? 'chevron-down' : 'chevron-up'}
+              size={14}
+              color={palette.textDim}
+              style={{ marginLeft: 4 }}
+            />
+          )}
         </View>
 
         {/* Expanded details */}
-        <Animated.View style={[styles.expandedRow, { height: expandedHeight, opacity: expandAnim }]}>
+        <Animated.View
+          style={[
+            styles.expandedRow,
+            !expandable && styles.expandedRowHidden,
+            { height: expandable ? expandedHeight : 0, opacity: expandable ? expandAnim : 0 },
+          ]}
+        >
           <View style={styles.expandedContent}>
             <View style={styles.expandedItem}>
               <Text style={styles.expandedLabel}>Lat</Text>
@@ -290,14 +305,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     zIndex: 50,
   },
+  containerEmbedded: {
+    position: 'relative',
+    zIndex: 1,
+    width: '100%',
+  },
   bar: {
-    alignSelf: 'flex-start',
+    alignSelf: 'stretch',
     backgroundColor: 'rgba(255, 255, 255, 0.94)',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    minWidth: 214,
-    maxWidth: 296,
+    minWidth: 0,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 10,
@@ -305,6 +324,15 @@ const styles = StyleSheet.create({
     elevation: 6,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: palette.borderLight,
+  },
+  barEmbedded: {
+    backgroundColor: 'rgba(246, 250, 252, 0.98)',
+    borderRadius: 14,
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
+    borderColor: 'rgba(27, 95, 129, 0.12)',
   },
   mainRow: {
     flexDirection: 'row',
@@ -338,6 +366,10 @@ const styles = StyleSheet.create({
   },
   expandedRow: {
     overflow: 'hidden',
+  },
+  expandedRowHidden: {
+    height: 0,
+    opacity: 0,
   },
   expandedContent: {
     flexDirection: 'row',
