@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/palette';
 import type { MapWeatherForecast, MapWeatherSummary, MapWeatherHour } from '../services/mapWeatherForecast';
@@ -24,6 +24,10 @@ interface Props {
   loading?: boolean;
   compact?: boolean;
   onClose?: () => void;
+  selectedWindHourIndex?: number;
+  onSelectWindHour?: (index: number) => void;
+  windPlaybackActive?: boolean;
+  onToggleWindPlayback?: () => void;
 }
 
 function windColor(mph: number): string {
@@ -99,9 +103,17 @@ function SmallStat({
   );
 }
 
-function HourPill({ hour }: { hour: MapWeatherHour }) {
-  return (
-    <View style={styles.hourPill}>
+function HourPill({
+  hour,
+  active,
+  onPress,
+}: {
+  hour: MapWeatherHour;
+  active: boolean;
+  onPress?: () => void;
+}) {
+  const content = (
+    <View style={[styles.hourPill, active && styles.hourPillActive]}>
       <Text style={styles.hourLabel}>{hour.label}</Text>
       <Ionicons
         name="arrow-up"
@@ -116,17 +128,44 @@ function HourPill({ hour }: { hour: MapWeatherHour }) {
       </Text>
     </View>
   );
+
+  if (!onPress) return content;
+
+  return <Pressable onPress={onPress}>{content}</Pressable>;
 }
 
-export function MapWeatherPanel({ forecast, tideSummary, loading = false, compact = false, onClose }: Props) {
+export function MapWeatherPanel({
+  forecast,
+  tideSummary,
+  loading = false,
+  compact = false,
+  onClose,
+  selectedWindHourIndex = 0,
+  onSelectWindHour,
+  windPlaybackActive = false,
+  onToggleWindPlayback,
+}: Props) {
   const current = forecast?.current;
-  const hourly = (forecast?.hourly ?? []).slice(0, compact ? 4 : 6);
-  const currentDirection = directionToCompass(current?.windDirectionDeg);
+  const forecastHours = forecast?.hourly ?? [];
+  const boundedSelectedIndex =
+    forecastHours.length > 0
+      ? Math.max(0, Math.min(selectedWindHourIndex, forecastHours.length - 1))
+      : 0;
+  const selectedHour = forecastHours[boundedSelectedIndex] ?? null;
+  const hourly = forecastHours.slice(0, 8);
+  const displayWindMph = selectedHour?.windMph ?? current?.windMph ?? 0;
+  const displayGustMph = selectedHour?.gustMph ?? current?.gustMph ?? null;
+  const displayDirectionDeg = selectedHour?.windDirectionDeg ?? current?.windDirectionDeg;
+  const displayTempF = selectedHour?.tempF ?? current?.tempF ?? 0;
+  const displayWaveHeightFt = selectedHour?.waveHeightFt ?? current?.waveHeightFt ?? null;
+  const displayPrecipitation =
+    selectedHour?.precipitationProbability ?? current?.precipitationProbability ?? null;
+  const currentDirection = directionToCompass(displayDirectionDeg);
   const currentFlow = currentLabel(current);
   const tideQuick = tideLabel(tideSummary);
   const compactMeta = [
-    current ? `${current.tempF}\u00B0 air` : null,
-    current?.gustMph ? `gust ${current.gustMph}` : null,
+    forecast ? `${displayTempF}\u00B0 air` : null,
+    displayGustMph ? `gust ${displayGustMph}` : null,
     tideQuick ? `tide ${tideQuick}` : null,
     currentFlow ? `current ${currentFlow}` : null,
   ].filter(Boolean).join(' · ');
@@ -137,13 +176,24 @@ export function MapWeatherPanel({ forecast, tideSummary, loading = false, compac
         <View style={styles.headerCopy}>
           <Text style={styles.eyebrow}>Wind & Conditions</Text>
           <Text style={styles.title}>
-            {current ? `${current.windMph} mph ${currentDirection}` : loading ? 'Loading wind' : 'Wind unavailable'}
+            {forecast ? `${displayWindMph} mph ${currentDirection}` : loading ? 'Loading wind' : 'Wind unavailable'}
           </Text>
           <Text style={styles.subtitle}>
-            {forecast ? `Map center · refreshed ${labelTime(forecast.updatedAt)}` : 'Forecast tuned to the current map view'}
+            {forecast
+              ? `${selectedHour?.label ?? 'Now'} · refreshed ${labelTime(forecast.updatedAt)}`
+              : 'Forecast tuned to the current map view'}
           </Text>
         </View>
         <View style={styles.headerActions}>
+          {onToggleWindPlayback && forecastHours.length > 1 ? (
+            <Pressable style={styles.headerCloseWrap} onPress={onToggleWindPlayback}>
+              <Ionicons
+                name={windPlaybackActive ? 'pause' : 'play'}
+                size={15}
+                color={palette.accentDeep}
+              />
+            </Pressable>
+          ) : null}
           <View style={styles.headerBadge}>
             {loading ? (
               <ActivityIndicator size="small" color={palette.accent} />
@@ -168,20 +218,20 @@ export function MapWeatherPanel({ forecast, tideSummary, loading = false, compac
           <View
             style={[
               styles.windArrowWrap,
-              { backgroundColor: `${windColor(current?.windMph ?? 0)}1A` },
+              { backgroundColor: `${windColor(displayWindMph)}1A` },
             ]}
           >
             <Ionicons
               name="arrow-up"
               size={16}
-              color={windColor(current?.windMph ?? 0)}
-              style={{ transform: [{ rotate: `${((current?.windDirectionDeg ?? 0) + 180) % 360}deg` }] }}
+              color={windColor(displayWindMph)}
+              style={{ transform: [{ rotate: `${((displayDirectionDeg ?? 0) + 180) % 360}deg` }] }}
             />
           </View>
           <View style={styles.windHeroCopy}>
-            <Text style={styles.windHeroValue}>{current ? `${current.windMph} mph` : '--'}</Text>
+            <Text style={styles.windHeroValue}>{forecast ? `${displayWindMph} mph` : '--'}</Text>
             <Text style={styles.windHeroSub}>
-              {current?.gustMph ? `gust ${current.gustMph} · ${currentDirection}` : currentDirection}
+              {displayGustMph ? `gust ${displayGustMph} · ${currentDirection}` : currentDirection}
             </Text>
           </View>
         </View>
@@ -194,13 +244,17 @@ export function MapWeatherPanel({ forecast, tideSummary, loading = false, compac
             <SmallStat
               icon="thermometer-outline"
               label="Air"
-              value={current ? `${current.tempF}°` : '--'}
+              value={forecast ? `${displayTempF}°` : '--'}
               tint="#355B75"
             />
             <SmallStat
               icon="water-outline"
               label="Sea"
-              value={seaStateLabel(current)}
+              value={
+                displayWaveHeightFt != null
+                  ? `${displayWaveHeightFt.toFixed(1)} ft`
+                  : seaStateLabel(current)
+              }
               tint="#5D8FCB"
             />
           </View>
@@ -212,11 +266,11 @@ export function MapWeatherPanel({ forecast, tideSummary, loading = false, compac
             {currentFlow ? (
               <SmallStat icon="navigate-outline" label="Current" value={currentFlow} tint="#699C8C" />
             ) : null}
-            {current?.precipitationProbability != null ? (
+            {displayPrecipitation != null ? (
               <SmallStat
                 icon="rainy-outline"
                 label="Rain"
-                value={`${current.precipitationProbability}%`}
+                value={`${displayPrecipitation}%`}
                 tint="#7A8FB5"
               />
             ) : null}
@@ -230,7 +284,18 @@ export function MapWeatherPanel({ forecast, tideSummary, loading = false, compac
         contentContainerStyle={[styles.hourlyRow, compact && styles.hourlyRowCompact]}
       >
         {hourly.length > 0 ? (
-          hourly.map((hour) => <HourPill key={hour.time} hour={hour} />)
+          hourly.map((hour, index) => (
+            <HourPill
+              key={hour.time}
+              hour={hour}
+              active={index === boundedSelectedIndex}
+              onPress={
+                onSelectWindHour
+                  ? () => onSelectWindHour(index)
+                  : undefined
+              }
+            />
+          ))
         ) : (
           <View style={styles.emptyState}>
             <Ionicons name="cloudy-outline" size={16} color={palette.textMuted} />
@@ -433,6 +498,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 9,
     alignItems: 'center',
+  },
+  hourPillActive: {
+    backgroundColor: 'rgba(21, 101, 192, 0.12)',
+    borderColor: 'rgba(21, 101, 192, 0.28)',
   },
   hourLabel: {
     color: palette.textSecondary,

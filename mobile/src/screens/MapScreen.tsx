@@ -245,6 +245,16 @@ import {
   type RouteMetrics,
   type ShallowWarning,
 } from '../services/routePlanner';
+import {
+  buildNavigationField,
+  evaluateRouteAgainstNavigationField,
+  navigationFieldToGeoJSON,
+  probeNavigationField,
+  routeWaypointsThroughNavigationField,
+  snapPointToNavigationField,
+  type NavigationField,
+  type NavigationFieldSample,
+} from '../services/navigationField';
 import { getMapWeatherForecast, type MapWeatherForecast } from '../services/mapWeatherForecast';
 import {
   getNextTide,
@@ -3471,6 +3481,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [routeWarnings, setRouteWarnings] = useState<ShallowWarning[]>([]);
   const [routeAlerts, setRouteAlerts] = useState<string[]>([]);
   const [routeBoatProfile, setRouteBoatProfile] = useState<BoatRouteProfile | null>(null);
+  const [routeNavigationField, setRouteNavigationField] = useState<NavigationField | null>(null);
   const [routeDepthChecking, setRouteDepthChecking] = useState(false);
   const [routeNavActive, setRouteNavActive] = useState(false);
   const [routeNavIndex, setRouteNavIndex] = useState(1);
@@ -3497,6 +3508,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [windEnabled, setWindEnabled] = useState(false);
   const [windVectorCount, setWindVectorCount] = useState(0);
   const [windLoading, setWindLoading] = useState(false);
+  const [windForecastIndex, setWindForecastIndex] = useState(0);
+  const [windForecastPlaying, setWindForecastPlaying] = useState(false);
   const [mapViewportCenter, setMapViewportCenter] = useState<{ lat: number; lon: number } | null>(null);
   const [mapFeatureLocationMode, setMapFeatureLocationMode] = useState<'current' | 'map-center'>('current');
   const [mapWeatherForecast, setMapWeatherForecast] = useState<MapWeatherForecast | null>(null);
@@ -4014,6 +4027,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     setRouteMetrics(null);
     setRouteWarnings([]);
     setRouteAlerts([]);
+    setRouteNavigationField(null);
     setRouteTurnSheetVisible(false);
     setPendingRouteDestination(null);
     setRoutePlacementMode('start');
@@ -4032,35 +4046,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
   const [currentZoom, setCurrentZoom] = useState(3.5);
 
-  const probeRoutePoint = useCallback(async (point: RouteLatLng) => {
-    if (!mapRef.current?.getPointInView || !mapRef.current?.queryRenderedFeaturesAtPoint) {
-      return { onWater: true, depthM: null };
-    }
-
-    try {
-      const screenPoint = await mapRef.current.getPointInView([point.lon, point.lat]);
-      const waterResult = await mapRef.current.queryRenderedFeaturesAtPoint(
-        screenPoint,
-        undefined,
-        ['water', 'water-polygon', 'waterway'],
-      );
-      const bathyResult = await mapRef.current.queryRenderedFeaturesAtPoint(
-        screenPoint,
-        undefined,
-        [...getBathyLayerIds('fill'), ...getBathyLayerIds('line')],
-      );
-      const depth = getDepthFromRenderedFeatures(bathyResult);
-      const hasBathyWater = !!bathyResult?.features?.length || depth?.depthM != null;
-      return {
-        onWater: !!waterResult?.features?.length || hasBathyWater,
-        depthM: depth?.depthM ?? null,
-      };
-    } catch {
-      return { onWater: true, depthM: null };
-    }
-  }, []);
-
-  const probeWaterAtScreenPoint = useCallback(async (screenPoint: [number, number]) => {
+  const sampleRouteScreenPoint = useCallback(async (
+    screenPoint: [number, number],
+  ): Promise<NavigationFieldSample | null> => {
     if (!mapRef.current?.getCoordinateFromView || !mapRef.current?.queryRenderedFeaturesAtPoint) {
       return null;
     }
@@ -4080,24 +4068,126 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       );
       const depth = getDepthFromRenderedFeatures(bathyResult);
       const hasBathyWater = !!bathyResult?.features?.length || depth?.depthM != null;
-      if (!waterResult?.features?.length && !hasBathyWater) {
-        return null;
-      }
 
       return {
         lat: coordinate[1],
         lon: coordinate[0],
-        depthFt: depth?.depthFt ?? null,
+        onWater: !!waterResult?.features?.length || hasBathyWater,
+        depthM: depth?.depthM ?? null,
       };
     } catch {
       return null;
     }
   }, []);
 
+  const findNearestWaterAtScreenPoint = useCallback(async (
+    screenPoint: [number, number],
+    maxRadiusPx: number = 96,
+  ): Promise<NavigationFieldSample | null> => {
+    const direct = await sampleRouteScreenPoint(screenPoint);
+    if (direct?.onWater) {
+      return direct;
+    }
+
+    const radiusSteps = [18, 36, 54, 72, maxRadiusPx];
+    const angleSteps = 12;
+    let best: NavigationFieldSample | null = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    let bestDepth = Number.NEGATIVE_INFINITY;
+
+    for (const radius of radiusSteps) {
+      for (let step = 0; step < angleSteps; step += 1) {
+        const angle = (Math.PI * 2 * step) / angleSteps;
+        const candidatePoint: [number, number] = [
+          screenPoint[0] + Math.cos(angle) * radius,
+          screenPoint[1] + Math.sin(angle) * radius,
+        ];
+        const sample = await sampleRouteScreenPoint(candidatePoint);
+        if (!sample?.onWater) continue;
+
+        const depthValue =
+          typeof sample.depthM === 'number' && Number.isFinite(sample.depthM)
+            ? sample.depthM
+            : Number.NEGATIVE_INFINITY;
+        if (
+          radius < bestDistance ||
+          (radius === bestDistance && depthValue > bestDepth)
+        ) {
+          best = sample;
+          bestDistance = radius;
+          bestDepth = depthValue;
+        }
+      }
+      if (best) {
+        return best;
+      }
+    }
+
+    return null;
+  }, [sampleRouteScreenPoint]);
+
+  const probeRoutePoint = useCallback(async (point: RouteLatLng) => {
+    if (!mapRef.current?.getPointInView) {
+      return { onWater: false, depthM: null };
+    }
+
+    try {
+      const projected = await mapRef.current.getPointInView([point.lon, point.lat]);
+      if (!Array.isArray(projected) || projected.length < 2) {
+        return { onWater: false, depthM: null };
+      }
+
+      const direct = await sampleRouteScreenPoint([projected[0], projected[1]]);
+      if (direct?.onWater) {
+        return { onWater: true, depthM: direct.depthM };
+      }
+
+      const snapped = await findNearestWaterAtScreenPoint(
+        [projected[0], projected[1]],
+        42,
+      );
+      if (
+        snapped &&
+        haversineDistance(point.lat, point.lon, snapped.lat, snapped.lon) <= 0.18
+      ) {
+        return { onWater: true, depthM: snapped.depthM };
+      }
+    } catch {
+      // Fall through to a conservative non-water result.
+    }
+
+    return { onWater: false, depthM: null };
+  }, [findNearestWaterAtScreenPoint, sampleRouteScreenPoint]);
+
+  const probeWaterAtScreenPoint = useCallback(async (screenPoint: [number, number]) => {
+    const sample = await sampleRouteScreenPoint(screenPoint);
+    if (!sample?.onWater) {
+      return null;
+    }
+    return {
+      lat: sample.lat,
+      lon: sample.lon,
+      depthFt:
+        typeof sample.depthM === 'number' && Number.isFinite(sample.depthM)
+          ? sample.depthM * FEET_PER_METER
+          : null,
+    };
+  }, [sampleRouteScreenPoint]);
+
   const handleAddRoutePointAtCenter = useCallback(async () => {
     const target = mapViewportCenter ?? userLocation;
     if (!target) return;
-    const routeProbe = await probeRoutePoint({ lat: target.lat, lon: target.lon });
+    const projected = mapRef.current?.getPointInView
+      ? await mapRef.current.getPointInView([target.lon, target.lat]).catch(() => null)
+      : null;
+    const snapped =
+      Array.isArray(projected) && projected.length >= 2
+        ? await findNearestWaterAtScreenPoint([projected[0], projected[1]], 84)
+        : null;
+    const resolvedPoint = snapped
+      ? { lat: snapped.lat, lon: snapped.lon }
+      : { lat: target.lat, lon: target.lon };
+    const routeProbe = snapped ? { onWater: true, depthM: snapped.depthM ?? null } : await probeRoutePoint(resolvedPoint);
     if (!routeProbe.onWater) {
       setRouteAlerts([
         pendingRouteDestination
@@ -4106,8 +4196,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       ]);
       return;
     }
-    placeRoutePoint({ lat: target.lat, lon: target.lon });
-  }, [mapViewportCenter, pendingRouteDestination, placeRoutePoint, probeRoutePoint, userLocation]);
+    placeRoutePoint(resolvedPoint);
+  }, [findNearestWaterAtScreenPoint, mapViewportCenter, pendingRouteDestination, placeRoutePoint, probeRoutePoint, userLocation]);
 
   const handlePullRouteToPoint = useCallback(async (point: RouteLatLng) => {
     if (routePoints.length < 2) return false;
@@ -4177,6 +4267,61 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     })();
   }, [probeRoutePoint]);
 
+  const buildRouteNavigationField = useCallback(async (
+    points: RouteLatLng[],
+  ): Promise<NavigationField | null> => {
+    if (!mapRef.current?.getPointInView) {
+      return null;
+    }
+
+    const projectedPoints = (
+      await Promise.all(
+        points.map(async (point) => {
+          try {
+            const projected = await mapRef.current.getPointInView([point.lon, point.lat]);
+            if (!Array.isArray(projected) || projected.length < 2) {
+              return null;
+            }
+            return [Number(projected[0]), Number(projected[1])] as [number, number];
+          } catch {
+            return null;
+          }
+        }),
+      )
+    ).filter(Boolean) as Array<[number, number]>;
+
+    const baseTop = 128;
+    const baseBottom = Math.max(
+      baseTop + 140,
+      SCREEN_HEIGHT - Math.max(currentHeight.current + 36, 220),
+    );
+    let left = 24;
+    let right = SCREEN_WIDTH - 24;
+    let top = baseTop;
+    let bottom = baseBottom;
+
+    if (projectedPoints.length >= 2) {
+      const xs = projectedPoints.map((point) => point[0]);
+      const ys = projectedPoints.map((point) => point[1]);
+      left = Math.max(24, Math.min(...xs) - 96);
+      right = Math.min(SCREEN_WIDTH - 24, Math.max(...xs) + 96);
+      top = Math.max(baseTop, Math.min(...ys) - 96);
+      bottom = Math.min(baseBottom, Math.max(...ys) + 120);
+    }
+
+    const frameWidth = Math.max(right - left, 180);
+    const frameHeight = Math.max(bottom - top, 180);
+    const cols = Math.max(12, Math.min(26, Math.round(frameWidth / 42)));
+    const rows = Math.max(10, Math.min(20, Math.round(frameHeight / 44)));
+
+    return buildNavigationField({
+      frame: { left, right, top, bottom },
+      cols,
+      rows,
+      sampler: sampleRouteScreenPoint,
+    });
+  }, [sampleRouteScreenPoint]);
+
   const buildLakeFishabilityField = useCallback(async (): Promise<GeoJSON.FeatureCollection | null> => {
     const fieldCenter = mapViewportCenter ?? userLocation;
     if (!fieldCenter || !mapRef.current?.getCoordinateFromView || !mapRef.current?.queryRenderedFeaturesAtPoint) {
@@ -4237,13 +4382,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   }, [currentZoom, locations, mapViewportCenter, markerMode, probeWaterAtScreenPoint, userLocation]);
 
   useEffect(() => {
-    let cancelled = false;
-
     if (!routeBoatProfile || routePoints.length < 2) {
       setPlannedRoute(null);
       setRouteMetrics(null);
       setRouteWarnings([]);
       setRouteAlerts([]);
+      setRouteNavigationField(null);
       if (routePoints.length < 2) {
         setRouteNavActive(false);
         setRouteNavIndex(1);
@@ -4253,54 +4397,144 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       return undefined;
     }
 
+    if (!routeNavActive && routePoints.length >= 2 && cameraRef.current?.fitBounds) {
+      const lats = routePoints.map((point) => point.lat);
+      const lons = routePoints.map((point) => point.lon);
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLon = Math.min(...lons);
+      const maxLon = Math.max(...lons);
+
+      if (Math.abs(maxLat - minLat) > 0.0002 || Math.abs(maxLon - minLon) > 0.0002) {
+        cameraRef.current.fitBounds(
+          [maxLon, maxLat],
+          [minLon, minLat],
+          [140, 72, Math.max(currentHeight.current + 90, 240), 72],
+          550,
+        );
+      }
+    }
+
+    let cancelled = false;
     setRouteDepthChecking(true);
 
-    Promise.resolve()
-      .then(async () => {
-        const routedWaypoints = await autorouteWaypoints(
-          routePoints,
-          routeBoatProfile.draftMeters,
-          probeRoutePoint,
-        );
-        const rerouted = routedWaypoints.length > routePoints.length;
-        const baseRoute = createRoute(routedWaypoints, routeName || undefined);
-        const baseMetrics = calculateRouteMetrics(baseRoute, routeBoatProfile);
-        const seededRoute = { ...baseRoute, metrics: baseMetrics };
+    void (async () => {
+      try {
+        if (!routeNavActive) {
+          await new Promise((resolve) => setTimeout(resolve, 240));
+        }
+        const navField = await buildRouteNavigationField(routePoints);
+        if (cancelled) return;
+        setRouteNavigationField(navField);
+
+        const snappedWaypoints = navField
+          ? routePoints.map((point) =>
+              snapPointToNavigationField(
+                navField,
+                point,
+                Math.max(navField.cellSpacingNm * 3.4, 0.18),
+              ) ?? point,
+            )
+          : routePoints;
+
+        const snappedChanged = snappedWaypoints.some((point, index) => {
+          const original = routePoints[index];
+          return haversineDistance(point.lat, point.lon, original.lat, original.lon) > 0.03;
+        });
+
+        const fieldRouted = navField
+          ? routeWaypointsThroughNavigationField(
+              navField,
+              snappedWaypoints,
+              routeBoatProfile.draftMeters,
+            )
+          : null;
+
+        const routedWaypoints =
+          fieldRouted ??
+          (await autorouteWaypoints(
+            snappedWaypoints,
+            routeBoatProfile.draftMeters,
+            navField
+              ? async (point) => probeNavigationField(navField, point)
+              : probeRoutePoint,
+          ));
+
+        let route = createRoute(routedWaypoints, routeName || undefined);
+        const rerouted =
+          snappedChanged ||
+          routedWaypoints.length > snappedWaypoints.length;
+
+        if (navField) {
+          const fieldAssessment = evaluateRouteAgainstNavigationField(
+            route.segments,
+            navField,
+            routeBoatProfile.draftMeters,
+          );
+          route = {
+            ...route,
+            segments: route.segments.map((segment, index) => ({
+              ...segment,
+              minDepthM: fieldAssessment.segmentDepths[index] ?? null,
+            })),
+          };
+          const metrics = calculateRouteMetrics(route, routeBoatProfile);
+          if (cancelled) return;
+          setPlannedRoute({ ...route, metrics });
+          setRouteMetrics(metrics);
+          setRouteWarnings(fieldAssessment.warnings as ShallowWarning[]);
+          setRouteAlerts(
+            [
+              rerouted
+                ? 'Autoroute hugged safe water instead of cutting straight across land or shoals.'
+                : null,
+              navField.coveragePct < 35
+                ? 'Depth coverage is sparse in this view, so unknown cells stay conservative.'
+                : null,
+            ].filter(Boolean) as string[],
+          );
+          return;
+        }
+
+        const seededMetrics = calculateRouteMetrics(route, routeBoatProfile);
+        const seededRoute = { ...route, metrics: seededMetrics };
         if (!cancelled) {
           setPlannedRoute(seededRoute);
-          setRouteMetrics(baseMetrics);
-          setRouteWarnings(baseMetrics.shallowWarnings);
+          setRouteMetrics(seededMetrics);
+          setRouteWarnings(seededMetrics.shallowWarnings);
           setRouteAlerts(
             rerouted
-              ? ['Auto-adjusted around land or shallow water where possible']
+              ? ['Auto-adjusted around land or shallow water where possible.']
               : [],
           );
         }
-        return checkRouteDepth(seededRoute, routeBoatProfile.draftMeters);
-      })
-      .then(({ route, warnings }) => {
+
+        const { route: depthCheckedRoute, warnings } = await checkRouteDepth(
+          seededRoute,
+          routeBoatProfile.draftMeters,
+        );
         if (cancelled) return;
-        const metrics = calculateRouteMetrics(route, routeBoatProfile);
-        setPlannedRoute({ ...route, metrics });
+        const metrics = calculateRouteMetrics(depthCheckedRoute, routeBoatProfile);
+        setPlannedRoute({ ...depthCheckedRoute, metrics });
         setRouteMetrics(metrics);
         setRouteWarnings(warnings);
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) {
           setRouteWarnings([]);
           setRouteAlerts([]);
+          setRouteNavigationField(null);
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) {
           setRouteDepthChecking(false);
         }
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [probeRoutePoint, routeBoatProfile, routeName, routePoints]);
+  }, [buildRouteNavigationField, probeRoutePoint, routeBoatProfile, routeName, routeNavActive, routePoints]);
 
   useEffect(() => {
     if (!(routeMode || routePoints.length > 0)) {
@@ -5391,8 +5625,32 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   useEffect(() => {
     if (!windEnabled) {
       setWindVectorCount(0);
+      setWindForecastIndex(0);
+      setWindForecastPlaying(false);
     }
   }, [windEnabled]);
+
+  useEffect(() => {
+    const forecastCount = mapWeatherForecast?.hourly.length ?? 0;
+    if (forecastCount <= 0) {
+      setWindForecastIndex(0);
+      return;
+    }
+    setWindForecastIndex((prev) => Math.max(0, Math.min(prev, forecastCount - 1)));
+  }, [mapWeatherForecast?.hourly.length]);
+
+  useEffect(() => {
+    const forecastCount = mapWeatherForecast?.hourly.length ?? 0;
+    if (!windEnabled || !windForecastPlaying || forecastCount <= 1) {
+      return undefined;
+    }
+
+    const timer = setInterval(() => {
+      setWindForecastIndex((prev) => (prev + 1) % forecastCount);
+    }, 1400);
+
+    return () => clearInterval(timer);
+  }, [mapWeatherForecast?.hourly.length, windEnabled, windForecastPlaying]);
 
   // ── Precipitation radar data fetching ─────────────────────────────
   useEffect(() => {
@@ -6126,27 +6384,29 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           : null;
 
       (async () => {
-        const waterPoint = screenPoint
-          ? await probeWaterAtScreenPoint(screenPoint as [number, number])
+        const snappedWaterPoint = screenPoint
+          ? await findNearestWaterAtScreenPoint(screenPoint as [number, number], 96)
           : null;
-        if (screenPoint && !waterPoint) {
+        if (screenPoint && !snappedWaterPoint) {
           setRouteAlerts([
             pendingRouteDestination
               ? 'Pick a starting point on the water before routing to that destination.'
-              : 'Route points need to be placed on the water.',
+              : 'Tap near the water and I’ll snap the route point onto it.',
           ]);
           return;
         }
 
-        const candidatePoint = waterPoint
-          ? { lat: waterPoint.lat, lon: waterPoint.lon }
+        const candidatePoint = snappedWaterPoint
+          ? { lat: snappedWaterPoint.lat, lon: snappedWaterPoint.lon }
           : { lat, lon: lng };
-        const fallbackProbe = !waterPoint ? await probeRoutePoint(candidatePoint) : { onWater: true, depthM: null };
+        const fallbackProbe = !snappedWaterPoint
+          ? await probeRoutePoint(candidatePoint)
+          : { onWater: true, depthM: snappedWaterPoint.depthM ?? null };
         if (!fallbackProbe.onWater) {
           setRouteAlerts([
             pendingRouteDestination
               ? 'Pick a starting point on the water before routing to that destination.'
-              : 'Route points need to be placed on the water.',
+              : 'Tap near the water and I’ll snap the route point onto it.',
           ]);
           return;
         }
@@ -6329,7 +6589,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     // Clear contextual tips (Feature 1)
     setContextualTips([]);
     setContextualTipsDismissed(false);
-  }, [routeMode, probeWaterAtScreenPoint, pendingRouteDestination, probeRoutePoint, placeRoutePoint, measureMode, annotationMode, annotationTool, annotationColor, annotationIcon, arrowStart, handleSaveAnnotation, activeOverlays, currentZoom, animateSheetTo, clearSelectedContour, navigation]);
+  }, [routeMode, findNearestWaterAtScreenPoint, pendingRouteDestination, probeRoutePoint, placeRoutePoint, measureMode, annotationMode, annotationTool, annotationColor, annotationIcon, arrowStart, handleSaveAnnotation, activeOverlays, currentZoom, animateSheetTo, clearSelectedContour, navigation]);
 
   // ── Derived ─────────────────────────────────────────────────────
   const waypointIonicon = (wpIcon: WaypointIcon): string =>
@@ -6370,6 +6630,17 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const routeWarningGeoJSON = useMemo(
     () => makeRouteWarningGeoJSON(routeWarnings, isMetric),
     [isMetric, routeWarnings],
+  );
+
+  const routeZoneGeoJSON = useMemo(
+    () =>
+      routeNavigationField && routeBoatProfile?.draftMeters != null
+        ? navigationFieldToGeoJSON(routeNavigationField, routeBoatProfile.draftMeters, {
+            includeSafe: true,
+            includeLand: true,
+          })
+        : null,
+    [routeBoatProfile?.draftMeters, routeNavigationField],
   );
 
   const routeTurnItems = useMemo(() => {
@@ -6816,7 +7087,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             ? {
                 primary: `${windVectorCount} live wind arrows`,
                 secondary: mapWeatherForecast
-                  ? `${mapWeatherForecast.current.windMph} mph at the map center`
+                  ? `${(mapWeatherForecast.hourly[windForecastIndex]?.windMph ?? mapWeatherForecast.current.windMph)} mph at ${mapWeatherForecast.hourly[windForecastIndex]?.label ?? 'the map center'}`
                   : 'Forecast pinned to the map center',
                 icon: 'flag',
                 color: '#1565C0',
@@ -7501,7 +7772,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Draft accessibility overlay (safe/caution/danger for boat draft) */}
-        {(draftAccessEnabled || navPresentationActive) && shouldMountMarineDetailOverlays && mapFeatureLocation && ShapeSource && CircleLayer && SymbolLayer && (
+        {(draftAccessEnabled || (navPresentationActive && !routeZoneGeoJSON)) && shouldMountMarineDetailOverlays && mapFeatureLocation && ShapeSource && CircleLayer && SymbolLayer && (
           <DraftAccessibilityOverlay
             lat={navPresentationActive ? (userLocation?.lat ?? mapFeatureLocation.lat) : mapFeatureLocation.lat}
             lon={navPresentationActive ? (userLocation?.lon ?? mapFeatureLocation.lon) : mapFeatureLocation.lon}
@@ -8641,6 +8912,27 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           CircleLayer &&
           SymbolLayer && (
           <>
+            {navPresentationActive && routeZoneGeoJSON && (
+              <ShapeSource id="route-zone-source" shape={routeZoneGeoJSON as any}>
+                <CircleLayer
+                  id="route-zone-circles"
+                  style={{
+                    circleRadius: ['get', 'radiusPx'],
+                    circleColor: ['get', 'color'],
+                    circleOpacity: ['get', 'opacity'],
+                    circleStrokeWidth: [
+                      'match',
+                      ['get', 'zone'],
+                      'danger', 0.9,
+                      'caution', 0.9,
+                      0,
+                    ] as any,
+                    circleStrokeColor: 'rgba(255,255,255,0.72)',
+                  }}
+                />
+              </ShapeSource>
+            )}
+
             {routeCorridorGeoJSON && FillLayer && (
               <ShapeSource id="route-corridor-source" shape={routeCorridorGeoJSON as any}>
                 <FillLayer
@@ -9230,14 +9522,16 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           })}
 
         {/* Wind overlay */}
-        {windEnabled && ShapeSource && CircleLayer && SymbolLayer && (
+        {windEnabled && ShapeSource && CircleLayer && SymbolLayer && LineLayer && (
           <WindOverlayAnimated
             lat={mapFeatureLocation?.lat ?? DEFAULT_CENTER[1]}
             lon={mapFeatureLocation?.lon ?? DEFAULT_CENTER[0]}
             bounds={visibleContourBounds}
+            forecastHourIndex={windForecastIndex}
             ShapeSource={ShapeSource}
             SymbolLayer={SymbolLayer}
             CircleLayer={CircleLayer}
+            LineLayer={LineLayer}
             onLoadStart={() => setWindLoading(true)}
             onLoadEnd={() => setWindLoading(false)}
             onDataLoaded={({ vectorCount }) => setWindVectorCount(vectorCount)}
@@ -9753,6 +10047,17 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             tideSummary={mapTideSummary}
             compact={windEnabled && !radarEnabled && !dynamicDepthsEnabled}
             loading={mapWeatherLoading || windLoading}
+            selectedWindHourIndex={windForecastIndex}
+            onSelectWindHour={(index) => {
+              setWindForecastPlaying(false);
+              setWindForecastIndex(index);
+            }}
+            windPlaybackActive={windForecastPlaying}
+            onToggleWindPlayback={
+              windEnabled
+                ? () => setWindForecastPlaying((prev) => !prev)
+                : undefined
+            }
             onClose={() => setMapWeatherPanelDismissed(true)}
           />
         </Animated.View>
