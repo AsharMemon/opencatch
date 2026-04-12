@@ -19,6 +19,8 @@ import {
   Text,
   TextInput,
   TouchableWithoutFeedback,
+  type StyleProp,
+  type ViewStyle,
   View,
 } from 'react-native';
 import type { AppStateStatus } from 'react-native';
@@ -39,6 +41,7 @@ let FillLayer: any = null;
 let setAccessToken: any = (_: any) => {};
 type CameraRef = any;
 type MapViewRef = any;
+type RoutePlacementMode = 'start' | 'stop' | 'end';
 
 try {
   const maplibre = require('@maplibre/maplibre-react-native');
@@ -64,6 +67,7 @@ try {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { palette, getConditionBand, conditionConfig, scoreColor } from '../theme/palette';
 import { FishingTimeBanner } from '../components/FishingTimeBanner';
 import {
@@ -77,11 +81,10 @@ import {
 import { scheduleBestTimeNotification } from '../services/fishingNotifications';
 import { EnhancedSearchBar } from '../components/EnhancedSearchBar';
 import { SpotInsightsCard } from '../components/SpotInsightsCard';
-import { api, buildTileSourceUrl } from '../services/api';
+import { api, buildTileSourceUrl, buildTileTemplateUrl } from '../services/api';
 import { TILE_SERVER_DEPLOYED } from '../config/network';
 import { fetchNearbyMarinas, formatAmenities } from '../services/marinaDirectory';
 import type { MarinaPOI, MarinaPOIType } from '../services/marinaDirectory';
-import { fetchWindGrid, windGridToGeoJSON } from '../services/windOverlay';
 import {
   fetchRadarData,
   getRadarFrames,
@@ -109,10 +112,10 @@ import {
 } from '../services/weatherAlerts';
 import type { FishingLocation, Waypoint, WaypointIcon, BestFishingV2Entry } from '../types/models';
 import type { TabProps } from '../types/navigation';
-import { SpeedCourseHUD } from '../components/SpeedCourseHUD';
 import { NoWakeZoneOverlay } from '../components/NoWakeZoneOverlay';
 import { NavigationAidsOverlay } from '../components/NavigationAidsOverlay';
 import { ArtificialReefOverlay } from '../components/ArtificialReefOverlay';
+import { WindOverlayAnimated } from '../components/WindOverlayAnimated';
 import { WaveOverlayAnimated } from '../components/WaveOverlayAnimated';
 import { DepthNumberOverlay } from '../components/DepthNumberOverlay';
 import { MarineGasOverlay } from '../components/MarineGasOverlay';
@@ -123,7 +126,7 @@ import { SEABED_LEGEND_STOPS } from '../services/seabedCharacteristics';
 import { MaritimeBoundariesOverlay } from '../components/MaritimeBoundariesOverlay';
 import { USACESurveyOverlay } from '../components/USACESurveyOverlay';
 import { DraftAccessibilityOverlay } from '../components/DraftAccessibilityOverlay';
-import { DynamicDepthOverlay, TideBadge } from '../components/DynamicDepthOverlay';
+import { DynamicDepthOverlay } from '../components/DynamicDepthOverlay';
 import { IceThicknessOverlay } from '../components/IceThicknessOverlay';
 import { FishingPressureOverlay } from '../components/FishingPressureOverlay';
 import { BiteTimeOverlay } from '../components/BiteTimeOverlay';
@@ -135,7 +138,7 @@ import { ICE_LEGEND_STOPS } from '../components/IceThicknessOverlay';
 import { BITE_LEGEND_STOPS } from '../components/BiteTimeOverlay';
 import { TIDAL_LEGEND_STOPS } from '../components/TidalCurrentOverlay';
 import { getDefaultBoat } from '../services/boatProfile';
-import { aisReceiver } from '../services/aisWifiReceiver';
+import { aisReceiver, type MarineInstrumentData } from '../services/aisWifiReceiver';
 import {
   trackRecorder,
   buildSpeedColoredGeoJSON,
@@ -151,8 +154,19 @@ import {
   type BoundingBox,
 } from '../services/fishingSpotDiscovery';
 import { getTopFishingSpots, isStaticSpot } from '../data/topFishingSpots';
+import {
+  getCatalogLakeBoundsForLocationId,
+  getGpsLakeCatalogEntryById,
+  getNearbyCatalogLocations,
+  searchCatalogLocations,
+} from '../services/gpsLakeCatalog';
 import { cacheLocationDetail, prefetchLocationDetails } from '../services/locationDetailCache';
 import { clearLocationDataCache } from '../services/locationDataCache';
+import { useUnits } from '../hooks/useUnits';
+import {
+  buildLakeFishabilityGeoJSON,
+  type FishabilityProbe,
+} from '../services/lakeFishability';
 import {
   getTipsForWaterbody,
   inferWaterbodyType,
@@ -196,6 +210,11 @@ import {
   type LakeAttribution as ContourLakeAttribution,
 } from '../services/contourMapService';
 import {
+  detectCountry as detectSurveyCountry,
+  getBathymetryTileSource as getInternationalBathymetryTileSource,
+  getCanadianHydroNetworkTileSource,
+} from '../services/internationalSurveys';
+import {
   getAnchorStatus,
   addAnchorListener,
   anchorCircleGeoJSON,
@@ -206,11 +225,11 @@ import {
   addMOBListener,
   type MOBStatus,
 } from '../services/manOverboard';
-import { QuickActionFAB } from '../components/QuickActionFAB';
 import { MapToolsDrawer, type MapToolGroup, type OverlayInfoCard } from '../components/MapToolsDrawer';
 import { MapOverlayLoadingBanner } from '../components/MapOverlayLoadingBanner';
 import { CoachMarks } from '../components/CoachMarks';
 import { MapLongPressMenu, type LongPressAction, type LongPressCoordinate } from '../components/MapLongPressMenu';
+import { MapWeatherPanel, type MapTideSummary } from '../components/MapWeatherPanel';
 import { MapInfoBar, type AnchorWatchInfo, type RouteNavInfo } from '../components/MapInfoBar';
 import {
   calculateRouteMetrics,
@@ -226,6 +245,14 @@ import {
   type RouteMetrics,
   type ShallowWarning,
 } from '../services/routePlanner';
+import { getMapWeatherForecast, type MapWeatherForecast } from '../services/mapWeatherForecast';
+import {
+  getNextTide,
+  getUnifiedNearestTideStation,
+  getUnifiedTideHourly,
+  getUnifiedTidePredictions,
+  getUnifiedWaterLevel,
+} from '../services/tidesService';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -233,6 +260,64 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const DEFAULT_CENTER: [number, number] = [-95.0, 45.0]; // [lng, lat] — centered to show US + Canada
 const DEFAULT_ZOOM = 3.5;
+const LOCAL_BATHY_MIN_ZOOM = 8.5;
+const BROWSE_LAGOS_CONTOUR_MIN_ZOOM = LOCAL_BATHY_MIN_ZOOM;
+const CRITICAL_LAGOS_CONTOUR_MIN_ZOOM = 9.5;
+const DEFAULT_NEARBY_SKIP_PATTERNS = [
+  /\bunnamed\b/i,
+  /\bstorm\b/i,
+  /\bretention\b/i,
+  /\bdetention\b/i,
+  /\bwastewater\b/i,
+  /\bsewage\b/i,
+  /\btreatment\b/i,
+];
+
+function cleanLocationText(value: string | null | undefined): string {
+  return (value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function getPrimaryLocationLabel(location: FishingLocation): string {
+  return cleanLocationText(location.name) || cleanLocationText(location.subtitle) || 'Unnamed spot';
+}
+
+function getSecondaryLocationLabel(location: FishingLocation): string {
+  const name = cleanLocationText(location.name);
+  const subtitle = cleanLocationText(location.subtitle);
+  if (subtitle && subtitle !== name) return subtitle;
+  if (name) return 'Water body';
+  return 'Water body';
+}
+
+function isRenderableLocation(location: FishingLocation): boolean {
+  if (!Number.isFinite(location.lat) || !Number.isFinite(location.lon)) {
+    return false;
+  }
+  return Boolean(cleanLocationText(location.name) || cleanLocationText(location.subtitle));
+}
+
+function buildContourFeatureFilter(featureKinds: string | string[]): any[] {
+  const kindFilter = Array.isArray(featureKinds)
+    ? ['in', ['get', 'feature_kind'], ['literal', featureKinds]]
+    : ['==', ['get', 'feature_kind'], featureKinds];
+  return ['all', kindFilter];
+}
+
+function shouldIncludeInDefaultNearbyList(location: FishingLocation): boolean {
+  const name = `${cleanLocationText(location.name)} ${cleanLocationText(location.subtitle)}`.trim();
+  if (!name || DEFAULT_NEARBY_SKIP_PATTERNS.some((pattern) => pattern.test(name))) {
+    return false;
+  }
+  const lower = name.toLowerCase();
+  if (lower.includes('pond') && !lower.includes('millpond')) {
+    return false;
+  }
+  return true;
+}
+
+function isPrimaryMapLocation(location: FishingLocation): boolean {
+  return !location.id.startsWith('osm-') && !isStaticSpot(location.id);
+}
 
 // AsyncStorage keys for persisting last map view
 const MAP_STATE_KEY = 'opencatch_map_state';
@@ -284,6 +369,18 @@ function makeRoutePointGeoJSON(points: RouteLatLng[]): GeoJSON.FeatureCollection
       properties: {
         index: index + 1,
         label: index === 0 ? 'START' : index === points.length - 1 ? 'END' : `WP ${index}`,
+        markerKind:
+          index === 0
+            ? 'start'
+            : index === points.length - 1
+              ? 'end'
+              : 'waypoint',
+        shortLabel:
+          index === 0
+            ? 'A'
+            : index === points.length - 1
+              ? 'B'
+              : `${index}`,
       },
       geometry: {
         type: 'Point',
@@ -291,6 +388,186 @@ function makeRoutePointGeoJSON(points: RouteLatLng[]): GeoJSON.FeatureCollection
       },
     })),
   };
+}
+
+function makeRouteTargetGeoJSON(
+  point: RouteLatLng | null,
+  markerKind: 'destination' | 'start',
+  label: string,
+): GeoJSON.FeatureCollection | null {
+  if (!point) return null;
+  return {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        properties: {
+          markerKind,
+          label,
+          shortLabel: markerKind === 'destination' ? 'B' : 'A',
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: [point.lon, point.lat],
+        },
+      },
+    ],
+  };
+}
+
+function makeRouteWarningGeoJSON(
+  warnings: ShallowWarning[],
+  isMetric: boolean,
+): GeoJSON.FeatureCollection | null {
+  if (!warnings.length) return null;
+
+  return {
+    type: 'FeatureCollection',
+    features: warnings.map((warning, index) => {
+      const depthLabel = isMetric
+        ? `${warning.depthM.toFixed(1)} m`
+        : `${(warning.depthM * 3.28084).toFixed(0)} ft`;
+      const draftLabel = isMetric
+        ? `${warning.draftM.toFixed(1)} m`
+        : `${(warning.draftM * 3.28084).toFixed(0)} ft`;
+      const severity = warning.depthM < warning.draftM ? 'danger' : 'caution';
+
+      return {
+        type: 'Feature' as const,
+        id: `route-warning-${index}`,
+        properties: {
+          severity,
+          shortLabel: severity === 'danger' ? 'NO' : '!',
+          label: severity === 'danger' ? `No-go ${depthLabel}` : `Shallow ${depthLabel}`,
+          detail: `Need ${draftLabel}`,
+        },
+        geometry: {
+          type: 'Point' as const,
+          coordinates: [warning.position.lon, warning.position.lat],
+        },
+      };
+    }),
+  };
+}
+
+function normalizeBearingDelta(delta: number): number {
+  let normalized = ((delta + 180) % 360 + 360) % 360 - 180;
+  if (normalized === -180) normalized = 180;
+  return normalized;
+}
+
+function offsetCoordinateMeters(
+  point: RouteLatLng,
+  bearingDeg: number,
+  distanceMeters: number,
+): RouteLatLng {
+  const earthRadiusMeters = 6378137;
+  const angularDistance = distanceMeters / earthRadiusMeters;
+  const bearingRad = (bearingDeg * Math.PI) / 180;
+  const lat1 = (point.lat * Math.PI) / 180;
+  const lon1 = (point.lon * Math.PI) / 180;
+
+  const lat2 = Math.asin(
+    Math.sin(lat1) * Math.cos(angularDistance) +
+      Math.cos(lat1) * Math.sin(angularDistance) * Math.cos(bearingRad),
+  );
+  const lon2 =
+    lon1 +
+    Math.atan2(
+      Math.sin(bearingRad) * Math.sin(angularDistance) * Math.cos(lat1),
+      Math.cos(angularDistance) - Math.sin(lat1) * Math.sin(lat2),
+    );
+
+  return {
+    lat: (lat2 * 180) / Math.PI,
+    lon: (((lon2 * 180) / Math.PI + 540) % 360) - 180,
+  };
+}
+
+function buildRouteCorridorPolygon(
+  from: RouteLatLng,
+  to: RouteLatLng,
+  halfWidthMeters: number,
+): RouteLatLng[] {
+  const bearingDeg =
+    (Math.atan2(
+      Math.sin(((to.lon - from.lon) * Math.PI) / 180) * Math.cos((to.lat * Math.PI) / 180),
+      Math.cos((from.lat * Math.PI) / 180) * Math.sin((to.lat * Math.PI) / 180) -
+        Math.sin((from.lat * Math.PI) / 180) *
+          Math.cos((to.lat * Math.PI) / 180) *
+          Math.cos(((to.lon - from.lon) * Math.PI) / 180),
+    ) *
+      180) /
+      Math.PI;
+  const normalizedBearing = (bearingDeg + 360) % 360;
+  const leftBearing = normalizedBearing - 90;
+  const rightBearing = normalizedBearing + 90;
+  const leftStart = offsetCoordinateMeters(from, leftBearing, halfWidthMeters);
+  const leftEnd = offsetCoordinateMeters(to, leftBearing, halfWidthMeters);
+  const rightEnd = offsetCoordinateMeters(to, rightBearing, halfWidthMeters);
+  const rightStart = offsetCoordinateMeters(from, rightBearing, halfWidthMeters);
+  return [leftStart, leftEnd, rightEnd, rightStart, leftStart];
+}
+
+function getRouteSegmentSeverity(
+  minDepthM: number | null,
+  draftMeters: number | null | undefined,
+): 'safe' | 'caution' | 'danger' {
+  if (draftMeters == null || minDepthM == null || !Number.isFinite(minDepthM)) {
+    return 'safe';
+  }
+  if (minDepthM < draftMeters) return 'danger';
+  if (minDepthM < draftMeters + 0.8) return 'caution';
+  return 'safe';
+}
+
+function makeRouteCorridorGeoJSON(
+  route: PlannedRoute | null,
+  draftMeters: number | null | undefined,
+  navActive: boolean,
+  navIndex: number,
+  userLocation: RouteLatLng | null,
+): GeoJSON.FeatureCollection | null {
+  if (!route || route.segments.length === 0) return null;
+  const startSegmentIndex = navActive ? Math.max(navIndex - 1, 0) : 0;
+  const features: GeoJSON.Feature[] = [];
+
+  for (let segmentIndex = startSegmentIndex; segmentIndex < route.segments.length; segmentIndex++) {
+    const segment = route.segments[segmentIndex];
+    const from =
+      navActive && segmentIndex === startSegmentIndex && userLocation
+        ? userLocation
+        : segment.from;
+    const to = segment.to;
+    const severity = getRouteSegmentSeverity(segment.minDepthM, draftMeters);
+    const polygon = buildRouteCorridorPolygon(from, to, navActive ? 42 : 30);
+    const fillColor =
+      severity === 'danger'
+        ? '#C44B4B'
+        : severity === 'caution'
+          ? '#C96A18'
+          : '#2E7D5B';
+    features.push({
+      type: 'Feature',
+      properties: {
+        segmentIndex,
+        severity,
+        fillColor,
+        lineColor: fillColor,
+      },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [polygon.map((point) => [point.lon, point.lat])],
+      },
+    });
+  }
+
+  return features.length > 0
+    ? {
+        type: 'FeatureCollection',
+        features,
+      }
+    : null;
 }
 
 function toContourBounds(bounds: any): ContourSourceBounds | null {
@@ -326,6 +603,51 @@ function estimateBoundsFromCenter(center: RouteLatLng, zoom: number): ContourSou
   };
 }
 
+function boundsChangedEnough(
+  previous: ContourSourceBounds | null,
+  next: ContourSourceBounds | null,
+): boolean {
+  if (!next) return false;
+  if (!previous) return true;
+
+  const prevLatSpan = Math.max(previous.maxLat - previous.minLat, 0.0001);
+  const prevLonSpan = Math.max(previous.maxLon - previous.minLon, 0.0001);
+  const nextLatSpan = Math.max(next.maxLat - next.minLat, 0.0001);
+  const nextLonSpan = Math.max(next.maxLon - next.minLon, 0.0001);
+
+  const prevCenterLat = (previous.minLat + previous.maxLat) / 2;
+  const prevCenterLon = (previous.minLon + previous.maxLon) / 2;
+  const nextCenterLat = (next.minLat + next.maxLat) / 2;
+  const nextCenterLon = (next.minLon + next.maxLon) / 2;
+
+  const latShift = Math.abs(nextCenterLat - prevCenterLat);
+  const lonShift = Math.abs(nextCenterLon - prevCenterLon);
+  const latSpanChange = Math.abs(nextLatSpan - prevLatSpan) / prevLatSpan;
+  const lonSpanChange = Math.abs(nextLonSpan - prevLonSpan) / prevLonSpan;
+
+  return (
+    latShift > prevLatSpan * 0.18 ||
+    lonShift > prevLonSpan * 0.18 ||
+    latSpanChange > 0.2 ||
+    lonSpanChange > 0.2
+  );
+}
+
+function expandBounds(bounds: ContourSourceBounds, latPadFactor = 0.15, lonPadFactor = 0.15): ContourSourceBounds {
+  const latSpan = Math.max(bounds.maxLat - bounds.minLat, 0.01);
+  const lonSpan = Math.max(bounds.maxLon - bounds.minLon, 0.01);
+  return {
+    minLat: bounds.minLat - latSpan * latPadFactor,
+    maxLat: bounds.maxLat + latSpan * latPadFactor,
+    minLon: bounds.minLon - lonSpan * lonPadFactor,
+    maxLon: bounds.maxLon + lonSpan * lonPadFactor,
+  };
+}
+
+function pointWithinBounds(lat: number, lon: number, bounds: ContourSourceBounds): boolean {
+  return lat >= bounds.minLat && lat <= bounds.maxLat && lon >= bounds.minLon && lon <= bounds.maxLon;
+}
+
 function hexToRgb(color: string): [number, number, number] {
   const normalized = color.replace('#', '');
   return [
@@ -351,28 +673,37 @@ function mixHex(from: string, to: string, t: number): string {
 }
 
 function darkenHex(color: string, amount = 0.18): string {
-  return mixHex(color, '#15384C', amount);
+  return mixHex(color, '#27445D', amount);
 }
 
 function lightenHex(color: string, amount = 0.18): string {
-  return mixHex(color, '#F7FBFE', amount);
+  return mixHex(color, '#FCF8EF', amount);
 }
 
 function buildDepthBreaksFt(interval: number): number[] {
   const base = Math.max(interval, 1);
   return [
     0,
+    base * 0.125,
+    base * 0.25,
+    base * 0.375,
     base * 0.5,
+    base * 0.75,
     base,
+    base * 1.25,
     base * 1.5,
+    base * 1.75,
     base * 2,
+    base * 2.5,
     base * 3,
     base * 4,
+    base * 5,
     base * 6,
     base * 8,
+    base * 10,
     base * 12,
+    base * 15,
     base * 18,
-    base * 28,
   ].map((value) => Math.round(value * 10) / 10);
 }
 
@@ -390,6 +721,31 @@ function sampleColorRamp(colors: string[], count: number): string[] {
     out.push(frac <= 0 ? start : mixHex(start, end, frac));
   }
   return out;
+}
+
+function buildSteppedDepthExpression(
+  colors: string[],
+  breaks: number[],
+  fallback: string,
+  valueExpression: any = ['coalesce', ['get', 'depth_ft'], 0],
+): any[] {
+  const usableCount = Math.min(colors.length, breaks.length);
+  if (usableCount === 0) return fallback as any;
+  const expression: any[] = ['step', valueExpression, colors[0] ?? fallback];
+  for (let i = 1; i < usableCount; i++) {
+    expression.push(breaks[i], colors[i] ?? colors[i - 1] ?? fallback);
+  }
+  return expression as any;
+}
+
+function formatArrivalClock(isoTime?: string | null): string {
+  if (!isoTime) return '--';
+  const parsed = new Date(isoTime);
+  if (Number.isNaN(parsed.getTime())) return '--';
+  return parsed.toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }
 
 // ── Weather alert banner colors by severity ─────────────────────
@@ -427,7 +783,7 @@ const MAP_STYLE_IONICONS: Record<MapStyleKey, string> = {
   night: 'moon-outline',
   'nautical-chart': 'boat-outline',
 };
-const MAP_STYLE_KEYS: MapStyleKey[] = ['opencatch', 'hybrid', 'bathymetry', 'satellite', 'outdoors', 'topo', 'night', 'nautical-chart'];
+const MAP_STYLE_KEYS: MapStyleKey[] = ['opencatch', 'satellite', 'outdoors', 'night', 'nautical-chart'];
 
 // NOAA nautical chart raster tile URL
 const NOAA_CHART_TILE_URL = 'https://tileservice.charts.noaa.gov/tiles/50000_1/{z}/{x}/{y}.png';
@@ -480,9 +836,12 @@ const OVERLAY_LAYERS: OverlayLayer[] = [
   { key: 'parking', label: 'Parking', ionicon: 'car-outline', description: 'Parking lots and pull-offs near access' },
   { key: 'trails', label: 'Trails', ionicon: 'walk-outline', description: 'Named access trails and paths to water' },
   { key: 'nautical', label: 'Nautical Marks', ionicon: 'boat-outline', description: 'OpenSeaMap buoys, channels, marks', context: 'coastal' },
+  { key: 'marine-navigation', label: 'NOAA Marine Navigation', ionicon: 'boat-outline', description: 'Maintained channels, shipping regulations, maritime boundaries', context: 'coastal' },
+  { key: 'river-network', label: 'River Network', ionicon: 'git-network-outline', description: 'Official USGS + NHN river-network backbone across North America' },
+  { key: 'river-navigation', label: 'USACE River Navigation', ionicon: 'git-branch-outline', description: 'Official river depth areas, contours, wrecks, and bridges' },
   { key: 'shaded-relief', label: 'Shaded Relief', ionicon: 'layers-outline', description: '3D terrain and elevation' },
   { key: 'water-flow', label: 'Hydrology', ionicon: 'water-outline', description: 'USGS streams & water features' },
-  { key: 'depth-contours', label: 'Depth Contours', ionicon: 'resize-outline', description: 'GEBCO bathymetry lines' },
+  { key: 'depth-contours', label: 'Depth Contours', ionicon: 'resize-outline', description: 'Official coastal and global bathymetry' },
   { key: 'no-wake-zones', label: 'No-Wake Zones', ionicon: 'speedometer-outline', description: 'Speed-restricted areas on water', context: 'coastal' },
   { key: 'nav-aids', label: 'Nav Aids', ionicon: 'radio-outline', description: 'Buoys, lights, channel markers', context: 'coastal' },
   { key: 'artificial-reefs', label: 'Artificial Reefs', ionicon: 'flag-outline', description: 'State artificial reef GPS locations', context: 'coastal' },
@@ -506,9 +865,13 @@ const TILE_LAYER_NAMES = {
   bathymetryContours: 'bathymetry_contours',
   publicLands: 'public_lands',
   accessPoints: 'access_points',
+  oceanContours: 'ocean_contours',
+  riverNetwork: 'na_river_network',
 } as const;
 
 const ENABLE_EXPERIMENTAL_VECTOR_OVERLAYS = true;
+const ENABLE_VECTOR_OCEAN_BATHY = process.env.EXPO_PUBLIC_USE_VECTOR_OCEAN_BATHY !== '0';
+const SHOW_RASTER_OCEAN_UNDERLAY = !ENABLE_VECTOR_OCEAN_BATHY;
 const GLYPH_URL = 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf';
 const FONT_STACKS = {
   regular: ['Open Sans Regular'],
@@ -520,10 +883,6 @@ const FONT_STACKS = {
 const DEFAULT_VECTOR_OVERLAYS = new Set([
   'local-bathymetry',
   'depth-contours',
-  'public-lands',
-  'access-points',
-  'parking',
-  'trails',
 ]);
 
 const WIND_LEGEND_STOPS = [
@@ -614,14 +973,14 @@ const BATHYMETRY_STYLE: object = {
           'interpolate',
           ['linear'],
           ['zoom'],
-          0, '#2A6F96',
-          4, '#2F7CA6',
-          6, '#4396BF',
-          8, '#65B2D1',
-          10, '#8DC9E0',
-          14, '#C6E4F2',
+          0, '#235D80',
+          4, '#2B7298',
+          6, '#3D8FB8',
+          8, '#59ABD0',
+          10, '#86CAE3',
+          14, '#D5EFF8',
         ],
-        'fill-opacity': 0.96,
+        'fill-opacity': 0.98,
       },
     },
 
@@ -640,9 +999,27 @@ const BATHYMETRY_STYLE: object = {
           ['linear'],
           ['zoom'],
           0, 0,
-          5, 0.08,
-          8, 0.14,
-          12, 0.07,
+          5, 0.12,
+          8, 0.2,
+          12, 0.1,
+        ],
+      },
+    },
+    {
+      id: 'water-shelf-highlight',
+      type: 'fill',
+      source: 'openmaptiles',
+      'source-layer': 'water',
+      paint: {
+        'fill-color': '#F4FBFE',
+        'fill-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          0, 0.01,
+          5, 0.05,
+          8, 0.08,
+          12, 0.04,
         ],
       },
     },
@@ -658,10 +1035,10 @@ const BATHYMETRY_STYLE: object = {
           'interpolate',
           ['linear'],
           ['zoom'],
-          0, 0.04,
-          5, 0.1,
-          8, 0.18,
-          12, 0.12,
+          0, 0.06,
+          5, 0.14,
+          8, 0.24,
+          12, 0.16,
         ],
       },
     },
@@ -676,15 +1053,15 @@ const BATHYMETRY_STYLE: object = {
           'interpolate',
           ['linear'],
           ['zoom'],
-          0, 0.2,
-          6, 0.32,
-          10, 0.28,
-          14, 0.18,
+          0, 0.24,
+          6, 0.38,
+          10, 0.34,
+          14, 0.2,
         ],
-        'raster-contrast': 0.28,
-        'raster-saturation': -0.45,
+        'raster-contrast': 0.36,
+        'raster-saturation': -0.52,
         'raster-brightness-min': 0.0,
-        'raster-brightness-max': 0.3,
+        'raster-brightness-max': 0.24,
       },
       minzoom: 0,
       maxzoom: 12,
@@ -698,15 +1075,15 @@ const BATHYMETRY_STYLE: object = {
           'interpolate',
           ['linear'],
           ['zoom'],
-          0, 0.18,
-          6, 0.28,
-          10, 0.22,
-          14, 0.12,
+          0, 0.22,
+          6, 0.34,
+          10, 0.28,
+          14, 0.16,
         ],
-        'raster-contrast': 0.1,
-        'raster-saturation': -0.2,
-        'raster-brightness-min': 0.12,
-        'raster-brightness-max': 0.62,
+        'raster-contrast': 0.16,
+        'raster-saturation': -0.28,
+        'raster-brightness-min': 0.1,
+        'raster-brightness-max': 0.56,
       },
       minzoom: 0,
       maxzoom: 12,
@@ -720,14 +1097,35 @@ const BATHYMETRY_STYLE: object = {
           'interpolate',
           ['linear'],
           ['zoom'],
-          0, 0.1,
-          6, 0.18,
-          10, 0.14,
-          14, 0.08,
+          0, 0.14,
+          6, 0.24,
+          10, 0.18,
+          14, 0.1,
         ],
-        'raster-contrast': 0.04,
-        'raster-brightness-min': 0.0,
-        'raster-brightness-max': 0.92,
+        'raster-contrast': 0.08,
+        'raster-brightness-min': 0.24,
+        'raster-brightness-max': 0.94,
+      },
+      minzoom: 0,
+      maxzoom: 12,
+    },
+    {
+      id: 'gebco-contour-crest',
+      type: 'raster',
+      source: 'gebco-contours',
+      paint: {
+        'raster-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          0, 0.08,
+          6, 0.14,
+          10, 0.12,
+          14, 0.06,
+        ],
+        'raster-contrast': 0.02,
+        'raster-brightness-min': 0.54,
+        'raster-brightness-max': 1.0,
       },
       minzoom: 0,
       maxzoom: 12,
@@ -1271,14 +1669,14 @@ const OPENCATCH_STYLE: object = {
           'interpolate',
           ['linear'],
           ['zoom'],
-          0, '#D8ECF7',
-          4, '#C2E0F1',
-          6, '#A7D0E6',
-          8, '#80B8D7',
-          10, '#5E9DBF',
-          14, '#35769D',
+          0, '#E1F1F9',
+          4, '#CCE8F4',
+          6, '#A9D4E8',
+          8, '#7DB8D7',
+          10, '#4F96BE',
+          14, '#266B93',
         ],
-        'fill-opacity': 0.92,
+        'fill-opacity': 0.96,
       },
     },
 
@@ -1295,9 +1693,27 @@ const OPENCATCH_STYLE: object = {
           ['linear'],
           ['zoom'],
           0, 0,
-          5, 0.08,
-          8, 0.16,
-          12, 0.06,
+          5, 0.1,
+          8, 0.18,
+          12, 0.08,
+        ],
+      },
+    },
+    {
+      id: 'water-shelf-highlight',
+      type: 'fill',
+      source: 'openmaptiles',
+      'source-layer': 'water',
+      paint: {
+        'fill-color': '#F8FCFE',
+        'fill-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          0, 0.01,
+          5, 0.04,
+          8, 0.08,
+          12, 0.04,
         ],
       },
     },
@@ -1313,10 +1729,10 @@ const OPENCATCH_STYLE: object = {
           'interpolate',
           ['linear'],
           ['zoom'],
-          0, 0.03,
-          5, 0.08,
-          8, 0.14,
-          12, 0.1,
+          0, 0.05,
+          5, 0.12,
+          8, 0.2,
+          12, 0.14,
         ],
       },
     },
@@ -1331,15 +1747,15 @@ const OPENCATCH_STYLE: object = {
           'interpolate',
           ['linear'],
           ['zoom'],
-          0, 0.14,
-          6, 0.22,
-          10, 0.18,
-          14, 0.1,
+          0, 0.18,
+          6, 0.28,
+          10, 0.24,
+          14, 0.12,
         ],
-        'raster-contrast': 0.2,
-        'raster-saturation': -0.35,
+        'raster-contrast': 0.28,
+        'raster-saturation': -0.4,
         'raster-brightness-min': 0.0,
-        'raster-brightness-max': 0.34,
+        'raster-brightness-max': 0.28,
       },
       minzoom: 0,
       maxzoom: 12,
@@ -1353,15 +1769,15 @@ const OPENCATCH_STYLE: object = {
           'interpolate',
           ['linear'],
           ['zoom'],
-          0, 0.16,
-          6, 0.24,
-          10, 0.18,
-          14, 0.08,
+          0, 0.18,
+          6, 0.28,
+          10, 0.24,
+          14, 0.1,
         ],
-        'raster-contrast': 0.06,
-        'raster-saturation': -0.15,
-        'raster-brightness-min': 0.18,
-        'raster-brightness-max': 0.68,
+        'raster-contrast': 0.12,
+        'raster-saturation': -0.2,
+        'raster-brightness-min': 0.14,
+        'raster-brightness-max': 0.62,
       },
       minzoom: 0,
       maxzoom: 12,
@@ -1375,14 +1791,35 @@ const OPENCATCH_STYLE: object = {
           'interpolate',
           ['linear'],
           ['zoom'],
-          0, 0.1,
-          6, 0.16,
-          10, 0.12,
-          14, 0.06,
+          0, 0.12,
+          6, 0.2,
+          10, 0.16,
+          14, 0.08,
+        ],
+        'raster-contrast': 0.06,
+        'raster-brightness-min': 0.28,
+        'raster-brightness-max': 0.94,
+      },
+      minzoom: 0,
+      maxzoom: 12,
+    },
+    {
+      id: 'gebco-contour-crest',
+      type: 'raster',
+      source: 'gebco-contours',
+      paint: {
+        'raster-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          0, 0.06,
+          6, 0.12,
+          10, 0.1,
+          14, 0.05,
         ],
         'raster-contrast': 0.02,
-        'raster-brightness-min': 0.34,
-        'raster-brightness-max': 0.96,
+        'raster-brightness-min': 0.56,
+        'raster-brightness-max': 1.0,
       },
       minzoom: 0,
       maxzoom: 12,
@@ -1398,18 +1835,18 @@ const OPENCATCH_STYLE: object = {
         'fill-color': [
           'match',
           ['get', 'class'],
-          'grass', '#F2F0EA',
-          'wood', '#EEEDEA',
-          'ice', '#F5F5F5',
-          'crop', '#F3F1EA',
-          '#F7F1E7',
+          'grass', '#EDE7D8',
+          'wood', '#E4DCCB',
+          'ice', '#EEF4F8',
+          'crop', '#EEE7D6',
+          '#F6F0E4',
         ],
         'fill-opacity': [
           'interpolate',
           ['linear'],
           ['zoom'],
-          6, 0.3,
-          10, 0.6,
+          6, 0.5,
+          10, 0.82,
         ],
       },
     },
@@ -1424,14 +1861,25 @@ const OPENCATCH_STYLE: object = {
         'fill-color': [
           'match',
           ['get', 'class'],
-          'park', '#EFF3EA',
-          'cemetery', '#F0EFEA',
-          'hospital', '#F5F0EE',
-          'school', '#F5F3EE',
-          'industrial', '#F0EEEA',
-          '#F7F1E7',
+          'park', '#DDE8D0',
+          'cemetery', '#E0DDD0',
+          'hospital', '#F0E8E4',
+          'school', '#F0EEE4',
+          'industrial', '#E8E4DC',
+          '#F6F0E4',
         ],
-        'fill-opacity': 0.4,
+        'fill-opacity': 0.52,
+      },
+    },
+    {
+      id: 'land-base',
+      type: 'fill',
+      source: 'openmaptiles',
+      'source-layer': 'landuse',
+      filter: ['==', ['geometry-type'], 'Polygon'],
+      paint: {
+        'fill-color': '#F6F0E4',
+        'fill-opacity': 0.16,
       },
     },
 
@@ -1470,9 +1918,9 @@ const OPENCATCH_STYLE: object = {
       'source-layer': 'transportation',
       filter: ['==', ['get', 'class'], 'motorway'],
       paint: {
-        'line-color': '#DCDCDC',
-        'line-width': ['interpolate', ['linear'], ['zoom'], 6, 0.5, 10, 1.2, 14, 2.5],
-        'line-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0.3, 10, 0.5],
+        'line-color': '#D4CDB8',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 6, 0.6, 10, 1.5, 14, 3.4],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0.32, 10, 0.58],
       },
       minzoom: 6,
     },
@@ -1483,9 +1931,9 @@ const OPENCATCH_STYLE: object = {
       'source-layer': 'transportation',
       filter: ['in', ['get', 'class'], ['literal', ['trunk', 'primary']]],
       paint: {
-        'line-color': '#E0E0E0',
-        'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.4, 12, 1, 14, 2],
-        'line-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.2, 12, 0.5],
+        'line-color': '#E0DAC4',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.45, 12, 1.2, 14, 2.4],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.24, 12, 0.56],
       },
       minzoom: 8,
     },
@@ -1496,9 +1944,9 @@ const OPENCATCH_STYLE: object = {
       'source-layer': 'transportation',
       filter: ['in', ['get', 'class'], ['literal', ['secondary', 'tertiary']]],
       paint: {
-        'line-color': '#E5E5E5',
-        'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.3, 14, 1.2],
-        'line-opacity': ['interpolate', ['linear'], ['zoom'], 10, 0.15, 14, 0.4],
+        'line-color': '#E8E4D0',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.34, 14, 1.5],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 10, 0.18, 14, 0.42],
       },
       minzoom: 10,
     },
@@ -1509,9 +1957,9 @@ const OPENCATCH_STYLE: object = {
       'source-layer': 'transportation',
       filter: ['in', ['get', 'class'], ['literal', ['minor', 'service', 'path', 'track']]],
       paint: {
-        'line-color': '#EBEBEB',
-        'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.2, 16, 0.8],
-        'line-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0.1, 16, 0.35],
+        'line-color': '#EBE7D6',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.24, 16, 1],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0.12, 16, 0.32],
       },
       minzoom: 12,
     },
@@ -1523,9 +1971,9 @@ const OPENCATCH_STYLE: object = {
       source: 'openmaptiles',
       'source-layer': 'building',
       paint: {
-        'fill-color': '#F0EFEC',
-        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 13, 0, 15, 0.3],
-        'fill-outline-color': '#E0E0E0',
+        'fill-color': '#E0DCC8',
+        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 13, 0, 15, 0.38],
+        'fill-outline-color': '#D9D2BE',
       },
       minzoom: 13,
     },
@@ -2213,6 +2661,7 @@ const VECTOR_OVERLAY_LAYER_BY_KEY: Record<string, string> = {
   'access-points': TILE_LAYER_NAMES.accessPoints,
   'parking': TILE_LAYER_NAMES.accessPoints,
   'trails': TILE_LAYER_NAMES.accessPoints,
+  'river-network': TILE_LAYER_NAMES.riverNetwork,
 };
 
 // ── Helpers ───────────────────────────────────────────────────────
@@ -2227,6 +2676,51 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
       Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function pointToSegmentDistanceMiles(
+  point: RouteLatLng,
+  start: RouteLatLng,
+  end: RouteLatLng,
+): number {
+  const meanLatRad = (((start.lat + end.lat + point.lat) / 3) * Math.PI) / 180;
+  const milesPerDegLat = 69.0;
+  const milesPerDegLon = 69.172 * Math.max(Math.cos(meanLatRad), 0.2);
+
+  const px = (point.lon - start.lon) * milesPerDegLon;
+  const py = (point.lat - start.lat) * milesPerDegLat;
+  const sx = (end.lon - start.lon) * milesPerDegLon;
+  const sy = (end.lat - start.lat) * milesPerDegLat;
+  const segLenSq = sx * sx + sy * sy;
+
+  if (segLenSq <= 1e-9) {
+    return Math.hypot(px, py);
+  }
+
+  const t = Math.max(0, Math.min(1, (px * sx + py * sy) / segLenSq));
+  const nearestX = sx * t;
+  const nearestY = sy * t;
+  return Math.hypot(px - nearestX, py - nearestY);
+}
+
+function findNearestRouteInsertionIndex(
+  point: RouteLatLng,
+  path: RouteLatLng[],
+): { insertIndex: number; distanceMiles: number } | null {
+  if (path.length < 2) return null;
+
+  let bestIndex = 1;
+  let bestDistance = Number.POSITIVE_INFINITY;
+
+  for (let i = 0; i < path.length - 1; i += 1) {
+    const distance = pointToSegmentDistanceMiles(point, path[i], path[i + 1]);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = i + 1;
+    }
+  }
+
+  return { insertIndex: bestIndex, distanceMiles: bestDistance };
 }
 
 function getTopSpecies(loc: FishingLocation): string[] {
@@ -2535,9 +3029,10 @@ interface LayerPickerProps {
   onToggleOverlay: (key: string) => void;
   onToggleQualityPins: () => void;
   onClose: () => void;
+  panelStyle?: StyleProp<ViewStyle>;
 }
 
-function LayerPicker({ visible, currentStyle, activeOverlays: _activeOverlays, showQualityPins, userLocation: pickerUserLoc, poiFilters: _poiFilters, onSelectStyle, onToggleOverlay: _onToggleOverlay, onToggleQualityPins, onClose }: LayerPickerProps) {
+function LayerPicker({ visible, currentStyle, activeOverlays: _activeOverlays, showQualityPins, userLocation: pickerUserLoc, poiFilters: _poiFilters, onSelectStyle, onToggleOverlay: _onToggleOverlay, onToggleQualityPins, onClose, panelStyle }: LayerPickerProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -2553,7 +3048,7 @@ function LayerPicker({ visible, currentStyle, activeOverlays: _activeOverlays, s
   return (
     <>
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-      <Animated.View style={[styles.layerPickerCard, { opacity: fadeAnim }]}>
+      <Animated.View style={[styles.layerPickerCard, panelStyle, { opacity: fadeAnim }]}>
         <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false} bounces={false}>
           <Text style={styles.layerSectionTitle}>MAP STYLE</Text>
           {MAP_STYLE_KEYS.filter((key) => {
@@ -2658,6 +3153,8 @@ function SiteCard({ location, distanceMi, onPress }: SiteCardProps) {
   const config = conditionConfig[band];
   const trend = getTrendIcon(location.score);
   const species = getTopSpecies(location);
+  const primaryLabel = getPrimaryLocationLabel(location);
+  const secondaryLabel = getSecondaryLocationLabel(location);
 
   return (
     <Pressable
@@ -2667,10 +3164,10 @@ function SiteCard({ location, distanceMi, onPress }: SiteCardProps) {
       <View style={styles.cardHeader}>
         <View style={styles.cardTitleArea}>
           <Text style={styles.cardName} numberOfLines={1}>
-            {location.name || 'Unseen Site'}
+            {primaryLabel}
           </Text>
           <Text style={styles.cardSubtitle} numberOfLines={1}>
-            {location.subtitle || 'Water Body'}
+            {secondaryLabel}
           </Text>
         </View>
         <View style={[styles.conditionBadge, { backgroundColor: config.bgTint }]}>
@@ -2870,14 +3367,36 @@ type CompassMode = 'static' | 'heading';
 const COMPASS_SIZE = 52;
 const COMPASS_HALF = COMPASS_SIZE / 2;
 function CompassRoseSvg() { const r = COMPASS_HALF - 2; const tickR = r - 3; const labelR = r - 11; const cardinals = [{ label: 'N', angle: 0 },{ label: 'E', angle: 90 },{ label: 'S', angle: 180 },{ label: 'W', angle: 270 }]; return (<Svg width={COMPASS_SIZE} height={COMPASS_SIZE}><G origin={`${COMPASS_HALF}, ${COMPASS_HALF}`}><Circle cx={COMPASS_HALF} cy={COMPASS_HALF} r={r} stroke={palette.border} strokeWidth={1} fill="none" />{Array.from({ length: 12 }).map((_, i) => { const a = i * 30; const rad = (a * Math.PI) / 180; const iC = a % 90 === 0; const iR = iC ? tickR - 5 : tickR - 3; return (<Line key={a} x1={COMPASS_HALF + Math.sin(rad) * iR} y1={COMPASS_HALF - Math.cos(rad) * iR} x2={COMPASS_HALF + Math.sin(rad) * tickR} y2={COMPASS_HALF - Math.cos(rad) * tickR} stroke={iC ? palette.text : palette.textMuted} strokeWidth={iC ? 1.5 : 0.8} />); })}<Polygon points={`${COMPASS_HALF},${COMPASS_HALF - r + 1} ${COMPASS_HALF - 3},${COMPASS_HALF - r + 8} ${COMPASS_HALF + 3},${COMPASS_HALF - r + 8}`} fill="#C44B4B" />{cardinals.map(({ label, angle }) => { const rad = (angle * Math.PI) / 180; return (<SvgText key={label} x={COMPASS_HALF + Math.sin(rad) * labelR} y={COMPASS_HALF - Math.cos(rad) * labelR + 3.5} fontSize={label === 'N' ? 9 : 7} fontWeight={label === 'N' ? '700' : '600'} fill={label === 'N' ? '#C44B4B' : palette.textSecondary} textAnchor="middle">{label}</SvgText>); })}<Circle cx={COMPASS_HALF} cy={COMPASS_HALF} r={2} fill={palette.accent} /></G></Svg>); }
-function CompassWidget({ heading, mode, onToggleMode }: { heading: number; mode: CompassMode; onToggleMode: () => void }) { const animatedRotation = useRef(new Animated.Value(0)).current; const lastH = useRef(0); useEffect(() => { let d = heading - lastH.current; if (d > 180) d -= 360; if (d < -180) d += 360; const t = lastH.current + d; lastH.current = t; Animated.timing(animatedRotation, { toValue: -t, duration: 250, useNativeDriver: true }).start(); }, [heading, animatedRotation]); const rotI = animatedRotation.interpolate({ inputRange: [-720, 720], outputRange: ['-720deg', '720deg'] }); const cardinal = degreesToCardinal(heading); const degLabel = `${Math.round(((heading % 360) + 360) % 360)}\u00B0`; return (<Pressable style={[cwStyles.container, mode === 'heading' && cwStyles.containerActive]} onPress={onToggleMode} accessibilityLabel={`Compass: ${degLabel} ${cardinal}. Tap to toggle heading mode.`}><Animated.View style={{ transform: [{ rotate: rotI }] }}><CompassRoseSvg /></Animated.View><View style={cwStyles.readout}><Text style={cwStyles.degrees}>{degLabel}</Text><Text style={cwStyles.cardinal}>{cardinal}</Text></View>{mode === 'heading' && <View style={cwStyles.trackingDot} />}</Pressable>); }
-const cwStyles = StyleSheet.create({ container: { position: 'absolute', top: Platform.OS === 'ios' ? 210 : 170, left: 16, width: COMPASS_SIZE + 8, alignItems: 'center', backgroundColor: palette.surface, borderRadius: (COMPASS_SIZE + 8) / 2, paddingVertical: 4, paddingHorizontal: 4, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4, zIndex: 4 }, containerActive: { borderWidth: 1.5, borderColor: palette.accent }, readout: { flexDirection: 'row', alignItems: 'baseline', gap: 2, marginTop: 1, marginBottom: 2 }, degrees: { fontSize: 10, fontWeight: '700', color: palette.text }, cardinal: { fontSize: 8, fontWeight: '600', color: palette.textSecondary }, trackingDot: { position: 'absolute', top: 4, right: 4, width: 6, height: 6, borderRadius: 3, backgroundColor: palette.accent } });
+function CompassWidget({ heading, mode, onToggleMode, style }: { heading: number; mode: CompassMode; onToggleMode: () => void; style?: StyleProp<ViewStyle> }) { const animatedRotation = useRef(new Animated.Value(0)).current; const lastH = useRef(0); useEffect(() => { let d = heading - lastH.current; if (d > 180) d -= 360; if (d < -180) d += 360; const t = lastH.current + d; lastH.current = t; Animated.timing(animatedRotation, { toValue: -t, duration: 250, useNativeDriver: true }).start(); }, [heading, animatedRotation]); const rotI = animatedRotation.interpolate({ inputRange: [-720, 720], outputRange: ['-720deg', '720deg'] }); const cardinal = degreesToCardinal(heading); const degLabel = `${Math.round(((heading % 360) + 360) % 360)}\u00B0`; return (<Pressable style={[cwStyles.container, style, mode === 'heading' && cwStyles.containerActive]} onPress={onToggleMode} accessibilityLabel={`Compass: ${degLabel} ${cardinal}. Tap to toggle heading mode.`}><Animated.View style={{ transform: [{ rotate: rotI }] }}><CompassRoseSvg /></Animated.View><View style={cwStyles.readout}><Text style={cwStyles.degrees}>{degLabel}</Text><Text style={cwStyles.cardinal}>{cardinal}</Text></View>{mode === 'heading' && <View style={cwStyles.trackingDot} />}</Pressable>); }
+const cwStyles = StyleSheet.create({ container: { position: 'absolute', left: 16, width: COMPASS_SIZE + 8, alignItems: 'center', backgroundColor: palette.surface, borderRadius: (COMPASS_SIZE + 8) / 2, paddingVertical: 4, paddingHorizontal: 4, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4, zIndex: 40 }, containerActive: { borderWidth: 1.5, borderColor: palette.accent }, readout: { flexDirection: 'row', alignItems: 'baseline', gap: 2, marginTop: 1, marginBottom: 2 }, degrees: { fontSize: 10, fontWeight: '700', color: palette.text }, cardinal: { fontSize: 8, fontWeight: '600', color: palette.textSecondary }, trackingDot: { position: 'absolute', top: 4, right: 4, width: 6, height: 6, borderRadius: 3, backgroundColor: palette.accent } });
 
 // ── MapScreen ─────────────────────────────────────────────────────
 
 type MarkerMode = 'locations' | 'waypoints';
+type RouteCameraMode = 'overview' | 'follow' | 'follow-3d';
+
+const FEET_PER_METER = 3.28084;
+const MILES_TO_KM = 1.60934;
+const ROUTE_DRAFT_STEP_METERS = 0.1;
+const MIN_ROUTE_DRAFT_METERS = 0.2;
+const MAX_ROUTE_DRAFT_METERS = 6;
+
+function buildWaterTapLocationId(name: string, lat: number, lon: number): string {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return `water-tap-${slug || 'unnamed'}-${lat.toFixed(4)}-${lon.toFixed(4)}`;
+}
+
+function isNamedWaterbody(name: unknown): boolean {
+  if (typeof name !== 'string') return false;
+  const trimmed = name.trim();
+  if (!trimmed) return false;
+  const lowered = trimmed.toLowerCase();
+  return lowered !== 'water body' && lowered !== 'water' && lowered !== 'unknown';
+}
 
 export function MapScreen({ navigation }: TabProps<'MapTab'>) {
+  const { units, isMetric } = useUnits();
+  const insets = useSafeAreaInsets();
   const cameraRef = useRef<CameraRef>(null);
   const mapRef = useRef<MapViewRef>(null);
   const locationSourceRef = useRef<any>(null);
@@ -2886,7 +3405,6 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [bestFishing, setBestFishing] = useState<BestFishingV2Entry[]>([]);
   const [search, setSearch] = useState('');
-  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
 
@@ -2941,6 +3459,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   // Route planner — map-native route creation/editing
   const [routeMode, setRouteMode] = useState(false);
   const [routePoints, setRoutePoints] = useState<RouteLatLng[]>([]);
+  const [pendingRouteDestination, setPendingRouteDestination] = useState<{
+    point: RouteLatLng;
+    label?: string;
+  } | null>(null);
+  const [routePlacementMode, setRoutePlacementMode] = useState<RoutePlacementMode>('start');
+  const [routePlannerExpanded, setRoutePlannerExpanded] = useState(false);
   const [routeName, setRouteName] = useState('');
   const [plannedRoute, setPlannedRoute] = useState<PlannedRoute | null>(null);
   const [routeMetrics, setRouteMetrics] = useState<RouteMetrics | null>(null);
@@ -2951,11 +3475,17 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [routeNavActive, setRouteNavActive] = useState(false);
   const [routeNavIndex, setRouteNavIndex] = useState(1);
   const [routeNavInfo, setRouteNavInfo] = useState<RouteNavInfo | undefined>(undefined);
+  const [routeCameraMode, setRouteCameraMode] = useState<RouteCameraMode>('overview');
+  const [routeTurnSheetVisible, setRouteTurnSheetVisible] = useState(false);
+  const [searchOverlayHeight, setSearchOverlayHeight] = useState(0);
   const [visibleContourBounds, setVisibleContourBounds] = useState<ContourSourceBounds | null>(null);
+  const lastContourBoundsRef = useRef<ContourSourceBounds | null>(null);
+  const navLocationSubRef = useRef<Location.LocationSubscription | null>(null);
 
   // Compass heading
   const [compassMode, setCompassMode] = useState<CompassMode>('static');
   const [compassHeading, setCompassHeading] = useState(0);
+  const [userCourseHeading, setUserCourseHeading] = useState(0);
 
   // Weather alerts
   const [weatherAlerts, setWeatherAlerts] = useState<FishingWeatherAlert[]>([]);
@@ -2965,9 +3495,15 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
   // Wind overlay
   const [windEnabled, setWindEnabled] = useState(false);
-  const [windGeoJSON, setWindGeoJSON] = useState<any>(null);
+  const [windVectorCount, setWindVectorCount] = useState(0);
   const [windLoading, setWindLoading] = useState(false);
-  const windDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [mapViewportCenter, setMapViewportCenter] = useState<{ lat: number; lon: number } | null>(null);
+  const [mapFeatureLocationMode, setMapFeatureLocationMode] = useState<'current' | 'map-center'>('current');
+  const [mapWeatherForecast, setMapWeatherForecast] = useState<MapWeatherForecast | null>(null);
+  const [mapTideSummary, setMapTideSummary] = useState<MapTideSummary | null>(null);
+  const [mapWeatherLoading, setMapWeatherLoading] = useState(false);
+  const [mapWeatherPanelDismissed, setMapWeatherPanelDismissed] = useState(false);
+  const weatherForecastDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Precipitation radar overlay
   const [radarEnabled, setRadarEnabled] = useState(false);
@@ -2981,7 +3517,6 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   // Storm tracking overlay
   const [stormCells, setStormCells] = useState<StormCell[]>([]);
   const [stormGeoJSON, setStormGeoJSON] = useState<StormGeoJSON | null>(null);
-  const lastWindCenter = useRef<{ lat: number; lon: number } | null>(null);
 
   // Access points overlay
   const [accessEnabled, setAccessEnabled] = useState(false);
@@ -3022,6 +3557,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const [pressureLoading, setPressureLoading] = useState(false);
   const [biteTimeOverlayEnabled, setBiteTimeOverlayEnabled] = useState(false);
   const [biteLoading, setBiteLoading] = useState(false);
+  const [biteFieldGeoJSON, setBiteFieldGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
 
   // Draft accessibility overlay (shows safe/caution/danger based on boat draft)
   const [draftAccessEnabled, setDraftAccessEnabled] = useState(false);
@@ -3039,6 +3575,11 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       .then(setRouteBoatProfile)
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!routeBoatProfile?.draftMeters || routeBoatProfile.draftMeters <= 0) return;
+    setBoatDraftFt(Number((routeBoatProfile.draftMeters * FEET_PER_METER).toFixed(1)));
+  }, [routeBoatProfile?.draftMeters]);
 
   // Dynamic Depths overlay (tide-adjusted charted depths)
   const [dynamicDepthsEnabled, setDynamicDepthsEnabled] = useState(false);
@@ -3076,6 +3617,38 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   // AIS WiFi receiver overlay
   const [aisWifiEnabled, setAisWifiEnabled] = useState(false);
   const [aisWifiGeoJSON, setAisWifiGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [marineInstrumentData, setMarineInstrumentData] = useState<MarineInstrumentData>(() => aisReceiver.getInstrumentData());
+
+  useEffect(() => {
+    setMarineInstrumentData(aisReceiver.getInstrumentData());
+    const unsub = aisReceiver.addInstrumentListener((snapshot) => {
+      setMarineInstrumentData(snapshot);
+    });
+    return () => {
+      unsub();
+    };
+  }, []);
+
+  useEffect(() => {
+    const externalPosition = marineInstrumentData.position;
+    if (!externalPosition) return;
+
+    const coords = { lat: externalPosition.lat, lon: externalPosition.lon };
+    setUserLocation(coords);
+    AsyncStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(coords)).catch(() => {});
+
+    if (marineInstrumentData.heading?.headingDeg != null) {
+      setCompassHeading(marineInstrumentData.heading.headingDeg);
+      setUserCourseHeading(marineInstrumentData.heading.headingDeg);
+    } else if (externalPosition.cogDeg != null) {
+      setUserCourseHeading(externalPosition.cogDeg);
+    }
+  }, [
+    marineInstrumentData.heading?.headingDeg,
+    marineInstrumentData.position?.cogDeg,
+    marineInstrumentData.position?.lat,
+    marineInstrumentData.position?.lon,
+  ]);
 
   // Dynamic fishing spot discovery (OSM Overpass)
   // Initialize from module-level cache so pins survive tab switches
@@ -3207,6 +3780,26 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   // ── Depth Contour Settings ─────────────────────────────────────────
   const [contourSettings, setContourSettings] = useState<DepthContourSettings>(DEFAULT_CONTOUR_SETTINGS);
   const [showContourModal, setShowContourModal] = useState(false);
+  const coachMarkTargets = useMemo(() => ({
+    'search-bar': {
+      x: SCREEN_WIDTH / 2,
+      y: (Platform.OS === 'ios' ? 60 : 20) + 22,
+      width: SCREEN_WIDTH - 40,
+      height: 46,
+    },
+    'quick-action': {
+      x: SCREEN_WIDTH - 40,
+      y: SCREEN_HEIGHT - (Platform.OS === 'ios' ? 136 : 102) - 24,
+      width: 52,
+      height: 52,
+    },
+    'bottom-sheet': {
+      x: SCREEN_WIDTH / 2,
+      y: SCREEN_HEIGHT - SHEET_COLLAPSED + 26,
+      width: SCREEN_WIDTH - 28,
+      height: 54,
+    },
+  }), []);
 
   // Bottom sheet
   const sheetHeight = useRef(new Animated.Value(SHEET_COLLAPSED)).current;
@@ -3217,14 +3810,36 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   // Tips modal (shown on-demand from focused card)
   const [showTipsModal, setShowTipsModal] = useState(false);
 
+  useEffect(() => {
+    if (mapStyle === 'hybrid') {
+      setMapStyle('satellite');
+      return;
+    }
+    if (mapStyle === 'bathymetry' || mapStyle === 'topo') {
+      setMapStyle('opencatch');
+    }
+  }, [mapStyle]);
+
   // Load annotations and contour settings from AsyncStorage on mount
   useEffect(() => {
     loadAnnotations().then(setAnnotations);
     loadContourSettings().then(setContourSettings);
   }, []);
 
-  const openRouteBuilder = useCallback((seedPoint?: RouteLatLng, seedLabel?: string) => {
+  const setRouteDraftMeters = useCallback((draftMeters: number) => {
+    const rounded = Math.round(draftMeters * 10) / 10;
+    const clamped = Math.max(MIN_ROUTE_DRAFT_METERS, Math.min(MAX_ROUTE_DRAFT_METERS, rounded));
+    setRouteBoatProfile((prev) => (prev ? { ...prev, draftMeters: clamped } : prev));
+    setBoatDraftFt(Number((clamped * FEET_PER_METER).toFixed(1)));
+  }, []);
+
+  const adjustRouteDraft = useCallback((deltaMeters: number) => {
+    setRouteDraftMeters((routeBoatProfile?.draftMeters ?? 0.6) + deltaMeters);
+  }, [routeBoatProfile?.draftMeters, setRouteDraftMeters]);
+
+  const prepareRoutePlanner = useCallback(() => {
     setRouteMode(true);
+    setMarineGasEnabled(true);
     setMapToolsDrawerOpen(false);
     setLayerPickerVisible(false);
     if (measureMode) {
@@ -3243,12 +3858,20 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     setHighlightedAccessSummary(null);
     setContextualTips([]);
     setContextualTipsDismissed(false);
+    setRouteNavActive(false);
+    setRouteNavIndex(1);
+    setRouteNavInfo(undefined);
+    setRouteCameraMode('overview');
+    setRouteTurnSheetVisible(false);
+    setRoutePlannerExpanded(false);
+    setRoutePlacementMode(routePoints.length > 0 ? 'stop' : 'start');
+  }, [annotationMode, clearSelectedContour, measureMode, routePoints.length]);
+
+  const openRouteBuilder = useCallback((seedPoint?: RouteLatLng, seedLabel?: string) => {
+    prepareRoutePlanner();
 
     setRoutePoints((prev) => {
       const next = [...prev];
-      if (next.length === 0 && userLocation) {
-        next.push({ lat: userLocation.lat, lon: userLocation.lon });
-      }
       if (seedPoint) {
         const last = next[next.length - 1];
         const isDuplicate =
@@ -3265,18 +3888,114 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     if (seedLabel) {
       setRouteName((prev) => prev || `Route to ${seedLabel}`);
     }
-  }, [
-    annotationMode,
-    clearSelectedContour,
-    measureMode,
-    userLocation,
-  ]);
+    setRoutePlacementMode(seedPoint ? 'end' : routePoints.length > 0 ? 'stop' : 'start');
+  }, [prepareRoutePlanner, routePoints.length]);
+
+  const appendRoutePointToPlan = useCallback((point: RouteLatLng) => {
+    setRouteAlerts([]);
+    setRoutePoints((prev) => {
+      const last = prev[prev.length - 1];
+      if (last && Math.abs(last.lat - point.lat) < 1e-6 && Math.abs(last.lon - point.lon) < 1e-6) {
+        return prev;
+      }
+
+      if (prev.length === 0 && pendingRouteDestination) {
+        const destination = pendingRouteDestination.point;
+        const isSameAsDestination =
+          Math.abs(destination.lat - point.lat) < 1e-6 &&
+          Math.abs(destination.lon - point.lon) < 1e-6;
+        return isSameAsDestination ? [point] : [point, destination];
+      }
+
+      return [...prev, point];
+    });
+
+    if (pendingRouteDestination) {
+      setPendingRouteDestination(null);
+      setRouteMode(false);
+    }
+  }, [pendingRouteDestination]);
+
+  const placeRouteStart = useCallback((point: RouteLatLng) => {
+    setRouteAlerts([]);
+    setRouteNavActive(false);
+    setRouteNavInfo(undefined);
+    setRoutePoints((prev) => {
+      if (pendingRouteDestination) {
+        const destination = pendingRouteDestination.point;
+        const isSameAsDestination =
+          Math.abs(destination.lat - point.lat) < 1e-6 &&
+          Math.abs(destination.lon - point.lon) < 1e-6;
+        return isSameAsDestination ? [point] : [point, destination];
+      }
+      if (prev.length <= 1) {
+        return [point];
+      }
+      return [point, ...prev.slice(1)];
+    });
+    if (pendingRouteDestination) {
+      setPendingRouteDestination(null);
+    }
+    setRouteMode(true);
+    setRoutePlacementMode('stop');
+  }, [pendingRouteDestination]);
+
+  const placeRouteStop = useCallback((point: RouteLatLng) => {
+    if (pendingRouteDestination && routePoints.length === 0) {
+      placeRouteStart(point);
+      return;
+    }
+    setRouteAlerts([]);
+    setRouteNavActive(false);
+    setRouteNavInfo(undefined);
+    setRoutePoints((prev) => {
+      if (prev.length === 0) return [point];
+      if (prev.length === 1) return [...prev, point];
+      const last = prev[prev.length - 1];
+      return [...prev.slice(0, -1), point, last];
+    });
+    setRouteMode(true);
+    setRoutePlacementMode('stop');
+  }, [pendingRouteDestination, placeRouteStart, routePoints.length]);
+
+  const placeRouteEnd = useCallback((point: RouteLatLng, label?: string) => {
+    setRouteAlerts([]);
+    setRouteNavActive(false);
+    setRouteNavInfo(undefined);
+    if (routePoints.length === 0) {
+      setPendingRouteDestination({ point, label: label ?? 'Pinned destination' });
+      setRouteMode(true);
+      setRoutePlacementMode('start');
+      return;
+    }
+    setPendingRouteDestination(null);
+    setRoutePoints((prev) => {
+      if (prev.length === 0) return [point];
+      if (prev.length === 1) return [prev[0], point];
+      return [...prev.slice(0, -1), point];
+    });
+    setRouteMode(true);
+    setRoutePlacementMode('stop');
+  }, [routePoints.length]);
+
+  const placeRoutePoint = useCallback((point: RouteLatLng, label?: string) => {
+    if (routePlacementMode === 'start') {
+      placeRouteStart(point);
+      return;
+    }
+    if (routePlacementMode === 'end') {
+      placeRouteEnd(point, label);
+      return;
+    }
+    placeRouteStop(point);
+  }, [placeRouteEnd, placeRouteStart, placeRouteStop, routePlacementMode]);
 
   const handleUndoRoutePoint = useCallback(() => {
     setRoutePoints((prev) => {
       if (prev.length <= 1) {
         setRouteNavActive(false);
         setRouteNavInfo(undefined);
+        setRoutePlacementMode('start');
         return [];
       }
       return prev.slice(0, -1);
@@ -3288,12 +4007,16 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     setRouteNavActive(false);
     setRouteNavIndex(1);
     setRouteNavInfo(undefined);
+    setRouteCameraMode('overview');
     setRoutePoints([]);
     setRouteName('');
     setPlannedRoute(null);
     setRouteMetrics(null);
     setRouteWarnings([]);
     setRouteAlerts([]);
+    setRouteTurnSheetVisible(false);
+    setPendingRouteDestination(null);
+    setRoutePlacementMode('start');
   }, []);
 
   const handleSavePlannedRoute = useCallback(async () => {
@@ -3306,6 +4029,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       Alert.alert('Could not save route', 'Try again in a moment.');
     }
   }, [plannedRoute, routeName]);
+
+  const [currentZoom, setCurrentZoom] = useState(3.5);
 
   const probeRoutePoint = useCallback(async (point: RouteLatLng) => {
     if (!mapRef.current?.getPointInView || !mapRef.current?.queryRenderedFeaturesAtPoint) {
@@ -3325,14 +4050,191 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         [...getBathyLayerIds('fill'), ...getBathyLayerIds('line')],
       );
       const depth = getDepthFromRenderedFeatures(bathyResult);
+      const hasBathyWater = !!bathyResult?.features?.length || depth?.depthM != null;
       return {
-        onWater: !!waterResult?.features?.length,
+        onWater: !!waterResult?.features?.length || hasBathyWater,
         depthM: depth?.depthM ?? null,
       };
     } catch {
       return { onWater: true, depthM: null };
     }
   }, []);
+
+  const probeWaterAtScreenPoint = useCallback(async (screenPoint: [number, number]) => {
+    if (!mapRef.current?.getCoordinateFromView || !mapRef.current?.queryRenderedFeaturesAtPoint) {
+      return null;
+    }
+
+    try {
+      const coordinate = await mapRef.current.getCoordinateFromView(screenPoint);
+      const waterResult = await mapRef.current.queryRenderedFeaturesAtPoint(
+        screenPoint,
+        undefined,
+        ['water', 'water-polygon', 'waterway'],
+      );
+
+      const bathyResult = await mapRef.current.queryRenderedFeaturesAtPoint(
+        screenPoint,
+        undefined,
+        [...getBathyLayerIds('fill'), ...getBathyLayerIds('line')],
+      );
+      const depth = getDepthFromRenderedFeatures(bathyResult);
+      const hasBathyWater = !!bathyResult?.features?.length || depth?.depthM != null;
+      if (!waterResult?.features?.length && !hasBathyWater) {
+        return null;
+      }
+
+      return {
+        lat: coordinate[1],
+        lon: coordinate[0],
+        depthFt: depth?.depthFt ?? null,
+      };
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const handleAddRoutePointAtCenter = useCallback(async () => {
+    const target = mapViewportCenter ?? userLocation;
+    if (!target) return;
+    const routeProbe = await probeRoutePoint({ lat: target.lat, lon: target.lon });
+    if (!routeProbe.onWater) {
+      setRouteAlerts([
+        pendingRouteDestination
+          ? 'Pick a start point on the water before routing to that destination.'
+          : 'Route points need to be placed on the water.',
+      ]);
+      return;
+    }
+    placeRoutePoint({ lat: target.lat, lon: target.lon });
+  }, [mapViewportCenter, pendingRouteDestination, placeRoutePoint, probeRoutePoint, userLocation]);
+
+  const handlePullRouteToPoint = useCallback(async (point: RouteLatLng) => {
+    if (routePoints.length < 2) return false;
+
+    const nearest = findNearestRouteInsertionIndex(point, routePoints);
+    if (!nearest || nearest.distanceMiles > 0.45) {
+      return false;
+    }
+
+    const routeProbe = await probeRoutePoint(point);
+    if (!routeProbe.onWater) {
+      setRouteAlerts(['Route edits need to stay on the water.']);
+      return true;
+    }
+
+    setRouteMode(true);
+    setRouteNavActive(false);
+    setRouteNavInfo(undefined);
+    setRoutePlannerExpanded(false);
+    setRoutePlacementMode('stop');
+    setRoutePoints((prev) => {
+      if (prev.length < 2) return prev;
+      const safeIndex = Math.max(1, Math.min(nearest.insertIndex, prev.length - 1));
+      const before = prev[safeIndex - 1];
+      const after = prev[safeIndex];
+      const nearlySameAsBefore =
+        before &&
+        haversineDistance(before.lat, before.lon, point.lat, point.lon) < 0.02;
+      const nearlySameAsAfter =
+        after &&
+        haversineDistance(after.lat, after.lon, point.lat, point.lon) < 0.02;
+      if (nearlySameAsBefore || nearlySameAsAfter) {
+        return prev;
+      }
+      return [...prev.slice(0, safeIndex), point, ...prev.slice(safeIndex)];
+    });
+    setRouteAlerts(['Route pulled here. Long-press near the blue line again to fine-tune it.']);
+    return true;
+  }, [probeRoutePoint, routePoints]);
+
+  const handleDragRoutePoint = useCallback((pointIndex: number, event: any) => {
+    const coordinates =
+      event?.geometry?.coordinates ??
+      event?.nativeEvent?.payload?.geometry?.coordinates ??
+      event?.nativeEvent?.geometry?.coordinates ??
+      event?.coordinates;
+    if (!Array.isArray(coordinates) || coordinates.length < 2) return;
+
+    const [lon, lat] = coordinates as [number, number];
+    void (async () => {
+      const routeProbe = await probeRoutePoint({ lat, lon });
+      if (!routeProbe.onWater) {
+        setRouteAlerts(['Route handles need to stay on the water.']);
+        return;
+      }
+
+      setRouteMode(true);
+      setRouteNavActive(false);
+      setRouteNavInfo(undefined);
+      setRouteTurnSheetVisible(false);
+      setRoutePlannerExpanded(false);
+      setRoutePlacementMode('stop');
+      setRoutePoints((prev) =>
+        prev.map((point, index) => (index === pointIndex ? { lat, lon } : point)),
+      );
+      setRouteAlerts(['Route reshaped. Drag a handle again or hold the blue line to add another bend.']);
+    })();
+  }, [probeRoutePoint]);
+
+  const buildLakeFishabilityField = useCallback(async (): Promise<GeoJSON.FeatureCollection | null> => {
+    const fieldCenter = mapViewportCenter ?? userLocation;
+    if (!fieldCenter || !mapRef.current?.getCoordinateFromView || !mapRef.current?.queryRenderedFeaturesAtPoint) {
+      return null;
+    }
+
+    const cols =
+      currentZoom >= 13 ? 8 :
+      currentZoom >= 11 ? 7 :
+      currentZoom >= 9 ? 6 : 5;
+    const rows =
+      currentZoom >= 13 ? 7 :
+      currentZoom >= 11 ? 6 :
+      currentZoom >= 9 ? 5 : 4;
+    const left = 24;
+    const right = SCREEN_WIDTH - 24;
+    const top = 136;
+    const bottomInset = markerMode === 'locations' ? Math.max(currentHeight.current + 24, 220) : 180;
+    const bottom = Math.max(top + 120, SCREEN_HEIGHT - bottomInset);
+    const probes: FishabilityProbe[] = [];
+
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const x = left + ((col + 0.5) / cols) * (right - left);
+        const y = top + ((row + 0.5) / rows) * (bottom - top);
+        const sample = await probeWaterAtScreenPoint([x, y]);
+        if (!sample) continue;
+        probes.push({
+          id: `${row}-${col}`,
+          row,
+          col,
+          lat: sample.lat,
+          lon: sample.lon,
+          depthFt: sample.depthFt,
+        });
+      }
+    }
+
+    if (probes.length < 6) {
+      return null;
+    }
+
+    const nearbyReferenceSpots = locations
+      .filter((location) => haversineDistance(fieldCenter.lat, fieldCenter.lon, location.lat, location.lon) <= 12)
+      .slice(0, 48)
+      .map((location) => ({
+        id: location.id,
+        lat: location.lat,
+        lon: location.lon,
+        name: location.name,
+      }));
+
+    return buildLakeFishabilityGeoJSON(probes, {
+      centerLat: fieldCenter.lat,
+      centerLon: fieldCenter.lon,
+      referenceSpots: nearbyReferenceSpots,
+    });
+  }, [currentZoom, locations, mapViewportCenter, markerMode, probeWaterAtScreenPoint, userLocation]);
 
   useEffect(() => {
     let cancelled = false;
@@ -3346,6 +4248,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         setRouteNavActive(false);
         setRouteNavIndex(1);
         setRouteNavInfo(undefined);
+        setRouteCameraMode('overview');
       }
       return undefined;
     }
@@ -3400,6 +4303,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   }, [probeRoutePoint, routeBoatProfile, routeName, routePoints]);
 
   useEffect(() => {
+    if (!(routeMode || routePoints.length > 0)) {
+      setRoutePlannerExpanded(false);
+    }
+  }, [routeMode, routePoints.length]);
+
+  useEffect(() => {
     if (!routeNavActive || !plannedRoute || !userLocation) {
       setRouteNavInfo(undefined);
       return;
@@ -3433,6 +4342,60 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       setRouteNavIndex((prev) => Math.min(prev + 1, plannedRoute.waypoints.length - 1));
     }
   }, [plannedRoute, routeBoatProfile, routeNavActive, routeNavIndex, userLocation]);
+
+  useEffect(() => {
+    if (!routeNavActive) {
+      navLocationSubRef.current?.remove();
+      navLocationSubRef.current = null;
+      return undefined;
+    }
+
+    if (marineInstrumentData.position) {
+      navLocationSubRef.current?.remove();
+      navLocationSubRef.current = null;
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        let { status } = await Location.getForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          const requested = await Location.requestForegroundPermissionsAsync();
+          status = requested.status;
+        }
+        if (status !== 'granted' || cancelled) return;
+
+        navLocationSubRef.current?.remove();
+        navLocationSubRef.current = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.BestForNavigation,
+            timeInterval: 1000,
+            distanceInterval: 2,
+          },
+          (loc) => {
+            if (cancelled) return;
+            const coords = { lat: loc.coords.latitude, lon: loc.coords.longitude };
+            setUserLocation(coords);
+            AsyncStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(coords)).catch(() => {});
+            const nextHeading = loc.coords.heading ?? -1;
+            if (nextHeading >= 0) {
+              setUserCourseHeading(nextHeading);
+            }
+          },
+        );
+      } catch {
+        // Route guidance can fall back to the last known position.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      navLocationSubRef.current?.remove();
+      navLocationSubRef.current = null;
+    };
+  }, [marineInstrumentData.position, routeNavActive]);
 
   useEffect(() => {
     if (!ENABLE_EXPERIMENTAL_VECTOR_OVERLAYS || !TILE_SERVER_DEPLOYED) {
@@ -3620,11 +4583,11 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     setSheetSettled(false);
     Animated.spring(sheetHeight, {
       toValue: target,
-      damping: 28,
-      stiffness: 300,
-      mass: 0.7,
+      damping: 34,
+      stiffness: 240,
+      mass: 0.78,
       useNativeDriver: false,
-      overshootClamping: false,
+      overshootClamping: true,
       restDisplacementThreshold: 0.3,
       restSpeedThreshold: 0.3,
     }).start(() => {
@@ -3636,9 +4599,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const panResponder = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dy) > 2,
-        onMoveShouldSetPanResponderCapture: (_, gs) => Math.abs(gs.dy) > 2,
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dy) > 1.5,
+        onMoveShouldSetPanResponderCapture: (_, gs) => Math.abs(gs.dy) > 1.5,
         onPanResponderGrant: () => {
           dragStartHeight.current = currentHeight.current;
         },
@@ -3739,6 +4702,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           if (!cancelled) {
             const coords = { lat: loc.coords.latitude, lon: loc.coords.longitude };
             setUserLocation(coords);
+            const nextHeading = loc.coords.heading ?? -1;
+            if (nextHeading >= 0) {
+              setUserCourseHeading(nextHeading);
+            }
             // Cache for next launch
             AsyncStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(coords)).catch(() => {});
             // Pan to user location smoothly
@@ -3760,11 +4727,13 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       cancelled = true;
       // Clean up ALL debounce/polling timers on unmount
       if (marinaFetchTimer.current) clearTimeout(marinaFetchTimer.current);
-      if (windDebounceRef.current) clearTimeout(windDebounceRef.current);
+      if (weatherForecastDebounceRef.current) clearTimeout(weatherForecastDebounceRef.current);
       if (accessFetchTimer.current) clearTimeout(accessFetchTimer.current);
       if (mapStateSaveTimer.current) clearTimeout(mapStateSaveTimer.current);
       if (discoveryTimer.current) clearTimeout(discoveryTimer.current);
       if (alertRefreshRef.current) { clearInterval(alertRefreshRef.current); alertRefreshRef.current = null; }
+      navLocationSubRef.current?.remove();
+      navLocationSubRef.current = null;
       cancelPendingDiscovery();
     };
   }, []);
@@ -3780,6 +4749,13 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     }
   }, []);
 
+  const mapFeatureLocation = useMemo(() => {
+    if (mapFeatureLocationMode === 'map-center') {
+      return mapViewportCenter ?? userLocation;
+    }
+    return userLocation ?? mapViewportCenter;
+  }, [mapFeatureLocationMode, mapViewportCenter, userLocation]);
+
   // ── Pause all timers when app goes to background (saves battery) ──
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   useEffect(() => {
@@ -3788,7 +4764,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         // App going to background — clear polling timers
         if (alertRefreshRef.current) { clearInterval(alertRefreshRef.current); alertRefreshRef.current = null; }
         if (marinaFetchTimer.current) { clearTimeout(marinaFetchTimer.current); marinaFetchTimer.current = null; }
-        if (windDebounceRef.current) { clearTimeout(windDebounceRef.current); windDebounceRef.current = null; }
+        if (weatherForecastDebounceRef.current) {
+          clearTimeout(weatherForecastDebounceRef.current);
+          weatherForecastDebounceRef.current = null;
+        }
         if (accessFetchTimer.current) { clearTimeout(accessFetchTimer.current); accessFetchTimer.current = null; }
         if (discoveryTimer.current) { clearTimeout(discoveryTimer.current); discoveryTimer.current = null; }
         if (mapStateSaveTimer.current) { clearTimeout(mapStateSaveTimer.current); mapStateSaveTimer.current = null; }
@@ -3796,24 +4775,24 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         clearLocationDataCache();
       } else if (nextState === 'active' && appStateRef.current.match(/inactive|background/)) {
         // App returning to foreground — restart alert polling
-        if (userLocation) {
-          fetchWeatherAlerts(userLocation.lat, userLocation.lon);
+        if (mapFeatureLocation) {
+          fetchWeatherAlerts(mapFeatureLocation.lat, mapFeatureLocation.lon);
           alertRefreshRef.current = setInterval(() => {
-            fetchWeatherAlerts(userLocation.lat, userLocation.lon);
+            fetchWeatherAlerts(mapFeatureLocation.lat, mapFeatureLocation.lon);
           }, ALERT_REFRESH_MS);
         }
       }
       appStateRef.current = nextState;
     });
     return () => sub.remove();
-  }, [userLocation, fetchWeatherAlerts]);
+  }, [mapFeatureLocation, fetchWeatherAlerts]);
 
   useEffect(() => {
-    if (!userLocation) return;
-    fetchWeatherAlerts(userLocation.lat, userLocation.lon);
+    if (!mapFeatureLocation) return;
+    fetchWeatherAlerts(mapFeatureLocation.lat, mapFeatureLocation.lon);
 
     alertRefreshRef.current = setInterval(() => {
-      fetchWeatherAlerts(userLocation.lat, userLocation.lon);
+      fetchWeatherAlerts(mapFeatureLocation.lat, mapFeatureLocation.lon);
     }, ALERT_REFRESH_MS);
 
     return () => {
@@ -3822,7 +4801,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         alertRefreshRef.current = null;
       }
     };
-  }, [userLocation, fetchWeatherAlerts]);
+  }, [mapFeatureLocation, fetchWeatherAlerts]);
 
   const topAlert = weatherAlerts.length > 0 ? weatherAlerts[0] : null;
   const bannerColor = topAlert ? SEVERITY_BANNER_COLORS[topAlert.severity] : '#1976D2';
@@ -3888,10 +4867,43 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     };
   }, []);
 
+  const nearbyLocationContext =
+    mapFeatureLocationMode === 'map-center'
+      ? mapViewportCenter ?? userLocation
+      : userLocation ?? mapViewportCenter;
+  const visibleMapBounds = useMemo(() => {
+    if (visibleContourBounds) return expandBounds(visibleContourBounds, 0.18, 0.18);
+    if (mapFeatureLocation) {
+      return expandBounds(
+        estimateBoundsFromCenter({ lat: mapFeatureLocation.lat, lon: mapFeatureLocation.lon }, currentZoom || DEFAULT_ZOOM),
+        0.18,
+        0.18,
+      );
+    }
+    return null;
+  }, [currentZoom, mapFeatureLocation, visibleContourBounds]);
+
   // Pre-bundled top fishing spots (appear instantly on startup)
   const staticSpots = useMemo(() => getTopFishingSpots(), []);
+  const gpsCatalogLocations = useMemo(() => {
+    if (search.trim()) {
+      return searchCatalogLocations(
+        search,
+        nearbyLocationContext?.lat,
+        nearbyLocationContext?.lon,
+        220,
+      );
+    }
+    if (!nearbyLocationContext) return [];
+    return getNearbyCatalogLocations(
+      nearbyLocationContext.lat,
+      nearbyLocationContext.lon,
+      62,
+      220,
+    );
+  }, [nearbyLocationContext, search]);
 
-  // Merge backend locations + static spots + dynamically discovered spots
+  // Merge backend locations + dynamically discovered spots + nearby GPS catalog spots + static spots
   const allLocations = useMemo(() => {
     // Build a coordinate lookup for de-duplication
     const coordKey = (lat: number, lon: number) =>
@@ -3919,7 +4931,17 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       }
     }
 
-    // 3. Static pre-bundled spots (lowest priority, fill the map on startup)
+    // 3. Nearby catalog lakes from the GPS discovery index
+    for (const cl of gpsCatalogLocations) {
+      const ck = coordKey(cl.lat, cl.lon);
+      if (!seen.has(cl.id) && !seen.has(ck)) {
+        seen.add(cl.id);
+        seen.add(ck);
+        result.push(cl);
+      }
+    }
+
+    // 4. Static pre-bundled spots (lowest priority, fill the map on startup)
     for (const sl of staticSpots) {
       const ck = coordKey(sl.lat, sl.lon);
       if (!seen.has(sl.id) && !seen.has(ck)) {
@@ -3930,30 +4952,38 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     }
 
     return result;
-  }, [locations, discoveredSpots, staticSpots]);
+  }, [locations, discoveredSpots, gpsCatalogLocations, staticSpots]);
 
   // ── Computed lists ──────────────────────────────────────────────
 
+  const listLocationContext = nearbyLocationContext;
+
   const locationsWithDistance = useMemo(() => {
-    return allLocations.map((loc) => ({
+    return allLocations
+      .filter(isRenderableLocation)
+      .map((loc) => ({
       location: loc,
-      distanceMi: userLocation
-        ? haversineDistance(userLocation.lat, userLocation.lon, loc.lat, loc.lon)
+      distanceMi: listLocationContext
+        ? haversineDistance(listLocationContext.lat, listLocationContext.lon, loc.lat, loc.lon)
         : null,
     }));
-  }, [allLocations, userLocation]);
+  }, [allLocations, listLocationContext]);
+  const defaultNearbyLocations = useMemo(
+    () => locationsWithDistance.filter((item) => shouldIncludeInDefaultNearbyList(item.location)),
+    [locationsWithDistance],
+  );
 
   const displayList = useMemo(() => {
-    let list = [...locationsWithDistance];
+    let list = search.trim() ? [...locationsWithDistance] : [...defaultNearbyLocations];
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
         (item) =>
-          item.location.name.toLowerCase().includes(q) ||
-          item.location.subtitle.toLowerCase().includes(q),
+          cleanLocationText(item.location.name).toLowerCase().includes(q) ||
+          cleanLocationText(item.location.subtitle).toLowerCase().includes(q),
       );
-    } else if (userLocation) {
-      // When not searching, only show spots within 100 km (~62 mi) of user
+    } else if (listLocationContext) {
+      // When not searching, only show spots within 100 km (~62 mi) of the chosen location context
       const MAX_NEARBY_MI = 62;
       list = list.filter(
         (item) => item.distanceMi !== null && item.distanceMi <= MAX_NEARBY_MI,
@@ -3971,7 +5001,51 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       // Fallback: sort by fishing score alone when no GPS
       return b.location.score - a.location.score;
     });
-  }, [locationsWithDistance, search, userLocation]);
+  }, [defaultNearbyLocations, listLocationContext, locationsWithDistance, search]);
+
+  const mapRenderableLocations = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let candidates = q
+      ? allLocations.filter((loc) => cleanLocationText(loc.name).toLowerCase().includes(q))
+      : allLocations.filter(isPrimaryMapLocation);
+
+    if (!q && candidates.length === 0) {
+      candidates = allLocations;
+    }
+
+    candidates = candidates.filter(isRenderableLocation);
+
+    if (visibleMapBounds) {
+      candidates = candidates.filter((loc) => pointWithinBounds(loc.lat, loc.lon, visibleMapBounds));
+    }
+
+    const mapLimit =
+      q
+        ? 180
+        : currentZoom < 5
+          ? 160
+          : currentZoom < 7
+            ? 260
+            : currentZoom < 10
+              ? 420
+              : 700;
+
+    return candidates.slice(0, mapLimit);
+  }, [allLocations, currentZoom, search, visibleMapBounds]);
+
+  const searchBarLocations = useMemo(() => {
+    return allLocations
+      .filter(isRenderableLocation)
+      .map((loc) => ({
+      id: loc.id,
+      name: getPrimaryLocationLabel(loc),
+      subtitle: getSecondaryLocationLabel(loc),
+      distanceMi: mapFeatureLocation
+        ? haversineDistance(mapFeatureLocation.lat, mapFeatureLocation.lon, loc.lat, loc.lon)
+        : undefined,
+      type: cleanLocationText(loc.subtitle),
+    }));
+  }, [allLocations, mapFeatureLocation]);
 
   // ── GeoJSON sources for MapLibre markers ────────────────────────
 
@@ -3979,14 +5053,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   // expensive full-collection rebuilds on every pin tap.
   const locationGeoJSON = useMemo((): GeoJSON.FeatureCollection => ({
     type: 'FeatureCollection',
-    features: (search.trim()
-      ? allLocations.filter(
-          (l) =>
-            l.name.toLowerCase().includes(search.toLowerCase()) ||
-            l.subtitle.toLowerCase().includes(search.toLowerCase()),
-        )
-      : allLocations
-    ).map((loc) => {
+    features: mapRenderableLocations.map((loc) => {
       const isOsm = loc.id.startsWith('osm-');
       const isStatic = isStaticSpot(loc.id);
       const band = getConditionBand(loc.score);
@@ -4009,9 +5076,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           isSelected: 0,
           isDiscovered: isOsm ? 1 : 0,
         },
-      };
-    }),
-  }), [allLocations, search, showQualityPins]);
+        };
+      }),
+  }), [mapRenderableLocations, showQualityPins]);
 
   // Separate tiny GeoJSON just for the selected pin — rebuilds cheaply on tap
   const selectedPinGeoJSON = useMemo((): GeoJSON.FeatureCollection | null => {
@@ -4097,9 +5164,40 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
   // ── Handlers ────────────────────────────────────────────────────
 
-  const [currentZoom, setCurrentZoom] = useState(3.5);
-
   // ── Marina POI fetching ──────────────────────────────────────────
+
+  const shouldUseResolvedWaterbodyContext = useCallback((
+    source: 'focused' | 'nearby',
+    waterbodyType?: string | null,
+    bboxDiagonalKm?: number | null,
+  ) => {
+    if (!waterbodyType) return false;
+    if (source === 'focused') return true;
+    if (waterbodyType === 'river' || waterbodyType === 'stream') return false;
+    if ((bboxDiagonalKm ?? 0) > 90 && waterbodyType !== 'lake' && waterbodyType !== 'reservoir') {
+      return false;
+    }
+    return true;
+  }, []);
+
+  const resolveNearestCatalogWaterbody = useCallback((lat: number, lon: number) => {
+    if (focusedLocation) {
+      const entry = getGpsLakeCatalogEntryById(focusedLocation.id);
+      const bounds = getCatalogLakeBoundsForLocationId(focusedLocation.id);
+      if (entry && bounds) {
+        return { id: focusedLocation.id, bounds, entry, source: 'focused' as const };
+      }
+    }
+    const candidates = getNearbyCatalogLocations(lat, lon, currentZoom < 9 ? 4 : 8, 16);
+    for (const candidate of candidates) {
+      const bounds = getCatalogLakeBoundsForLocationId(candidate.id);
+      const entry = getGpsLakeCatalogEntryById(candidate.id);
+      if (bounds && entry) {
+        return { id: candidate.id, bounds, entry, source: 'nearby' as const };
+      }
+    }
+    return null;
+  }, [currentZoom, focusedLocation]);
 
   const fetchMarinasForCenter = useCallback(async (lat: number, lon: number) => {
     // Skip if we fetched recently for a nearby center (< 5 km)
@@ -4112,7 +5210,27 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     setMarinasLoading(true);
     try {
       const radiusMeters = currentZoom < 7 ? 45_000 : currentZoom < 10 ? 25_000 : 14_000;
-      const pois = await fetchNearbyMarinas(lat, lon, radiusMeters);
+      const resolvedWaterbody = resolveNearestCatalogWaterbody(lat, lon);
+      const shouldUseWaterbodyContext = resolvedWaterbody
+        ? shouldUseResolvedWaterbodyContext(
+            resolvedWaterbody.source,
+            resolvedWaterbody.entry.waterBodyType,
+            resolvedWaterbody.entry.bboxDiagonalKm,
+          )
+        : false;
+      const focusBounds = resolvedWaterbody?.bounds;
+      if ((!focusBounds || !shouldUseWaterbodyContext) && !isNearCoast(lat, lon)) {
+        setMarinaPOIs([]);
+        lastMarinaCenter.current = { lat, lon };
+        return;
+      }
+      const pois = await fetchNearbyMarinas(
+        lat,
+        lon,
+        radiusMeters,
+        shouldUseWaterbodyContext ? focusBounds : undefined,
+        shouldUseWaterbodyContext ? resolvedWaterbody?.id : undefined,
+      );
       setMarinaPOIs(pois);
       lastMarinaCenter.current = { lat, lon };
     } catch {
@@ -4120,7 +5238,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     } finally {
       setMarinasLoading(false);
     }
-  }, [currentZoom]);
+  }, [currentZoom, resolveNearestCatalogWaterbody, shouldUseResolvedWaterbodyContext]);
 
   // When marinas are toggled on, fetch for current map center
   useEffect(() => {
@@ -4131,9 +5249,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       return;
     }
     // Use user location as initial center or default
-    const center = userLocation ?? { lat: DEFAULT_CENTER[1], lon: DEFAULT_CENTER[0] };
+    const center = mapFeatureLocation ?? { lat: DEFAULT_CENTER[1], lon: DEFAULT_CENTER[0] };
     fetchMarinasForCenter(center.lat, center.lon);
-  }, [marinasEnabled, userLocation, fetchMarinasForCenter]);
+  }, [marinasEnabled, mapFeatureLocation, fetchMarinasForCenter]);
 
   // ── Catch photo overlay data fetching ──────────────────────────
   useEffect(() => {
@@ -4160,47 +5278,121 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     }
   }, [userLocation]);
 
-  // ── Wind overlay data fetching ──────────────────────────────────
-  const loadWindData = useCallback(async (lat: number, lon: number) => {
-    setWindLoading(true);
-    try {
-      let radiusDeg = 1.0;
-      let spacingDeg = 0.35;
-      try {
-        const bounds = await mapRef.current?.getVisibleBounds?.();
-        if (bounds?.[0] && bounds?.[1]) {
-          const latSpan = Math.abs(bounds[0][1] - bounds[1][1]);
-          const lonSpan = Math.abs(bounds[0][0] - bounds[1][0]);
-          const span = Math.max(latSpan, lonSpan);
-          radiusDeg = Math.min(Math.max(span * 0.65, 0.6), 2.0);
-          spacingDeg = span < 0.8 ? 0.2 : span < 1.5 ? 0.28 : 0.4;
-        }
-      } catch {
-        // Fall back to default radius/spacing if visible bounds are unavailable.
-      }
+  useEffect(() => {
+    if (!mapViewportCenter && userLocation) {
+      setMapViewportCenter(userLocation);
+    }
+  }, [mapViewportCenter, userLocation]);
 
-      const grid = await fetchWindGrid(lat, lon, radiusDeg, spacingDeg);
-      const geoJSON = windGridToGeoJSON(grid);
-      setWindGeoJSON(geoJSON);
-      lastWindCenter.current = { lat, lon };
+  useEffect(() => {
+    if (!biteTimeOverlayEnabled) {
+      setBiteFieldGeoJSON(null);
+      return;
+    }
+
+    let cancelled = false;
+    const timeout = setTimeout(() => {
+      setBiteLoading(true);
+      buildLakeFishabilityField()
+        .then((geoJSON) => {
+          if (!cancelled) {
+            setBiteFieldGeoJSON(geoJSON);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setBiteFieldGeoJSON(null);
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setBiteLoading(false);
+          }
+        });
+    }, 260);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [biteTimeOverlayEnabled, buildLakeFishabilityField, mapViewportCenter, currentZoom]);
+
+  const loadMapWeatherForecast = useCallback(async (lat: number, lon: number) => {
+    setMapWeatherLoading(true);
+    try {
+      const forecast = await getMapWeatherForecast(lat, lon);
+      setMapWeatherForecast(forecast);
     } catch {
-      // Silently fail — keep previous data if any
+      // Keep the previous forecast if a refresh fails.
     } finally {
-      setWindLoading(false);
+      setMapWeatherLoading(false);
+    }
+  }, []);
+
+  const loadMapTideSummary = useCallback(async (lat: number, lon: number) => {
+    try {
+      const station = await getUnifiedNearestTideStation(lat, lon);
+      const [predictions, waterLevels, hourly] = await Promise.all([
+        getUnifiedTidePredictions(station.id, 2),
+        getUnifiedWaterLevel(station.id).catch(() => null),
+        getUnifiedTideHourly(station.id).catch(() => []),
+      ]);
+      const next = getNextTide(predictions);
+      const latestWaterLevel = waterLevels?.[0] ?? null;
+      const depthAdjustmentFt = latestWaterLevel?.heightFt ?? hourly?.[0]?.heightFt ?? null;
+      const secondary = latestWaterLevel
+        ? `${latestWaterLevel.heightFt >= 0 ? '+' : ''}${latestWaterLevel.heightFt.toFixed(1)} ft now`
+        : `${Math.max(1, Math.round(station.distanceKm))} km away`;
+
+      setMapTideSummary({
+        stationName: station.name,
+        primary: next ? `${next.prediction.label} in ${next.timeRemaining}` : 'Tide forecast ready',
+        secondary,
+        currentLevelFt: latestWaterLevel?.heightFt ?? null,
+        depthAdjustmentFt,
+        trendPoints: hourly.slice(0, 5).map((point, index) => ({
+          label:
+            index === 0
+              ? 'Now'
+              : new Date(point.time).toLocaleTimeString([], { hour: 'numeric' }).replace(':00', ''),
+          heightFt: point.heightFt,
+        })),
+      });
+    } catch {
+      setMapTideSummary(null);
     }
   }, []);
 
   useEffect(() => {
-    if (!windEnabled) {
-      setWindGeoJSON(null);
-      lastWindCenter.current = null;
-      if (windDebounceRef.current) clearTimeout(windDebounceRef.current);
+    const wantsConditionsPanel = windEnabled || radarEnabled || dynamicDepthsEnabled;
+    if (!wantsConditionsPanel) {
+      if (weatherForecastDebounceRef.current) clearTimeout(weatherForecastDebounceRef.current);
+      setMapWeatherLoading(false);
+      setMapTideSummary(null);
       return;
     }
-    const lat = userLocation?.lat ?? DEFAULT_CENTER[1];
-    const lon = userLocation?.lon ?? DEFAULT_CENTER[0];
-    loadWindData(lat, lon);
-  }, [windEnabled, userLocation, loadWindData]);
+
+    const center = mapFeatureLocation ?? { lat: DEFAULT_CENTER[1], lon: DEFAULT_CENTER[0] };
+    if (weatherForecastDebounceRef.current) clearTimeout(weatherForecastDebounceRef.current);
+    weatherForecastDebounceRef.current = setTimeout(() => {
+      loadMapWeatherForecast(center.lat, center.lon);
+      if (isNearCoast(center.lat, center.lon)) {
+        loadMapTideSummary(center.lat, center.lon);
+      } else {
+        setMapTideSummary(null);
+      }
+    }, 900);
+
+    return () => {
+      if (weatherForecastDebounceRef.current) clearTimeout(weatherForecastDebounceRef.current);
+    };
+  }, [dynamicDepthsEnabled, loadMapTideSummary, loadMapWeatherForecast, mapFeatureLocation, radarEnabled, windEnabled]);
+
+  useEffect(() => {
+    if (!windEnabled) {
+      setWindVectorCount(0);
+    }
+  }, [windEnabled]);
 
   // ── Precipitation radar data fetching ─────────────────────────────
   useEffect(() => {
@@ -4252,10 +5444,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
   // ── Storm cell data fetching ──────────────────────────────────────
   useEffect(() => {
-    if (!userLocation) return;
+    if (!mapFeatureLocation) return;
     // Fetch storm cells for a wide area around the user
-    const lat = userLocation.lat;
-    const lon = userLocation.lon;
+    const lat = mapFeatureLocation.lat;
+    const lon = mapFeatureLocation.lon;
     const dLat = 3; // ~200 mile radius
     const dLon = 3 / Math.cos((lat * Math.PI) / 180);
     const bbox: [number, number, number, number] = [lat - dLat, lon - dLon, lat + dLat, lon + dLon];
@@ -4270,7 +5462,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     }).catch(() => {
       // Silent fail — storms are supplementary
     });
-  }, [userLocation]);
+  }, [mapFeatureLocation]);
 
   // ── Access points + trails data fetching ─────────────────────────
 
@@ -4285,8 +5477,23 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     try {
       const accessRadius = currentZoom < 8 ? 22_000 : currentZoom < 11 ? 15_000 : 9_000;
       const trailRadius = currentZoom < 8 ? 16_000 : currentZoom < 11 ? 10_000 : 6_000;
+      const resolvedWaterbody = resolveNearestCatalogWaterbody(lat, lon);
+      const shouldUseWaterbodyContext = resolvedWaterbody
+        ? shouldUseResolvedWaterbodyContext(
+            resolvedWaterbody.source,
+            resolvedWaterbody.entry.waterBodyType,
+            resolvedWaterbody.entry.bboxDiagonalKm,
+          )
+        : false;
+      const focusBounds = resolvedWaterbody?.bounds;
+      if (!focusBounds || !shouldUseWaterbodyContext) {
+        setAccessPoints([]);
+        setAccessTrailGeoJSON(null);
+        lastAccessCenter.current = { lat, lon };
+        return;
+      }
       const [points, trails] = await Promise.all([
-        fetchNearbyAccessPoints(lat, lon, accessRadius),
+        fetchNearbyAccessPoints(lat, lon, accessRadius, focusBounds, resolvedWaterbody.id),
         fetchNearbyTrails(lat, lon, trailRadius),
       ]);
       setAccessPoints(points);
@@ -4297,7 +5504,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     } finally {
       setAccessLoading(false);
     }
-  }, [currentZoom]);
+  }, [currentZoom, resolveNearestCatalogWaterbody, shouldUseResolvedWaterbodyContext]);
 
   useEffect(() => {
     if (!accessEnabled) {
@@ -4306,14 +5513,20 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       lastAccessCenter.current = null;
       return;
     }
-    const center = userLocation ?? { lat: DEFAULT_CENTER[1], lon: DEFAULT_CENTER[0] };
+    const center = mapFeatureLocation ?? { lat: DEFAULT_CENTER[1], lon: DEFAULT_CENTER[0] };
     fetchAccessForCenter(center.lat, center.lon);
-  }, [accessEnabled, userLocation, fetchAccessForCenter]);
+  }, [accessEnabled, mapFeatureLocation, fetchAccessForCenter]);
 
   // Ref to debounce map state persistence
   const mapStateSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Frame-skip counter — only process heavy work every 3rd region-change event */
   const regionChangeCounter = useRef(0);
+  const updateVisibleContourBounds = useCallback((nextBounds: ContourSourceBounds | null) => {
+    if (!nextBounds) return;
+    if (!boundsChangedEnough(lastContourBoundsRef.current, nextBounds)) return;
+    lastContourBoundsRef.current = nextBounds;
+    setVisibleContourBounds(nextBounds);
+  }, []);
 
   const handleRegionChange = useCallback((feature: any) => {
     // Always update zoom/bearing (lightweight state, needed for UI)
@@ -4321,14 +5534,20 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     if (zoom !== undefined) setCurrentZoom(zoom);
     const bearing = feature?.properties?.heading ?? feature?.properties?.bearing;
     if (bearing !== undefined) setCompassHeading(bearing);
+    if (feature?.geometry?.coordinates) {
+      const [lon, lat] = feature.geometry.coordinates as [number, number];
+      setMapViewportCenter((prev) => {
+        if (prev && Math.abs(prev.lat - lat) < 0.015 && Math.abs(prev.lon - lon) < 0.015) {
+          return prev;
+        }
+        return { lat, lon };
+      });
+    }
     if (feature?.properties?.visibleBounds) {
-      const nextBounds = toContourBounds(feature.properties.visibleBounds);
-      if (nextBounds) {
-        setVisibleContourBounds(nextBounds);
-      }
+      updateVisibleContourBounds(toContourBounds(feature.properties.visibleBounds));
     } else if (feature?.geometry?.coordinates && zoom !== undefined) {
       const [lon, lat] = feature.geometry.coordinates as [number, number];
-      setVisibleContourBounds(estimateBoundsFromCenter({ lat, lon }, zoom));
+      updateVisibleContourBounds(estimateBoundsFromCenter({ lat, lon }, zoom));
     }
 
     // Frame-skip: only run heavy work (network fetches, persistence) every 3rd call
@@ -4364,17 +5583,6 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       }, 2000);
     }
 
-    // Debounced wind re-fetch on significant pan
-    if (windEnabled && feature?.geometry?.coordinates) {
-      const [wLon, wLat] = feature.geometry.coordinates;
-      const prev = lastWindCenter.current;
-      const moved = !prev || Math.abs(prev.lat - wLat) > 0.3 || Math.abs(prev.lon - wLon) > 0.3;
-      if (moved) {
-        if (windDebounceRef.current) clearTimeout(windDebounceRef.current);
-        windDebounceRef.current = setTimeout(() => loadWindData(wLat, wLon), 2000);
-      }
-    }
-
     // Debounced fishing spot discovery on pan/zoom (deferred 3s after mount)
     if (feature?.properties?.visibleBounds || feature?.geometry?.coordinates) {
       if (discoveryTimer.current) clearTimeout(discoveryTimer.current);
@@ -4386,10 +5594,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         try {
           const bounds = await mapRef.current?.getVisibleBounds();
           if (bounds) {
-            const nextBounds = toContourBounds(bounds);
-            if (nextBounds) {
-              setVisibleContourBounds(nextBounds);
-            }
+            updateVisibleContourBounds(toContourBounds(bounds));
             // bounds = [[ne_lon, ne_lat], [sw_lon, sw_lat]]
             const bbox: BoundingBox = {
               south: bounds[1][1],
@@ -4415,7 +5620,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           if (feature?.geometry?.coordinates) {
             const [cLon, cLat] = feature.geometry.coordinates;
             const span = 180 / Math.pow(2, z);
-            setVisibleContourBounds({
+            updateVisibleContourBounds({
               minLat: cLat - span / 2,
               minLon: cLon - span,
               maxLat: cLat + span / 2,
@@ -4431,10 +5636,13 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         }
       }, discoveryDelay);
     }
-  }, [marinasEnabled, fetchMarinasForCenter, accessEnabled, fetchAccessForCenter, windEnabled, loadWindData, fetchDiscoveredSpots, currentZoom]);
+  }, [accessEnabled, currentZoom, fetchAccessForCenter, fetchDiscoveredSpots, fetchMarinasForCenter, marinasEnabled, updateVisibleContourBounds]);
 
   // Compass mode toggle: static (north-up) vs heading (map follows device bearing)
   const handleToggleCompassMode = useCallback(() => {
+    if (routeNavActive && routeCameraMode !== 'overview') {
+      return;
+    }
     setCompassMode((prev) => {
       const next = prev === 'static' ? 'heading' : 'static';
       if (next === 'static' && cameraRef.current) {
@@ -4443,10 +5651,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       }
       return next;
     });
-  }, []);
+  }, [routeCameraMode, routeNavActive]);
 
   // In heading mode, use expo-location heading if available
   useEffect(() => {
+    if (routeNavActive && routeCameraMode !== 'overview') return;
+    if (marineInstrumentData.heading) return;
     if (compassMode !== 'heading') return;
     let sub: Location.LocationSubscription | null = null;
     (async () => {
@@ -4463,7 +5673,85 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       }
     })();
     return () => { sub?.remove(); };
-  }, [compassMode]);
+  }, [compassMode, marineInstrumentData.heading, routeCameraMode, routeNavActive]);
+
+  useEffect(() => {
+    if (!marineInstrumentData.heading || compassMode !== 'heading') return;
+    if (routeNavActive && routeCameraMode !== 'overview') return;
+    const deg = marineInstrumentData.heading.headingDeg;
+    setCompassHeading(deg);
+    cameraRef.current?.setCamera({ heading: deg, animationDuration: 150 });
+  }, [
+    compassMode,
+    marineInstrumentData.heading,
+    routeCameraMode,
+    routeNavActive,
+  ]);
+
+  useEffect(() => {
+    if (!routeNavActive) {
+      cameraRef.current?.setCamera({ pitch: 0, animationDuration: 350 });
+      return;
+    }
+    if (routeCameraMode === 'overview') {
+      cameraRef.current?.setCamera({ pitch: 0, heading: 0, animationDuration: 350 });
+    }
+  }, [routeCameraMode, routeNavActive]);
+
+  useEffect(() => {
+    if (!routeNavActive || routeCameraMode === 'overview' || !userLocation) return;
+
+    const heading =
+      userCourseHeading > 0
+        ? userCourseHeading
+        : routeNavInfo?.bearingDeg ?? 0;
+
+    cameraRef.current?.setCamera({
+      centerCoordinate: [userLocation.lon, userLocation.lat],
+      zoomLevel: routeCameraMode === 'follow-3d' ? 15.9 : 14.9,
+      pitch: routeCameraMode === 'follow-3d' ? 54 : 14,
+      heading,
+      animationDuration: 550,
+    });
+  }, [
+    routeCameraMode,
+    routeNavActive,
+    routeNavInfo?.bearingDeg,
+    userCourseHeading,
+    userLocation?.lat,
+    userLocation?.lon,
+  ]);
+
+  useEffect(() => {
+    if (!windEnabled && !radarEnabled && !dynamicDepthsEnabled) {
+      setMapWeatherPanelDismissed(false);
+    }
+  }, [dynamicDepthsEnabled, radarEnabled, windEnabled]);
+
+  useEffect(() => {
+    if (routeMode || routePoints.length > 0) {
+      setMarineGasEnabled(true);
+    }
+  }, [routeMode, routePoints.length]);
+
+  const findLocationBySearchText = useCallback((query: string): FishingLocation | null => {
+    const trimmed = query.trim().toLowerCase();
+    if (!trimmed) return null;
+    const exact = allLocations.find((loc) => loc.name.trim().toLowerCase() === trimmed);
+    if (exact) return exact;
+    const startsWith = allLocations.find((loc) => loc.name.trim().toLowerCase().startsWith(trimmed));
+    if (startsWith) return startsWith;
+    const includes = allLocations.find((loc) => loc.name.toLowerCase().includes(trimmed));
+    return includes ?? null;
+  }, [allLocations]);
+
+  const flyToLocation = useCallback((loc: FishingLocation, zoomLevel: number = 13) => {
+    cameraRef.current?.setCamera({
+      centerCoordinate: [loc.lon, loc.lat],
+      zoomLevel,
+      animationDuration: 800,
+    });
+  }, []);
 
   // Handle tapping a search result — fly to the location and focus it
   const handleSearchSelectLocation = useCallback((locationId: string) => {
@@ -4473,19 +5761,76 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     setFocusedLocation(loc);
     setSelectedMarkerId(loc.id);
     cacheLocationDetail(loc);
-    cameraRef.current?.setCamera({
-      centerCoordinate: [loc.lon, loc.lat],
-      zoomLevel: 13,
-      animationDuration: 800,
-    });
-  }, [allLocations, clearSelectedContour]);
+    setSearch(loc.name);
+    flyToLocation(loc);
+  }, [allLocations, clearSelectedContour, flyToLocation]);
+
+  const startRouteToTarget = useCallback(async (loc: FishingLocation) => {
+    const targetPoint = { lat: loc.lat, lon: loc.lon };
+    const startCandidates = [
+      userLocation ? { lat: userLocation.lat, lon: userLocation.lon } : null,
+      mapViewportCenter ? { lat: mapViewportCenter.lat, lon: mapViewportCenter.lon } : null,
+    ].filter(Boolean) as RouteLatLng[];
+
+    let seededStart: RouteLatLng | null = null;
+    for (const candidate of startCandidates) {
+      const result = await probeRoutePoint(candidate);
+      if (result.onWater) {
+        seededStart = candidate;
+        break;
+      }
+    }
+
+    prepareRoutePlanner();
+    setSearch(loc.name);
+    flyToLocation(loc);
+    setRouteName(`Route to ${loc.name}`);
+
+    if (seededStart) {
+      setPendingRouteDestination(null);
+      setRoutePlacementMode('stop');
+      setRouteMode(false);
+      setRoutePoints([seededStart, targetPoint]);
+      setRouteAlerts(['Depth-aware autoroute is checking channels and safe water.']);
+      return;
+    }
+
+    setRoutePoints([]);
+    setPendingRouteDestination({ point: targetPoint, label: loc.name });
+    setRoutePlacementMode('start');
+    setRouteAlerts(['Pick a starting point on the water, then use Set A or tap the map.']);
+  }, [flyToLocation, mapViewportCenter, prepareRoutePlanner, probeRoutePoint, userLocation]);
+
+  const handleStartRouteToLocation = useCallback((locationId: string) => {
+    const loc = allLocations.find((l) => l.id === locationId);
+    if (!loc) {
+      openRouteBuilder();
+      return;
+    }
+    void startRouteToTarget(loc);
+  }, [allLocations, openRouteBuilder, startRouteToTarget]);
+
+  const handleSearchSubmit = useCallback((text: string) => {
+    const match = findLocationBySearchText(text);
+    if (!match) return;
+    handleSearchSelectLocation(match.id);
+  }, [findLocationBySearchText, handleSearchSelectLocation]);
+
+  const handleStartRouteFromSearch = useCallback(() => {
+    const target = focusedLocation ?? findLocationBySearchText(search);
+    if (target) {
+      void startRouteToTarget(target);
+      return;
+    }
+    setPendingRouteDestination(null);
+    setRoutePlacementMode('start');
+    openRouteBuilder();
+  }, [findLocationBySearchText, focusedLocation, openRouteBuilder, search, startRouteToTarget]);
 
   const visibleLocations = useMemo(() => {
     return search.trim()
       ? allLocations.filter(
-          (l) =>
-            l.name.toLowerCase().includes(search.toLowerCase()) ||
-            l.subtitle.toLowerCase().includes(search.toLowerCase()),
+          (l) => l.name.toLowerCase().includes(search.toLowerCase()),
         )
       : allLocations;
   }, [allLocations, search]);
@@ -4515,7 +5860,13 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       setHighlightedAccessPoints([]);
       setHighlightedAccessSummary(null);
       setRiverSpots([]);
-      fetchNearbyAccessPoints(location.lat, location.lon, 5_000).then((pts) => { // min 5km enforced in service
+      fetchNearbyAccessPoints(
+        location.lat,
+        location.lon,
+        5_000,
+        getCatalogLakeBoundsForLocationId(location.id),
+        location.id,
+      ).then((pts) => { // min 5km enforced in service
         setHighlightedAccessPoints(pts);
         setHighlightedAccessSummary(computeAccessSummary(pts));
         setHighlightedAccessLoading(false);
@@ -4609,15 +5960,40 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       // Exact match by ID — never fall back to proximity
       const location = allLocations.find((loc) => loc.id === locationId);
       if (location) {
+        if (routeMode && !routeNavActive) {
+          placeRoutePoint({ lat: location.lat, lon: location.lon }, location.name);
+          return;
+        }
         handleMarkerPress(location);
       }
     },
-    [currentZoom, handleMarkerPress, allLocations],
+    [allLocations, currentZoom, handleMarkerPress, placeRoutePoint, routeMode, routeNavActive],
   );
 
   const handleMapLongPress = useCallback((event: any) => {
     const coords = event.geometry?.coordinates;
     if (coords) {
+      if ((routeMode || routePoints.length > 0) && !routeNavActive) {
+        void (async () => {
+          const pulled = await handlePullRouteToPoint({
+            lat: coords[1],
+            lon: coords[0],
+          });
+          if (!pulled) {
+            const screenPoint = event.properties?.screenPointX != null
+              ? { screenX: event.properties.screenPointX, screenY: event.properties.screenPointY }
+              : { screenX: SCREEN_WIDTH / 2, screenY: SCREEN_HEIGHT / 3 };
+            setLongPressCoord({
+              latitude: coords[1],
+              longitude: coords[0],
+              ...screenPoint,
+            });
+            setLongPressMenuVisible(true);
+          }
+        })();
+        return;
+      }
+
       // MapLibre gives [lng, lat]; we store as {latitude, longitude}
       // Show context menu instead of directly opening waypoint modal
       const screenPoint = event.properties?.screenPointX != null
@@ -4630,7 +6006,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       });
       setLongPressMenuVisible(true);
     }
-  }, []);
+  }, [handlePullRouteToPoint, routeMode, routeNavActive, routePoints.length]);
 
   const handleLongPressAction = useCallback((action: LongPressAction, coordinate: LongPressCoordinate) => {
     switch (action) {
@@ -4743,7 +6119,40 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   const handleMapPress = useCallback((event?: any) => {
     if (routeMode && event?.geometry?.coordinates) {
       const [lng, lat] = event.geometry.coordinates as [number, number];
-      openRouteBuilder({ lat, lon: lng });
+      const screenPoint = event.properties?.screenPointX != null
+        ? [event.properties.screenPointX, event.properties.screenPointY]
+        : event.point?.x != null
+          ? [event.point.x, event.point.y]
+          : null;
+
+      (async () => {
+        const waterPoint = screenPoint
+          ? await probeWaterAtScreenPoint(screenPoint as [number, number])
+          : null;
+        if (screenPoint && !waterPoint) {
+          setRouteAlerts([
+            pendingRouteDestination
+              ? 'Pick a starting point on the water before routing to that destination.'
+              : 'Route points need to be placed on the water.',
+          ]);
+          return;
+        }
+
+        const candidatePoint = waterPoint
+          ? { lat: waterPoint.lat, lon: waterPoint.lon }
+          : { lat, lon: lng };
+        const fallbackProbe = !waterPoint ? await probeRoutePoint(candidatePoint) : { onWater: true, depthM: null };
+        if (!fallbackProbe.onWater) {
+          setRouteAlerts([
+            pendingRouteDestination
+              ? 'Pick a starting point on the water before routing to that destination.'
+              : 'Route points need to be placed on the water.',
+          ]);
+          return;
+        }
+        setRouteAlerts([]);
+        placeRoutePoint(candidatePoint);
+      })();
       return;
     }
 
@@ -4866,7 +6275,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
               ? fp.class.charAt(0).toUpperCase() + fp.class.slice(1)
               : 'Water Body';
             const tmpLoc: FishingLocation = {
-              id: `water-tap-${Date.now()}`,
+              id: buildWaterTapLocationId(wName, tappedLat, tappedLng),
               name: wName,
               subtitle: wClass,
               lat: tappedLat,
@@ -4892,6 +6301,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
               animationDuration: 500,
             });
             animateSheetTo(SHEET_HIDDEN);
+            if (isNamedWaterbody(wName)) {
+              navigation.navigate('LocationDetail', { locationId: tmpLoc.id });
+            }
             return;
           }
         } catch { /* queryRenderedFeatures unavailable */ }
@@ -4917,7 +6329,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     // Clear contextual tips (Feature 1)
     setContextualTips([]);
     setContextualTipsDismissed(false);
-  }, [routeMode, openRouteBuilder, measureMode, annotationMode, annotationTool, annotationColor, annotationIcon, arrowStart, handleSaveAnnotation, activeOverlays, currentZoom, animateSheetTo, clearSelectedContour]);
+  }, [routeMode, probeWaterAtScreenPoint, pendingRouteDestination, probeRoutePoint, placeRoutePoint, measureMode, annotationMode, annotationTool, annotationColor, annotationIcon, arrowStart, handleSaveAnnotation, activeOverlays, currentZoom, animateSheetTo, clearSelectedContour, navigation]);
 
   // ── Derived ─────────────────────────────────────────────────────
   const waypointIonicon = (wpIcon: WaypointIcon): string =>
@@ -4929,9 +6341,72 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   );
 
   const routePointGeoJSON = useMemo(
-    () => makeRoutePointGeoJSON(plannedRoute?.waypoints.map((wp) => wp.position) ?? routePoints),
+    () => makeRoutePointGeoJSON(routePoints.length > 0 ? routePoints : plannedRoute?.waypoints.map((wp) => wp.position) ?? []),
     [plannedRoute, routePoints],
   );
+
+  const routeCorridorGeoJSON = useMemo(
+    () =>
+      makeRouteCorridorGeoJSON(
+        plannedRoute,
+        routeBoatProfile?.draftMeters,
+        routeNavActive,
+        routeNavIndex,
+        userLocation,
+      ),
+    [plannedRoute, routeBoatProfile?.draftMeters, routeNavActive, routeNavIndex, userLocation],
+  );
+
+  const pendingRouteDestinationGeoJSON = useMemo(
+    () =>
+      makeRouteTargetGeoJSON(
+        routePoints.length === 0 ? pendingRouteDestination?.point ?? null : null,
+        'destination',
+        pendingRouteDestination?.label ?? 'DESTINATION',
+      ),
+    [pendingRouteDestination, routePoints.length],
+  );
+
+  const routeWarningGeoJSON = useMemo(
+    () => makeRouteWarningGeoJSON(routeWarnings, isMetric),
+    [isMetric, routeWarnings],
+  );
+
+  const routeTurnItems = useMemo(() => {
+    if (!plannedRoute) return [];
+    return plannedRoute.segments.map((segment, index) => {
+      const previousBearing = plannedRoute.segments[index - 1]?.bearingDeg;
+      const delta = previousBearing == null ? 0 : normalizeBearingDelta(segment.bearingDeg - previousBearing);
+      const maneuver =
+        index === 0
+          ? 'Depart'
+          : Math.abs(delta) < 18
+            ? 'Continue'
+            : Math.abs(delta) < 42
+              ? delta > 0
+                ? 'Bear starboard'
+                : 'Bear port'
+              : Math.abs(delta) < 140
+                ? delta > 0
+                  ? 'Turn starboard'
+                  : 'Turn port'
+                : 'Sharp turn';
+      const distancePrimary = isMetric
+        ? `${(segment.distanceNm * 1.852).toFixed(1)} km`
+        : `${segment.distanceNm.toFixed(1)} nm`;
+      const severity = getRouteSegmentSeverity(segment.minDepthM, routeBoatProfile?.draftMeters);
+      return {
+        id: `turn-${index}`,
+        segmentIndex: index,
+        title:
+          index === 0
+            ? `Depart on ${segment.bearingLabel}`
+            : `${maneuver} to ${segment.bearingLabel}`,
+        detail: `${distancePrimary} · leg ${index + 1}`,
+        severity,
+      };
+    });
+  }, [isMetric, plannedRoute, routeBoatProfile?.draftMeters]);
 
   const isVectorOverlayReady = useCallback(
     (overlayKey: string) => {
@@ -4988,7 +6463,21 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
   // Contextual: only show tools relevant to current location/season
   const currentMonth = new Date().getMonth() + 1; // 1-12
   const isWinterSeason = currentMonth >= 11 || currentMonth <= 3;
-  const isNearCoastNow = userLocation ? isNearCoast(userLocation.lat, userLocation.lon) : false;
+  const isNearCoastNow = mapFeatureLocation ? isNearCoast(mapFeatureLocation.lat, mapFeatureLocation.lon) : false;
+  const mapFeatureCountry = useMemo(() => {
+    if (!mapFeatureLocation) return null;
+    return detectSurveyCountry(mapFeatureLocation.lat, mapFeatureLocation.lon);
+  }, [mapFeatureLocation]);
+  const internationalMarineBathySource = useMemo(() => {
+    if (!mapFeatureLocation || !isNearCoastNow || !mapFeatureCountry) return null;
+    const country = mapFeatureCountry;
+    if (country !== 'CA') return null;
+    return getInternationalBathymetryTileSource(country);
+  }, [isNearCoastNow, mapFeatureCountry, mapFeatureLocation]);
+  const canadianRiverNetworkSource = useMemo(
+    () => getCanadianHydroNetworkTileSource(),
+    [],
+  );
   const bathymetryDepthBreaks = useMemo(
     () => buildDepthBreaksFt(contourSettings.interval),
     [contourSettings.interval],
@@ -5016,34 +6505,138 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       { color: colors[10] ?? colors[9] ?? '#1A5276', label: `${Math.round(labels[10])}+` },
     ];
   }, [bathymetryColorStops, bathymetryDepthBreaks]);
+  const depthBandValueExpression = useMemo(
+    () => ['coalesce', ['get', 'depth_max_ft'], ['get', 'depth_ft'], 0] as any,
+    [],
+  );
   const bathymetryFillExpression = useMemo(() => {
-    const colors = bathymetryColorStops;
-    const breaks = bathymetryDepthBreaks;
-    const expression: any[] = ['interpolate', ['linear'], ['coalesce', ['get', 'depth_ft'], 0]];
-    for (let i = 0; i < Math.min(colors.length, breaks.length); i++) {
-      expression.push(breaks[i], colors[i] ?? colors[Math.max(0, i - 1)] ?? '#D6EAF8');
-    }
-    return expression as any;
-  }, [bathymetryColorStops, bathymetryDepthBreaks]);
+    return buildSteppedDepthExpression(
+      bathymetryColorStops,
+      bathymetryDepthBreaks,
+      '#D6EAF8',
+      depthBandValueExpression,
+    );
+  }, [bathymetryColorStops, bathymetryDepthBreaks, depthBandValueExpression]);
   const bathymetryShadowExpression = useMemo(() => {
-    const colors = bathymetryShadowStops;
-    const breaks = bathymetryDepthBreaks;
-    const expression: any[] = ['interpolate', ['linear'], ['coalesce', ['get', 'depth_ft'], 0]];
-    for (let i = 1; i < Math.min(colors.length, breaks.length); i++) {
-      expression.push(breaks[i - 1], colors[i - 1] ?? '#9BB5C8');
-      expression.push(breaks[i], colors[i] ?? colors[i - 1] ?? '#9BB5C8');
-    }
-    return expression as any;
-  }, [bathymetryDepthBreaks, bathymetryShadowStops]);
+    return buildSteppedDepthExpression(
+      bathymetryShadowStops,
+      bathymetryDepthBreaks,
+      '#9BB5C8',
+      depthBandValueExpression,
+    );
+  }, [bathymetryDepthBreaks, bathymetryShadowStops, depthBandValueExpression]);
   const bathymetryHighlightExpression = useMemo(() => {
-    const colors = bathymetryHighlightStops;
-    const breaks = bathymetryDepthBreaks;
-    const expression: any[] = ['interpolate', ['linear'], ['coalesce', ['get', 'depth_ft'], 0]];
-    for (let i = 0; i < Math.min(colors.length, breaks.length); i++) {
-      expression.push(breaks[i], colors[i] ?? colors[Math.max(0, i - 1)] ?? '#F0F7FC');
-    }
-    return expression as any;
+    return buildSteppedDepthExpression(
+      bathymetryHighlightStops,
+      bathymetryDepthBreaks,
+      '#F0F7FC',
+      ['coalesce', ['get', 'depth_min_ft'], ['get', 'depth_ft'], 0],
+    );
   }, [bathymetryDepthBreaks, bathymetryHighlightStops]);
+  const routeArrivalLabel = useMemo(
+    () => formatArrivalClock(routeMetrics?.adjustedEta),
+    [routeMetrics?.adjustedEta],
+  );
+  const routeStatusTone = routeDepthChecking
+    ? '#1565C0'
+    : routeAlerts.length > 0
+      ? '#2E7D32'
+      : routeWarnings.length > 0
+        ? '#C96A18'
+        : '#1565C0';
+  const routeStatusLabel = routeDepthChecking
+    ? 'Checking depth'
+    : routeAlerts.length > 0
+      ? 'Auto-routed'
+      : routeWarnings.length > 0
+        ? `${routeWarnings.length} shallow`
+        : 'Depth clear';
+  const routeNextLegText = routeNavInfo
+    ? `${routeNavInfo.nextWaypointName} · ${(routeNavInfo.distanceMeters / 1852).toFixed(1)} nm · ${Math.round(routeNavInfo.bearingDeg)}°`
+    : null;
+  const routeOverviewText = routeNavActive && routeNextLegText
+    ? routeNextLegText
+    : routeMetrics
+    ? `${isMetric ? (routeMetrics.totalDistanceMi * MILES_TO_KM).toFixed(1) : routeMetrics.totalDistanceMi.toFixed(1)} ${isMetric ? 'km' : 'mi'} · ${routeMetrics.adjustedTimeLabel} · arrive ${routeArrivalLabel}`
+    : pendingRouteDestination
+      ? `Choose a water start for ${pendingRouteDestination.label ?? 'this destination'}`
+    : routeMode
+      ? routePlacementMode === 'start'
+        ? 'Set A on the water, then pick your destination or stops'
+        : routePlacementMode === 'end'
+          ? 'Place B on the water to finish the route'
+          : 'Add stops by tapping the water or using the center reticle'
+      : routePoints.length > 1
+      ? `${routePoints.length} route points placed`
+      : 'Start a route from search, or tap the water to build one';
+  const routeSupportText = routeNavActive
+    ? routeCameraMode === 'overview'
+      ? 'Navigation is active. Switch to Follow or 3D for the live helm view.'
+      : 'Following your position. Amber and red water mark draft-limited zones.'
+    : routeMode
+    ? pendingRouteDestination
+      ? 'Your destination is pinned. Set A on the water, then add stops if you want.'
+      : routePlacementMode === 'start'
+        ? 'Pick your start point on the water.'
+        : routePlacementMode === 'end'
+          ? 'Pick the destination point on the water.'
+          : 'Tap the water or long-press near the blue line to pull the route through a stop.'
+    : routeDepthChecking
+    ? 'Checking land, channels, and draft depth'
+    : routeAlerts[0]
+      ? routeAlerts[0]
+      : routeWarnings.length > 0
+        ? `${routeWarnings.length} shallow segments need caution`
+        : 'Channels, land, and draft fit checked';
+  const routeDistancePrimaryLabel = routeMetrics
+    ? `${isMetric ? (routeMetrics.totalDistanceMi * MILES_TO_KM).toFixed(1) : routeMetrics.totalDistanceMi.toFixed(1)} ${isMetric ? 'km' : 'mi'}`
+    : 'Tap to start';
+  const routeDistanceSecondaryLabel = routeMetrics ? `${routeMetrics.totalDistanceNm.toFixed(1)} nm` : '';
+  const routeDraftPrimaryLabel = routeBoatProfile
+    ? (isMetric
+      ? `${routeBoatProfile.draftMeters.toFixed(1)} m`
+      : `${boatDraftFt.toFixed(1)} ft`)
+    : (isMetric ? '0.6 m' : '2.0 ft');
+  const routeDraftSecondaryLabel = routeBoatProfile
+    ? (isMetric
+      ? `${boatDraftFt.toFixed(1)} ft`
+      : `${routeBoatProfile.draftMeters.toFixed(1)} m`)
+    : (isMetric ? '2.0 ft' : '0.6 m');
+  const routePlannerVisible = routeMode || routePoints.length > 0;
+  const showRoutePlannerDetails = routePlannerExpanded;
+  const navPresentationActive = routeNavActive;
+  const showTopMapAlerts = false;
+  const topStackTop = Math.max(insets.top + 8, Platform.OS === 'ios' ? 18 : 12);
+  const topStackBottom = topStackTop + searchOverlayHeight;
+  const topBannerTop = topStackBottom + 8;
+  const floatingControlsTop = topStackBottom + 10;
+  const showFloatingMapControls = !routePlannerVisible;
+  const routePlannerBottom = routeNavActive ? insets.bottom + 8 : insets.bottom + 66;
+  const routePlannerMaxHeight = routeNavActive
+    ? SCREEN_HEIGHT * 0.34
+    : showRoutePlannerDetails
+      ? SCREEN_HEIGHT * 0.42
+      : routePoints.length > 0 || pendingRouteDestination
+        ? SCREEN_HEIGHT * 0.27
+        : SCREEN_HEIGHT * 0.23;
+  const shouldShowChartLabels = contourSettings.showLabels && !navPresentationActive;
+  const shouldShowBathymetryDetails = !navPresentationActive;
+  const routeTapBannerTextValue = pendingRouteDestination && routePoints.length === 0
+    ? `Tap water to set A for ${pendingRouteDestination.label ?? 'this route'}`
+    : routePlacementMode === 'start'
+      ? 'Tap water to set route start (A)'
+      : routePlacementMode === 'end'
+        ? 'Tap water to set destination (B)'
+        : 'Tap water or hold near the blue line to add a stop'
+  ;
+  const connectedInstrumentCount = [
+    marineInstrumentData.position,
+    marineInstrumentData.heading,
+    marineInstrumentData.depth,
+    marineInstrumentData.wind,
+  ].filter(Boolean).length;
+  const shouldMountPointDetailOverlays = currentZoom >= 8;
+  const shouldMountMarineDetailOverlays = currentZoom >= 7;
 
   const mapToolGroups: MapToolGroup[] = [
     {
@@ -5080,6 +6673,56 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                 secondary: 'Great for coasts, inlets, and offshore structure',
                 icon: 'navigate-circle',
                 color: '#1F6FB2',
+              } as OverlayInfoCard
+            : null,
+        },
+        {
+          key: 'noaa-marine-navigation-layer',
+          label: 'NOAA Marine Navigation',
+          icon: 'boat-outline',
+          description: 'Official maintained channels, shipping regs, maritime boundaries',
+          visible: isNearCoastNow && mapFeatureCountry === 'US',
+          isActive: activeOverlays.has('marine-navigation'),
+          onPress: () => handleToggleOverlay('marine-navigation'),
+          infoCard: activeOverlays.has('marine-navigation')
+            ? {
+                primary: 'NOAA marine navigation active',
+                secondary: 'Maintained channels, shipping regulations, and maritime limits',
+                icon: 'boat',
+                color: '#0F5D7A',
+              } as OverlayInfoCard
+            : null,
+        },
+        {
+          key: 'north-america-river-network-layer',
+          label: 'River Network',
+          icon: 'git-network-outline',
+          description: 'Official USGS + NHN hydrography backbone for North America',
+          isActive: activeOverlays.has('river-network'),
+          onPress: () => handleToggleOverlay('river-network'),
+          infoCard: activeOverlays.has('river-network')
+            ? {
+                primary: 'North America river network active',
+                secondary: 'Official hydrography backbone for river completeness; USACE adds surveyed corridor detail on top',
+                icon: 'git-network',
+                color: '#3D6D8A',
+              } as OverlayInfoCard
+            : null,
+        },
+        {
+          key: 'usace-river-navigation-layer',
+          label: 'USACE River Navigation',
+          icon: 'git-branch-outline',
+          description: 'Official river depth areas, contours, wrecks, and bridges',
+          visible: mapFeatureCountry === 'US',
+          isActive: activeOverlays.has('river-navigation'),
+          onPress: () => handleToggleOverlay('river-navigation'),
+          infoCard: activeOverlays.has('river-navigation')
+            ? {
+                primary: 'USACE river navigation active',
+                secondary: 'Selected IENC chart overlays for maintained U.S. river corridors',
+                icon: 'git-network',
+                color: '#6A4C93',
               } as OverlayInfoCard
             : null,
         },
@@ -5169,12 +6812,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           isActive: windEnabled,
           isLoading: windLoading,
           onPress: () => setWindEnabled((prev) => !prev),
-          infoCard: windEnabled && windGeoJSON?.features?.length > 0
+          infoCard: windEnabled && windVectorCount > 0
             ? {
-                primary: `${windGeoJSON.features.length} wind vectors`,
-                secondary: lastWindCenter.current
-                  ? 'Viewport-aligned arrows, refreshed as you pan'
-                  : undefined,
+                primary: `${windVectorCount} live wind arrows`,
+                secondary: mapWeatherForecast
+                  ? `${mapWeatherForecast.current.windMph} mph at the map center`
+                  : 'Forecast pinned to the map center',
                 icon: 'flag',
                 color: '#1565C0',
               } as OverlayInfoCard
@@ -5295,16 +6938,18 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       tools: [
         {
           key: 'bite-time',
-          label: 'Bite Activity',
+          label: 'Fishability',
           icon: 'flame-outline',
-          description: 'Color-code spots by current bite score',
+          description: 'Heat map of the best zones to fish on the water right now',
           isActive: biteTimeOverlayEnabled,
           isLoading: biteLoading,
           onPress: () => setBiteTimeOverlayEnabled((prev) => !prev),
           infoCard: biteTimeOverlayEnabled
             ? {
-                primary: 'Spots colored by bite score',
-                secondary: 'Green = hot, Red = slow',
+                primary: biteFieldGeoJSON?.features?.length
+                  ? `${biteFieldGeoJSON.features.length} lake zones sampled`
+                  : 'Building lake fishability map',
+                secondary: 'Shows the best zones on the lake using bite timing, depth fit, and structure',
                 icon: 'flame',
                 color: '#2E7D32',
               } as OverlayInfoCard
@@ -5440,9 +7085,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         },
         {
           key: 'terrain-3d',
-          label: '3D Terrain',
+          label: 'Shaded Relief',
           icon: 'cube-outline',
-          description: 'Terrain exaggeration and hillshade',
+          description: 'USGS terrain shading and elevation relief',
           isActive: terrain3DEnabled,
           onPress: () => setTerrain3DEnabled((prev) => !prev),
         },
@@ -5496,15 +7141,19 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         },
         {
           key: 'ais-wifi',
-          label: 'AIS WiFi Vessels',
+          label: 'Marine Electronics',
           icon: 'radio-outline',
-          description: 'Local AIS receiver vessel overlay',
+          description: 'AIS, GPS, depth, wind, and heading from onboard instruments',
           isActive: aisWifiEnabled,
           onPress: () => setAisWifiEnabled((prev) => !prev),
-          infoCard: aisWifiEnabled && aisWifiGeoJSON && aisWifiGeoJSON.features.length > 0
+          infoCard: aisWifiEnabled && (connectedInstrumentCount > 0 || (aisWifiGeoJSON && aisWifiGeoJSON.features.length > 0))
             ? {
-                primary: `${aisWifiGeoJSON.features.length} vessel${aisWifiGeoJSON.features.length !== 1 ? 's' : ''} via WiFi AIS`,
-                secondary: aisReceiver.getAISStatus().status === 'connected' ? 'Connected' : 'Not connected',
+                primary: aisWifiGeoJSON && aisWifiGeoJSON.features.length > 0
+                  ? `${aisWifiGeoJSON.features.length} vessel${aisWifiGeoJSON.features.length !== 1 ? 's' : ''} via onboard feed`
+                  : `${connectedInstrumentCount} live instrument${connectedInstrumentCount !== 1 ? 's' : ''}`,
+                secondary: aisReceiver.getAISStatus().status === 'connected'
+                  ? `${connectedInstrumentCount} sensors online`
+                  : 'Not connected',
                 icon: 'radio',
                 color: '#00897B',
               } as OverlayInfoCard
@@ -5538,6 +7187,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     maritimeBoundariesEnabled,
     activeOverlays.has('local-bathymetry'),
     activeOverlays.has('public-lands'),
+    activeOverlays.has('marine-navigation'),
+    activeOverlays.has('river-navigation'),
     activeOverlays.has('nav-aids'),
     activeOverlays.has('no-wake-zones'),
     activeOverlays.has('artificial-reefs'),
@@ -5548,21 +7199,44 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
     routeMode ||
     !!focusedLocation ||
     !!selectedContourDepth;
+  const isDepthCriticalMode =
+    routeMode ||
+    routePoints.length > 0 ||
+    routeNavActive ||
+    draftAccessEnabled;
+  const contourFeatureFilter = useCallback(
+    (featureKinds: string | string[]) => buildContourFeatureFilter(featureKinds),
+    [],
+  );
+  const lagosContourMinZoom = isDepthCriticalMode
+    ? CRITICAL_LAGOS_CONTOUR_MIN_ZOOM
+    : BROWSE_LAGOS_CONTOUR_MIN_ZOOM;
 
   const activeContourSources = useMemo(() => {
+    const filteredSources = (sources: ReturnType<typeof getMartinContourSourcesForBounds>) =>
+      sources.filter((source) => source.id !== 'lagos_contours' || currentZoom >= lagosContourMinZoom);
     if (visibleContourBounds) {
-      return getMartinContourSourcesForBounds(visibleContourBounds);
+      return filteredSources(getMartinContourSourcesForBounds(visibleContourBounds));
     }
     if (userLocation) {
-      return getMartinContourSourcesForBounds(
+      return filteredSources(getMartinContourSourcesForBounds(
         estimateBoundsFromCenter({ lat: userLocation.lat, lon: userLocation.lon }, currentZoom || DEFAULT_ZOOM),
-      );
+      ));
     }
-    return getMartinContourSourcesForBounds(null);
-  }, [currentZoom, userLocation, visibleContourBounds]);
+    return filteredSources(getMartinContourSourcesForBounds(null));
+  }, [currentZoom, lagosContourMinZoom, userLocation, visibleContourBounds]);
   const shouldRenderLocalBathymetry =
-    activeOverlays.has('local-bathymetry') || routeMode || routePoints.length > 0;
+    currentZoom >= LOCAL_BATHY_MIN_ZOOM &&
+    activeContourSources.length > 0 &&
+    (activeOverlays.has('local-bathymetry') || routeMode || routePoints.length > 0);
   const bathyOpacityScale = activeOverlays.has('local-bathymetry') ? 1 : 0.42;
+  const bathyVisualOpacityScale = navPresentationActive
+    ? (activeOverlays.has('local-bathymetry') ? 0.72 : 0.52)
+    : bathyOpacityScale;
+  const oceanContourOpacityScale = activeOverlays.has('depth-contours') ? 1 : 0.42;
+  const oceanContourVisualOpacityScale = navPresentationActive
+    ? (activeOverlays.has('depth-contours') ? 0.68 : 0.5)
+    : oceanContourOpacityScale;
 
   // ── Render ───────────────────────────────────────────────────────
   if (Platform.OS === 'web') {
@@ -5589,10 +7263,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             ? OPENCATCH_STYLE
             : mapStyle === 'night'
               ? NIGHT_STYLE
-              : mapStyle === 'hybrid'
+              : mapStyle === 'hybrid' || mapStyle === 'satellite'
                 ? HYBRID_STYLE
                 : mapStyle === 'bathymetry'
-                  ? BATHYMETRY_STYLE
+                  ? OPENCATCH_STYLE
                   : mapStyle === 'nautical-chart'
                     ? ALT_STYLES['satellite']
                     : ALT_STYLES[mapStyle]
@@ -5630,10 +7304,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* No-wake zone overlay */}
-        {activeOverlays.has('no-wake-zones') && userLocation && ShapeSource && FillLayer && SymbolLayer && (
+        {activeOverlays.has('no-wake-zones') && mapFeatureLocation && ShapeSource && FillLayer && SymbolLayer && (
           <NoWakeZoneOverlay
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={mapFeatureLocation.lat}
+            lon={mapFeatureLocation.lon}
             ShapeSource={ShapeSource}
             FillLayer={FillLayer}
             SymbolLayer={SymbolLayer}
@@ -5642,10 +7316,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Navigation aids overlay (buoys, lights) */}
-        {activeOverlays.has('nav-aids') && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+        {activeOverlays.has('nav-aids') && mapFeatureLocation && ShapeSource && CircleLayer && SymbolLayer && (
           <NavigationAidsOverlay
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={mapFeatureLocation.lat}
+            lon={mapFeatureLocation.lon}
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
@@ -5653,10 +7327,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Artificial reef markers */}
-        {activeOverlays.has('artificial-reefs') && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+        {activeOverlays.has('artificial-reefs') && mapFeatureLocation && ShapeSource && CircleLayer && SymbolLayer && (
           <ArtificialReefOverlay
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={mapFeatureLocation.lat}
+            lon={mapFeatureLocation.lon}
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
@@ -5664,10 +7338,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Wave height overlay (coastal only) */}
-        {waveEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+        {waveEnabled && shouldMountMarineDetailOverlays && mapFeatureLocation && ShapeSource && CircleLayer && SymbolLayer && (
           <WaveOverlayAnimated
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={mapFeatureLocation.lat}
+            lon={mapFeatureLocation.lon}
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
@@ -5677,10 +7351,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Sea Surface Temperature overlay (coastal only) */}
-        {sstEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+        {sstEnabled && shouldMountMarineDetailOverlays && mapFeatureLocation && ShapeSource && CircleLayer && SymbolLayer && (
           <SSTOverlay
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={mapFeatureLocation.lat}
+            lon={mapFeatureLocation.lon}
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
@@ -5688,12 +7362,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Depth number overlay (nautical chart soundings) */}
-        {depthNumbersEnabled && userLocation && ShapeSource && SymbolLayer && (
+        {depthNumbersEnabled && shouldMountPointDetailOverlays && mapFeatureLocation && ShapeSource && SymbolLayer && !navPresentationActive && (
           <DepthNumberOverlay
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={mapFeatureLocation.lat}
+            lon={mapFeatureLocation.lon}
             zoom={currentZoom}
-            units="imperial"
+            units={units}
             ShapeSource={ShapeSource}
             SymbolLayer={SymbolLayer}
             onLoadStart={() => setDepthLoading(true)}
@@ -5702,10 +7376,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Marine gas station markers */}
-        {marineGasEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+        {marineGasEnabled && shouldMountPointDetailOverlays && mapFeatureLocation && ShapeSource && CircleLayer && SymbolLayer && (
           <MarineGasOverlay
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={mapFeatureLocation.lat}
+            lon={mapFeatureLocation.lon}
+            lakeId={focusedLocation?.id}
+            bbox={focusedLocation ? getCatalogLakeBoundsForLocationId(focusedLocation.id) : undefined}
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
@@ -5713,10 +7389,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Ocean fishing spots (wrecks, reefs, ledges) */}
-        {oceanSpotsEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+        {oceanSpotsEnabled && shouldMountPointDetailOverlays && mapFeatureLocation && ShapeSource && CircleLayer && SymbolLayer && (
           <OceanFishingSpotsOverlay
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={mapFeatureLocation.lat}
+            lon={mapFeatureLocation.lon}
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
@@ -5724,10 +7400,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Ice thickness overlay (winter, northern latitudes) */}
-        {iceThicknessEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+        {iceThicknessEnabled && shouldMountPointDetailOverlays && mapFeatureLocation && ShapeSource && CircleLayer && SymbolLayer && (
           <IceThicknessOverlay
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={mapFeatureLocation.lat}
+            lon={mapFeatureLocation.lon}
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
@@ -5737,10 +7413,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Fishing pressure heat map overlay */}
-        {fishingPressureOverlayEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+        {fishingPressureOverlayEnabled && shouldMountPointDetailOverlays && mapFeatureLocation && ShapeSource && CircleLayer && SymbolLayer && (
           <FishingPressureOverlay
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={mapFeatureLocation.lat}
+            lon={mapFeatureLocation.lon}
             spots={locations.map((l) => ({ id: l.id, lat: l.lat, lon: l.lon, name: l.name }))}
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
@@ -5751,11 +7427,13 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Bite time activity overlay */}
-        {biteTimeOverlayEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+        {biteTimeOverlayEnabled && shouldMountPointDetailOverlays && mapFeatureLocation && ShapeSource && CircleLayer && SymbolLayer && (
           <BiteTimeOverlay
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={mapFeatureLocation.lat}
+            lon={mapFeatureLocation.lon}
             spots={locations.map((l) => ({ id: l.id, lat: l.lat, lon: l.lon, name: l.name }))}
+            predictionGeoJSON={biteFieldGeoJSON}
+            presentation={biteFieldGeoJSON ? 'field' : 'spots'}
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
@@ -5765,10 +7443,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Tidal current overlay (coastal only) */}
-        {tidalCurrentEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+        {tidalCurrentEnabled && shouldMountMarineDetailOverlays && mapFeatureLocation && ShapeSource && CircleLayer && SymbolLayer && (
           <TidalCurrentOverlay
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={mapFeatureLocation.lat}
+            lon={mapFeatureLocation.lon}
             zoom={currentZoom}
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
@@ -5779,10 +7457,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Seabed characteristics overlay (zoom 10+) */}
-        {seabedEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+        {seabedEnabled && shouldMountMarineDetailOverlays && mapFeatureLocation && ShapeSource && CircleLayer && SymbolLayer && (
           <SeabedOverlay
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={mapFeatureLocation.lat}
+            lon={mapFeatureLocation.lon}
             zoom={currentZoom}
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
@@ -5793,10 +7471,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Maritime boundaries overlay (shipping lanes, restricted areas — safety-critical) */}
-        {maritimeBoundariesEnabled && userLocation && ShapeSource && LineLayer && FillLayer && SymbolLayer && CircleLayer && (
+        {maritimeBoundariesEnabled && shouldMountMarineDetailOverlays && mapFeatureLocation && ShapeSource && LineLayer && FillLayer && SymbolLayer && CircleLayer && (
           <MaritimeBoundariesOverlay
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={mapFeatureLocation.lat}
+            lon={mapFeatureLocation.lon}
             zoom={currentZoom}
             ShapeSource={ShapeSource}
             LineLayer={LineLayer}
@@ -5809,10 +7487,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* USACE survey overlay (channel depths, locks, harbors) */}
-        {usaceSurveyEnabled && userLocation && ShapeSource && LineLayer && CircleLayer && SymbolLayer && (
+        {usaceSurveyEnabled && shouldMountMarineDetailOverlays && mapFeatureLocation && ShapeSource && LineLayer && CircleLayer && SymbolLayer && (
           <USACESurveyOverlay
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={mapFeatureLocation.lat}
+            lon={mapFeatureLocation.lon}
             zoom={currentZoom}
             ShapeSource={ShapeSource}
             LineLayer={LineLayer}
@@ -5823,23 +7501,24 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Draft accessibility overlay (safe/caution/danger for boat draft) */}
-        {draftAccessEnabled && userLocation && ShapeSource && CircleLayer && SymbolLayer && (
+        {(draftAccessEnabled || navPresentationActive) && shouldMountMarineDetailOverlays && mapFeatureLocation && ShapeSource && CircleLayer && SymbolLayer && (
           <DraftAccessibilityOverlay
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={navPresentationActive ? (userLocation?.lat ?? mapFeatureLocation.lat) : mapFeatureLocation.lat}
+            lon={navPresentationActive ? (userLocation?.lon ?? mapFeatureLocation.lon) : mapFeatureLocation.lon}
             draftFt={boatDraftFt}
             zoom={currentZoom}
             ShapeSource={ShapeSource}
             CircleLayer={CircleLayer}
             SymbolLayer={SymbolLayer}
+            presentation={navPresentationActive ? 'hazards' : 'full'}
           />
         )}
 
         {/* Dynamic Depths overlay (tide-adjusted charted depths) */}
-        {dynamicDepthsEnabled && userLocation && ShapeSource && SymbolLayer && CircleLayer && (
+        {dynamicDepthsEnabled && shouldMountMarineDetailOverlays && mapFeatureLocation && ShapeSource && SymbolLayer && CircleLayer && (
           <DynamicDepthOverlay
-            lat={userLocation.lat}
-            lon={userLocation.lon}
+            lat={mapFeatureLocation.lat}
+            lon={mapFeatureLocation.lon}
             zoom={currentZoom}
             boatDraftFt={boatDraftFt}
             ShapeSource={ShapeSource}
@@ -5887,16 +7566,16 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           </ShapeSource>
         )}
 
-        {/* 3D Terrain — hillshade + terrain exaggeration */}
+        {/* Shaded relief — real terrain shading raster */}
         {terrain3DEnabled && RasterSource && RasterLayer && (
           <RasterSource
             id="terrain-hillshade-source"
-            tileUrlTemplates={['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png']}
+            tileUrlTemplates={[OVERLAY_TILE_URLS['shaded-relief']]}
             tileSize={256}
           >
             <RasterLayer
               id="terrain-hillshade-layer"
-              style={{ rasterOpacity: 0.35 }}
+              style={{ rasterOpacity: 0.48 }}
             />
           </RasterSource>
         )}
@@ -5907,42 +7586,217 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           if (!url) return null;
           if (key === 'depth-contours') {
             return (
-              <RasterSource
-                key="src-depth-contours"
-                id="overlay-source-depth-contours"
-                tileUrlTemplates={[url]}
-                tileSize={256}
-              >
-                <RasterLayer
-                  id="overlay-layer-depth-contours-shadow"
-                  style={{
-                    rasterOpacity: 0.22,
-                    rasterContrast: 0.3,
-                    rasterSaturation: -0.5,
-                    rasterBrightnessMin: 0.0,
-                    rasterBrightnessMax: 0.26,
-                  }}
-                />
-                <RasterLayer
-                  id="overlay-layer-depth-contours-mid"
-                  style={{
-                    rasterOpacity: 0.32,
-                    rasterContrast: 0.12,
-                    rasterSaturation: -0.25,
-                    rasterBrightnessMin: 0.12,
-                    rasterBrightnessMax: 0.58,
-                  }}
-                />
-                <RasterLayer
-                  id="overlay-layer-depth-contours-core"
-                  style={{
-                    rasterOpacity: 0.2,
-                    rasterContrast: 0.05,
-                    rasterBrightnessMin: 0.36,
-                    rasterBrightnessMax: 0.98,
-                  }}
-                />
-              </RasterSource>
+              <React.Fragment key="src-depth-contours-stack">
+                {internationalMarineBathySource && RasterSource && RasterLayer && (
+                  <RasterSource
+                    id="overlay-source-depth-contours-canada"
+                    tileUrlTemplates={[internationalMarineBathySource.urlTemplate]}
+                    tileSize={256}
+                  >
+                    <RasterLayer
+                      id="overlay-layer-depth-contours-canada-shadow"
+                      style={{
+                        rasterOpacity: SHOW_RASTER_OCEAN_UNDERLAY ? 0.12 : 0,
+                        rasterContrast: 0.26,
+                        rasterSaturation: -0.42,
+                        rasterBrightnessMin: 0.02,
+                        rasterBrightnessMax: 0.28,
+                      }}
+                    />
+                    <RasterLayer
+                      id="overlay-layer-depth-contours-canada-core"
+                      style={{
+                        rasterOpacity: SHOW_RASTER_OCEAN_UNDERLAY ? 0.22 : 0,
+                        rasterContrast: 0.12,
+                        rasterSaturation: -0.24,
+                        rasterBrightnessMin: 0.16,
+                        rasterBrightnessMax: 0.8,
+                      }}
+                    />
+                  </RasterSource>
+                )}
+                <RasterSource
+                  id="overlay-source-depth-contours"
+                  tileUrlTemplates={[url]}
+                  tileSize={256}
+                >
+                  <RasterLayer
+                    id="overlay-layer-depth-contours-shadow"
+                    style={{
+                      rasterOpacity: SHOW_RASTER_OCEAN_UNDERLAY ? 0.22 : 0,
+                      rasterContrast: 0.28,
+                      rasterSaturation: -0.62,
+                      rasterBrightnessMin: 0.0,
+                      rasterBrightnessMax: 0.18,
+                    }}
+                  />
+                  <RasterLayer
+                    id="overlay-layer-depth-contours-mid"
+                    style={{
+                      rasterOpacity: SHOW_RASTER_OCEAN_UNDERLAY ? 0.28 : 0,
+                      rasterContrast: 0.12,
+                      rasterSaturation: -0.34,
+                      rasterBrightnessMin: 0.08,
+                      rasterBrightnessMax: 0.48,
+                    }}
+                  />
+                  <RasterLayer
+                    id="overlay-layer-depth-contours-core"
+                    style={{
+                      rasterOpacity: SHOW_RASTER_OCEAN_UNDERLAY ? 0.14 : 0,
+                      rasterContrast: 0.08,
+                      rasterBrightnessMin: 0.24,
+                      rasterBrightnessMax: 0.96,
+                    }}
+                  />
+                  <RasterLayer
+                    id="overlay-layer-depth-contours-crest"
+                    style={{
+                      rasterOpacity: SHOW_RASTER_OCEAN_UNDERLAY ? 0.1 : 0,
+                      rasterContrast: 0.02,
+                      rasterBrightnessMin: 0.58,
+                      rasterBrightnessMax: 1,
+                    }}
+                  />
+                </RasterSource>
+                {ENABLE_VECTOR_OCEAN_BATHY && VectorSource && LineLayer && SymbolLayer && (
+                  <VectorSource
+                    id="overlay-source-depth-contours-vector"
+                    url={buildTileSourceUrl(TILE_LAYER_NAMES.oceanContours)!}
+                    maxZoomLevel={14}
+                  >
+                    <LineLayer
+                      id="overlay-ocean-line-shadow"
+                      sourceLayerID="contours"
+                      filter={contourFeatureFilter('contour_line') as any}
+                      style={{
+                        lineColor: bathymetryShadowExpression,
+                        lineWidth: [
+                          'interpolate',
+                          ['linear'],
+                          ['zoom'],
+                          5, 0.7,
+                          8, 1.05,
+                          11, 1.45,
+                          14, 2,
+                        ] as any,
+                        lineBlur: 1.2,
+                        lineOpacity: contourSettings.opacity * 0.12 * oceanContourVisualOpacityScale,
+                        lineTranslate: [0, 1.4],
+                        lineTranslateAnchor: 'viewport',
+                        lineJoin: 'round',
+                        lineCap: 'round',
+                      }}
+                    />
+                    <LineLayer
+                      id="overlay-ocean-line"
+                      sourceLayerID="contours"
+                      filter={contourFeatureFilter('contour_line') as any}
+                      style={{
+                        lineColor: bathymetryFillExpression,
+                        lineWidth: [
+                          'interpolate',
+                          ['linear'],
+                          ['zoom'],
+                          5, 0.42,
+                          8, 0.7,
+                          11, 1.02,
+                          14, 1.4,
+                        ] as any,
+                        lineOpacity: contourSettings.opacity * (navPresentationActive ? 0.72 : 0.9) * oceanContourVisualOpacityScale,
+                        lineJoin: 'round',
+                        lineCap: 'round',
+                      }}
+                    />
+                    <LineLayer
+                      id="overlay-ocean-line-crest"
+                      sourceLayerID="contours"
+                      filter={contourFeatureFilter('contour_line') as any}
+                      style={{
+                        lineColor: 'rgba(244, 251, 254, 0.82)',
+                        lineWidth: [
+                          'interpolate',
+                          ['linear'],
+                          ['zoom'],
+                          5, 0.1,
+                          8, 0.16,
+                          11, 0.22,
+                          14, 0.28,
+                        ] as any,
+                        lineOpacity: contourSettings.opacity * (navPresentationActive ? 0.1 : 0.22) * oceanContourVisualOpacityScale,
+                        lineJoin: 'round',
+                        lineCap: 'round',
+                      }}
+                    />
+                    {shouldShowChartLabels && (
+                      <SymbolLayer
+                        id="overlay-ocean-line-label"
+                        sourceLayerID="contours"
+                        filter={contourFeatureFilter('contour_line') as any}
+                        minZoomLevel={10}
+                        style={{
+                          symbolPlacement: 'line',
+                          symbolSpacing: [
+                            'interpolate',
+                            ['linear'],
+                            ['zoom'],
+                            10, 260,
+                            12, 180,
+                            14, 120,
+                            16, 80,
+                          ] as any,
+                          textField: ['coalesce', ['get', 'label'], ['concat', ['to-string', ['get', 'depth_ft']], ' ft']] as any,
+                          textSize: [
+                            'interpolate',
+                            ['linear'],
+                            ['zoom'],
+                            10, 9,
+                            12, 10.5,
+                            15, 12,
+                          ] as any,
+                          textColor: 'rgba(36, 66, 86, 0.88)',
+                          textHaloColor: 'rgba(252, 248, 239, 0.98)',
+                          textHaloWidth: 1.35,
+                          textOpacity: contourSettings.opacity * 0.9 * oceanContourVisualOpacityScale,
+                          textFont: FONT_STACKS.bold,
+                          textKeepUpright: true,
+                          textOptional: true,
+                          textAllowOverlap: false,
+                          textIgnorePlacement: false,
+                          textPadding: 4,
+                        }}
+                      />
+                    )}
+                    {shouldShowChartLabels && (
+                    <SymbolLayer
+                      id="overlay-ocean-label"
+                      sourceLayerID="contours"
+                      filter={contourFeatureFilter('depth_label') as any}
+                      minZoomLevel={8}
+                      style={{
+                        textField: ['coalesce', ['get', 'label'], ['concat', ['to-string', ['get', 'depth_ft']], ' ft']] as any,
+                        textSize: [
+                          'interpolate',
+                          ['linear'],
+                          ['zoom'],
+                          8, 9,
+                          11, 10.5,
+                          14, 12,
+                        ] as any,
+                        textColor: '#244256',
+                        textHaloColor: '#FCF8EF',
+                        textHaloWidth: 1.6,
+                        textOpacity: contourSettings.opacity * 0.72 * oceanContourVisualOpacityScale,
+                        textFont: FONT_STACKS.bold,
+                        textAllowOverlap: false,
+                        textIgnorePlacement: false,
+                        textOptional: true,
+                      }}
+                    />
+                    )}
+                  </VectorSource>
+                )}
+              </React.Fragment>
             );
           }
           const opacity =
@@ -5965,89 +7819,492 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           );
         })}
 
-        {/* Bathymetry contour overlays from Martin PMTiles */}
-        {shouldRenderLocalBathymetry &&
+        {activeOverlays.has('marine-navigation') &&
           VectorSource &&
           FillLayer &&
           LineLayer &&
           SymbolLayer &&
+          buildTileTemplateUrl('noaa_marine_navigation') && (
+            <VectorSource
+              id="overlay-source-marine-navigation"
+              tileUrlTemplates={[buildTileTemplateUrl('noaa_marine_navigation')!]}
+              maxZoomLevel={14}
+            >
+              <FillLayer
+                id="overlay-marine-channel-fill-shadow"
+                sourceLayerID="marine_navigation"
+                filter={['==', ['get', 'feature_kind'], 'maintained_channel'] as any}
+                style={{
+                  fillColor: bathymetryShadowExpression,
+                  fillOpacity: 0.18,
+                  fillTranslate: [0, 3],
+                  fillTranslateAnchor: 'viewport',
+                }}
+              />
+              <FillLayer
+                id="overlay-marine-channel-fill"
+                sourceLayerID="marine_navigation"
+                filter={['==', ['get', 'feature_kind'], 'maintained_channel'] as any}
+                style={{
+                  fillColor: bathymetryFillExpression,
+                  fillOpacity: 0.34,
+                  fillOutlineColor: 'rgba(12, 68, 95, 0.28)',
+                }}
+              />
+              <LineLayer
+                id="overlay-marine-channel-line"
+                sourceLayerID="marine_navigation"
+                filter={['==', ['get', 'feature_kind'], 'maintained_channel'] as any}
+                style={{
+                  lineColor: '#0F5D7A',
+                  lineWidth: [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    5, 0.8,
+                    8, 1.4,
+                    12, 2.3,
+                    15, 3.1,
+                  ] as any,
+                  lineOpacity: 0.78,
+                }}
+              />
+              <LineLayer
+                id="overlay-marine-shipping-line"
+                sourceLayerID="marine_navigation"
+                filter={['==', ['get', 'feature_kind'], 'shipping_regulation'] as any}
+                style={{
+                  lineColor: '#C4841D',
+                  lineWidth: [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    5, 0.7,
+                    8, 1.2,
+                    12, 1.9,
+                    15, 2.4,
+                  ] as any,
+                  lineDasharray: [2, 1.4],
+                  lineOpacity: 0.86,
+                }}
+              />
+              <LineLayer
+                id="overlay-marine-boundary-line"
+                sourceLayerID="marine_navigation"
+                filter={['==', ['get', 'feature_kind'], 'maritime_boundary'] as any}
+                style={{
+                  lineColor: '#113A52',
+                  lineWidth: [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    3, 0.8,
+                    6, 1,
+                    10, 1.4,
+                    14, 1.8,
+                  ] as any,
+                  lineDasharray: [3.2, 1.2],
+                  lineOpacity: 0.7,
+                }}
+              />
+              <SymbolLayer
+                id="overlay-marine-channel-label"
+                sourceLayerID="marine_navigation"
+                filter={['all', ['==', ['get', 'feature_kind'], 'maintained_channel'], ['has', 'channel_name']] as any}
+                minZoomLevel={9}
+                style={{
+                  textField: ['get', 'channel_name'],
+                  textSize: [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    9, 9,
+                    12, 10.5,
+                    15, 12,
+                  ] as any,
+                  textColor: '#143C52',
+                  textHaloColor: '#F8F1E6',
+                  textHaloWidth: 1.1,
+                  textOpacity: 0.86,
+                  textFont: FONT_STACKS.bold,
+                  textAllowOverlap: false,
+                  textIgnorePlacement: false,
+                  textOptional: true,
+                }}
+              />
+            </VectorSource>
+          )}
+
+        {activeOverlays.has('river-network') &&
+          RasterSource &&
+          RasterLayer && (
+            <React.Fragment key="src-river-network-backbone">
+              <RasterSource
+                id="overlay-source-river-network-us"
+                tileUrlTemplates={[OVERLAY_TILE_URLS['water-flow']]}
+                tileSize={256}
+              >
+                <RasterLayer
+                  id="overlay-layer-river-network-us"
+                  style={{
+                    rasterOpacity: 0.56,
+                    rasterSaturation: -0.28,
+                    rasterContrast: 0.08,
+                  }}
+                />
+              </RasterSource>
+              <RasterSource
+                id="overlay-source-river-network-canada"
+                tileUrlTemplates={[canadianRiverNetworkSource.urlTemplate]}
+                tileSize={256}
+              >
+                <RasterLayer
+                  id="overlay-layer-river-network-canada"
+                  style={{
+                    rasterOpacity: 0.52,
+                    rasterSaturation: -0.24,
+                    rasterContrast: 0.06,
+                  }}
+                />
+              </RasterSource>
+            </React.Fragment>
+          )}
+
+        {activeOverlays.has('river-network') &&
+          isVectorOverlayReady('river-network') &&
+          VectorSource &&
+          LineLayer &&
+          SymbolLayer &&
+          buildTileTemplateUrl(TILE_LAYER_NAMES.riverNetwork) && (
+            <VectorSource
+              id="overlay-source-river-network-vector"
+              tileUrlTemplates={[buildTileTemplateUrl(TILE_LAYER_NAMES.riverNetwork)!]}
+              maxZoomLevel={13}
+            >
+              <LineLayer
+                id="overlay-river-network-shadow"
+                sourceLayerID="river_network"
+                style={{
+                  lineColor: bathymetryShadowExpression,
+                  lineWidth: [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    4, 1.2,
+                    7, 1.7,
+                    10, 2.4,
+                    13, 3.2,
+                  ] as any,
+                  lineBlur: 1.8,
+                  lineOpacity: 0.22,
+                  lineTranslate: [0, 1.6],
+                  lineTranslateAnchor: 'viewport',
+                  lineJoin: 'round',
+                  lineCap: 'round',
+                }}
+              />
+              <LineLayer
+                id="overlay-river-network-line"
+                sourceLayerID="river_network"
+                style={{
+                  lineColor: [
+                    'match',
+                    ['get', 'river_class'],
+                    'trunk', '#3D5F7B',
+                    'major', '#557A96',
+                    'secondary', '#7295AE',
+                    '#93B1C5',
+                  ] as any,
+                  lineWidth: [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    4, 0.45,
+                    7, 0.7,
+                    10, 1.05,
+                    13, 1.45,
+                  ] as any,
+                  lineOpacity: 0.84,
+                  lineJoin: 'round',
+                  lineCap: 'round',
+                }}
+              />
+              <SymbolLayer
+                id="overlay-river-network-label"
+                sourceLayerID="river_network"
+                minZoomLevel={7}
+                filter={['all', ['has', 'river_name'], ['!=', ['get', 'river_name'], '']] as any}
+                style={{
+                  textField: ['get', 'river_name'],
+                  textSize: [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    7, 9,
+                    10, 10.5,
+                    13, 12,
+                  ] as any,
+                  textColor: '#315A72',
+                  textHaloColor: '#F7F1E6',
+                  textHaloWidth: 1,
+                  textOpacity: 0.82,
+                  textFont: FONT_STACKS.regular,
+                  symbolPlacement: 'line',
+                  textAllowOverlap: false,
+                  textIgnorePlacement: false,
+                  textOptional: true,
+                }}
+              />
+            </VectorSource>
+          )}
+
+        {activeOverlays.has('river-navigation') &&
+          VectorSource &&
+          FillLayer &&
+          LineLayer &&
+          SymbolLayer &&
+          CircleLayer &&
+          buildTileTemplateUrl('usace_river_navigation') && (
+            <VectorSource
+              id="overlay-source-river-navigation"
+              tileUrlTemplates={[buildTileTemplateUrl('usace_river_navigation')!]}
+              maxZoomLevel={14}
+            >
+              <FillLayer
+                id="overlay-river-depth-fill-shadow"
+                sourceLayerID="river_navigation"
+                filter={['==', ['get', 'feature_kind'], 'depth_area'] as any}
+                style={{
+                  fillColor: bathymetryShadowExpression,
+                  fillOpacity: 0.2,
+                  fillTranslate: [0, 3],
+                  fillTranslateAnchor: 'viewport',
+                }}
+              />
+              <FillLayer
+                id="overlay-river-depth-fill"
+                sourceLayerID="river_navigation"
+                filter={['==', ['get', 'feature_kind'], 'depth_area'] as any}
+                style={{
+                  fillColor: bathymetryFillExpression,
+                  fillOpacity: 0.4,
+                  fillOutlineColor: 'rgba(69, 92, 126, 0.24)',
+                }}
+              />
+              <LineLayer
+                id="overlay-river-contour-shadow"
+                sourceLayerID="river_navigation"
+                filter={['==', ['get', 'feature_kind'], 'depth_contour'] as any}
+                style={{
+                  lineColor: bathymetryShadowExpression,
+                  lineWidth: [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    6, 1.2,
+                    9, 1.8,
+                    12, 2.5,
+                    15, 3.4,
+                  ] as any,
+                  lineBlur: 2.1,
+                  lineOpacity: 0.26,
+                  lineTranslate: [0, 2],
+                  lineTranslateAnchor: 'viewport',
+                }}
+              />
+              <LineLayer
+                id="overlay-river-contour-line"
+                sourceLayerID="river_navigation"
+                filter={['==', ['get', 'feature_kind'], 'depth_contour'] as any}
+                style={{
+                  lineColor: '#314F77',
+                  lineWidth: [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    6, 0.55,
+                    9, 0.9,
+                    12, 1.2,
+                    15, 1.6,
+                  ] as any,
+                  lineOpacity: 0.92,
+                }}
+              />
+              <LineLayer
+                id="overlay-river-land-edge"
+                sourceLayerID="river_navigation"
+                filter={['==', ['get', 'feature_kind'], 'land_area'] as any}
+                style={{
+                  lineColor: 'rgba(115, 98, 72, 0.72)',
+                  lineWidth: [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    6, 0.4,
+                    9, 0.7,
+                    12, 1.1,
+                    15, 1.5,
+                  ] as any,
+                  lineOpacity: 0.7,
+                }}
+              />
+              <CircleLayer
+                id="overlay-river-wrecks"
+                sourceLayerID="river_navigation"
+                filter={['==', ['get', 'feature_kind'], 'wreck'] as any}
+                style={{
+                  circleColor: '#C44B4B',
+                  circleStrokeColor: '#F8F1E6',
+                  circleStrokeWidth: 1,
+                  circleRadius: [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    8, 1.8,
+                    11, 3.2,
+                    14, 4.8,
+                  ] as any,
+                  circleOpacity: 0.9,
+                }}
+              />
+              <CircleLayer
+                id="overlay-river-bridges"
+                sourceLayerID="river_navigation"
+                filter={['==', ['get', 'feature_kind'], 'bridge'] as any}
+                style={{
+                  circleColor: '#7D5BA6',
+                  circleStrokeColor: '#F8F1E6',
+                  circleStrokeWidth: 1,
+                  circleRadius: [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    8, 1.6,
+                    11, 2.8,
+                    14, 4.2,
+                  ] as any,
+                  circleOpacity: 0.84,
+                }}
+              />
+              <SymbolLayer
+                id="overlay-river-depth-label"
+                sourceLayerID="river_navigation"
+                filter={['==', ['get', 'feature_kind'], 'depth_label'] as any}
+                minZoomLevel={10}
+                style={{
+                  textField: ['coalesce', ['get', 'label'], ['concat', ['to-string', ['get', 'depth_ft']], ' ft']] as any,
+                  textSize: [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    10, 8.5,
+                    13, 10,
+                    15, 11,
+                  ] as any,
+                  textColor: '#2E4768',
+                  textHaloColor: '#F8F1E6',
+                  textHaloWidth: 1.1,
+                  textOpacity: 0.84,
+                  textFont: FONT_STACKS.bold,
+                  textAllowOverlap: false,
+                  textIgnorePlacement: false,
+                  textOptional: true,
+                }}
+              />
+            </VectorSource>
+          )}
+
+        {/* Bathymetry contour overlays from Martin PMTiles */}
+        {shouldRenderLocalBathymetry &&
+          VectorSource &&
+          LineLayer &&
+          SymbolLayer &&
+          CircleLayer &&
           (() => {
             return activeContourSources.map(({ id: src }) => (
               <VectorSource
                 key={src}
                 id={`bathy-${src}`}
-                url={buildTileSourceUrl(src)!}
+                tileUrlTemplates={[buildTileTemplateUrl(src)!]}
                 maxZoomLevel={16}
               >
-                <FillLayer
-                  id={`bathy-fill-shadow-${src}`}
+                <LineLayer
+                  id={`bathy-band-shadow-${src}`}
                   sourceLayerID="contours"
-                  filter={['==', '$type', 'Polygon'] as any}
+                  filter={contourFeatureFilter('contour_line') as any}
                   style={{
-                    fillColor: bathymetryShadowExpression,
-                    fillOpacity: contourSettings.opacity * 0.28 * bathyOpacityScale,
-                    fillTranslate: [0, 3],
-                    fillTranslateAnchor: 'viewport',
-                  }}
-                />
-                <FillLayer
-                  id={`bathy-fill-${src}`}
-                  sourceLayerID="contours"
-                  filter={['==', '$type', 'Polygon'] as any}
-                  style={{
-                    fillColor: bathymetryFillExpression,
-                    fillOpacity: contourSettings.opacity * 0.88 * bathyOpacityScale,
-                    fillOutlineColor: 'rgba(18, 56, 79, 0.18)',
-                  }}
-                />
-                <FillLayer
-                  id={`bathy-fill-highlight-${src}`}
-                  sourceLayerID="contours"
-                  filter={['==', '$type', 'Polygon'] as any}
-                  style={{
-                    fillColor: bathymetryHighlightExpression,
-                    fillOpacity: contourSettings.opacity * 0.18 * bathyOpacityScale,
-                    fillTranslate: [0, -1],
-                    fillTranslateAnchor: 'viewport',
+                    lineColor: bathymetryShadowExpression,
+                    lineWidth: [
+                      'interpolate',
+                      ['linear'],
+                      ['zoom'],
+                      5, 1.6,
+                      8, 3.4,
+                      11, 6.2,
+                      14, 10.2,
+                    ] as any,
+                    lineBlur: 3.6,
+                    lineOpacity: contourSettings.opacity * 0.06 * bathyVisualOpacityScale,
+                    lineJoin: 'round',
+                    lineCap: 'round',
                   }}
                 />
                 <LineLayer
-                  id={`bathy-line-shadow-${src}`}
+                  id={`bathy-band-${src}`}
                   sourceLayerID="contours"
-                  filter={['==', ['get', 'feature_kind'], 'contour_line'] as any}
+                  filter={contourFeatureFilter('contour_line') as any}
                   style={{
-                    lineColor: '#12384F',
+                    lineColor: bathymetryFillExpression,
                     lineWidth: [
                       'interpolate',
                       ['linear'],
                       ['zoom'],
                       5, 0.9,
-                      8, 1.25,
-                      11, 1.8,
-                      14, 2.4,
+                      8, 1.8,
+                      11, 3.2,
+                      14, 5.2,
                     ] as any,
-                    lineBlur: 1.5,
-                    lineTranslate: [0, 1.8],
-                    lineTranslateAnchor: 'viewport',
-                    lineOpacity: contourSettings.opacity * 0.3 * bathyOpacityScale,
+                    lineBlur: 1.1,
+                    lineOpacity: contourSettings.opacity * (navPresentationActive ? 0.08 : 0.14) * bathyVisualOpacityScale,
+                    lineJoin: 'round',
+                    lineCap: 'round',
+                  }}
+                />
+                <LineLayer
+                  id={`bathy-line-shadow-${src}`}
+                  sourceLayerID="contours"
+                  filter={contourFeatureFilter('contour_line') as any}
+                  style={{
+                    lineColor: bathymetryShadowExpression,
+                    lineWidth: [
+                      'interpolate',
+                      ['linear'],
+                      ['zoom'],
+                      5, 0.7,
+                      8, 1.05,
+                      11, 1.45,
+                      14, 2,
+                    ] as any,
+                    lineBlur: 1.2,
+                    lineOpacity: contourSettings.opacity * 0.12 * bathyVisualOpacityScale,
                   }}
                 />
                 <LineLayer
                   id={`bathy-line-${src}`}
                   sourceLayerID="contours"
-                  filter={['==', ['get', 'feature_kind'], 'contour_line'] as any}
+                  filter={contourFeatureFilter('contour_line') as any}
                   style={{
-                    lineColor: '#1B5F81',
+                    lineColor: bathymetryFillExpression,
                     lineWidth: [
                       'interpolate',
                       ['linear'],
                       ['zoom'],
-                      5, 0.45,
-                      8, 0.75,
-                      11, 1.05,
-                      14, 1.45,
+                      5, 0.38,
+                      8, 0.62,
+                      11, 0.92,
+                      14, 1.25,
                     ] as any,
-                    lineOpacity: contourSettings.opacity * 0.9 * bathyOpacityScale,
+                    lineOpacity: contourSettings.opacity * (navPresentationActive ? 0.58 : 0.74) * bathyVisualOpacityScale,
                     lineJoin: 'round',
                     lineCap: 'round',
                   }}
@@ -6055,7 +8312,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                 <LineLayer
                   id={`bathy-line-crest-${src}`}
                   sourceLayerID="contours"
-                  filter={['==', ['get', 'feature_kind'], 'contour_line'] as any}
+                  filter={contourFeatureFilter('contour_line') as any}
                   style={{
                     lineColor: 'rgba(240, 248, 252, 0.78)',
                     lineWidth: [
@@ -6067,31 +8324,120 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                       11, 0.24,
                       14, 0.32,
                     ] as any,
-                    lineOpacity: contourSettings.opacity * 0.55 * bathyOpacityScale,
+                    lineOpacity: contourSettings.opacity * (navPresentationActive ? 0.14 : 0.3) * bathyVisualOpacityScale,
                     lineJoin: 'round',
                     lineCap: 'round',
                   }}
                 />
-                {contourSettings.showLabels && (
+                {shouldShowChartLabels && (
+                  <SymbolLayer
+                    id={`bathy-line-label-${src}`}
+                    sourceLayerID="contours"
+                    filter={contourFeatureFilter('contour_line') as any}
+                    minZoomLevel={10}
+                    style={{
+                      symbolPlacement: 'line',
+                      symbolSpacing: [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        10, 260,
+                        12, 180,
+                        14, 120,
+                        16, 80,
+                      ] as any,
+                      textField: ['coalesce', ['get', 'label'], ['concat', ['to-string', ['get', 'depth_ft']], ' ft']] as any,
+                      textSize: [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        10, 8.5,
+                        12, 10,
+                        15, 11.5,
+                      ] as any,
+                      textColor: 'rgba(36, 66, 86, 0.78)',
+                      textHaloColor: 'rgba(252, 248, 239, 0.95)',
+                      textHaloWidth: 1.1,
+                      textOpacity: contourSettings.opacity * 0.74 * bathyVisualOpacityScale,
+                      textFont: FONT_STACKS.bold,
+                      textKeepUpright: true,
+                      textOptional: true,
+                      textAllowOverlap: false,
+                      textIgnorePlacement: false,
+                      textPadding: 4,
+                    }}
+                  />
+                )}
+                {shouldShowChartLabels && (
                   <SymbolLayer
                     id={`bathy-label-${src}`}
                     sourceLayerID="contours"
-                    filter={['==', ['get', 'feature_kind'], 'depth_label'] as any}
-                    minZoomLevel={9}
+                    filter={contourFeatureFilter('depth_label') as any}
+                    minZoomLevel={8}
                     style={{
                       textField: ['coalesce', ['get', 'label'], ['to-string', ['get', 'depth_ft']]] as any,
                       textSize: [
                         'interpolate',
                         ['linear'],
                         ['zoom'],
-                        9, 10,
-                        12, 11.5,
-                        15, 13,
+                        8, 9.5,
+                        11, 11,
+                        14, 12.5,
                       ] as any,
+                      textColor: '#314F67',
+                      textHaloColor: '#FCF8EF',
+                      textHaloWidth: 1.35,
+                      textOpacity: contourSettings.opacity * 0.84 * bathyVisualOpacityScale,
+                      textFont: FONT_STACKS.bold,
+                      textAllowOverlap: false,
+                      textIgnorePlacement: false,
+                      textOptional: true,
+                    }}
+                  />
+                )}
+                {shouldShowBathymetryDetails && (
+                <CircleLayer
+                  id={`bathy-sounding-${src}`}
+                  sourceLayerID="contours"
+                  filter={contourFeatureFilter('depth_point') as any}
+                  style={{
+                    circleColor: bathymetryFillExpression,
+                    circleStrokeColor: '#F8F1E6',
+                    circleStrokeWidth: 0.9,
+                    circleRadius: [
+                      'interpolate',
+                      ['linear'],
+                      ['zoom'],
+                      7, 0.6,
+                      10, 1.4,
+                      13, 2.2,
+                      16, 3.1,
+                    ] as any,
+                    circleOpacity: contourSettings.opacity * 0.78 * bathyVisualOpacityScale,
+                  }}
+                />
+                )}
+                {shouldShowBathymetryDetails && shouldShowChartLabels && (
+                  <SymbolLayer
+                    id={`bathy-sounding-label-${src}`}
+                    sourceLayerID="contours"
+                    filter={contourFeatureFilter('depth_point') as any}
+                    minZoomLevel={13}
+                    style={{
+                      textField: ['concat', ['to-string', ['get', 'depth_ft']], ' ft'] as any,
+                      textSize: [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        13, 8,
+                        15, 9.5,
+                        17, 10.5,
+                      ] as any,
+                      textOffset: [0, 1.2],
                       textColor: '#143C52',
                       textHaloColor: '#F8F1E6',
-                      textHaloWidth: 1.2,
-                      textOpacity: contourSettings.opacity * 0.95 * bathyOpacityScale,
+                      textHaloWidth: 1.05,
+                      textOpacity: contourSettings.opacity * 0.8 * bathyVisualOpacityScale,
                       textFont: FONT_STACKS.bold,
                       textAllowOverlap: false,
                       textIgnorePlacement: false,
@@ -6148,7 +8494,11 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                 <LineLayer
                   id="access-trails-layer"
                   sourceLayerID={TILE_LAYER_NAMES.accessPoints}
-                  filter={['==', ['get', 'access_type'], 'trail'] as any}
+                  filter={[
+                    'all',
+                    ['==', ['get', 'access_type'], 'trail'],
+                    ['<=', ['to-number', ['coalesce', ['get', 'distance_to_water_m'], 9999]], 220],
+                  ] as any}
                   style={{
                     lineColor: '#C4841D',
                     lineWidth: [
@@ -6167,7 +8517,11 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                 <CircleLayer
                   id="access-parking-layer"
                   sourceLayerID={TILE_LAYER_NAMES.accessPoints}
-                  filter={['==', ['get', 'access_type'], 'parking'] as any}
+                  filter={[
+                    'all',
+                    ['==', ['get', 'access_type'], 'parking'],
+                    ['<=', ['to-number', ['coalesce', ['get', 'distance_to_water_m'], 9999]], 140],
+                  ] as any}
                   style={{
                     circleColor: '#E7B84B',
                     circleRadius: [
@@ -6187,7 +8541,11 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                 <CircleLayer
                   id="access-points-layer"
                   sourceLayerID={TILE_LAYER_NAMES.accessPoints}
-                  filter={['match', ['get', 'access_type'], ['boat_launch', 'shore_access', 'campground'], true, false] as any}
+                  filter={[
+                    'all',
+                    ['match', ['get', 'access_type'], ['boat_launch', 'shore_access', 'campground'], true, false],
+                    ['<=', ['to-number', ['coalesce', ['get', 'distance_to_water_m'], 9999]], 180],
+                  ] as any}
                   style={{
                     circleColor: [
                       'match',
@@ -6283,6 +8641,26 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           CircleLayer &&
           SymbolLayer && (
           <>
+            {routeCorridorGeoJSON && FillLayer && (
+              <ShapeSource id="route-corridor-source" shape={routeCorridorGeoJSON as any}>
+                <FillLayer
+                  id="route-corridor-fill"
+                  style={{
+                    fillColor: ['get', 'fillColor'],
+                    fillOpacity: navPresentationActive ? 0.18 : 0.11,
+                  }}
+                />
+                <LineLayer
+                  id="route-corridor-outline"
+                  style={{
+                    lineColor: ['get', 'lineColor'],
+                    lineWidth: navPresentationActive ? 1.4 : 1,
+                    lineOpacity: navPresentationActive ? 0.55 : 0.32,
+                  }}
+                />
+              </ShapeSource>
+            )}
+
             {routeLineGeoJSON && (
               <ShapeSource id="route-line-source" shape={routeLineGeoJSON as any}>
                 <LineLayer
@@ -6304,26 +8682,207 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
               </ShapeSource>
             )}
 
+            {!routeNavActive && PointAnnotation && routePoints.map((point, index) => {
+              const markerKind =
+                index === 0 ? 'start' : index === routePoints.length - 1 ? 'end' : 'waypoint';
+              const label =
+                markerKind === 'start'
+                  ? 'A'
+                  : markerKind === 'end'
+                    ? 'B'
+                    : `${index}`;
+              const bgColor =
+                markerKind === 'start'
+                  ? '#1E8E5A'
+                  : markerKind === 'end'
+                    ? '#C44B4B'
+                    : '#1F6FB2';
+              return (
+                <PointAnnotation
+                  key={`route-handle-${index}`}
+                  id={`route-handle-${index}`}
+                  coordinate={[point.lon, point.lat]}
+                  draggable
+                  anchor={{ x: 0.5, y: 0.5 }}
+                  onDragEnd={(event: any) => handleDragRoutePoint(index, event)}
+                >
+                  <View style={[styles.routeHandlePin, { backgroundColor: bgColor }]}>
+                    <Text style={styles.routeHandlePinText}>{label}</Text>
+                  </View>
+                </PointAnnotation>
+              );
+            })}
+
             {routePointGeoJSON && (
               <ShapeSource id="route-point-source" shape={routePointGeoJSON as any}>
                 <CircleLayer
                   id="route-point-layer"
                   style={{
-                    circleRadius: 8,
-                    circleColor: '#FFFFFF',
-                    circleStrokeColor: '#1F6FB2',
+                    circleRadius: [
+                      'match',
+                      ['get', 'markerKind'],
+                      'start', 10,
+                      'end', 10,
+                      8,
+                    ] as any,
+                    circleColor: [
+                      'match',
+                      ['get', 'markerKind'],
+                      'start', '#1E8E5A',
+                      'end', '#C44B4B',
+                      '#FFFFFF',
+                    ] as any,
+                    circleStrokeColor: [
+                      'match',
+                      ['get', 'markerKind'],
+                      'start', '#F3FBF7',
+                      'end', '#FFF4F4',
+                      '#1F6FB2',
+                    ] as any,
                     circleStrokeWidth: 3,
                   }}
                 />
                 <SymbolLayer
                   id="route-point-labels"
                   style={{
-                    textField: ['to-string', ['get', 'index']] as any,
-                    textColor: '#1F6FB2',
+                    textField: ['get', 'shortLabel'] as any,
+                    textColor: [
+                      'match',
+                      ['get', 'markerKind'],
+                      'waypoint', '#1F6FB2',
+                      '#FFFFFF',
+                    ] as any,
                     textSize: 11,
                     textFont: FONT_STACKS.bold,
                     textAllowOverlap: true,
                     textIgnorePlacement: true,
+                  }}
+                />
+                <SymbolLayer
+                  id="route-point-captions"
+                  minZoomLevel={8}
+                  style={{
+                    textField: ['get', 'label'] as any,
+                    textColor: '#355B75',
+                    textHaloColor: '#FFFFFF',
+                    textHaloWidth: 1.2,
+                    textSize: 10,
+                    textFont: FONT_STACKS.bold,
+                    textOffset: [0, 2.1],
+                    textAnchor: 'top',
+                    textAllowOverlap: true,
+                    textIgnorePlacement: true,
+                  }}
+                />
+              </ShapeSource>
+            )}
+
+            {pendingRouteDestinationGeoJSON && (
+              <ShapeSource id="route-pending-destination-source" shape={pendingRouteDestinationGeoJSON as any}>
+                <CircleLayer
+                  id="route-pending-destination-layer"
+                  style={{
+                    circleRadius: 10,
+                    circleColor: '#C44B4B',
+                    circleStrokeColor: '#FFF4F4',
+                    circleStrokeWidth: 3,
+                  }}
+                />
+                <SymbolLayer
+                  id="route-pending-destination-label"
+                  style={{
+                    textField: 'B',
+                    textColor: '#FFFFFF',
+                    textSize: 11,
+                    textFont: FONT_STACKS.bold,
+                    textAllowOverlap: true,
+                    textIgnorePlacement: true,
+                  }}
+                />
+                <SymbolLayer
+                  id="route-pending-destination-caption"
+                  minZoomLevel={8}
+                  style={{
+                    textField: ['get', 'label'] as any,
+                    textColor: '#355B75',
+                    textHaloColor: '#FFFFFF',
+                    textHaloWidth: 1.2,
+                    textSize: 10,
+                    textFont: FONT_STACKS.bold,
+                    textOffset: [0, 2.1],
+                    textAnchor: 'top',
+                    textAllowOverlap: true,
+                    textIgnorePlacement: true,
+                  }}
+                />
+              </ShapeSource>
+            )}
+
+            {routeWarningGeoJSON && (
+              <ShapeSource id="route-warning-source" shape={routeWarningGeoJSON as any}>
+                <CircleLayer
+                  id="route-warning-layer"
+                  style={{
+                    circleRadius: [
+                      'interpolate',
+                      ['linear'],
+                      ['zoom'],
+                      8, 8,
+                      11, 12,
+                      14, 18,
+                    ] as any,
+                    circleColor: [
+                      'match',
+                      ['get', 'severity'],
+                      'danger', 'rgba(196, 75, 75, 0.34)',
+                      'rgba(201, 106, 24, 0.24)',
+                    ] as any,
+                    circleStrokeColor: [
+                      'match',
+                      ['get', 'severity'],
+                      'danger', '#C44B4B',
+                      '#C96A18',
+                    ] as any,
+                    circleStrokeWidth: 1.4,
+                  }}
+                />
+                <SymbolLayer
+                  id="route-warning-short-label"
+                  minZoomLevel={10}
+                  style={{
+                    textField: ['get', 'shortLabel'] as any,
+                    textColor: [
+                      'match',
+                      ['get', 'severity'],
+                      'danger', '#8A1F1F',
+                      '#8A4D12',
+                    ] as any,
+                    textSize: 10,
+                    textFont: FONT_STACKS.bold,
+                    textAllowOverlap: true,
+                    textIgnorePlacement: true,
+                  }}
+                />
+                <SymbolLayer
+                  id="route-warning-caption"
+                  minZoomLevel={11}
+                  style={{
+                    textField: ['get', 'label'] as any,
+                    textColor: [
+                      'match',
+                      ['get', 'severity'],
+                      'danger', '#8A1F1F',
+                      '#8A4D12',
+                    ] as any,
+                    textHaloColor: '#FFF7F2',
+                    textHaloWidth: 1.15,
+                    textSize: 10.5,
+                    textFont: FONT_STACKS.bold,
+                    textOffset: [0, 1.9],
+                    textAnchor: 'top',
+                    textAllowOverlap: false,
+                    textIgnorePlacement: false,
+                    textOptional: true,
                   }}
                 />
               </ShapeSource>
@@ -6332,7 +8891,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Fishing location markers — clustered for smooth zoomed-out rendering */}
-        {markerMode === 'locations' && ShapeSource && CircleLayer && SymbolLayer && (
+        {markerMode === 'locations' && !navPresentationActive && !routePlannerVisible && ShapeSource && CircleLayer && SymbolLayer && (
           <ShapeSource
             ref={locationSourceRef}
             id="location-marker-source"
@@ -6404,7 +8963,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         )}
 
         {/* Selected pin highlight — separate layer to avoid full GeoJSON rebuild */}
-        {markerMode === 'locations' && selectedPinGeoJSON && ShapeSource && CircleLayer && (
+        {markerMode === 'locations' && !navPresentationActive && !routePlannerVisible && selectedPinGeoJSON && ShapeSource && CircleLayer && (
           <ShapeSource
             id="selected-pin-source"
             shape={selectedPinGeoJSON as any}
@@ -6671,58 +9230,18 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           })}
 
         {/* Wind overlay */}
-        {windEnabled && windGeoJSON && ShapeSource && CircleLayer && SymbolLayer && (
-          <ShapeSource id="wind-arrow-source" shape={windGeoJSON}>
-            <CircleLayer
-              id="wind-point-layer"
-              style={{
-                circleRadius: [
-                  'interpolate',
-                  ['linear'],
-                  ['zoom'],
-                  4, 4,
-                  7, 5.5,
-                  10, 7,
-                ] as any,
-                circleColor: [
-                  'interpolate',
-                  ['linear'],
-                  ['get', 'speedMph'],
-                  0, '#4CAF50',
-                  12, '#FFC107',
-                  24, '#FF9800',
-                  38, '#F44336',
-                ],
-                circleOpacity: 0.92,
-                circleStrokeColor: '#FFFFFF',
-                circleStrokeWidth: 1.2,
-              }}
-            />
-            <SymbolLayer
-              id="wind-arrow-layer"
-              style={{
-                textField: [
-                  'concat',
-                  ['to-string', ['round', ['get', 'speedMph']]],
-                  ' mph',
-                ] as any,
-                textAllowOverlap: true,
-                textIgnorePlacement: true,
-                textSize: [
-                  'interpolate',
-                  ['linear'],
-                  ['zoom'],
-                  4, 0,
-                  6, 10,
-                  9, 11.5,
-                ] as any,
-                textColor: '#18354A',
-                textHaloColor: 'rgba(255,255,255,0.92)',
-                textHaloWidth: 1.2,
-                textOffset: [0, 1.35] as any,
-              }}
-            />
-          </ShapeSource>
+        {windEnabled && ShapeSource && CircleLayer && SymbolLayer && (
+          <WindOverlayAnimated
+            lat={mapFeatureLocation?.lat ?? DEFAULT_CENTER[1]}
+            lon={mapFeatureLocation?.lon ?? DEFAULT_CENTER[0]}
+            bounds={visibleContourBounds}
+            ShapeSource={ShapeSource}
+            SymbolLayer={SymbolLayer}
+            CircleLayer={CircleLayer}
+            onLoadStart={() => setWindLoading(true)}
+            onLoadEnd={() => setWindLoading(false)}
+            onDataLoaded={({ vectorCount }) => setWindVectorCount(vectorCount)}
+          />
         )}
         {/* Precipitation radar overlay */}
         {radarEnabled && radarTileUrl && RasterSource && RasterLayer && (
@@ -6975,7 +9494,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       {/* Dismiss track overlay after recording stops */}
       {!liveTrack && liveTrackGeoJSON && dismissedTrackId !== (liveTrack as any)?.id && (
         <Pressable
-          style={styles.dismissTrackBanner}
+          style={[styles.dismissTrackBanner, { top: topBannerTop }]}
           onPress={() => {
             setLiveTrackGeoJSON(null);
           }}
@@ -6991,6 +9510,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           style={[
             styles.anchorWatchBanner,
             anchorStatus.alarm && styles.anchorWatchBannerAlarm,
+            { top: topBannerTop },
             { transform: [{ scale: anchorStatus.alarm ? anchorBannerPulse : 1 }] },
           ]}
         >
@@ -7014,7 +9534,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
       {/* ── MOB Active Banner ──────────────────────────────────────── */}
       {mobStatus.active && mobStatus.event && (
-        <View style={styles.mobBanner}>
+        <View style={[styles.mobBanner, { top: topBannerTop }]}>
           <View style={styles.mobBannerDot} />
           <View style={{ flex: 1 }}>
             <Text style={styles.mobBannerTitle}>MAN OVERBOARD</Text>
@@ -7029,67 +9549,40 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       )}
 
       {/* Search bar overlay */}
-      <View style={styles.searchOverlay}>
-        <EnhancedSearchBar
-          value={search}
-          onChangeText={setSearch}
-          onClear={() => setSearch('')}
-          onSelectLocation={handleSearchSelectLocation}
-          nearbySpots={locationsWithDistance.slice(0, 10).map((item) => ({
-            id: item.location.id,
-            name: item.location.name,
-            subtitle: item.location.subtitle,
-            distanceMi: item.distanceMi ?? undefined,
-            type: item.location.subtitle,
-          }))}
-          allLocations={allLocations.map((loc) => ({
-            id: loc.id,
-            name: loc.name,
-            subtitle: loc.subtitle,
-            distanceMi: userLocation
-              ? haversineDistance(userLocation.lat, userLocation.lon, loc.lat, loc.lon)
-              : undefined,
-            type: loc.subtitle,
-          }))}
-        />
-        {/* Filter chips */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterChipsRow}>
-          {[
-            { key: 'shore', label: 'Shore Fishing', icon: 'walk-outline' },
-            { key: 'boat-launch', label: 'Boat Launch', icon: 'boat-outline' },
-            { key: 'kayak', label: 'Kayak', icon: 'water-outline' },
-            { key: 'free-parking', label: 'Free Parking', icon: 'car-outline' },
-            { key: 'public', label: 'Public Access', icon: 'globe-outline' },
-          ].map((f) => {
-            const isActive = activeFilters.has(f.key);
-            return (
-              <Pressable
-                key={f.key}
-                style={[styles.filterChip, isActive && styles.filterChipActive]}
-                onPress={() => setActiveFilters((prev) => {
-                  const next = new Set(prev);
-                  if (next.has(f.key)) next.delete(f.key);
-                  else next.add(f.key);
-                  return next;
-                })}
-              >
-                <Ionicons
-                  name={f.icon as any}
-                  size={12}
-                  color={isActive ? '#FFFFFF' : palette.textSecondary}
-                />
-                <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
-                  {f.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
+      {!routeNavActive && (
+        <View
+          style={[styles.searchOverlay, { top: topStackTop }]}
+          onLayout={(event) => {
+            const nextHeight = Math.ceil(event.nativeEvent.layout.height);
+            if (Math.abs(nextHeight - searchOverlayHeight) > 2) {
+              setSearchOverlayHeight(nextHeight);
+            }
+          }}
+        >
+          <EnhancedSearchBar
+            value={search}
+            onChangeText={setSearch}
+            onClear={() => setSearch('')}
+            onSubmit={handleSearchSubmit}
+            onSelectLocation={handleSearchSelectLocation}
+            onStartRoute={handleStartRouteFromSearch}
+            onStartRouteToLocation={handleStartRouteToLocation}
+            routeActive={routePlannerVisible}
+            nearbySpots={defaultNearbyLocations.slice(0, 10).map((item) => ({
+              id: item.location.id,
+              name: getPrimaryLocationLabel(item.location),
+              subtitle: getSecondaryLocationLabel(item.location),
+              distanceMi: item.distanceMi ?? undefined,
+              type: cleanLocationText(item.location.subtitle),
+            }))}
+            allLocations={searchBarLocations}
+          />
+        </View>
+      )}
 
       {/* Weather alert banner */}
-      {topAlert && !alertBannerDismissed && (
-        <View style={[styles.alertBanner, { backgroundColor: bannerColor }]}>
+      {showTopMapAlerts && topAlert && !alertBannerDismissed && !routePlannerVisible && (
+        <View style={[styles.alertBanner, { backgroundColor: bannerColor, top: topBannerTop }]}>
           <Pressable
             style={styles.alertBannerContent}
             onPress={() => setAlertBannerExpanded((prev) => !prev)}
@@ -7148,89 +9641,52 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         </View>
       )}
 
-      {/* Segmented control: Locations / My Spots */}
-      <View style={styles.segmentedOverlay}>
-        <View style={styles.segmentedControl}>
-          <Pressable
-            style={[
-              styles.segmentButton,
-              markerMode === 'locations' && styles.segmentButtonActive,
-            ]}
-            onPress={() => setMarkerMode('locations')}
-          >
-            <Ionicons
-              name="location-outline"
-              size={14}
-              color={markerMode === 'locations' ? '#FFFFFF' : palette.textMuted}
-              style={{ marginRight: 4 }}
-            />
-            <Text
-              style={[
-                styles.segmentText,
-                markerMode === 'locations' && styles.segmentTextActive,
-              ]}
-            >
-              Locations
-            </Text>
-          </Pressable>
-          <Pressable
-            style={[
-              styles.segmentButton,
-              markerMode === 'waypoints' && styles.segmentButtonActive,
-            ]}
-            onPress={() => setMarkerMode('waypoints')}
-          >
-            <Ionicons
-              name="bookmark-outline"
-              size={14}
-              color={markerMode === 'waypoints' ? '#FFFFFF' : palette.textMuted}
-              style={{ marginRight: 4 }}
-            />
-            <Text
-              style={[
-                styles.segmentText,
-                markerMode === 'waypoints' && styles.segmentTextActive,
-              ]}
-            >
-              My Spots
-            </Text>
-          </Pressable>
-        </View>
-      </View>
-
       {/* Map style toggle button */}
-      <Pressable
-        style={styles.layerButton}
-        onPress={handleToggleLayerPicker}
-        accessibilityLabel={`Map style: ${MAP_STYLE_LABELS[mapStyle]}. Tap to change the basemap.`}
-      >
-        <Ionicons name="layers-outline" size={20} color={palette.textSecondary} />
-      </Pressable>
+      {showFloatingMapControls && (
+        <Pressable
+          style={[styles.layerButton, { top: floatingControlsTop }]}
+          onPress={handleToggleLayerPicker}
+          accessibilityLabel={`Map style: ${MAP_STYLE_LABELS[mapStyle]}. Tap to change the basemap.`}
+        >
+          <Ionicons name="layers-outline" size={20} color={palette.textSecondary} />
+        </Pressable>
+      )}
 
       {/* Map Tools button — opens slide-out drawer (replaces 7 individual buttons) */}
       {/* Design: "Kitchen Sink" avoidance per Gaigg Ch.7 */}
-      <Pressable
-        style={[styles.mapToolsButton, mapToolsActiveCount > 0 && styles.mapToolsButtonActive]}
-        onPress={() => setMapToolsDrawerOpen(true)}
-        accessibilityLabel="Open map tools drawer"
-      >
-        <Ionicons
-          name="build-outline"
-          size={20}
-          color={mapToolsActiveCount > 0 ? '#FFFFFF' : palette.textSecondary}
-        />
-        {mapToolsActiveCount > 0 && (
-          <View style={styles.mapToolsBadge}>
-            <Text style={styles.mapToolsBadgeText}>
-              {mapToolsActiveCount}
-            </Text>
-          </View>
-        )}
-      </Pressable>
+      {showFloatingMapControls && (
+        <Pressable
+          style={[
+            styles.mapToolsButton,
+            { top: floatingControlsTop + 48 },
+            mapToolsActiveCount > 0 && styles.mapToolsButtonActive,
+          ]}
+          onPress={() => setMapToolsDrawerOpen(true)}
+          accessibilityLabel="Open map tools drawer"
+        >
+          <Ionicons
+            name="build-outline"
+            size={20}
+            color={mapToolsActiveCount > 0 ? '#FFFFFF' : palette.textSecondary}
+          />
+          {mapToolsActiveCount > 0 && (
+            <View style={styles.mapToolsBadge}>
+              <Text style={styles.mapToolsBadgeText}>
+                {mapToolsActiveCount}
+              </Text>
+            </View>
+          )}
+        </Pressable>
+      )}
 
       {/* Compass heading widget — only visible when map is rotated */}
-      {!shouldHideCompass && (
-        <CompassWidget heading={compassHeading} mode={compassMode} onToggleMode={handleToggleCompassMode} />
+      {showFloatingMapControls && !shouldHideCompass && (
+        <CompassWidget
+          heading={compassHeading}
+          mode={compassMode}
+          onToggleMode={handleToggleCompassMode}
+          style={{ top: floatingControlsTop }}
+        />
       )}
 
       {/* Overlay loading banner — shows when any overlay is fetching data */}
@@ -7245,12 +9701,9 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
 
       {/* Catch photos toggle available via layer picker */}
 
-      {/* Speed/Course HUD — shows when moving at boating speed */}
-      <SpeedCourseHUD />
-
       {/* Fishing time banner — shows when conditions are good */}
-      {userLocation && (
-        <FishingTimeBanner lat={userLocation.lat} lon={userLocation.lon} />
+      {mapFeatureLocation && !routePlannerVisible && (
+        <FishingTimeBanner lat={mapFeatureLocation.lat} lon={mapFeatureLocation.lon} />
       )}
 
       {/* Precipitation radar controls */}
@@ -7281,9 +9734,33 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         </View>
       )}
 
+      {(windEnabled || radarEnabled || dynamicDepthsEnabled) && !mapWeatherPanelDismissed && !routePlannerVisible && (
+        <Animated.View
+          pointerEvents="box-none"
+          style={[
+            styles.mapWeatherPanelWrap,
+            {
+              bottom: markerMode === 'locations'
+                ? Animated.add(sheetHeight, 16)
+                : radarEnabled && radarFrames.length > 0
+                  ? (Platform.OS === 'ios' ? 170 : 150)
+                  : 24,
+            },
+          ]}
+        >
+          <MapWeatherPanel
+            forecast={mapWeatherForecast}
+            tideSummary={mapTideSummary}
+            compact={windEnabled && !radarEnabled && !dynamicDepthsEnabled}
+            loading={mapWeatherLoading || windLoading}
+            onClose={() => setMapWeatherPanelDismissed(true)}
+          />
+        </Animated.View>
+      )}
+
       {/* Storm cell warnings */}
-      {stormCells.length > 0 && (
-        <View style={styles.stormBanner}>
+      {showTopMapAlerts && stormCells.length > 0 && !routePlannerVisible && (
+        <View style={[styles.stormBanner, { top: topBannerTop }]}>
           <Ionicons name="thunderstorm" size={16} color="#D50000" style={{ marginRight: 6 }} />
           <View style={{ flex: 1 }}>
             <Text style={styles.stormBannerTitle}>
@@ -7298,42 +9775,187 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         </View>
       )}
 
-      {(routeMode || routePoints.length > 0) && (
-        <View style={styles.routePlannerCard}>
+      {routePlannerVisible && (
+        <View
+          style={[
+            styles.routePlannerCard,
+            routeNavActive && styles.routePlannerCardNavActive,
+            { bottom: routePlannerBottom, maxHeight: routePlannerMaxHeight },
+          ]}
+        >
+          <View style={styles.routePlannerSheetHandle} />
           <View style={styles.routePlannerHeader}>
             <View style={{ flex: 1 }}>
               <Text style={styles.routePlannerTitle}>
-                {routeName || 'Route Builder'}
+                {routeNavActive ? 'Navigation' : routeName || 'Route Builder'}
               </Text>
-              <Text style={styles.routePlannerSubtitle} numberOfLines={1}>
-                {routeMode
-                  ? 'Tap the map to add route points. Drag the map, then keep tapping to shape your line.'
+              <Text style={styles.routePlannerSubtitle} numberOfLines={showRoutePlannerDetails ? 2 : 1}>
+                {routeNavActive
+                  ? 'Follow the shaded lane ahead. Drag handles any time before or after you stop navigation.'
+                  : routeMode
+                  ? pendingRouteDestination
+                    ? 'Choose a start on the water, then we will route to the pinned destination.'
+                    : 'Tap the water to place turns. Adjust the route live.'
                   : routeMetrics
-                    ? `${routePoints.length} points · ${routeMetrics.totalDistanceMi.toFixed(1)} mi · ETA ${routeMetrics.adjustedTimeLabel}`
+                    ? 'Draft-aware autoroute ready'
                     : routePoints.length > 0
                       ? `${routePoints.length} point${routePoints.length === 1 ? '' : 's'} placed`
                       : 'Start by tapping the map'}
               </Text>
             </View>
-            <Pressable
-              style={styles.routePlannerClose}
-              onPress={() => {
-                if (routeMode) {
-                  setRouteMode(false);
-                } else {
-                  handleClearRoutePlan();
-                }
-              }}
-            >
-              <Ionicons
-                name={routeMode ? 'checkmark' : 'close'}
-                size={16}
-                color={routeMode ? '#1565C0' : palette.textSecondary}
-              />
-            </Pressable>
+            <View style={styles.routePlannerHeaderActions}>
+              <Pressable
+                style={styles.routePlannerHeaderButton}
+                onPress={() => setRoutePlannerExpanded((prev) => !prev)}
+              >
+                <Ionicons
+                  name={showRoutePlannerDetails ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color={palette.textSecondary}
+                />
+              </Pressable>
+              <Pressable
+                style={styles.routePlannerClose}
+                onPress={() => {
+                  if (routeMode) {
+                    setRouteMode(false);
+                  } else {
+                    handleClearRoutePlan();
+                  }
+                }}
+              >
+                <Ionicons
+                  name={routeMode ? 'checkmark' : 'close'}
+                  size={16}
+                  color={routeMode ? '#1565C0' : palette.textSecondary}
+                />
+              </Pressable>
+            </View>
           </View>
 
+          {(routeNavActive || routeMetrics || routePoints.length > 0 || pendingRouteDestination) && (
+            <View style={styles.routePlannerSummaryStrip}>
+              <View style={styles.routePlannerSummaryCopy}>
+                <Text style={styles.routePlannerSummaryEyebrow}>
+                  {routeNavActive ? 'Live Navigation' : 'AutoRoute'}
+                </Text>
+                <Text style={styles.routePlannerSummaryPrimary} numberOfLines={1}>
+                  {routeOverviewText}
+                </Text>
+                <Text style={styles.routePlannerSummarySecondary} numberOfLines={showRoutePlannerDetails ? 2 : 1}>
+                  {routeSupportText}
+                </Text>
+              </View>
+              <View style={[styles.routePlannerStatusBadge, { backgroundColor: `${routeStatusTone}14` }]}>
+                <Ionicons
+                  name={
+                    routeNavActive
+                      ? 'navigate'
+                      : routeAlerts.length > 0
+                        ? 'git-branch-outline'
+                        : routeWarnings.length > 0
+                          ? 'warning-outline'
+                          : 'checkmark-circle-outline'
+                  }
+                  size={14}
+                  color={routeStatusTone}
+                />
+                <Text style={[styles.routePlannerStatusBadgeText, { color: routeStatusTone }]}>
+                  {routeStatusLabel}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {routeMode && !routeNavActive && (
+            <View style={styles.routePlannerGuideBanner}>
+              <Ionicons name="navigate-outline" size={14} color="#1565C0" />
+              <Text style={styles.routePlannerGuideText}>
+                {routeTapBannerTextValue}
+              </Text>
+            </View>
+          )}
+
+          {!routeNavActive && (
+            <View style={styles.routePlannerPlacementRow}>
+              {([
+                ['start', 'Set A'],
+                ['stop', 'Add Stop'],
+                ['end', 'Set B'],
+              ] as const).map(([mode, label]) => {
+                const active = routePlacementMode === mode;
+                return (
+                  <Pressable
+                    key={mode}
+                    style={[
+                      styles.routePlannerPlacementBtn,
+                      active && styles.routePlannerPlacementBtnActive,
+                    ]}
+                    onPress={() => {
+                      setRouteMode(true);
+                      setRoutePlacementMode(mode);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.routePlannerPlacementText,
+                        active && styles.routePlannerPlacementTextActive,
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+
+          {routeMetrics && showRoutePlannerDetails && (
+            <View style={styles.routePlannerHeroRow}>
+              <View style={styles.routePlannerHeroCard}>
+                <Text style={styles.routePlannerHeroLabel}>Distance</Text>
+                <Text style={styles.routePlannerHeroValue}>{routeDistancePrimaryLabel}</Text>
+                <Text style={styles.routePlannerHeroSub}>{routeDistanceSecondaryLabel}</Text>
+              </View>
+              <View style={styles.routePlannerHeroCard}>
+                <Text style={styles.routePlannerHeroLabel}>Remaining</Text>
+                <Text style={styles.routePlannerHeroValue}>{routeMetrics.adjustedTimeLabel}</Text>
+                <Text style={styles.routePlannerHeroSub}>at {routeMetrics.cruiseSpeedKnots.toFixed(0)} kt cruise</Text>
+              </View>
+              <View style={styles.routePlannerHeroCard}>
+                <Text style={styles.routePlannerHeroLabel}>Arrival</Text>
+                <Text style={styles.routePlannerHeroValue}>{routeArrivalLabel}</Text>
+                <Text style={styles.routePlannerHeroSub}>
+                  {routeWarnings.length > 0 ? 'draft-aware caution' : 'clear path'}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {!!routeNextLegText && showRoutePlannerDetails && (
+            <View style={styles.routePlannerNavCard}>
+              <View style={styles.routePlannerNavIcon}>
+                <Ionicons name="navigate" size={15} color="#355B75" />
+              </View>
+              <View style={styles.routePlannerNavCopy}>
+                <Text style={styles.routePlannerNavTitle}>Next leg</Text>
+                <Text style={styles.routePlannerNavSubtitle} numberOfLines={1}>
+                  {routeNextLegText}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {(!routeNavActive || showRoutePlannerDetails) && (
           <View style={styles.routePlannerMetricRow}>
+            {pendingRouteDestination && (
+              <View style={styles.routePlannerMetricPill}>
+                <Ionicons name="flag-outline" size={12} color="#C44B4B" />
+                <Text style={styles.routePlannerMetricText}>
+                  Destination: {pendingRouteDestination.label ?? 'Pinned'}
+                </Text>
+              </View>
+            )}
             <View style={styles.routePlannerMetricPill}>
               <Ionicons name="pin-outline" size={12} color="#1565C0" />
               <Text style={styles.routePlannerMetricText}>{routePoints.length} pts</Text>
@@ -7341,7 +9963,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             <View style={styles.routePlannerMetricPill}>
               <Ionicons name="resize-outline" size={12} color="#1565C0" />
               <Text style={styles.routePlannerMetricText}>
-                {routeMetrics ? `${routeMetrics.totalDistanceMi.toFixed(1)} mi` : 'Tap to start'}
+                {routeDistancePrimaryLabel}
               </Text>
             </View>
             <View style={styles.routePlannerMetricPill}>
@@ -7356,29 +9978,214 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                         : 'water-outline'
                 }
                 size={12}
-                color={
-                  routeDepthChecking
-                    ? '#1565C0'
-                    : routeAlerts.length > 0
-                      ? '#2E7D32'
-                      : routeWarnings.length > 0
-                        ? '#C96A18'
-                        : '#1565C0'
-                }
+                color={routeStatusTone}
               />
               <Text style={styles.routePlannerMetricText}>
-                {routeDepthChecking
-                  ? 'Checking depth'
-                  : routeAlerts.length > 0
-                    ? 'Auto-routed'
-                  : routeWarnings.length > 0
-                    ? `${routeWarnings.length} shallow`
-                    : 'Depth clear'}
+                {routeStatusLabel}
               </Text>
             </View>
+            {routeMetrics && (
+              <View style={[styles.routePlannerMetricPill, { backgroundColor: `${routeStatusTone}12` }]}>
+                <Ionicons name="boat-outline" size={12} color={routeStatusTone} />
+                <Text style={[styles.routePlannerMetricText, { color: routeStatusTone }]}>
+                  Draft {routeDraftPrimaryLabel}
+                </Text>
+              </View>
+            )}
+            <Pressable
+              style={styles.routePlannerMetricPill}
+              onPress={() => setRoutePlannerExpanded((prev) => !prev)}
+            >
+              <Ionicons
+                name={showRoutePlannerDetails ? 'chevron-up-outline' : 'options-outline'}
+                size={12}
+                color="#1565C0"
+              />
+              <Text style={styles.routePlannerMetricText}>
+                {showRoutePlannerDetails ? 'Hide details' : 'Details'}
+              </Text>
+            </Pressable>
+          </View>
+          )}
+
+          <View style={styles.routePlannerPrimaryActionRow}>
+            {!routeNavActive ? (
+              <Pressable
+                style={[styles.routePlannerGoButton, styles.routePlannerGoButtonLarge]}
+                onPress={() => {
+                  setRouteNavIndex(1);
+                  setCompassMode('static');
+                  setRouteCameraMode('follow-3d');
+                  setRouteMode(false);
+                  setRouteNavActive(true);
+                  setRouteTurnSheetVisible(false);
+                  setRoutePlannerExpanded(false);
+                }}
+                disabled={!plannedRoute || routePoints.length < 2}
+              >
+                <Ionicons
+                  name="navigate-outline"
+                  size={17}
+                  color="#FFFFFF"
+                />
+                <Text style={styles.routePlannerGoButtonText}>
+                  Start Navigation
+                </Text>
+              </Pressable>
+            ) : (
+              <>
+                <Pressable
+                  style={[styles.routePlannerGoButton, routeNavActive && styles.routePlannerGoButtonActive]}
+                  onPress={() => {
+                    setRouteNavActive(false);
+                    setRouteCameraMode('overview');
+                    setRouteTurnSheetVisible(false);
+                  }}
+                  disabled={!plannedRoute || routePoints.length < 2}
+                >
+                  <Ionicons
+                    name="pause-outline"
+                    size={15}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.routePlannerGoButtonText}>
+                    Stop Route
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={styles.routePlannerPrimarySecondaryBtn}
+                  onPress={() => {
+                    setRouteCameraMode((prev) => (prev === 'overview' ? 'follow-3d' : 'overview'));
+                  }}
+                >
+                  <Ionicons
+                    name={routeCameraMode === 'overview' ? 'navigate-outline' : 'map-outline'}
+                    size={14}
+                    color={palette.textSecondary}
+                  />
+                  <Text style={styles.routePlannerActionText}>
+                    {routeCameraMode === 'overview' ? 'Follow' : 'Overview'}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={styles.routePlannerPrimarySecondaryBtn}
+                  onPress={() => setRouteTurnSheetVisible(true)}
+                  disabled={!routeTurnItems.length}
+                >
+                  <Ionicons name="list-outline" size={14} color={palette.textSecondary} />
+                  <Text style={styles.routePlannerActionText}>Turns</Text>
+                </Pressable>
+              </>
+            )}
           </View>
 
+          {!routeNavActive && (
+            <View style={styles.routePlannerPrimaryActionRow}>
+              <Pressable
+                style={styles.routePlannerPrimarySecondaryBtn}
+                onPress={handleSavePlannedRoute}
+                disabled={!plannedRoute}
+              >
+                <Ionicons name="bookmark-outline" size={14} color={palette.textSecondary} />
+                <Text style={styles.routePlannerActionText}>Save</Text>
+              </Pressable>
+              <Pressable
+                style={styles.routePlannerPrimarySecondaryBtn}
+                onPress={() => setRouteTurnSheetVisible(true)}
+                disabled={!routeTurnItems.length}
+              >
+                <Ionicons name="list-outline" size={14} color={palette.textSecondary} />
+                <Text style={styles.routePlannerActionText}>Turns</Text>
+              </Pressable>
+              <Pressable
+                style={styles.routePlannerPrimarySecondaryBtn}
+                onPress={() => navigation.navigate('RoutePlanner')}
+              >
+                <Ionicons name="albums-outline" size={14} color={palette.textSecondary} />
+                <Text style={styles.routePlannerActionText}>Routes</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {showRoutePlannerDetails && (
+            <View style={styles.routePlannerControlRow}>
+              <View style={styles.routePlannerControlBlock}>
+                <Text style={styles.routePlannerControlLabel}>Boat draft</Text>
+                <View style={styles.routePlannerStepper}>
+                  <Pressable
+                    style={styles.routePlannerStepperBtn}
+                    onPress={() => adjustRouteDraft(-ROUTE_DRAFT_STEP_METERS)}
+                    disabled={!routeBoatProfile}
+                  >
+                    <Ionicons name="remove" size={14} color={palette.textSecondary} />
+                  </Pressable>
+                  <View style={styles.routePlannerStepperValueWrap}>
+                    <Text style={styles.routePlannerStepperValue}>
+                      {routeDraftPrimaryLabel}
+                    </Text>
+                    <Text style={styles.routePlannerStepperSub}>{routeDraftSecondaryLabel}</Text>
+                  </View>
+                  <Pressable
+                    style={styles.routePlannerStepperBtn}
+                    onPress={() => adjustRouteDraft(ROUTE_DRAFT_STEP_METERS)}
+                    disabled={!routeBoatProfile}
+                  >
+                    <Ionicons name="add" size={14} color={palette.textSecondary} />
+                  </Pressable>
+                </View>
+              </View>
+
+              <View style={styles.routePlannerControlBlock}>
+                <Text style={styles.routePlannerControlLabel}>Nav camera</Text>
+                <View style={styles.routePlannerSegmented}>
+                  {([
+                    ['overview', 'Overview'],
+                    ['follow', 'Follow'],
+                    ['follow-3d', '3D'],
+                  ] as const).map(([mode, label]) => {
+                    const active = routeCameraMode === mode;
+                    return (
+                      <Pressable
+                        key={mode}
+                        style={[
+                          styles.routePlannerSegmentBtn,
+                          active && styles.routePlannerSegmentBtnActive,
+                        ]}
+                        onPress={() => setRouteCameraMode(mode)}
+                      >
+                        <Text
+                          style={[
+                            styles.routePlannerSegmentText,
+                            active && styles.routePlannerSegmentTextActive,
+                          ]}
+                        >
+                          {label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            </View>
+          )}
+
+          {!routeNavActive && (
           <View style={styles.routePlannerActionRow}>
+            {!routeNavActive && (
+              <Pressable
+                style={[styles.routePlannerActionBtn, styles.routePlannerActionBtnPrimary]}
+                onPress={handleAddRoutePointAtCenter}
+              >
+                <Ionicons name="locate-outline" size={14} color="#FFFFFF" />
+                <Text style={[styles.routePlannerActionText, styles.routePlannerActionTextPrimary]}>
+                  {routePlacementMode === 'start'
+                    ? 'Use Center for A'
+                    : routePlacementMode === 'end'
+                      ? 'Use Center for B'
+                      : 'Use Center for Stop'}
+                </Text>
+              </Pressable>
+            )}
             <Pressable
               style={[styles.routePlannerActionBtn, routeMode && styles.routePlannerActionBtnPrimary]}
               onPress={() => {
@@ -7407,36 +10214,111 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
               <Text style={styles.routePlannerActionText}>Undo</Text>
             </Pressable>
             <Pressable
-              style={styles.routePlannerActionBtn}
-              onPress={handleSavePlannedRoute}
-              disabled={!plannedRoute}
-            >
-              <Ionicons name="bookmark-outline" size={14} color={palette.textSecondary} />
-              <Text style={styles.routePlannerActionText}>Save</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.routePlannerActionBtn, routeNavActive && styles.routePlannerActionBtnPrimary]}
-              onPress={() => {
-                if (!routeNavActive) {
-                  setRouteNavIndex(1);
-                }
-                setRouteMode(false);
-                setRouteNavActive((prev) => !prev);
-              }}
-              disabled={!plannedRoute || routePoints.length < 2}
+              style={[styles.routePlannerActionBtn, marineGasEnabled && styles.routePlannerActionBtnPrimary]}
+              onPress={() => setMarineGasEnabled((prev) => !prev)}
             >
               <Ionicons
-                name={routeNavActive ? 'pause-outline' : 'navigate-outline'}
+                name="car-outline"
                 size={14}
-                color={routeNavActive ? '#FFFFFF' : palette.textSecondary}
+                color={marineGasEnabled ? '#FFFFFF' : palette.textSecondary}
               />
-              <Text style={[styles.routePlannerActionText, routeNavActive && styles.routePlannerActionTextPrimary]}>
-                {routeNavActive ? 'Stop' : 'Start'}
+              <Text style={[styles.routePlannerActionText, marineGasEnabled && styles.routePlannerActionTextPrimary]}>
+                Fuel
               </Text>
             </Pressable>
           </View>
+          )}
         </View>
       )}
+
+      {routeMode && !routeNavActive && (
+        <View pointerEvents="none" style={styles.routeTargetReticle}>
+          <View style={styles.routeTargetReticleRing}>
+            <View style={styles.routeTargetReticleDot} />
+          </View>
+          <View style={styles.routeTargetReticleHorizontal} />
+          <View style={styles.routeTargetReticleVertical} />
+        </View>
+      )}
+
+      <Modal
+        transparent
+        animationType="slide"
+        visible={routeTurnSheetVisible}
+        onRequestClose={() => setRouteTurnSheetVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setRouteTurnSheetVisible(false)}>
+          <View style={styles.routeTurnsBackdrop}>
+            <TouchableWithoutFeedback>
+              <View style={styles.routeTurnsSheet}>
+                <View style={styles.routeTurnsHandle} />
+                <View style={styles.routeTurnsHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.routeTurnsTitle}>Turn List</Text>
+                    <Text style={styles.routeTurnsSubtitle}>
+                      {routeNavActive ? 'Next maneuver is highlighted.' : 'Route legs and course changes.'}
+                    </Text>
+                  </View>
+                  <Pressable
+                    style={styles.routeTurnsClose}
+                    onPress={() => setRouteTurnSheetVisible(false)}
+                  >
+                    <Ionicons name="close" size={18} color={palette.textMuted} />
+                  </Pressable>
+                </View>
+
+                <ScrollView
+                  style={styles.routeTurnsScroll}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {routeTurnItems.map((item) => {
+                    const active = routeNavActive && item.segmentIndex === Math.max(routeNavIndex - 1, 0);
+                    const accent =
+                      item.severity === 'danger'
+                        ? '#C44B4B'
+                        : item.severity === 'caution'
+                          ? '#C96A18'
+                          : '#1F6FB2';
+                    return (
+                      <View
+                        key={item.id}
+                        style={[
+                          styles.routeTurnRow,
+                          active && styles.routeTurnRowActive,
+                        ]}
+                      >
+                        <View style={[styles.routeTurnIndexBubble, { backgroundColor: `${accent}18` }]}>
+                          <Text style={[styles.routeTurnIndexText, { color: accent }]}>
+                            {item.segmentIndex + 1}
+                          </Text>
+                        </View>
+                        <View style={styles.routeTurnCopy}>
+                          <Text style={styles.routeTurnTitle}>{item.title}</Text>
+                          <Text style={styles.routeTurnDetail}>{item.detail}</Text>
+                        </View>
+                        <View style={[styles.routeTurnSeverityPill, { backgroundColor: `${accent}14` }]}>
+                          <Text style={[styles.routeTurnSeverityText, { color: accent }]}>
+                            {item.severity === 'danger' ? 'No-go' : item.severity === 'caution' ? 'Shallow' : 'Clear'}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+
+                  {plannedRoute && (
+                    <View style={styles.routeTurnArrivalRow}>
+                      <Ionicons name="flag-outline" size={15} color="#C44B4B" />
+                      <Text style={styles.routeTurnArrivalText}>
+                        Arrive at {routeName || 'destination'}
+                      </Text>
+                    </View>
+                  )}
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
       {/* Measure mode banner */}
       {measureMode && (
@@ -7676,6 +10558,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         onToggleOverlay={handleToggleOverlay}
         onToggleQualityPins={() => setShowQualityPins((p) => !p)}
         onClose={() => setLayerPickerVisible(false)}
+        panelStyle={{ top: floatingControlsTop + 8 }}
       />
 
       {/* Tips are only shown on-demand via the lightbulb button on the focused card */}
@@ -7744,8 +10627,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
               )}
             </View>
             <View style={{ flex: 1, gap: 2 }}>
-              <Text style={styles.focusedName}>{focusedLocation.name || 'Unseen Site'}</Text>
-              <Text style={styles.focusedSubtitle}>{focusedLocation.subtitle || 'Water Body'}</Text>
+              <Text style={styles.focusedName}>{getPrimaryLocationLabel(focusedLocation)}</Text>
+              <Text style={styles.focusedSubtitle}>{getSecondaryLocationLabel(focusedLocation)}</Text>
               <View style={styles.focusedTags}>
                 {focusedLocation.id.startsWith('osm-') ? (
                   <>
@@ -7760,7 +10643,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                   </>
                 ) : highlightedAccessSummary ? (
                   <>
-                    {highlightedAccessSummary.boat_launch > 0 && (
+                  {highlightedAccessSummary.boat_launch > 0 && (
                       <View style={styles.focusedTag}>
                         <Ionicons name="boat-outline" size={10} color={ACCESS_POINT_CONFIG.boat_launch.color} />
                         <Text style={styles.focusedTagText}>{highlightedAccessSummary.boat_launch} Boat Launch{highlightedAccessSummary.boat_launch > 1 ? 'es' : ''}</Text>
@@ -7924,56 +10807,8 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
         </Animated.View>
       )}
 
-      {/* Quick Action FAB */}
-      {!focusedLocation && !mapToolsDrawerOpen && !routeMode && (
-        <QuickActionFAB
-          bottomOffset={Platform.OS === 'ios' ? 136 : 102}
-          actions={[
-            {
-              key: 'catch',
-              label: 'Log Catch',
-              icon: 'camera',
-              color: '#E53935',
-              onPress: () => navigation.navigate('CatchReport', {
-                lat: userLocation?.lat,
-                lon: userLocation?.lon,
-              }),
-            },
-            {
-              key: 'track',
-              label: 'Record Trip',
-              icon: 'play',
-              color: '#E65100',
-              onPress: () => navigation.navigate('TrackRecording'),
-            },
-            {
-              key: 'spot',
-              label: 'Mark Spot',
-              icon: 'pin',
-              color: '#2E7D32',
-              onPress: () => {
-                if (userLocation) {
-                  setPendingCoord({ latitude: userLocation.lat, longitude: userLocation.lon });
-                  setShowWaypointModal(true);
-                }
-              },
-            },
-            {
-              key: 'conditions',
-              label: 'Check Conditions',
-              icon: 'water',
-              color: '#1565C0',
-              onPress: () => navigation.navigate('WaterInsights', {
-                lat: userLocation?.lat,
-                lon: userLocation?.lon,
-              }),
-            },
-          ]}
-        />
-      )}
-
       {/* First-time user coach marks (Gaigg Ch.1 — Onboarding pattern) */}
-      <CoachMarks mapReady={!loading && userLocation !== null} />
+      <CoachMarks mapReady={!loading && userLocation !== null} targets={coachMarkTargets} />
 
       {/* Long-press contextual menu */}
       <MapLongPressMenu
@@ -8030,12 +10865,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
       )}
 
       {/* Bottom sheet with location list (merged from Explore) */}
-      {markerMode === 'locations' && (
+      {markerMode === 'locations' && !routePlannerVisible && (
         <Animated.View style={[styles.sheet, { height: sheetHeight }]}>
-          <View style={styles.handleArea}>
-            <View style={styles.sheetGrabber} {...panResponder.panHandlers}>
+          <View style={styles.handleArea} {...panResponder.panHandlers}>
+            <View style={styles.sheetGrabber}>
               <View style={styles.dragHandle} />
-              <Text style={styles.handleHint}>—</Text>
+              <Text style={styles.handleHint}>Swipe for nearby spots</Text>
             </View>
             <View style={styles.sheetStatusWrap}>
               <MapInfoBar
@@ -8043,6 +10878,7 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
                 expandable={false}
                 anchorWatch={anchorStatus.active ? { active: true, driftMeters: anchorStatus.driftDistance, radiusMeters: anchorStatus.watch?.radiusMeters ?? 30 } as AnchorWatchInfo : undefined}
                 routeNav={routeNavInfo}
+                externalData={marineInstrumentData}
               />
             </View>
           </View>
@@ -8065,12 +10901,12 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           )}
 
           {/* Quick area insights when sheet is expanded */}
-          {userLocation && !search.trim() && (
+          {mapFeatureLocation && !search.trim() && (
             <View style={styles.sheetInsightsWrapper}>
               <SpotInsightsCard
-                lat={userLocation.lat}
-                lon={userLocation.lon}
-                locationName="Your Area"
+                lat={mapFeatureLocation.lat}
+                lon={mapFeatureLocation.lon}
+                locationName={mapFeatureLocationMode === 'map-center' ? 'Map Area' : 'Your Area'}
               />
             </View>
           )}
@@ -8078,10 +10914,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
           {/* Count */}
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>
-              {search.trim() ? `Results` : userLocation ? `Nearby` : `Spots`}
+              {search.trim() ? `Results` : mapFeatureLocation ? `Nearby` : `Spots`}
             </Text>
             <Text style={styles.sheetCount}>
-              {displayList.length} spots{discoveredSpots.length > 0 ? ` (${discoveredSpots.length} discovered)` : ''}{discoveryLoading ? ' ...' : ''}{!search.trim() && !userLocation ? ' (enable GPS for nearby)' : ''}
+              {displayList.length} spots{discoveredSpots.length > 0 ? ` (${discoveredSpots.length} discovered)` : ''}{discoveryLoading ? ' ...' : ''}{!search.trim() && !mapFeatureLocation ? ' (set a location for nearby)' : ''}
             </Text>
           </View>
 
@@ -8092,6 +10928,10 @@ export function MapScreen({ navigation }: TabProps<'MapTab'>) {
             keyExtractor={keyExtractor}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            removeClippedSubviews={false}
+            keyboardShouldPersistTaps="handled"
+            initialNumToRender={10}
+            windowSize={8}
             ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
             ListFooterComponent={<View style={{ height: 100 }} />}
           />
@@ -8235,11 +11075,12 @@ const styles = StyleSheet.create({
     top: Platform.OS === 'ios' ? 60 : 20,
     left: 16,
     right: 16,
-    gap: 8,
+    gap: 6,
+    zIndex: 30,
   },
   filterChipsRow: {
     gap: 6,
-    paddingRight: 56,
+    paddingRight: 8,
   },
   filterChip: {
     flexDirection: 'row',
@@ -8642,10 +11483,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   segmentedOverlay: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 150 : 110,
+    marginTop: 2,
     alignSelf: 'center',
-    zIndex: 1,
+    zIndex: 35,
   },
   segmentedControl: {
     flexDirection: 'row',
@@ -8680,7 +11520,7 @@ const styles = StyleSheet.create({
   // ── Map layer toggle ─────────────────────────────────────────────
   layerButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 155 : 115,
+    top: Platform.OS === 'ios' ? 250 : 210,
     right: 16,
     width: 40,
     height: 40,
@@ -8716,7 +11556,7 @@ const styles = StyleSheet.create({
   // ── Map Tools button (replaces 7 individual buttons) ──────────────
   mapToolsButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 205 : 165,
+    top: Platform.OS === 'ios' ? 300 : 260,
     right: 16,
     width: 40,
     height: 40,
@@ -8756,7 +11596,7 @@ const styles = StyleSheet.create({
   // ── Layer picker popover ──────────────────────────────────────────
   layerPickerCard: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 170 : 130,
+    top: Platform.OS === 'ios' ? 265 : 225,
     right: 16,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -8899,23 +11739,27 @@ const styles = StyleSheet.create({
     backgroundColor: palette.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(18, 56, 79, 0.08)',
     shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: -6 },
-    elevation: 10,
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: -8 },
+    elevation: 24,
+    zIndex: 80,
+    overflow: 'hidden',
   },
   handleArea: {
     paddingTop: 10,
     paddingHorizontal: 14,
     paddingBottom: 12,
-    gap: 10,
+    gap: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(20, 60, 82, 0.08)',
-    backgroundColor: 'rgba(250, 247, 242, 0.96)',
+    borderBottomColor: 'rgba(35, 80, 104, 0.08)',
+    backgroundColor: 'rgba(248, 250, 249, 0.985)',
   },
   sheetGrabber: {
-    height: 18,
+    height: 20,
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'grab' as any,
@@ -8927,12 +11771,13 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: palette.border,
+    backgroundColor: 'rgba(80, 109, 128, 0.28)',
   },
   handleHint: {
-    color: 'transparent',
-    fontSize: 0,
-    height: 0,
+    color: palette.textDim,
+    fontSize: 9.5,
+    fontWeight: '600',
+    marginTop: 4,
   },
   sheetInsightsWrapper: {
     paddingHorizontal: 16,
@@ -9190,25 +12035,56 @@ const styles = StyleSheet.create({
   },
   routePlannerCard: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 108 : 88,
-    left: 16,
-    right: 72,
-    backgroundColor: 'rgba(255,255,255,0.96)',
-    borderRadius: 16,
+    left: 8,
+    right: 8,
+    backgroundColor: 'rgba(252, 253, 251, 0.98)',
+    borderRadius: 26,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 5,
-    zIndex: 9,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(35, 80, 104, 0.08)',
+    shadowColor: '#0C2232',
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 10,
+    zIndex: 18,
     gap: 10,
+    maxHeight: SCREEN_HEIGHT * 0.5,
+  },
+  routePlannerCardNavActive: {
+    left: 10,
+    right: 10,
+    borderRadius: 24,
+    paddingTop: 12,
+    paddingBottom: 12,
+    maxHeight: SCREEN_HEIGHT * 0.36,
+  },
+  routePlannerSheetHandle: {
+    alignSelf: 'center',
+    width: 42,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(53, 91, 117, 0.22)',
+    marginBottom: 2,
   },
   routePlannerHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
+  },
+  routePlannerHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  routePlannerHeaderButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: palette.surfaceRaised,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   routePlannerTitle: {
     color: palette.text,
@@ -9220,6 +12096,132 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 16,
     marginTop: 2,
+  },
+  routePlannerSummaryStrip: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: 'rgba(244, 249, 252, 0.92)',
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderWidth: 1,
+    borderColor: 'rgba(35, 80, 104, 0.05)',
+  },
+  routePlannerSummaryCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  routePlannerSummaryEyebrow: {
+    color: palette.textDim,
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.45,
+  },
+  routePlannerSummaryPrimary: {
+    color: palette.text,
+    fontSize: 14,
+    fontWeight: '800',
+    marginTop: 2,
+    letterSpacing: -0.2,
+  },
+  routePlannerSummarySecondary: {
+    color: palette.textMuted,
+    fontSize: 10.5,
+    lineHeight: 14,
+    marginTop: 3,
+  },
+  routePlannerStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+  },
+  routePlannerStatusBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  routePlannerPlacementRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'stretch',
+  },
+  routePlannerPlacementBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(245, 248, 250, 0.92)',
+    borderWidth: 1,
+    borderColor: 'rgba(35, 80, 104, 0.06)',
+  },
+  routePlannerPlacementBtnActive: {
+    backgroundColor: '#355B75',
+    borderColor: 'rgba(53, 91, 117, 0.9)',
+  },
+  routePlannerPlacementText: {
+    color: palette.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  routePlannerPlacementTextActive: {
+    color: '#FFFFFF',
+  },
+  routePlannerGuideBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: 'rgba(229, 241, 251, 0.92)',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderWidth: 1,
+    borderColor: 'rgba(21, 101, 192, 0.10)',
+  },
+  routePlannerGuideText: {
+    flex: 1,
+    color: '#355B75',
+    fontSize: 11.5,
+    lineHeight: 16,
+    fontWeight: '700',
+  },
+  routePlannerHeroRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  routePlannerHeroCard: {
+    flex: 1,
+    minWidth: 0,
+    backgroundColor: 'rgba(246, 250, 252, 0.92)',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    gap: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(35, 80, 104, 0.06)',
+  },
+  routePlannerHeroLabel: {
+    color: palette.textDim,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.45,
+  },
+  routePlannerHeroValue: {
+    color: palette.text,
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  routePlannerHeroSub: {
+    color: palette.textMuted,
+    fontSize: 10.5,
+    lineHeight: 13,
   },
   routePlannerClose: {
     width: 28,
@@ -9238,15 +12240,299 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#F5F8FB',
+    backgroundColor: 'rgba(245, 248, 250, 0.92)',
     borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   routePlannerMetricText: {
     color: palette.textSecondary,
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '600',
+  },
+  routePlannerNavCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.78)',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(28, 68, 91, 0.06)',
+  },
+  routePlannerNavIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(53, 91, 117, 0.10)',
+  },
+  routePlannerNavCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  routePlannerNavTitle: {
+    color: palette.textDim,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.35,
+  },
+  routePlannerNavSubtitle: {
+    color: palette.text,
+    fontSize: 12.5,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  routePlannerPrimaryActionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'stretch',
+  },
+  routePlannerGoButton: {
+    flex: 1,
+    minHeight: 42,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    borderRadius: 14,
+    backgroundColor: '#355B75',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  routePlannerGoButtonLarge: {
+    minHeight: 50,
+  },
+  routePlannerGoButtonActive: {
+    backgroundColor: '#27485D',
+  },
+  routePlannerGoButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.1,
+  },
+  routePlannerPrimarySecondaryBtn: {
+    minWidth: 82,
+    minHeight: 42,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 14,
+    backgroundColor: palette.surfaceRaised,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  routeHandlePin: {
+    minWidth: 26,
+    height: 26,
+    borderRadius: 13,
+    paddingHorizontal: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    shadowColor: '#0C2232',
+    shadowOpacity: 0.22,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 5,
+  },
+  routeHandlePinText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  routeTurnsBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(12, 22, 30, 0.28)',
+    justifyContent: 'flex-end',
+  },
+  routeTurnsSheet: {
+    backgroundColor: 'rgba(252, 253, 251, 0.98)',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 20,
+    maxHeight: SCREEN_HEIGHT * 0.62,
+    borderTopWidth: 1,
+    borderColor: 'rgba(35, 80, 104, 0.08)',
+  },
+  routeTurnsHandle: {
+    alignSelf: 'center',
+    width: 42,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(53, 91, 117, 0.22)',
+    marginBottom: 12,
+  },
+  routeTurnsHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 10,
+  },
+  routeTurnsTitle: {
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  routeTurnsSubtitle: {
+    color: palette.textMuted,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  routeTurnsClose: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: palette.surfaceRaised,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  routeTurnsScroll: {
+    maxHeight: SCREEN_HEIGHT * 0.5,
+  },
+  routeTurnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 2,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(35, 80, 104, 0.08)',
+  },
+  routeTurnRowActive: {
+    backgroundColor: 'rgba(230, 242, 251, 0.42)',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    marginHorizontal: -8,
+  },
+  routeTurnIndexBubble: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  routeTurnIndexText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  routeTurnCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  routeTurnTitle: {
+    color: palette.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  routeTurnDetail: {
+    color: palette.textMuted,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  routeTurnSeverityPill: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  routeTurnSeverityText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+  },
+  routeTurnArrivalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingTop: 14,
+    paddingBottom: 4,
+  },
+  routeTurnArrivalText: {
+    color: palette.textSecondary,
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  routePlannerControlRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  routePlannerControlBlock: {
+    flex: 1,
+    minWidth: 150,
+    gap: 6,
+  },
+  routePlannerControlLabel: {
+    color: palette.textDim,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  routePlannerStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(245, 248, 250, 0.92)',
+    borderRadius: 16,
+    padding: 4,
+    gap: 4,
+  },
+  routePlannerStepperBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.surfaceRaised,
+  },
+  routePlannerStepperValueWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  routePlannerStepperValue: {
+    color: palette.text,
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  routePlannerStepperSub: {
+    color: palette.textMuted,
+    fontSize: 10.5,
+    marginTop: 1,
+  },
+  routePlannerSegmented: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(245, 248, 250, 0.92)',
+    borderRadius: 16,
+    padding: 4,
+    gap: 4,
+  },
+  routePlannerSegmentBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  routePlannerSegmentBtnActive: {
+    backgroundColor: '#355B75',
+  },
+  routePlannerSegmentText: {
+    color: palette.textSecondary,
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+  routePlannerSegmentTextActive: {
+    color: '#FFFFFF',
   },
   routePlannerActionRow: {
     flexDirection: 'row',
@@ -9263,7 +12549,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   routePlannerActionBtnPrimary: {
-    backgroundColor: '#1565C0',
+    backgroundColor: '#355B75',
   },
   routePlannerActionText: {
     color: palette.textSecondary,
@@ -9272,6 +12558,72 @@ const styles = StyleSheet.create({
   },
   routePlannerActionTextPrimary: {
     color: '#FFFFFF',
+  },
+  routeTargetReticle: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: 44,
+    height: 44,
+    marginLeft: -22,
+    marginTop: -22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 12,
+  },
+  routeTargetReticleRing: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'rgba(53, 91, 117, 0.92)',
+    backgroundColor: 'rgba(255,255,255,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  routeTargetReticleDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#355B75',
+  },
+  routeTargetReticleHorizontal: {
+    position: 'absolute',
+    width: 44,
+    height: 2,
+    backgroundColor: 'rgba(53, 91, 117, 0.45)',
+  },
+  routeTargetReticleVertical: {
+    position: 'absolute',
+    width: 2,
+    height: 44,
+    backgroundColor: 'rgba(53, 91, 117, 0.45)',
+  },
+  routeTapBanner: {
+    position: 'absolute',
+    top: '50%',
+    alignSelf: 'center',
+    marginTop: 36,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+    zIndex: 12,
+    maxWidth: SCREEN_WIDTH - 28,
+  },
+  routeTapBannerText: {
+    color: palette.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+    flexShrink: 1,
+    lineHeight: 16,
   },
   measureActions: {
     position: 'absolute',
@@ -9519,6 +12871,13 @@ const styles = StyleSheet.create({
   radarButton: { position: 'absolute', top: Platform.OS === 'ios' ? 505 : 465, zIndex: 5, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
   radarButtonActive: { backgroundColor: '#1565C0' },
   radarControlBanner: { position: 'absolute', bottom: Platform.OS === 'ios' ? 120 : 100, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.75)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, gap: 8, zIndex: 10 },
+  mapWeatherPanelWrap: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    zIndex: 26,
+    alignItems: 'flex-start',
+  },
   radarPlayButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: palette.accent, alignItems: 'center', justifyContent: 'center' },
   radarTimestamp: { color: '#FFFFFF', fontSize: 12, fontWeight: '600', minWidth: 80 },
   radarLegendRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, flex: 1, justifyContent: 'flex-end' },

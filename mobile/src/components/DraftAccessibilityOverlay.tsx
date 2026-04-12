@@ -24,6 +24,7 @@ interface Props {
   ShapeSource: any;
   CircleLayer: any;
   SymbolLayer: any;
+  presentation?: 'full' | 'hazards';
 }
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -45,11 +46,18 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function resultToGeoJSON(result: DraftAccessibilityResult): GeoJSON.FeatureCollection {
+function resultToGeoJSON(
+  result: DraftAccessibilityResult,
+  presentation: 'full' | 'hazards',
+): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
     features: result.cells
-      .filter((c) => c.accessibility !== 'unknown')
+      .filter((c) =>
+        presentation === 'hazards'
+          ? c.accessibility === 'danger' || c.accessibility === 'caution'
+          : c.accessibility !== 'unknown',
+      )
       .map((cell, i) => ({
         type: 'Feature' as const,
         id: i,
@@ -62,6 +70,12 @@ function resultToGeoJSON(result: DraftAccessibilityResult): GeoJSON.FeatureColle
           opacity: cell.opacity,
           accessibility: cell.accessibility,
           depth: cell.depthM != null ? cell.depthM.toFixed(1) : '',
+          label:
+            cell.accessibility === 'danger'
+              ? 'NO GO'
+              : cell.accessibility === 'caution'
+                ? 'CAUTION'
+                : 'SAFE',
         },
       })),
   };
@@ -77,6 +91,7 @@ export function DraftAccessibilityOverlay({
   ShapeSource,
   CircleLayer,
   SymbolLayer,
+  presentation = 'full',
 }: Props) {
   const [geoJSON, setGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
   const lastCenter = useRef<{ lat: number; lon: number } | null>(null);
@@ -112,7 +127,7 @@ export function DraftAccessibilityOverlay({
           feetToMeters(draftFt),
         );
         if (result.cells.length > 0) {
-          setGeoJSON(resultToGeoJSON(result));
+          setGeoJSON(resultToGeoJSON(result, presentation));
         }
       } catch {
         // Keep previous data
@@ -120,7 +135,7 @@ export function DraftAccessibilityOverlay({
         loadingRef.current = false;
       }
     },
-    [draftFt],
+    [draftFt, presentation],
   );
 
   useEffect(() => {
@@ -143,27 +158,37 @@ export function DraftAccessibilityOverlay({
             'interpolate',
             ['linear'],
             ['zoom'],
-            10, 6,
-            13, 14,
-            16, 22,
+            10, presentation === 'hazards' ? 10 : 6,
+            13, presentation === 'hazards' ? 18 : 14,
+            16, presentation === 'hazards' ? 28 : 22,
           ],
           circleColor: ['get', 'color'],
-          circleOpacity: ['get', 'opacity'],
-          circleStrokeWidth: 0,
+          circleOpacity:
+            presentation === 'hazards'
+              ? [
+                  'match',
+                  ['get', 'accessibility'],
+                  'danger', 0.44,
+                  'caution', 0.28,
+                  0,
+                ]
+              : ['get', 'opacity'],
+          circleStrokeWidth: presentation === 'hazards' ? 1.2 : 0,
+          circleStrokeColor: presentation === 'hazards' ? 'rgba(255,255,255,0.92)' : 'rgba(0,0,0,0)',
         }}
       />
       {/* Depth labels at higher zoom */}
       <SymbolLayer
         id="draft-access-labels"
-        minZoomLevel={13}
+        minZoomLevel={presentation === 'hazards' ? 12 : 13}
         style={{
-          textField: ['get', 'depth'],
-          textSize: 9,
-          textColor: '#333333',
+          textField: presentation === 'hazards' ? ['get', 'label'] : ['get', 'depth'],
+          textSize: presentation === 'hazards' ? 9.5 : 9,
+          textColor: presentation === 'hazards' ? '#7A1F1F' : '#333333',
           textHaloColor: 'rgba(255, 255, 255, 0.9)',
           textHaloWidth: 1,
-          textFont: ['Open Sans Regular'],
-          textAllowOverlap: false,
+          textFont: presentation === 'hazards' ? ['Open Sans Bold'] : ['Open Sans Regular'],
+          textAllowOverlap: presentation === 'hazards',
           textOptional: true,
         }}
       />

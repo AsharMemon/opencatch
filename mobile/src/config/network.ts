@@ -1,9 +1,11 @@
 import Constants from 'expo-constants';
 
-const PROD_API_URL = 'https://api.opencatch.app';
+// api.opencatch.app is not resolving reliably yet, so production auth/API
+// traffic needs the same droplet fallback strategy as tiles for now.
+const PROD_API_URL = 'http://24.199.80.77';
 // Temporary production fallback until tiles.opencatch.app DNS/TLS is live.
-// Martin is currently reachable directly on the droplet IP.
-const PROD_TILE_URL = 'http://24.199.80.77:3000';
+// Martin is currently reachable through the droplet IP reverse proxy.
+const PROD_TILE_URL = 'http://24.199.80.77';
 
 function normalizeBaseUrl(value?: string | null): string | null {
   const trimmed = value?.trim();
@@ -28,13 +30,15 @@ function extractExpoDevHost(): string | null {
 
 const expoDevHost = extractExpoDevHost();
 
-const defaultDevApiUrl = expoDevHost
-  ? `http://${expoDevHost}:8000`
-  : 'http://localhost:8000';
+const useLocalDevApiServer = process.env.EXPO_PUBLIC_USE_LOCAL_API_SERVER === '1';
+const defaultDevApiUrl = useLocalDevApiServer
+  ? (expoDevHost ? `http://${expoDevHost}:8000` : 'http://localhost:8000')
+  : PROD_API_URL;
 
-const defaultDevTileUrl = expoDevHost
-  ? `http://${expoDevHost}:3000`
-  : 'http://localhost:3000';
+const useLocalDevTileServer = process.env.EXPO_PUBLIC_USE_LOCAL_TILE_SERVER === '1';
+const defaultDevTileUrl = useLocalDevTileServer
+  ? (expoDevHost ? `http://${expoDevHost}:3000` : 'http://localhost:3000')
+  : PROD_TILE_URL;
 
 export const API_BASE_URL =
   normalizeBaseUrl(process.env.EXPO_PUBLIC_API_BASE_URL) ??

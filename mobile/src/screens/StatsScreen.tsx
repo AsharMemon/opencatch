@@ -22,7 +22,13 @@ import Svg, {
 import { Ionicons } from '@expo/vector-icons';
 import { palette, scoreColor } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
-import { getAllCatches, getPersonalBests, type EnhancedCatch, type PersonalBest } from '../services/catchEnhancements';
+import {
+  getAllCatches,
+  getPersonalBests,
+  subscribeToCatchUpdates,
+  type EnhancedCatch,
+  type PersonalBest,
+} from '../services/catchEnhancements';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -291,6 +297,10 @@ export function StatsScreen() {
 
   useEffect(() => {
     loadData();
+    const unsubscribe = subscribeToCatchUpdates(() => {
+      loadData();
+    });
+    return unsubscribe;
   }, [loadData]);
 
   const onRefresh = async () => {

@@ -16,6 +16,7 @@ import { ScoreGauge } from '../components/ScoreGauge';
 import { ScoreBreakdownBar } from '../components/ScoreBreakdownBar';
 import { WeatherCard } from '../components/WeatherCard';
 import { WeatherForecastSection } from '../components/WeatherForecastSection';
+import { useUnits } from '../hooks/useUnits';
 import { ForecastChart } from '../components/ForecastChart';
 import { ExplanationCard } from '../components/ExplanationCard';
 import { api } from '../services/api';
@@ -638,6 +639,7 @@ async function fetchOpenMeteoConditions(
 
 export function LocationDetailScreen({ route, navigation }: Props) {
   const { locationId } = route.params;
+  const { units } = useUnits();
   const [location, setLocation] = useState<FishingLocation | null>(null);
   const [loading, setLoading] = useState(true);
   const [prediction, setPrediction] = useState<PredictV2Response | null>(null);
@@ -895,13 +897,36 @@ export function LocationDetailScreen({ route, navigation }: Props) {
 
       {/* Current Conditions */}
       {location.conditions && (
-        <WeatherCard conditions={location.conditions} />
+        <WeatherCard conditions={location.conditions} units={units} />
       )}
 
       {/* Detailed Weather Forecast */}
       {location.conditions && (
-        <WeatherForecastSection location={location} />
+        <WeatherForecastSection location={location} units={units} />
       )}
+
+      {/* Community Reviews */}
+      <View style={styles.card}>
+        <View style={styles.reviewHeader}>
+          <Text style={styles.cardTitle}>Reviews</Text>
+        </View>
+        <View style={{ alignItems: 'center', paddingVertical: 16, gap: 8 }}>
+          <Ionicons name="chatbubble-outline" size={28} color={palette.textDim} />
+          <Text style={{ color: palette.textMuted, fontSize: 14 }}>No reviews yet</Text>
+          <Text style={{ color: palette.textDim, fontSize: 12, textAlign: 'center' }}>
+            Be the first to share your experience at this spot.
+          </Text>
+        </View>
+        <Pressable style={styles.reviewCTA}>
+          <Ionicons name="create-outline" size={14} color={palette.accent} />
+          <Text style={styles.reviewCTAText}>Write a Review</Text>
+        </Pressable>
+        <View style={{ marginTop: 10, paddingHorizontal: 4 }}>
+          <Text style={{ color: palette.textDim, fontSize: 11, textAlign: 'center', fontStyle: 'italic' }}>
+            Reviews are stored locally. They will sync when online features are available.
+          </Text>
+        </View>
+      </View>
 
       {/* ── Integrated Feature Cards ─────────────────────────────────── */}
 
@@ -1073,29 +1098,6 @@ export function LocationDetailScreen({ route, navigation }: Props) {
 
       {/* Access & Parking — will show real data when access point service populates it */}
       {/* Site Tags — will show real data when available */}
-
-      {/* Community Reviews */}
-      <View style={styles.card}>
-        <View style={styles.reviewHeader}>
-          <Text style={styles.cardTitle}>Reviews</Text>
-        </View>
-        <View style={{ alignItems: 'center', paddingVertical: 16, gap: 8 }}>
-          <Ionicons name="chatbubble-outline" size={28} color={palette.textDim} />
-          <Text style={{ color: palette.textMuted, fontSize: 14 }}>No reviews yet</Text>
-          <Text style={{ color: palette.textDim, fontSize: 12, textAlign: 'center' }}>
-            Be the first to share your experience at this spot.
-          </Text>
-        </View>
-        <Pressable style={styles.reviewCTA}>
-          <Ionicons name="create-outline" size={14} color={palette.accent} />
-          <Text style={styles.reviewCTAText}>Write a Review</Text>
-        </Pressable>
-        <View style={{ marginTop: 10, paddingHorizontal: 4 }}>
-          <Text style={{ color: palette.textDim, fontSize: 11, textAlign: 'center', fontStyle: 'italic' }}>
-            Reviews are stored locally. They will sync when online features are available.
-          </Text>
-        </View>
-      </View>
 
       {/* Plan Trip Here */}
       <Pressable

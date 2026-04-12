@@ -22,7 +22,7 @@ export type RootStackParamList = {
   TrackDetail: { trackId: string };
   Regulations: { stateCode?: string };
   BaitGuide: { species?: string; spotName?: string; spotLat?: number; spotLon?: number };
-  TideChart: { stationId: string; stationName: string };
+  TideChart: { stationId: string; stationName: string; lat?: number; lon?: number };
   SpeciesGuide: undefined;
   OfflineMaps: undefined;
   Alerts: undefined;

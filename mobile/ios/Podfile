@@ -1,5 +1,16 @@
-require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
-require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
+node_binary_candidates = [
+  ENV['NODE_BINARY'],
+  '/Users/Ashar/.nvm/versions/node/v24.14.0/bin/node',
+  '/opt/homebrew/bin/node',
+  '/usr/local/bin/node',
+  `which node`.strip
+].compact.reject(&:empty?).uniq
+
+NODE_BINARY = node_binary_candidates.find { |candidate| File.exist?(candidate) }
+abort('Unable to locate a usable node binary for CocoaPods autolinking.') unless NODE_BINARY
+
+require File.join(File.dirname(`#{NODE_BINARY} --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
+require File.join(File.dirname(`#{NODE_BINARY} --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
 
 require 'json'
 podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}

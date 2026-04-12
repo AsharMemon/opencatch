@@ -25,9 +25,9 @@ import {
   Text,
   View,
 } from 'react-native';
-import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { FeatureLocationPicker } from '../components/FeatureLocationPicker';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
 import { hapticLight } from '../utils/haptics';
@@ -42,6 +42,11 @@ import {
   type IceEquipmentItem,
   type WinterSpeciesTip,
 } from '../services/iceFishing';
+import {
+  getCurrentFeatureLocation,
+  searchFeatureLocation,
+  type FeatureLocation,
+} from '../services/featureLocation';
 
 // ── Main Screen ──────────────────────────────────────────────────
 
@@ -55,30 +60,23 @@ export function IceFishingScreen() {
   const [expandedSpecies, setExpandedSpecies] = useState<string | null>(null);
   const [showChecklist, setShowChecklist] = useState(false);
   const [showSpecies, setShowSpecies] = useState(false);
-  const [userLat, setUserLat] = useState<number | null>(null);
-  const [userLon, setUserLon] = useState<number | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<FeatureLocation | null>(null);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (location?: FeatureLocation) => {
     setLoading(true);
     setError(null);
 
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setError('Location permission required to estimate ice conditions');
-        setLoading(false);
-        return;
-      }
-
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const lat = loc.coords.latitude;
-      const lon = loc.coords.longitude;
-      setUserLat(lat);
-      setUserLon(lon);
+      const activeLocation = location ?? await getCurrentFeatureLocation({
+        lat: 47.5,
+        lon: -93.5,
+        label: 'Default ice region',
+      });
+      setSelectedLocation(activeLocation);
 
       const [iceData, iceOutData] = await Promise.all([
-        getIceThickness(lat, lon),
-        getIceOutDate(lat, lon),
+        getIceThickness(activeLocation.lat, activeLocation.lon),
+        getIceOutDate(activeLocation.lat, activeLocation.lon),
       ]);
 
       setCondition(iceData);
@@ -94,6 +92,20 @@ export function IceFishingScreen() {
 
   useEffect(() => {
     loadData();
+  }, [loadData]);
+
+  const handleUseCurrentLocation = useCallback(async () => {
+    const location = await getCurrentFeatureLocation({
+      lat: 47.5,
+      lon: -93.5,
+      label: 'Default ice region',
+    });
+    await loadData(location);
+  }, [loadData]);
+
+  const handleSearchLocation = useCallback(async (query: string) => {
+    const location = await searchFeatureLocation(query);
+    await loadData(location);
   }, [loadData]);
 
   const toggleChecklistItem = useCallback((index: number) => {
@@ -126,7 +138,7 @@ export function IceFishingScreen() {
       <View style={styles.centered}>
         <Ionicons name="alert-circle-outline" size={48} color={palette.error} />
         <Text style={styles.errorText}>{error}</Text>
-        <Pressable style={styles.retryButton} onPress={loadData}>
+        <Pressable style={styles.retryButton} onPress={() => { void loadData(); }}>
           <Text style={styles.retryButtonText}>Retry</Text>
         </Pressable>
       </View>
@@ -136,6 +148,19 @@ export function IceFishingScreen() {
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <FeatureLocationPicker
+          label={selectedLocation?.label ?? 'Finding your location'}
+          helperText={
+            selectedLocation?.source === 'search'
+              ? 'Ice thickness and ice-out estimates are using your searched lake or area.'
+              : 'Ice thickness and ice-out estimates are using this location.'
+          }
+          loading={loading}
+          activeSource={selectedLocation?.source}
+          onUseCurrent={handleUseCurrentLocation}
+          onSearchLocation={handleSearchLocation}
+        />
+
         {/* ── Map Action Buttons ── */}
         <View style={styles.mapActions}>
           <Pressable

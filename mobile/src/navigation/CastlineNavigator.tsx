@@ -415,7 +415,7 @@ export function OpenCatchNavigator({ user, onLogout }: NavProps) {
       <Stack.Screen
         name="AISSettings"
         component={AISSettingsScreen}
-        options={{ title: 'AIS Receiver' }}
+        options={{ title: 'Marine Electronics' }}
       />
     </Stack.Navigator>
   );

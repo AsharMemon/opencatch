@@ -29,10 +29,13 @@ Usage:
 """
 
 import argparse
+import difflib
 import json
 import logging
 import os
+import re
 import sys
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -43,7 +46,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 from shapely.affinity import affine_transform
-from shapely.geometry import MultiPolygon, Polygon, mapping, shape
+from shapely.geometry import LineString, MultiLineString, MultiPolygon, Polygon, mapping, shape
 from shapely.ops import unary_union
 
 logging.basicConfig(
@@ -65,6 +68,7 @@ MIN_CONTOUR_AREA_PX = 200  # ignore tiny noise blobs
 DEFAULT_DPI = 300
 DEFAULT_NUM_BANDS = 6
 OCR_CONFIDENCE_THRESHOLD = 0.3
+MONO_DARK_THRESHOLD = 205
 
 
 @dataclass
@@ -94,9 +98,16 @@ class QualityReport:
             s += 0.25
         elif self.num_bands > 0:
             s += 0.10
+        # Monochrome contour charts can be useful even without filled blue bands.
+        if self.num_contours >= 20:
+            s += 0.20
+        elif self.num_contours >= 8:
+            s += 0.10
         # Blue coverage: expect 10-80% of image
         if 0.10 <= self.blue_pixel_fraction <= 0.80:
             s += 0.20
+        elif self.blue_pixel_fraction < 0.02 and self.num_contours >= 10:
+            s += 0.15
         # OCR quality (FULL mode only)
         if self.ocr_labels_found > 0 and self.ocr_mean_confidence > 0.5:
             s += 0.25
@@ -110,7 +121,7 @@ class QualityReport:
         # Max depth available
         if not np.isnan(self.max_depth_m):
             s += 0.15
-        self.score = round(s, 3)
+        self.score = round(min(s, 1.0), 3)
         return self.score
 
 
@@ -375,6 +386,168 @@ def detect_contour_lines(img_bgr: np.ndarray) -> list[np.ndarray]:
     return filtered
 
 
+def extract_monochrome_lake_mask(img_bgr: np.ndarray) -> np.ndarray:
+    """Estimate the interior lake area for monochrome contour charts."""
+    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    _, dark = cv2.threshold(gray, MONO_DARK_THRESHOLD, 255, cv2.THRESH_BINARY_INV)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    closed = cv2.morphologyEx(dark, cv2.MORPH_CLOSE, kernel, iterations=2)
+    contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    img_h, img_w = gray.shape[:2]
+    img_area = img_h * img_w
+    mask = np.zeros_like(gray)
+    best = None
+    best_area = 0.0
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        if area < img_area * 0.01 or area > img_area * 0.95:
+            continue
+        x, y, w, h = cv2.boundingRect(cnt)
+        if w < img_w * 0.08 or h < img_h * 0.08:
+            continue
+        if area > best_area:
+            best = cnt
+            best_area = area
+
+    if best is None:
+        return mask
+
+    cv2.drawContours(mask, [best], -1, 255, thickness=cv2.FILLED)
+    inner = cv2.erode(mask, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9)), iterations=1)
+    return inner
+
+
+def detect_monochrome_contour_lines(img_bgr: np.ndarray) -> list[np.ndarray]:
+    """
+    Detect contour lines on monochrome bathymetric charts.
+
+    These charts often use black contour lines on white paper with no blue fill.
+    """
+    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    focus_mask = extract_monochrome_lake_mask(img_bgr)
+    if cv2.countNonZero(focus_mask) == 0:
+        return []
+
+    binary = cv2.adaptiveThreshold(
+        gray,
+        255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY_INV,
+        31,
+        7,
+    )
+    binary = cv2.bitwise_and(binary, focus_mask)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel, iterations=1)
+
+    contours, _ = cv2.findContours(binary, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    img_h, img_w = gray.shape[:2]
+    filtered = []
+    for cnt in contours:
+        perimeter = cv2.arcLength(cnt, closed=False)
+        area = cv2.contourArea(cnt)
+        if perimeter < 50:
+            continue
+        x, y, w, h = cv2.boundingRect(cnt)
+        if w < 18 or h < 18:
+            continue
+        if x <= 1 or y <= 1 or x + w >= img_w - 1 or y + h >= img_h - 1:
+            continue
+        if area > 0 and perimeter > 0:
+            circularity = 4 * np.pi * area / (perimeter * perimeter)
+            if circularity > 0.92:
+                continue
+        filtered.append(cnt)
+
+    log.info(f"Detected {len(filtered)} monochrome contour line candidates")
+    return filtered
+
+
+def contour_arrays_to_lines(
+    contour_arrays: list[np.ndarray],
+    simplify_tolerance: float = 1.5,
+) -> list[LineString]:
+    """Convert OpenCV contour arrays into shapely LineStrings."""
+    lines: list[LineString] = []
+    for cnt in contour_arrays:
+        coords = cnt.squeeze()
+        if len(coords.shape) != 2 or coords.shape[0] < 2:
+            continue
+        try:
+            line = LineString(coords)
+        except Exception:
+            continue
+        if line.is_empty or line.length < 10:
+            continue
+        line = line.simplify(simplify_tolerance, preserve_topology=True)
+        if line.is_empty or line.length < 10:
+            continue
+        lines.append(line)
+    return lines
+
+
+def georeference_lines(
+    pixel_lines: list[LineString],
+    lake_boundary: Polygon | MultiPolygon,
+) -> list[LineString | MultiLineString]:
+    """Affine-transform pixel-coordinate lines into the lake boundary extent."""
+    if not pixel_lines:
+        return []
+
+    combined = unary_union(pixel_lines)
+    px_minx, px_miny, px_maxx, px_maxy = combined.bounds
+    lk_minx, lk_miny, lk_maxx, lk_maxy = lake_boundary.bounds
+    px_w = px_maxx - px_minx
+    px_h = px_maxy - px_miny
+    if px_w < 1 or px_h < 1:
+        return pixel_lines
+
+    sx = (lk_maxx - lk_minx) / px_w
+    sy = (lk_maxy - lk_miny) / px_h
+    georef: list[LineString | MultiLineString] = []
+    for line in pixel_lines:
+        transformed = affine_transform(
+            line,
+            [sx, 0, 0, -sy, lk_minx - sx * px_minx, lk_maxy + sy * px_miny],
+        )
+        clipped = transformed.intersection(lake_boundary)
+        if clipped.is_empty:
+            continue
+        georef.append(clipped)
+    return georef
+
+
+def assign_line_depth_m(
+    line: LineString | MultiLineString,
+    ocr_labels: list[dict],
+    max_depth_m: Optional[float],
+    max_assign_distance_px: float = 180.0,
+) -> tuple[Optional[float], Optional[float]]:
+    """Assign the nearest OCR label depth to a contour line when possible."""
+    if not ocr_labels:
+        return None, None
+
+    centroid = line.centroid
+    best = None
+    best_dist = None
+    for label in ocr_labels:
+        cx, cy = label["bbox_center"]
+        dist = float(np.hypot(centroid.x - cx, centroid.y - cy))
+        if best_dist is None or dist < best_dist:
+            best = label
+            best_dist = dist
+
+    if best is None or best_dist is None or best_dist > max_assign_distance_px:
+        return None, None
+
+    depth_m = float(best["value_m"])
+    rel_depth = None
+    if max_depth_m and max_depth_m > 0:
+        rel_depth = min(depth_m / max_depth_m, 1.0)
+    return depth_m, rel_depth
+
+
 # ---------------------------------------------------------------------------
 # Georeferencing
 # ---------------------------------------------------------------------------
@@ -483,20 +656,120 @@ def find_lake_polygon(
         log.warning("No name column found in lake polygons")
         return None
 
-    name_col = name_cols[0]
+    def pick_largest_geometry(frame: gpd.GeoDataFrame):
+        if len(frame) == 1:
+            return frame.iloc[0].geometry
+        try:
+            if frame.crs is None:
+                area_frame = frame.set_crs(4326, allow_override=True)
+            elif getattr(frame.crs, "is_geographic", False):
+                area_frame = frame.to_crs(6933)
+            else:
+                area_frame = frame
+            areas = area_frame.geometry.area
+        except Exception:
+            areas = frame.geometry.area
+        return frame.iloc[int(areas.argmax())].geometry
+
     clean_name = lake_name.lower().strip()
 
+    def canonicalize(text: str) -> str:
+        text = unicodedata.normalize("NFKD", str(text)).encode("ascii", "ignore").decode("ascii")
+        text = text.lower()
+        # Many official inventories append county/region hints in parentheses.
+        text = re.sub(r"\([^)]*\)", " ", text)
+        for ch in "()/,-":
+            text = text.replace(ch, " ")
+        text = text.replace("&", " and ")
+        text = text.replace("'", " ")
+        tokens = [tok for tok in text.split() if tok]
+        stopwords = {
+            "lake",
+            "pond",
+            "etang",
+            "reservoir",
+            "dam",
+            "river",
+            "north",
+            "south",
+            "east",
+            "west",
+            "county",
+            "regional",
+            "municipality",
+        }
+        filtered = [tok for tok in tokens if tok not in stopwords]
+        deduped: list[str] = []
+        for tok in filtered:
+            if tok not in deduped:
+                deduped.append(tok)
+        return " ".join(deduped).strip()
+
+    canonical_query = canonicalize(lake_name)
+    if not canonical_query:
+        return None
+
+    candidate_names = lake_gdf[name_cols].fillna("").astype(str)
+
     # Exact match
-    exact = lake_gdf[lake_gdf[name_col].str.lower().str.strip() == clean_name]
+    exact_mask = candidate_names.apply(
+        lambda col: col.str.lower().str.strip() == clean_name,
+        axis=0,
+    ).any(axis=1)
+    exact = lake_gdf[exact_mask]
     if len(exact) > 0:
-        return exact.iloc[0].geometry
+        return pick_largest_geometry(exact)
+
+    canonical_candidates = candidate_names.apply(lambda col: col.map(canonicalize), axis=0)
+    canonical_exact_mask = canonical_candidates.apply(
+        lambda col: col == canonical_query,
+        axis=0,
+    ).any(axis=1)
+    canonical_exact = lake_gdf[canonical_exact_mask]
+    if len(canonical_exact) > 0:
+        return pick_largest_geometry(canonical_exact)
 
     # Substring match
-    substr = lake_gdf[lake_gdf[name_col].str.lower().str.contains(clean_name, na=False)]
+    substr_mask = candidate_names.apply(
+        lambda col: col.str.lower().str.contains(clean_name, na=False),
+        axis=0,
+    ).any(axis=1)
+    substr = lake_gdf[substr_mask]
     if len(substr) > 0:
-        # Pick largest by area
-        areas = substr.geometry.area
-        return substr.iloc[areas.argmax()].geometry
+        # Pick largest by area using a projected CRS when needed.
+        return pick_largest_geometry(substr)
+
+    # Token-overlap fallback for bilingual, reordered, or inventory-appended names.
+    query_tokens = set(canonical_query.split())
+    if not query_tokens:
+        return None
+
+    def score_candidate(candidate: str) -> float:
+        candidate = candidate.strip()
+        if not candidate:
+            return 0.0
+        candidate_tokens = set(candidate.split())
+        if not candidate_tokens:
+            return 0.0
+        overlap = len(query_tokens & candidate_tokens)
+        if overlap == 0:
+            return 0.0
+
+        union = len(query_tokens | candidate_tokens)
+        jaccard = overlap / max(union, 1)
+        coverage = overlap / max(min(len(query_tokens), len(candidate_tokens)), 1)
+        seq = difflib.SequenceMatcher(None, canonical_query, candidate).ratio()
+        subset_bonus = 0.15 if (query_tokens <= candidate_tokens or candidate_tokens <= query_tokens) else 0.0
+        return max(seq, 0.55 * coverage + 0.30 * jaccard + subset_bonus)
+
+    row_scores = canonical_candidates.apply(
+        lambda row: max(score_candidate(candidate) for candidate in row),
+        axis=1,
+    )
+    best_idx = row_scores.idxmax()
+    best_score = float(row_scores.loc[best_idx])
+    if best_score >= 0.72:
+        return lake_gdf.loc[best_idx].geometry
 
     return None
 
@@ -504,12 +777,38 @@ def find_lake_polygon(
 def lake_name_from_pdf(pdf_path: str) -> str:
     """Extract a lake name from the PDF filename."""
     stem = Path(pdf_path).stem
-    # Common patterns: "LakeName_bathymetry", "lakename-contour-map", etc.
-    name = stem.replace("_", " ").replace("-", " ")
-    # Remove common suffixes
-    for suffix in ["bathymetry", "contour", "map", "depth", "bathy", "survey", "lake"]:
-        name = name.lower().replace(suffix, "").strip()
-    return name.title().strip()
+    name = stem.replace("_", " ").replace("-", " ").strip()
+    tokens = name.split()
+    removable_suffixes = {"bathymetry", "bathymetric", "contour", "contours", "map", "depth", "bathy", "survey"}
+    while tokens and tokens[-1].lower() in removable_suffixes:
+        tokens.pop()
+    normalized = " ".join(tokens).strip()
+    return (normalized or name).title()
+
+
+def load_name_manifest(path: Optional[str]) -> dict[str, str]:
+    """Load a filename -> canonical lake name mapping from download manifest JSON or CSV."""
+    if not path:
+        return {}
+
+    manifest_path = Path(path)
+    if not manifest_path.exists():
+        log.warning("Name manifest not found: %s", manifest_path)
+        return {}
+
+    mapping: dict[str, str] = {}
+    if manifest_path.suffix.lower() == ".json":
+        records = json.loads(manifest_path.read_text())
+    else:
+        records = pd.read_csv(manifest_path).to_dict(orient="records")
+
+    for row in records:
+        local_path = row.get("local_path") or row.get("pdf_file") or row.get("pdf_url")
+        lake_name = row.get("lake_name") or row.get("waterbody") or row.get("reservoir_name")
+        if not local_path or not lake_name:
+            continue
+        mapping[Path(str(local_path)).name] = str(lake_name).strip()
+    return mapping
 
 
 # ---------------------------------------------------------------------------
@@ -570,6 +869,8 @@ def lookup_max_depth(
 
 def build_geojson(
     georef_bands: list[tuple[Polygon | MultiPolygon, float]],
+    contour_lines: list[LineString | MultiLineString],
+    ocr_labels: list[dict],
     max_depth_m: Optional[float],
     lake_name: str,
     mode: str,
@@ -594,6 +895,25 @@ def build_geojson(
         }
         features.append(feat)
 
+    for line in contour_lines:
+        depth_m, rel_depth = assign_line_depth_m(line, ocr_labels, max_depth_m)
+        props = {
+            "lake_name": lake_name,
+            "relative_depth": round(rel_depth, 4) if rel_depth is not None else None,
+            "depth_m": round(depth_m, 2) if depth_m is not None else None,
+            "depth_ft": round(depth_m * 3.28084, 2) if depth_m is not None else None,
+            "mode": mode,
+            "quality_score": quality.score,
+            "feature_kind": "contour_line",
+        }
+        features.append(
+            {
+                "type": "Feature",
+                "geometry": mapping(line),
+                "properties": props,
+            }
+        )
+
     return {
         "type": "FeatureCollection",
         "properties": {
@@ -602,6 +922,7 @@ def build_geojson(
             "max_depth_m": max_depth_m,
             "quality_score": quality.score,
             "num_bands": len(georef_bands),
+            "num_contour_lines": len(contour_lines),
         },
         "features": features,
     }
@@ -620,6 +941,7 @@ def process_single_pdf(
     num_bands: int = DEFAULT_NUM_BANDS,
     dpi: int = DEFAULT_DPI,
     output_path: Optional[str] = None,
+    lake_name_override: Optional[str] = None,
 ) -> tuple[dict, QualityReport]:
     """
     Process a single PDF bathymetric map.
@@ -636,7 +958,7 @@ def process_single_pdf(
     Returns:
         (geojson_dict, quality_report)
     """
-    lake_name = lake_name_from_pdf(pdf_path)
+    lake_name = (lake_name_override or lake_name_from_pdf(pdf_path)).strip()
     log.info(f"Processing: {lake_name} ({pdf_path}) mode={mode}")
 
     quality = QualityReport(
@@ -651,12 +973,13 @@ def process_single_pdf(
     quality.image_height_px = img.shape[0]
     quality.image_width_px = img.shape[1]
     quality.blue_pixel_fraction = round(_blue_pixel_fraction(img), 4)
+    monochrome_mode = quality.blue_pixel_fraction < 0.02
 
-    if quality.blue_pixel_fraction < 0.02:
+    if monochrome_mode:
         log.warning(f"Very low blue content ({quality.blue_pixel_fraction:.1%}) — may not be a bathymetric map")
 
     # Step 2: Extract depth bands
-    bands = segment_depth_bands(img, num_bands=num_bands)
+    bands = segment_depth_bands(img, num_bands=num_bands) if not monochrome_mode else []
     quality.num_bands = len(bands)
     log.info(f"Extracted {len(bands)} depth bands")
 
@@ -665,6 +988,7 @@ def process_single_pdf(
 
     # Step 3: OCR (FULL mode)
     ocr_labels = []
+    contour_lines = []
     if mode == "full":
         ocr_labels = extract_depth_labels(img)
         quality.ocr_labels_found = len(ocr_labels)
@@ -673,7 +997,11 @@ def process_single_pdf(
                 np.mean([lb["confidence"] for lb in ocr_labels]), 3
             )
         # Also detect contour lines
-        contour_lines = detect_contour_lines(img)
+        contour_lines = (
+            detect_monochrome_contour_lines(img)
+            if monochrome_mode
+            else detect_contour_lines(img)
+        )
         quality.num_contours = len(contour_lines)
 
     # Step 4: Max depth lookup
@@ -697,13 +1025,23 @@ def process_single_pdf(
 
     if lake_poly is not None:
         georef_polys = georeference_polygons(pixel_polys, img.shape[:2], lake_poly)
+        georef_lines = georeference_lines(contour_arrays_to_lines(contour_lines), lake_poly)
         quality.georef_rmse_m = compute_georef_rmse(pixel_polys, georef_polys, lake_poly)
     else:
         georef_polys = pixel_polys
+        georef_lines = contour_arrays_to_lines(contour_lines)
 
     # Build output
     quality.compute_score()
-    geojson = build_geojson(georef_polys, max_depth, lake_name, mode, quality)
+    geojson = build_geojson(
+        georef_polys,
+        georef_lines,
+        ocr_labels,
+        max_depth,
+        lake_name,
+        mode,
+        quality,
+    )
 
     # Write output
     if output_path:
@@ -724,6 +1062,7 @@ def batch_process(
     input_dir: str,
     lake_polygons_path: Optional[str] = None,
     max_depths_path: Optional[str] = None,
+    name_manifest_path: Optional[str] = None,
     output_dir: str = "./digitized",
     mode: str = "simple",
     num_bands: int = DEFAULT_NUM_BANDS,
@@ -759,6 +1098,7 @@ def batch_process(
     # Load reference data
     lake_gdf = load_lake_polygons(lake_polygons_path) if lake_polygons_path else None
     max_depths_df = load_max_depths(max_depths_path) if max_depths_path else None
+    name_manifest = load_name_manifest(name_manifest_path)
 
     os.makedirs(output_dir, exist_ok=True)
     reports = []
@@ -776,6 +1116,7 @@ def batch_process(
                 num_bands=num_bands,
                 dpi=dpi,
                 output_path=out_path,
+                lake_name_override=name_manifest.get(pdf_path.name),
             )
             if quality.score < min_quality:
                 log.info(
@@ -864,6 +1205,11 @@ Examples:
         help="CSV with lake max depths (lake_name, max_depth_m)",
     )
     parser.add_argument(
+        "--name-manifest",
+        default=None,
+        help="Optional JSON/CSV mapping from downloaded PDF filename to canonical lake name.",
+    )
+    parser.add_argument(
         "--output",
         required=True,
         help="Output GeoJSON file or directory",
@@ -907,6 +1253,7 @@ def main():
             input_dir=str(input_path),
             lake_polygons_path=args.lake_polygons,
             max_depths_path=args.max_depths,
+            name_manifest_path=args.name_manifest,
             output_dir=args.output,
             mode=args.mode,
             num_bands=args.num_bands,
@@ -925,6 +1272,7 @@ def main():
             num_bands=args.num_bands,
             dpi=args.dpi,
             output_path=args.output,
+            lake_name_override=load_name_manifest(args.name_manifest).get(input_path.name) if args.name_manifest else None,
         )
         log.info(f"Quality score: {quality.score}")
     else:

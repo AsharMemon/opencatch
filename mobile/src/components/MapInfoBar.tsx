@@ -22,6 +22,7 @@ import {
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/palette';
+import type { MarineInstrumentData } from '../services/aisWifiReceiver';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -35,6 +36,7 @@ interface GPSInfo {
   speedMs: number;
   heading: number;
   accuracy: number;
+  source: 'device' | 'external';
 }
 
 export interface AnchorWatchInfo {
@@ -58,6 +60,7 @@ interface MapInfoBarProps {
   rightInset?: number;
   anchorWatch?: AnchorWatchInfo;
   routeNav?: RouteNavInfo;
+  externalData?: MarineInstrumentData | null;
   embedded?: boolean;
   expandable?: boolean;
 }
@@ -87,6 +90,7 @@ export function MapInfoBar({
   rightInset = 108,
   anchorWatch,
   routeNav,
+  externalData,
   embedded = false,
   expandable = true,
 }: MapInfoBarProps) {
@@ -98,6 +102,13 @@ export function MapInfoBar({
   // GPS watcher
   useEffect(() => {
     let cancelled = false;
+
+    if (externalData?.position) {
+      locationSub.current?.remove();
+      return () => {
+        cancelled = true;
+      };
+    }
 
     (async () => {
       const { status } = await Location.getForegroundPermissionsAsync();
@@ -118,6 +129,7 @@ export function MapInfoBar({
             speedMs: Math.max(0, loc.coords.speed ?? 0),
             heading: loc.coords.heading ?? 0,
             accuracy: loc.coords.accuracy ?? 999,
+            source: 'device',
           });
         },
       );
@@ -127,7 +139,28 @@ export function MapInfoBar({
       cancelled = true;
       locationSub.current?.remove();
     };
-  }, []);
+  }, [externalData?.position]);
+
+  useEffect(() => {
+    if (!externalData?.position) return;
+    setGps({
+      latitude: externalData.position.lat,
+      longitude: externalData.position.lon,
+      altitude: null,
+      speedMs: Math.max(0, (externalData.position.sogKnots ?? 0) / MS_TO_KNOTS),
+      heading: externalData.heading?.headingDeg
+        ?? externalData.position.cogDeg
+        ?? 0,
+      accuracy: 3,
+      source: 'external',
+    });
+  }, [
+    externalData?.heading?.headingDeg,
+    externalData?.position?.cogDeg,
+    externalData?.position?.lat,
+    externalData?.position?.lon,
+    externalData?.position?.sogKnots,
+  ]);
 
   // Expand/collapse animation
   const toggleExpand = useCallback(() => {
@@ -149,6 +182,7 @@ export function MapInfoBar({
   const speedKnots = gps.speedMs * MS_TO_KNOTS;
   const accuracy = getAccuracyBadge(gps.accuracy);
   const compassDir = degreesToCompass(gps.heading);
+  const windDir = externalData?.wind ? degreesToCompass(externalData.wind.angleDeg) : null;
 
   // Animated height for expanded section
   const expandedHeight = expandAnim.interpolate({
@@ -204,10 +238,19 @@ export function MapInfoBar({
 
           {/* GPS accuracy */}
           <View style={styles.infoItem}>
-            <View style={[styles.accuracyDot, { backgroundColor: accuracy.color }]} />
-            <Text style={[styles.infoUnit, { color: accuracy.color }]}>
-              {'\u00B1'}{Math.round(gps.accuracy)}m
-            </Text>
+            {gps.source === 'external' ? (
+              <>
+                <Ionicons name="hardware-chip-outline" size={13} color="#1565C0" />
+                <Text style={[styles.infoUnit, { color: '#1565C0', fontWeight: '700' }]}>NMEA</Text>
+              </>
+            ) : (
+              <>
+                <View style={[styles.accuracyDot, { backgroundColor: accuracy.color }]} />
+                <Text style={[styles.infoUnit, { color: accuracy.color }]}>
+                  {'\u00B1'}{Math.round(gps.accuracy)}m
+                </Text>
+              </>
+            )}
           </View>
 
           {/* Anchor watch badge */}
@@ -283,6 +326,26 @@ export function MapInfoBar({
                 <Text style={styles.expandedValue}>{speedKnots.toFixed(1)}</Text>
               </View>
             )}
+            {externalData?.depth && (
+              <View style={styles.expandedItem}>
+                <Text style={styles.expandedLabel}>Depth</Text>
+                <Text style={styles.expandedValue}>{externalData.depth.depthM.toFixed(1)} m</Text>
+              </View>
+            )}
+            {externalData?.wind && (
+              <View style={styles.expandedItem}>
+                <Text style={styles.expandedLabel}>Wind</Text>
+                <Text style={styles.expandedValue}>
+                  {externalData.wind.speedKnots.toFixed(1)} kt {windDir}
+                </Text>
+              </View>
+            )}
+            {gps.source === 'external' && (
+              <View style={styles.expandedItem}>
+                <Text style={styles.expandedLabel}>Source</Text>
+                <Text style={styles.expandedValue}>Boat instruments</Text>
+              </View>
+            )}
 
             {/* Route nav details */}
             {showRoute && (
@@ -312,27 +375,27 @@ const styles = StyleSheet.create({
   },
   bar: {
     alignSelf: 'stretch',
-    backgroundColor: 'rgba(255, 255, 255, 0.94)',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    backgroundColor: 'rgba(250, 252, 251, 0.92)',
+    borderRadius: 14,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
     minWidth: 0,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 6,
+    elevation: 4,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: palette.borderLight,
+    borderColor: 'rgba(38, 70, 88, 0.08)',
   },
   barEmbedded: {
-    backgroundColor: 'rgba(246, 250, 252, 0.98)',
-    borderRadius: 14,
+    backgroundColor: 'rgba(248, 250, 249, 0.98)',
+    borderRadius: 16,
     shadowOpacity: 0,
     shadowRadius: 0,
     shadowOffset: { width: 0, height: 0 },
     elevation: 0,
-    borderColor: 'rgba(27, 95, 129, 0.12)',
+    borderColor: 'rgba(53, 91, 117, 0.10)',
   },
   mainRow: {
     flexDirection: 'row',
@@ -345,13 +408,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   infoValue: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '700',
     color: palette.text,
     fontVariant: ['tabular-nums'],
   },
   infoUnit: {
-    fontSize: 11,
+    fontSize: 10.5,
     color: palette.textMuted,
   },
   divider: {

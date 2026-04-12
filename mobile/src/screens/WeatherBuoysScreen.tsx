@@ -8,7 +8,7 @@
  * - Expandable detail cards
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -19,9 +19,14 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
+import { FeatureLocationPicker } from '../components/FeatureLocationPicker';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
+import {
+  getCurrentFeatureLocation,
+  searchFeatureLocation,
+  type FeatureLocation,
+} from '../services/featureLocation';
 import {
   getNearbyBuoys,
   fetchBuoyObservation,
@@ -105,39 +110,43 @@ function mapToBuoyData(buoy: NearbyBuoy, obs: BuoyObservation | null): BuoyData 
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function WeatherBuoysScreen({ route }: any) {
+  const paramLat = route?.params?.lat as number | undefined;
+  const paramLon = route?.params?.lon as number | undefined;
   const [buoys, setBuoys] = useState<BuoyData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<FeatureLocation | null>(null);
+  const selectedLocationRef = useRef<FeatureLocation | null>(null);
 
-  const fetchBuoys = useCallback(async (isRetry = false) => {
+  const fetchBuoys = useCallback(async (locationOverride?: FeatureLocation, isRetry = false) => {
     if (!isRetry) {
       setLoading(true);
     }
     setError(null);
 
     try {
-      // Get user location
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setError('Location permission required to find nearby buoys.');
-        setLoading(false);
-        return;
-      }
+      const location =
+        locationOverride ??
+        selectedLocationRef.current ??
+        await getCurrentFeatureLocation({
+          lat: 40.70,
+          lon: -73.90,
+          label: 'Default buoy area',
+        });
 
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-
-      const lat = loc.coords.latitude;
-      const lon = loc.coords.longitude;
+      selectedLocationRef.current = location;
+      setSelectedLocation(location);
+      const lat = location.lat;
+      const lon = location.lon;
 
       // Fetch nearby stations (100 mile radius for better coverage)
       const nearbyStations = await getNearbyBuoys(lat, lon, 100);
 
       if (nearbyStations.length === 0) {
         setBuoys([]);
+        setError(null);
         setLoading(false);
         return;
       }
@@ -173,7 +182,9 @@ export function WeatherBuoysScreen({ route }: any) {
 
       // Auto-retry once
       if (!isRetry) {
-        setTimeout(() => fetchBuoys(true), 3000);
+        setTimeout(() => {
+          void fetchBuoys(locationOverride ?? selectedLocationRef.current ?? undefined, true);
+        }, 3000);
         return;
       }
     } finally {
@@ -182,8 +193,39 @@ export function WeatherBuoysScreen({ route }: any) {
   }, []);
 
   useEffect(() => {
-    fetchBuoys();
-  }, [fetchBuoys]);
+    let cancelled = false;
+    (async () => {
+      const initialLocation =
+        paramLat != null && paramLon != null
+          ? {
+              lat: paramLat,
+              lon: paramLon,
+              label: 'Selected buoy area',
+              source: 'selected' as const,
+            }
+          : undefined;
+      if (!cancelled) {
+        await fetchBuoys(initialLocation);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchBuoys, paramLat, paramLon]);
+
+  const handleUseCurrentLocation = async () => {
+    const location = await getCurrentFeatureLocation({
+      lat: 40.70,
+      lon: -73.90,
+      label: 'Default buoy area',
+    });
+    await fetchBuoys(location);
+  };
+
+  const handleSearchLocation = async (query: string) => {
+    const location = await searchFeatureLocation(query);
+    await fetchBuoys(location);
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -331,6 +373,17 @@ export function WeatherBuoysScreen({ route }: any) {
         </Text>
       </View>
 
+      <View style={styles.locationPickerWrap}>
+        <FeatureLocationPicker
+          label={selectedLocation?.label ?? 'Finding your buoy area'}
+          helperText="Nearby buoys and marine observations are using this location."
+          loading={loading}
+          activeSource={selectedLocation?.source}
+          onUseCurrent={handleUseCurrentLocation}
+          onSearchLocation={handleSearchLocation}
+        />
+      </View>
+
       {/* Error banner */}
       {error && buoys.length > 0 && (
         <View style={styles.errorBanner}>
@@ -451,6 +504,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: palette.accent,
     flex: 1,
+  },
+  locationPickerWrap: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
 
   // Card

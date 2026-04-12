@@ -18,9 +18,14 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
+import { FeatureLocationPicker } from '../components/FeatureLocationPicker';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
+import {
+  getCurrentFeatureLocation,
+  searchFeatureLocation,
+  type FeatureLocation,
+} from '../services/featureLocation';
 import {
   getWaterInsights,
   conditionColor,
@@ -97,62 +102,61 @@ function InsightCard({ insight }: { insight: WaterInsight }) {
 export function WaterInsightsScreen({ route }: any) {
   const paramLat = route?.params?.lat as number | undefined;
   const paramLon = route?.params?.lon as number | undefined;
+  const paramLocationName = route?.params?.locationName as string | undefined;
   const [dashboard, setDashboard] = useState<WaterInsightsDashboard | null>(null);
   const [loading, setLoading] = useState(true);
-  const [locationName, setLocationName] = useState('Your Location');
+  const [selectedLocation, setSelectedLocation] = useState<FeatureLocation | null>(null);
   const [canadianData, setCanadianData] = useState<{ stationName?: string; waterTempC?: number; flowCms?: number } | null>(null);
+
+  const loadForLocation = async (location: FeatureLocation) => {
+    setSelectedLocation(location);
+    const data = await getWaterInsights(location.lat, location.lon, {
+      locationName: location.label,
+      airTempF: 68,
+    });
+    setDashboard(data);
+
+    if (isCanadianLocation(location.lat, location.lon)) {
+      try {
+        const station = await getNearestCanadianStation(location.lat, location.lon);
+        if (station) {
+          const [tempResult, flowResult] = await Promise.all([
+            getCanadianWaterTemp(location.lat, location.lon).catch(() => null),
+            getCanadianStreamflow(station.id).catch(() => null),
+          ]);
+          setCanadianData({
+            stationName: station.name,
+            waterTempC: tempResult?.[0]?.waterTempC ?? undefined,
+            flowCms: flowResult?.[0]?.discharge ?? undefined,
+          });
+        }
+      } catch {
+        setCanadianData(null);
+      }
+    } else {
+      setCanadianData(null);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        let lat = paramLat;
-        let lon = paramLon;
-
-        // Use passed coordinates or get current location
-        if (lat == null || lon == null) {
-          try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status === 'granted') {
-              const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-              lat = pos.coords.latitude;
-              lon = pos.coords.longitude;
-            }
-          } catch {
-            // Fall back to central US
-          }
-        }
-
-        if (lat == null || lon == null) {
-          lat = 37.0;
-          lon = -95.0;
-          if (!cancelled) setLocationName('Default Location');
-        }
-
-        const data = await getWaterInsights(lat, lon, {
-          locationName: locationName,
-          airTempF: 68,
-        });
-        if (!cancelled) setDashboard(data);
-
-        // Supplement with Canadian data if location is in Canada
-        if (isCanadianLocation(lat, lon)) {
-          try {
-            const station = await getNearestCanadianStation(lat, lon);
-            if (station && !cancelled) {
-              const [tempResult, flowResult] = await Promise.all([
-                getCanadianWaterTemp(lat, lon).catch(() => null),
-                getCanadianStreamflow(station.id).catch(() => null),
-              ]);
-              setCanadianData({
-                stationName: station.name,
-                waterTempC: tempResult?.[0]?.waterTempC ?? undefined,
-                flowCms: flowResult?.[0]?.discharge ?? undefined,
+        const location =
+          paramLat != null && paramLon != null
+            ? {
+                lat: paramLat,
+                lon: paramLon,
+                label: paramLocationName ?? 'Selected spot',
+                source: 'selected' as const,
+              }
+            : await getCurrentFeatureLocation({
+                lat: 37.0,
+                lon: -95.0,
+                label: 'Default water area',
               });
-            }
-          } catch {
-            // Canadian data is supplemental
-          }
+        if (!cancelled) {
+          await loadForLocation(location);
         }
       } catch {
         // Will show empty state
@@ -161,7 +165,31 @@ export function WaterInsightsScreen({ route }: any) {
       }
     })();
     return () => { cancelled = true; };
-  }, [paramLat, paramLon]);
+  }, [paramLat, paramLon, paramLocationName]);
+
+  const handleUseCurrentLocation = async () => {
+    setLoading(true);
+    try {
+      const location = await getCurrentFeatureLocation({
+        lat: 37.0,
+        lon: -95.0,
+        label: 'Default water area',
+      });
+      await loadForLocation(location);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearchLocation = async (query: string) => {
+    setLoading(true);
+    try {
+      const location = await searchFeatureLocation(query);
+      await loadForLocation(location);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -186,10 +214,19 @@ export function WaterInsightsScreen({ route }: any) {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      <FeatureLocationPicker
+        label={selectedLocation?.label ?? dashboard.locationName}
+        helperText="Water temperature, flow, clarity, and gauge insights are using this location."
+        loading={loading}
+        activeSource={selectedLocation?.source}
+        onUseCurrent={handleUseCurrentLocation}
+        onSearchLocation={handleSearchLocation}
+      />
+
       {/* Condition Hero */}
       <View style={[styles.heroCard, { borderColor: condColor + '40' }]}>
         <View style={styles.heroHeader}>
-          <Text style={styles.heroLocation}>{dashboard.locationName}</Text>
+          <Text style={styles.heroLocation}>{selectedLocation?.label ?? dashboard.locationName}</Text>
           <Text style={styles.heroTimestamp}>
             {dashboard.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>

@@ -69,8 +69,8 @@ def download_arcgis_by_object_ids(base_url, name, batch=1000):
     object_ids = sorted(object_ids)
     all_features = []
     object_id_field = ids_data.get("objectIdFieldName") or ids_data.get("objectIdFieldName".lower()) or "OBJECTID"
-    for i in range(0, len(object_ids), batch):
-        batch_ids = object_ids[i:i + batch]
+
+    def fetch_batch(batch_ids, batch_index, depth=0):
         url = arcgis_query_url(
             base_url,
             objectIds=",".join(str(v) for v in batch_ids),
@@ -80,13 +80,31 @@ def download_arcgis_by_object_ids(base_url, name, batch=1000):
         try:
             r = requests.get(url, headers=HEADERS, timeout=120)
             if r.status_code != 200:
-                log.warning(f"  {name}: HTTP {r.status_code} for objectIds batch {i // batch + 1}")
-                return []
+                if len(batch_ids) == 1:
+                    log.warning(f"  {name}: HTTP {r.status_code} for objectId {batch_ids[0]}")
+                    return []
+                midpoint = len(batch_ids) // 2
+                log.warning(
+                    f"  {name}: HTTP {r.status_code} for objectIds batch {batch_index}; "
+                    f"splitting {len(batch_ids)} ids at recursion depth {depth}"
+                )
+                left = fetch_batch(batch_ids[:midpoint], f"{batch_index}L", depth + 1)
+                right = fetch_batch(batch_ids[midpoint:], f"{batch_index}R", depth + 1)
+                return left + right
             data = r.json()
             features = data.get("features", [])
             if not features:
-                log.warning(f"  {name}: empty objectIds batch {i // batch + 1}")
-                return []
+                if len(batch_ids) == 1:
+                    log.warning(f"  {name}: empty objectId response for {batch_ids[0]}")
+                    return []
+                midpoint = len(batch_ids) // 2
+                log.warning(
+                    f"  {name}: empty objectIds batch {batch_index}; "
+                    f"splitting {len(batch_ids)} ids at recursion depth {depth}"
+                )
+                left = fetch_batch(batch_ids[:midpoint], f"{batch_index}L", depth + 1)
+                right = fetch_batch(batch_ids[midpoint:], f"{batch_index}R", depth + 1)
+                return left + right
             returned_ids = {
                 (
                     (feat.get("properties") or {}).get(object_id_field)
@@ -97,17 +115,44 @@ def download_arcgis_by_object_ids(base_url, name, batch=1000):
             }
             requested_ids = set(batch_ids)
             if not returned_ids or not returned_ids.issubset(requested_ids):
+                if len(batch_ids) == 1:
+                    log.warning(
+                        f"  {name}: objectId {batch_ids[0]} not respected by the service; "
+                        "falling back to resultOffset pagination"
+                    )
+                    raise ValueError("objectIds not respected")
+                midpoint = len(batch_ids) // 2
                 log.warning(
-                    f"  {name}: objectIds not respected on batch {i // batch + 1}; "
-                    "falling back to resultOffset pagination"
+                    f"  {name}: objectIds not respected on batch {batch_index}; "
+                    f"splitting {len(batch_ids)} ids at recursion depth {depth}"
                 )
-                return []
-            all_features.extend(features)
-            log.info(f"  {name}: {len(all_features)} features via objectIds")
+                left = fetch_batch(batch_ids[:midpoint], f"{batch_index}L", depth + 1)
+                right = fetch_batch(batch_ids[midpoint:], f"{batch_index}R", depth + 1)
+                return left + right
+            return features
         except Exception as e:
-            log.warning(f"  {name}: objectIds batch failed: {e}")
-            return []
-        time.sleep(0.4)
+            if len(batch_ids) == 1:
+                log.warning(f"  {name}: objectIds batch failed for {batch_ids[0]}: {e}")
+                return []
+            midpoint = len(batch_ids) // 2
+            log.warning(
+                f"  {name}: objectIds batch {batch_index} failed with {type(e).__name__}: {e}; "
+                f"splitting {len(batch_ids)} ids at recursion depth {depth}"
+            )
+            left = fetch_batch(batch_ids[:midpoint], f"{batch_index}L", depth + 1)
+            right = fetch_batch(batch_ids[midpoint:], f"{batch_index}R", depth + 1)
+            return left + right
+        finally:
+            time.sleep(0.4)
+
+    for i in range(0, len(object_ids), batch):
+        batch_ids = object_ids[i:i + batch]
+        features = fetch_batch(batch_ids, str(i // batch + 1))
+        if not features:
+            log.warning(f"  {name}: no features recovered for objectIds batch {i // batch + 1}")
+            continue
+        all_features.extend(features)
+        log.info(f"  {name}: {len(all_features)} features via objectIds")
 
     return all_features
 
@@ -198,6 +243,13 @@ def direct_download(url, output_path, name):
 
 SOURCES = {
     # === TIER 1: ArcGIS REST API (paginated query) ===
+    "AL": {
+        "type": "arcgis",
+        "url": "https://conservationgis.alabama.gov/adcnrweb/rest/services/PFLBathymetry/MapServer/0/query",
+        "name": "Alabama ADCNR Lake Contours",
+        "expected": 3041,
+        "batch": 500,
+    },
     "AK": {
         "type": "arcgis",
         "url": "https://arcgis.adfg.alaska.gov/arcgis/rest/services/SpeciesAndHabitat/Bathymetry/MapServer/0/query",
@@ -243,6 +295,13 @@ SOURCES = {
         "name": "Connecticut DEEP Lake Contours",
         "expected": 7495,
     },
+    "DE": {
+        "type": "arcgis",
+        "url": "https://enterprise.firstmaptest.delaware.gov/arcgis/rest/services/Hydrology/DE_Public_Ponds/MapServer/5/query",
+        "name": "Delaware DNREC Public Ponds Bathymetry",
+        "expected": 769,
+        "batch": 250,
+    },
     "FL": {
         "type": "arcgis",
         "url": "https://gis.myfwc.com/hosting/rest/services/Open_Data/Bathymetry_of_Select_Lakes_in_Florida/MapServer/3/query",
@@ -252,9 +311,10 @@ SOURCES = {
     },
     "IN": {
         "type": "arcgis",
-        "url": "https://maps.indiana.edu/arcgis/rest/services/Hydrology/Water_Bodies_Lakes_Bathymetry/MapServer/0/query",
+        "url": "https://gisdata.in.gov/server/rest/services/Hosted/Lake_Bathymetry_RO/FeatureServer/0/query",
         "name": "Indiana DNR Lakes Bathymetry",
-        "expected": 5000,
+        "expected": 10260,
+        "batch": 100,
     },
     "AB": {
         "type": "arcgis",
@@ -268,13 +328,20 @@ SOURCES = {
         "url": "https://ndgishub.nd.gov/arcgis/rest/services/Applications/GNF_LakeContoursCached/MapServer/0/query",
         "name": "North Dakota Lake Contours",
         "expected": 4765,
-        "batch": 250,
+        "batch": 20,
     },
     "SK": {
         "type": "arcgis",
         "url": "https://gis.saskatchewan.ca/arcgis/rest/services/Bathymetric/FeatureServer/0/query",
         "name": "Saskatchewan Bathymetry Index",
         "expected": 945,
+    },
+    "KS": {
+        "type": "arcgis",
+        "url": "https://itprdkarsap.home.ku.edu/arcgis/rest/services/WaterResources/BathymetryContour/MapServer/0/query",
+        "name": "Kansas Bathymetry Contours",
+        "expected": 7667,
+        "batch": 500,
     },
 
     # === TIER 2: Direct downloads ===

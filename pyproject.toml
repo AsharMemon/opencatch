@@ -24,6 +24,12 @@ dev = [
   "pytest>=8.3,<9",
   "ruff>=0.11,<0.12",
 ]
+bathymetry = [
+  "shapely>=2.0,<3",
+  "xarray>=2025.1,<2027",
+  "netCDF4>=1.7,<2",
+  "matplotlib>=3.9,<4",
+]
 
 [tool.setuptools]
 include-package-data = true

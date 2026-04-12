@@ -155,7 +155,8 @@ const EMODNET_WMS = 'https://ows.emodnet-bathymetry.eu/wms';
 
 // ── CHS (Canada) WMS ─────────────────────────────────────────────
 
-const CHS_WMS = 'https://data.chs-shc.ca/geoserver/chs/wms';
+const CHS_WMS = 'https://nonna-geoserver.data.chs-shc.ca/geoserver/ows';
+const NR_CAN_HYDRO_NETWORK_WMS = 'https://maps.geogratis.gc.ca/wms/hydro_network_en';
 
 // ── LINZ (NZ) WMS ────────────────────────────────────────────────
 
@@ -355,13 +356,13 @@ export function getBathymetryTileSource(country: SurveyCountry): BathymetryTileS
     case 'CA':
       return {
         urlTemplate:
-          `${CHS_WMS}?service=WMS&request=GetMap&layers=chs:NONNA_100` +
-          `&styles=&format=image/png&transparent=true&version=1.1.1` +
-          `&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}`,
+          `${CHS_WMS}?service=WMS&request=GetMap&layers=nonna:NONNA%2010` +
+          `&styles=&format=image/png&transparent=true&version=1.3.0` +
+          `&width=256&height=256&crs=EPSG:3857&bbox={bbox-epsg-3857}`,
         type: 'wms',
         minZoom: 3,
-        maxZoom: 14,
-        attribution: 'Canadian Hydrographic Service (CHS) NONNA',
+        maxZoom: 16,
+        attribution: 'Canadian Hydrographic Service (CHS) NONNA 10 (non-navigational)',
         country,
       };
 
@@ -412,6 +413,21 @@ export function getBathymetryTileSource(country: SurveyCountry): BathymetryTileS
     default:
       return null;
   }
+}
+
+/** Official NRCan NHN hydrography tiles for Canada-wide river completeness. */
+export function getCanadianHydroNetworkTileSource(): BathymetryTileSource {
+  return {
+    urlTemplate:
+      `${NR_CAN_HYDRO_NETWORK_WMS}?service=WMS&request=GetMap&layers=hydro_network_en` +
+      `&styles=&format=image/png&transparent=true&version=1.3.0` +
+      `&width=256&height=256&crs=EPSG:3857&bbox={bbox-epsg-3857}`,
+    type: 'wms',
+    minZoom: 3,
+    maxZoom: 14,
+    attribution: 'Natural Resources Canada NHN',
+    country: 'CA',
+  };
 }
 
 // ── Unified Query Interface ──────────────────────────────────────

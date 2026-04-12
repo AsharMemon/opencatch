@@ -9,9 +9,7 @@
  *
  * Settings persist via AsyncStorage.
  *
- * Competitor parity: Navionics SonarChart shading / depth color options.
- * OpenCatch EXCEEDS with papercut contour style, thermal colormap, and custom
- * shallow/deep color picking.
+ * Design goal: readable chart-first styling with soft, low-fatigue colors.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -37,6 +35,7 @@ export interface ContourCustomColors {
 }
 
 export interface DepthContourSettings {
+  settingsVersion?: number;
   interval: ContourInterval;
   colorScheme: ContourColorScheme;
   opacity: number; // 0.0 – 1.0
@@ -47,13 +46,14 @@ export interface DepthContourSettings {
 // ── Defaults ───────────────────────────────────────────────────────────────────
 
 export const DEFAULT_CONTOUR_SETTINGS: DepthContourSettings = {
-  interval: 2,
+  settingsVersion: 3,
+  interval: 1,
   colorScheme: 'papercut',
-  opacity: 0.9,
+  opacity: 0.85,
   showLabels: true,
   customColors: {
-    shallow: '#9ECAE1',
-    deep: '#08306B',
+    shallow: '#CFE0EA',
+    deep: '#385E7C',
   },
 };
 
@@ -81,14 +81,14 @@ export const COLOR_SCHEMES: ColorSchemeOption[] = [
   {
     key: 'classic-blue',
     label: 'Classic Blue',
-    description: 'Light to dark blue, Navionics-style',
-    stops: ['#E3F2FD', '#BBDEFB', '#64B5F6', '#2196F3', '#1565C0', '#0D47A1'],
+    description: 'Quiet nautical blues with gentle contrast',
+    stops: ['#EEF6FB', '#D9E9F3', '#BDD4E4', '#90B7CF', '#668CA9', '#456A88'],
   },
   {
     key: 'papercut',
     label: 'Papercut',
-    description: 'Layered blue bands, topographic map look',
-    stops: ['#E6F3FA', '#CBE6F5', '#A7D2EB', '#79B8D9', '#4D98C0', '#2C739C', '#174C70'],
+    description: 'Layered paper bands with soft depth separation',
+    stops: ['#F7FBFC', '#ECF4F8', '#DDEAF1', '#CBDDE8', '#B5CEDD', '#97B7CC', '#789AB4', '#587A97', '#3D5F7B'],
   },
   {
     key: 'thermal',
@@ -203,8 +203,9 @@ export async function loadContourSettings(): Promise<DepthContourSettings> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULT_CONTOUR_SETTINGS };
+    const currentSettingsVersion = DEFAULT_CONTOUR_SETTINGS.settingsVersion ?? 3;
     const parsed = JSON.parse(raw);
-    return {
+    const merged: DepthContourSettings = {
       ...DEFAULT_CONTOUR_SETTINGS,
       ...parsed,
       customColors: {
@@ -212,6 +213,20 @@ export async function loadContourSettings(): Promise<DepthContourSettings> {
         ...(parsed.customColors ?? {}),
       },
     };
+    if (!parsed.settingsVersion && merged.colorScheme === 'papercut') {
+      if (parsed.interval === 2) merged.interval = 1;
+      if (parsed.opacity == null || parsed.opacity >= 0.9) merged.opacity = 0.85;
+      merged.settingsVersion = currentSettingsVersion;
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    }
+    if ((parsed.settingsVersion ?? 0) < currentSettingsVersion) {
+      if (parsed.colorScheme === 'papercut' && parsed.opacity >= 0.9) {
+        merged.opacity = DEFAULT_CONTOUR_SETTINGS.opacity;
+      }
+      merged.settingsVersion = currentSettingsVersion;
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    }
+    return merged;
   } catch {
     return { ...DEFAULT_CONTOUR_SETTINGS };
   }
@@ -317,9 +332,34 @@ export function buildDataQualityColorExpression(): any[] {
  */
 export function getSourceLabel(source: string): string {
   const labels: Record<string, string> = {
+    ak_survey: 'AK Survey',
+    ar_survey: 'AR Survey',
+    bc_survey: 'BC Survey',
+    de_survey: 'DE Survey',
+    hi_hydrolakes: 'HI HydroLAKES',
+    mo_depth_points: 'MO Soundings',
     mn_dnr_survey: 'MN DNR Survey',
     wi_dnr_survey: 'WI DNR Survey',
+    wi_hypsography: 'WI Hypsography',
     mi_dnr_survey: 'MI DNR Survey',
+    nb_depth_points: 'NB Soundings',
+    ok_depth_points: 'OK Depths',
+    ri_lake_management_index: 'RI Lake Plans',
+    ny_dec_contour_index: 'NY Contour Maps',
+    nj_lake_plan_index: 'NJ Lake Plans',
+    pa_pfbc_footprint: 'PA Lake Footprints',
+    va_dwr_index: 'VA Waterbody Index',
+    wv_lake_map_index: 'WV Lake Maps',
+    nl_hydrolakes: 'NL HydroLAKES',
+    nt_hydrolakes: 'NT HydroLAKES',
+    ns_survey_footprint: 'NS Survey Coverage',
+    nu_hydrolakes: 'NU HydroLAKES',
+    pe_hydrolakes: 'PE HydroLAKES',
+    tx_twdb_survey: 'TX TWDB Survey',
+    me_index: 'Maine Survey Index',
+    mb_index: 'Manitoba Survey Index',
+    sk_index: 'Saskatchewan Survey Index',
+    yt_hydrolakes: 'YT HydroLAKES',
     cudem: 'NOAA Chart',
     gebco: 'Global Ocean Chart',
     emodnet: 'European Chart',

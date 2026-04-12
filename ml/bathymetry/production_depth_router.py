@@ -72,11 +72,14 @@ except ImportError:
 
 try:
     from scipy.interpolate import griddata, RBFInterpolator
-    from scipy.ndimage import gaussian_filter
+    from scipy.ndimage import gaussian_filter, distance_transform_edt
+    from scipy.spatial import cKDTree
 except ImportError:
     griddata = None
     RBFInterpolator = None
     gaussian_filter = None
+    distance_transform_edt = None
+    cKDTree = None
 
 try:
     import pandas as pd
@@ -148,6 +151,9 @@ SOURCE_RMSE = {
     "gebco": 50.0,
     "3dlakes": 1.37,
     "globathy": 4.5,
+    "glacial_model": 2.49,
+    "mountain_model": 3.72,
+    "unified_fallback": 4.08,
     "ml_tier1": 2.76,       # Validated shallow-water ML
     "ml_tier2": 5.0,        # Deep-water / low-confidence ML
     "morphometric_prior": 8.0,
@@ -164,6 +170,9 @@ SOURCE_TIER = {
     "gebco": DepthTier.SURVEY,
     "3dlakes": DepthTier.MODELED,
     "globathy": DepthTier.MODELED,
+    "glacial_model": DepthTier.ML,
+    "mountain_model": DepthTier.ML,
+    "unified_fallback": DepthTier.ML,
     "ml_tier1": DepthTier.ML,
     "ml_tier2": DepthTier.ML,
     "morphometric_prior": DepthTier.PRIOR,
@@ -180,6 +189,9 @@ SOURCE_ATTRIBUTION = {
     "gebco": "GEBCO 2025 Global Bathymetry (public domain)",
     "3dlakes": "3D-LAKES Global Lake Bathymetry (CC-BY 4.0)",
     "globathy": "GLOBathy Global Lake Bathymetry (CC-BY 4.0)",
+    "glacial_model": "OpenCatch Glacial Specialist Model",
+    "mountain_model": "OpenCatch Mountain Specialist Model",
+    "unified_fallback": "OpenCatch Unified Fallback Model",
     "ml_tier1": "OpenCatch ML Bathymetry",
     "ml_tier2": "OpenCatch ML Bathymetry (low confidence)",
     "morphometric_prior": "OpenCatch morphometric prior",
@@ -724,6 +736,7 @@ class ProductionDepthRouter:
         nx = max(2, int((maxx - minx) * m_per_deg_lon / resolution_m))
         ny = max(2, int((maxy - miny) * m_per_deg_lat / resolution_m))
         nx, ny = min(nx, 2000), min(ny, 2000)
+        transform = from_bounds(*bounds, nx, ny) if rasterio is not None else None
 
         metadata = {
             "lake_id": lake_id,
@@ -731,6 +744,7 @@ class ProductionDepthRouter:
             "bounds": list(bounds),
             "grid_shape": [ny, nx],
             "crs": "EPSG:4326",
+            "transform": transform,
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
 
@@ -761,11 +775,13 @@ class ProductionDepthRouter:
                     depth_grid, source_grid, rmse_grid, conf_grid = (
                         self._gap_fill_with_ml(
                             depth_grid, source_grid, rmse_grid, conf_grid,
-                            gap_mask, bounds, lake_id, nx, ny,
+                            gap_mask, bounds, lake_id, nx, ny, transform,
                         )
                     )
 
                 metadata["primary_source"] = survey_source
+                metadata["tier"] = DepthTier.SURVEY.value
+                metadata["attribution"] = SOURCE_ATTRIBUTION.get(survey_source, "Survey data")
                 metadata["gap_filled"] = bool(gap_mask.any())
                 return LakeMap(
                     depth=depth_grid,
@@ -778,19 +794,17 @@ class ProductionDepthRouter:
         # ── ML-only map ──────────────────────────────────────────
         if self._ml._loaded:
             log.info("Generating ML-only map for lake %s", lake_id)
-            depth_grid = np.full((ny, nx), np.nan)
-            rmse_grid = np.full((ny, nx), SOURCE_RMSE["ml_tier2"])
-            conf_grid = np.full((ny, nx), 0.5)
-            source_grid = np.full((ny, nx), "ml_tier2", dtype=object)
-            # TODO: extract spectral features and run grid prediction
-            metadata["primary_source"] = "ml"
-            return LakeMap(
-                depth=depth_grid,
-                source=source_grid,
-                rmse=rmse_grid.astype(np.float32),
-                confidence=conf_grid.astype(np.float32),
-                metadata=metadata,
+            ml_map = self._build_ml_fallback_map(
+                lake_id=lake_id,
+                bounds=bounds,
+                nx=nx,
+                ny=ny,
+                transform=transform,
+                resolution_m=resolution_m,
             )
+            if ml_map is not None:
+                ml_map.metadata.update(metadata)
+                return ml_map
 
         # ── Morphometric prior (last resort) ─────────────────────
         log.info("Using morphometric prior for lake %s", lake_id)
@@ -1143,28 +1157,37 @@ class ProductionDepthRouter:
         lake_id: str,
         nx: int,
         ny: int,
+        transform: Optional[Any],
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Fill gaps in survey grid using ML predictions."""
-        # For gap pixels, use nearest-survey interpolation + ML blend
-        gap_rows, gap_cols = np.where(gap_mask)
-        for r, c in zip(gap_rows, gap_cols):
-            depth_grid[r, c] = np.nan  # Will be filled by ML or stay NaN
-            source_grid[r, c] = "ml_tier2"
-            rmse_grid[r, c] = SOURCE_RMSE["ml_tier2"]
-            conf_grid[r, c] = 0.4
+        ml_map = self._build_ml_fallback_map(
+            lake_id=lake_id,
+            bounds=bounds,
+            nx=nx,
+            ny=ny,
+            transform=transform,
+        )
+        if ml_map is None:
+            return depth_grid, source_grid, rmse_grid, conf_grid
+
+        fill_mask = gap_mask & np.isfinite(ml_map.depth)
+        if not np.any(fill_mask):
+            return depth_grid, source_grid, rmse_grid, conf_grid
+
+        depth_grid[fill_mask] = ml_map.depth[fill_mask]
+        source_grid[fill_mask] = ml_map.source[fill_mask]
+        rmse_grid[fill_mask] = ml_map.rmse[fill_mask]
+        conf_grid[fill_mask] = ml_map.confidence[fill_mask]
         return depth_grid, source_grid, rmse_grid, conf_grid
 
     def _get_lake_bounds(
         self, lake_id: str,
     ) -> Optional[Tuple[float, float, float, float]]:
         """Get bounding box for a lake."""
-        if self._waterbodies is not None:
+        row = self._get_lake_row(lake_id)
+        if row is not None:
             try:
-                match = self._waterbodies[
-                    self._waterbodies["lake_id"].astype(str) == str(lake_id)
-                ]
-                if len(match) > 0:
-                    return tuple(match.iloc[0].geometry.bounds)
+                return tuple(row.geometry.bounds)
             except Exception:
                 pass
         return None
@@ -1205,15 +1228,10 @@ class ProductionDepthRouter:
         self, lake_id: str,
     ) -> Optional[Dict[str, float]]:
         """Load lake-level morphometric features."""
-        if self._waterbodies is None:
+        row = self._get_lake_row(lake_id)
+        if row is None:
             return None
         try:
-            match = self._waterbodies[
-                self._waterbodies["lake_id"].astype(str) == str(lake_id)
-            ]
-            if len(match) == 0:
-                return None
-            row = match.iloc[0]
             geom = row.geometry
             return {
                 "area_km2": geom.area * 12321,
@@ -1222,6 +1240,387 @@ class ProductionDepthRouter:
             }
         except Exception:
             return None
+
+    def _get_lake_row(self, lake_id: str):
+        """Return the first matching waterbody record for a lake ID."""
+        if self._waterbodies is None:
+            return None
+        lid = str(lake_id)
+        candidate_cols = (
+            "lake_id",
+            "GNIS_ID",
+            "gnis_id",
+            "Permanent_Identifier",
+            "permanent_id",
+            "NHDPlusID",
+            "COMID",
+            "comid",
+            "Hylak_id",
+            "HYLAK_ID",
+            "id",
+        )
+        for col in candidate_cols:
+            if col not in self._waterbodies.columns:
+                continue
+            try:
+                match = self._waterbodies[
+                    self._waterbodies[col].astype(str) == lid
+                ]
+                if len(match) > 0:
+                    return match.iloc[0]
+            except Exception:
+                continue
+        return None
+
+    def _build_ml_fallback_map(
+        self,
+        lake_id: str,
+        bounds: Tuple[float, float, float, float],
+        nx: int,
+        ny: int,
+        transform: Optional[Any],
+        resolution_m: float = 10.0,
+    ) -> Optional[LakeMap]:
+        """
+        Build a non-empty ML fallback depth surface for contour generation.
+
+        The preferred path uses cached point features if they exist. If they do
+        not, we still synthesize a physically plausible basin from lake
+        geometry, shore distance, and morphometric max-depth priors so the
+        contour renderer always has a real surface to work with.
+        """
+        row = self._get_lake_row(lake_id)
+        lake_geom = getattr(row, "geometry", None) if row is not None else None
+        if lake_geom is None:
+            log.warning("No lake geometry available for ML fallback on lake %s", lake_id)
+            return None
+
+        if transform is None and rasterio is not None:
+            transform = from_bounds(*bounds, nx, ny)
+
+        lake_mask = self._rasterize_lake_mask(lake_geom, transform, (ny, nx))
+        if lake_mask is None or not np.any(lake_mask):
+            lake_mask = self._rasterize_lake_mask(
+                lake_geom, transform, (ny, nx), bounds=bounds,
+            )
+        if lake_mask is None or not np.any(lake_mask):
+            lake_mask = np.ones((ny, nx), dtype=bool)
+
+        family = self._classify_ml_family(row, lake_geom)
+        source_name = {
+            "glacial": "glacial_model",
+            "mountain": "mountain_model",
+            "unified": "unified_fallback",
+        }[family]
+        base_rmse = SOURCE_RMSE[source_name]
+        base_conf = {
+            "glacial": 0.72,
+            "mountain": 0.56,
+            "unified": 0.38,
+        }[family]
+
+        prior = self._morphometric_prior(lake_id)
+        max_depth_m = 12.0
+        if prior is not None and np.isfinite(prior.depth_m):
+            max_depth_m = max(1.5, float(prior.depth_m))
+        else:
+            area_km2 = max(float(lake_geom.area) * 12321.0, 0.01)
+            max_depth_m = max(1.5, 4.0 * (area_km2 ** 0.35))
+
+        synthetic = self._synthesize_ml_depth_grid(
+            lake_mask=lake_mask,
+            family=family,
+            target_max_depth_m=max_depth_m,
+        )
+
+        cache_depth, cache_rmse, cache_conf = self._predict_ml_grid_from_feature_cache(
+            lake_id=lake_id,
+            lake_mask=lake_mask,
+            transform=transform,
+            lake_features=self._load_lake_features(lake_id),
+            default_rmse=base_rmse,
+            default_confidence=base_conf,
+        )
+
+        depth_grid = synthetic.copy()
+        rmse_grid = np.full((ny, nx), base_rmse, dtype=np.float32)
+        conf_grid = np.full((ny, nx), base_conf, dtype=np.float32)
+        source_grid = np.full((ny, nx), source_name, dtype=object)
+
+        if cache_depth is not None:
+            cache_valid = lake_mask & np.isfinite(cache_depth)
+            if np.any(cache_valid):
+                target_cap = max(
+                    max_depth_m,
+                    float(np.nanpercentile(cache_depth[cache_valid], 97)),
+                )
+                if np.nanmax(cache_depth[cache_valid]) > EPS:
+                    cache_depth = cache_depth * (
+                        target_cap / np.nanmax(cache_depth[cache_valid])
+                    )
+                depth_grid[cache_valid] = (
+                    0.7 * cache_depth[cache_valid] + 0.3 * synthetic[cache_valid]
+                )
+                rmse_grid[cache_valid] = cache_rmse[cache_valid]
+                conf_grid[cache_valid] = np.maximum(
+                    conf_grid[cache_valid], cache_conf[cache_valid]
+                )
+
+        depth_grid = np.where(lake_mask, depth_grid, np.nan)
+        rmse_grid = np.where(lake_mask, rmse_grid, np.nan)
+        conf_grid = np.where(lake_mask, conf_grid, 0.0)
+
+        if not np.any(np.isfinite(depth_grid)):
+            return None
+
+        metadata = {
+            "primary_source": source_name,
+            "tier": DepthTier.ML.value,
+            "attribution": SOURCE_ATTRIBUTION[source_name],
+            "ml_family": family,
+            "feature_cache_used": bool(cache_depth is not None),
+            "target_max_depth_m": round(max_depth_m, 2),
+        }
+        return LakeMap(
+            depth=depth_grid.astype(np.float32),
+            source=source_grid,
+            rmse=rmse_grid.astype(np.float32),
+            confidence=conf_grid.astype(np.float32),
+            metadata=metadata,
+        )
+
+    def _classify_ml_family(self, row: Any, lake_geom: Any) -> str:
+        """Classify a lake into glacial, mountain, or unified ML families."""
+        centroid = lake_geom.centroid
+        lon = float(centroid.x)
+        lat = float(centroid.y)
+
+        jurisdiction_tokens = []
+        if row is not None:
+            for col in row.index:
+                lower = str(col).lower()
+                if any(token in lower for token in ("state", "prov", "province", "admin", "juris", "region", "code")):
+                    value = row.get(col)
+                    if value is not None:
+                        jurisdiction_tokens.append(str(value).upper())
+        admin_blob = " ".join(jurisdiction_tokens)
+
+        mountain_codes = {
+            "AK", "AB", "AZ", "BC", "CO", "ID", "MT", "NM", "NV",
+            "OR", "UT", "WA", "WY", "YT", "NT", "NU",
+        }
+        glacial_codes = {
+            "CT", "FL", "IA", "IL", "IN", "MA", "ME", "MI", "MN", "NB",
+            "NE", "NH", "NJ", "NS", "NY", "OH", "ON", "PA", "PE", "QC",
+            "RI", "SK", "VT", "WI", "MB", "NL",
+        }
+
+        if any(code in admin_blob for code in mountain_codes):
+            return "mountain"
+        if any(code in admin_blob for code in glacial_codes):
+            return "glacial"
+        if lon <= -108 or (lon <= -102 and lat >= 43):
+            return "mountain"
+        if lat >= 40 and lon >= -100:
+            return "glacial"
+        return "unified"
+
+    def _rasterize_lake_mask(
+        self,
+        lake_geom: Any,
+        transform: Optional[Any],
+        shape: Tuple[int, int],
+        bounds: Optional[Tuple[float, float, float, float]] = None,
+    ) -> Optional[np.ndarray]:
+        """Rasterize the lake polygon to a boolean water mask."""
+        if rasterio is not None and transform is not None:
+            try:
+                from rasterio.features import rasterize
+                mask = rasterize(
+                    [(lake_geom, 1)],
+                    out_shape=shape,
+                    transform=transform,
+                    fill=0,
+                    all_touched=True,
+                    dtype="uint8",
+                )
+                return mask.astype(bool)
+            except Exception as exc:
+                log.debug("Lake mask rasterization failed: %s", exc)
+
+        if bounds is None:
+            return None
+
+        minx, miny, maxx, maxy = bounds
+        ny, nx = shape
+        xs = np.linspace(minx, maxx, nx, endpoint=False) + ((maxx - minx) / max(nx, 1)) * 0.5
+        ys = np.linspace(maxy, miny, ny, endpoint=False) - ((maxy - miny) / max(ny, 1)) * 0.5
+        mask = np.zeros(shape, dtype=bool)
+        try:
+            for row_idx, lat in enumerate(ys):
+                for col_idx, lon in enumerate(xs):
+                    mask[row_idx, col_idx] = bool(lake_geom.covers(Point(float(lon), float(lat))))
+            return mask
+        except Exception as exc:
+            log.debug("Manual lake mask rasterization failed: %s", exc)
+            return None
+
+    def _synthesize_ml_depth_grid(
+        self,
+        lake_mask: np.ndarray,
+        family: str,
+        target_max_depth_m: float,
+    ) -> np.ndarray:
+        """Build a smooth, shoreline-anchored synthetic depth surface."""
+        depth = np.full(lake_mask.shape, np.nan, dtype=np.float32)
+        if not np.any(lake_mask):
+            return depth
+
+        if distance_transform_edt is None:
+            depth[lake_mask] = target_max_depth_m
+            return depth
+
+        dist = distance_transform_edt(lake_mask)
+        max_dist = float(np.nanmax(dist)) if np.any(lake_mask) else 0.0
+        if max_dist <= EPS:
+            depth[lake_mask] = target_max_depth_m
+            return depth
+        rel_shore = np.clip(dist / max_dist, 0.0, 1.0)
+
+        rows, cols = np.where(lake_mask)
+        coords = np.column_stack([rows, cols]).astype(np.float32)
+        center_proximity = np.zeros_like(rel_shore, dtype=np.float32)
+        trough_strength = np.ones_like(rel_shore, dtype=np.float32)
+
+        if len(coords) >= 3:
+            centered = coords - coords.mean(axis=0, keepdims=True)
+            cov = np.cov(centered, rowvar=False)
+            eigvals, eigvecs = np.linalg.eigh(cov)
+            order = np.argsort(eigvals)[::-1]
+            eigvecs = eigvecs[:, order]
+            proj = centered @ eigvecs
+            scale1 = float(np.percentile(np.abs(proj[:, 0]), 95)) + EPS
+            scale2 = float(np.percentile(np.abs(proj[:, 1]), 95)) + EPS
+            radius = np.sqrt((proj[:, 0] / scale1) ** 2 + (proj[:, 1] / scale2) ** 2)
+            center_vals = np.clip(1.0 - np.minimum(radius, 1.5) / 1.5, 0.0, 1.0)
+            trough_vals = np.exp(-0.5 * (proj[:, 1] / max(scale2 * 0.35, EPS)) ** 2)
+            center_proximity[rows, cols] = center_vals.astype(np.float32)
+            trough_strength[rows, cols] = trough_vals.astype(np.float32)
+        else:
+            center_proximity[lake_mask] = rel_shore[lake_mask]
+
+        if family == "glacial":
+            shape = 0.55 * np.power(rel_shore, 0.90) + 0.45 * np.power(center_proximity, 1.25)
+        elif family == "mountain":
+            shape = (
+                0.35 * np.power(rel_shore, 0.70) +
+                0.65 * (np.power(rel_shore, 0.92) * trough_strength)
+            )
+        else:
+            shape = 0.75 * np.power(rel_shore, 1.10) + 0.25 * np.power(center_proximity, 1.50)
+
+        shape = np.clip(shape, 0.0, 1.0)
+        if gaussian_filter is not None:
+            smooth = gaussian_filter(np.where(lake_mask, shape, 0.0), sigma=1.2)
+            shape = np.where(lake_mask, smooth, 0.0)
+
+        scale = float(np.nanmax(shape[lake_mask])) if np.any(lake_mask) else 0.0
+        if scale > EPS:
+            shape = shape / scale
+        depth[lake_mask] = target_max_depth_m * shape[lake_mask]
+        edge_mask = lake_mask & (dist <= 1.0)
+        depth[edge_mask] = np.minimum(depth[edge_mask], target_max_depth_m * 0.03)
+        return depth
+
+    def _predict_ml_grid_from_feature_cache(
+        self,
+        lake_id: str,
+        lake_mask: np.ndarray,
+        transform: Optional[Any],
+        lake_features: Optional[Dict[str, float]],
+        default_rmse: float,
+        default_confidence: float,
+    ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]:
+        """Use cached point features to build a nearest-neighbour ML surface."""
+        feat_dir = Path(self.paths["ml_models_dir"]).parent / "features"
+        feat_file = feat_dir / f"{lake_id}_features.parquet"
+        if (
+            pd is None or
+            cKDTree is None or
+            transform is None or
+            not feat_file.exists() or
+            not np.any(lake_mask)
+        ):
+            return None, None, None
+
+        try:
+            df = pd.read_parquet(feat_file)
+        except Exception as exc:
+            log.debug("Could not read cached features for %s: %s", lake_id, exc)
+            return None, None, None
+
+        if len(df) == 0 or not {"lat", "lon"}.issubset(df.columns):
+            return None, None, None
+
+        df = df.dropna(subset=["lat", "lon"]).reset_index(drop=True)
+        if len(df) == 0:
+            return None, None, None
+
+        rows, cols = np.where(lake_mask)
+        xs, ys = rasterio.transform.xy(transform, rows, cols, offset="center")
+        grid_xy = np.column_stack([np.asarray(xs), np.asarray(ys)])
+        feat_xy = df[["lon", "lat"]].to_numpy(dtype=np.float64)
+
+        try:
+            tree = cKDTree(feat_xy)
+            _, nearest_idx = tree.query(grid_xy, k=1)
+        except Exception as exc:
+            log.debug("cKDTree query failed for %s: %s", lake_id, exc)
+            return None, None, None
+
+        depth_grid = np.full(lake_mask.shape, np.nan, dtype=np.float32)
+        rmse_grid = np.full(lake_mask.shape, default_rmse, dtype=np.float32)
+        conf_grid = np.full(lake_mask.shape, default_confidence, dtype=np.float32)
+
+        cached_predictions: Dict[int, DepthResult] = {}
+        for idx in np.unique(nearest_idx):
+            row = df.iloc[int(idx)]
+            feature_dict = {}
+            for key, value in row.items():
+                if key in {"lat", "lon", "depth_m"}:
+                    continue
+                if isinstance(value, (int, float, np.integer, np.floating)) and np.isfinite(value):
+                    feature_dict[key] = float(value)
+            if not feature_dict:
+                continue
+            result = self._ml.predict_point(feature_dict, lake_features)
+            if result is not None and np.isfinite(result.depth_m):
+                cached_predictions[int(idx)] = result
+
+        if not cached_predictions:
+            return None, None, None
+
+        for row_idx, col_idx, feat_idx in zip(rows, cols, nearest_idx):
+            result = cached_predictions.get(int(feat_idx))
+            if result is None:
+                continue
+            depth_grid[row_idx, col_idx] = result.depth_m
+            rmse_grid[row_idx, col_idx] = min(default_rmse, result.rmse_m)
+            conf_grid[row_idx, col_idx] = max(default_confidence, result.confidence)
+
+        if gaussian_filter is not None and np.any(np.isfinite(depth_grid)):
+            valid = np.isfinite(depth_grid)
+            smooth = gaussian_filter(np.where(valid, depth_grid, 0.0), sigma=1.0)
+            counts = gaussian_filter(valid.astype(np.float32), sigma=1.0)
+            smoothed = np.divide(
+                smooth,
+                np.maximum(counts, EPS),
+                out=np.full_like(smooth, np.nan, dtype=np.float32),
+                where=counts > EPS,
+            )
+            depth_grid = np.where(valid, smoothed, np.nan)
+
+        return depth_grid, rmse_grid, conf_grid
 
 
 # ── GeoTIFF Export ───────────────────────────────────────────────────

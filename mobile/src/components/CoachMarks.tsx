@@ -12,7 +12,7 @@
  * location, with a semi-transparent backdrop, animated arrow, and smooth
  * fade in/out transitions.
  */
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -63,18 +63,20 @@ interface CoachMark {
   delay: number;
 }
 
+type CoachTargetOverrides = Partial<Record<'search-bar' | 'quick-action' | 'bottom-sheet', TargetRegion>>;
+
 /**
  * Coach marks are defined with approximate screen target positions.
  * These correspond to key UI elements on the MapScreen.
  */
-function getCoachMarks(): CoachMark[] {
+function getCoachMarks(targetOverrides?: CoachTargetOverrides): CoachMark[] {
   return [
     {
       id: 'search-bar',
-      title: 'Search for spots',
-      body: 'Find any lake, river, or stream by name. We have data on thousands of fishing locations.',
+      title: 'Search the map',
+      body: 'Jump straight to a lake, river, coastline, or saved spot from here.',
       icon: 'search',
-      target: {
+      target: targetOverrides?.['search-bar'] ?? {
         x: SCREEN_WIDTH / 2,
         y: STATUS_BAR_HEIGHT + 30,
         width: SCREEN_WIDTH - 32,
@@ -86,9 +88,9 @@ function getCoachMarks(): CoachMark[] {
     {
       id: 'quick-action',
       title: 'Quick actions',
-      body: 'Tap the + button to log a catch, record a trip, or mark a spot.',
+      body: 'Use the plus button to log a catch, record a trip, or drop a new spot instantly.',
       icon: 'add-circle',
-      target: {
+      target: targetOverrides?.['quick-action'] ?? {
         x: SCREEN_WIDTH - 40,
         y: SCREEN_HEIGHT - TAB_BAR_HEIGHT - 80,
         width: 56,
@@ -99,14 +101,14 @@ function getCoachMarks(): CoachMark[] {
     },
     {
       id: 'bottom-sheet',
-      title: 'Explore nearby spots',
-      body: 'Swipe up on the bottom panel to browse fishing spots near you, ranked by current conditions.',
+      title: 'Pull this panel up',
+      body: 'Drag this header upward for nearby spots, bite windows, pressure, and water conditions.',
       icon: 'chevron-up',
-      target: {
+      target: targetOverrides?.['bottom-sheet'] ?? {
         x: SCREEN_WIDTH / 2,
         y: SCREEN_HEIGHT - TAB_BAR_HEIGHT - 20,
         width: SCREEN_WIDTH - 32,
-        height: 40,
+        height: 56,
       },
       preferredPlacement: 'above',
       delay: 500,
@@ -117,13 +119,14 @@ function getCoachMarks(): CoachMark[] {
 interface CoachMarksProps {
   /** Set to true when the map screen has finished its initial load */
   mapReady: boolean;
+  targets?: CoachTargetOverrides;
 }
 
-export function CoachMarks({ mapReady }: CoachMarksProps) {
+export function CoachMarks({ mapReady, targets }: CoachMarksProps) {
   const [currentMarkIndex, setCurrentMarkIndex] = useState(-1);
   const [seenMarks, setSeenMarks] = useState<Set<string>>(new Set());
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const coachMarks = useRef(getCoachMarks()).current;
+  const coachMarks = useMemo(() => getCoachMarks(targets), [targets]);
 
   let insets = { top: STATUS_BAR_HEIGHT, bottom: TAB_BAR_HEIGHT };
   try {
@@ -235,7 +238,7 @@ export function CoachMarks({ mapReady }: CoachMarksProps) {
           {
             top: layout.top,
             left: layout.left,
-            maxWidth: layout.maxWidth,
+            width: layout.width,
             transform: [
               {
                 translateY: fadeAnim.interpolate({
@@ -296,9 +299,17 @@ export function CoachMarks({ mapReady }: CoachMarksProps) {
 interface TooltipLayout {
   top: number;
   left: number;
-  maxWidth: number;
+  width: number;
   placement: TooltipPlacement;
   arrowOffsetX: number;
+}
+
+function estimateTooltipHeight(mark: CoachMark, width: number): number {
+  const textWidth = Math.max(150, width - 88);
+  const titleLines = Math.max(1, Math.ceil(mark.title.length / 24));
+  const charsPerLine = Math.max(22, Math.floor(textWidth / 7));
+  const bodyLines = Math.max(2, Math.ceil(mark.body.length / charsPerLine));
+  return 72 + titleLines * 18 + bodyLines * 18 + 34;
 }
 
 function computeTooltipLayout(
@@ -306,7 +317,8 @@ function computeTooltipLayout(
   insets: { top: number; bottom: number },
 ): TooltipLayout {
   const TOOLTIP_PADDING = 16;
-  const TOOLTIP_MAX_WIDTH = Math.min(320, SCREEN_WIDTH - 32);
+  const TOOLTIP_MAX_WIDTH = Math.min(320, SCREEN_WIDTH - 24);
+  const TOOLTIP_MIN_WIDTH = Math.min(248, SCREEN_WIDTH - 24);
   const GAP = 12; // Gap between target and tooltip
 
   const targetTop = mark.target.y - mark.target.height / 2;
@@ -324,28 +336,34 @@ function computeTooltipLayout(
     placement = 'below';
   }
 
+  const width = Math.max(
+    TOOLTIP_MIN_WIDTH,
+    Math.min(TOOLTIP_MAX_WIDTH, mark.target.width + 36),
+  );
+  const estimatedHeight = estimateTooltipHeight(mark, width);
+
   // Horizontal: center tooltip on target, but clamp to screen
-  let left = mark.target.x - TOOLTIP_MAX_WIDTH / 2;
-  left = Math.max(TOOLTIP_PADDING, Math.min(left, SCREEN_WIDTH - TOOLTIP_MAX_WIDTH - TOOLTIP_PADDING));
+  let left = mark.target.x - width / 2;
+  left = Math.max(TOOLTIP_PADDING, Math.min(left, SCREEN_WIDTH - width - TOOLTIP_PADDING));
 
   // Vertical
   let top: number;
   if (placement === 'below') {
     top = targetBottom + GAP + ARROW_SIZE;
+    top = Math.min(top, SCREEN_HEIGHT - insets.bottom - estimatedHeight - 12);
   } else {
     // Place above — tooltip bottom edge above target top
-    // We estimate tooltip height at ~130px; actual rendering handles overflow
-    top = targetTop - GAP - ARROW_SIZE - 130;
+    top = targetTop - GAP - ARROW_SIZE - estimatedHeight;
     top = Math.max(insets.top + 8, top);
   }
 
   // Arrow: point at target center X, relative to tooltip left
-  const arrowOffsetX = Math.max(20, Math.min(mark.target.x - left - ARROW_SIZE / 2, TOOLTIP_MAX_WIDTH - 30));
+  const arrowOffsetX = Math.max(22, Math.min(mark.target.x - left - ARROW_SIZE / 2, width - 30));
 
   return {
     top,
     left,
-    maxWidth: TOOLTIP_MAX_WIDTH,
+    width,
     placement,
     arrowOffsetX,
   };
@@ -374,9 +392,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   tooltip: {
+    width: '100%',
     backgroundColor: 'rgba(26, 26, 24, 0.95)',
     borderRadius: 14,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
     shadowColor: '#000',
     shadowOpacity: 0.35,
     shadowRadius: 20,
@@ -386,6 +406,7 @@ const styles = StyleSheet.create({
   iconRow: {
     flexDirection: 'row',
     gap: 12,
+    alignItems: 'flex-start',
   },
   iconCircle: {
     width: 36,
@@ -397,18 +418,20 @@ const styles = StyleSheet.create({
   },
   textArea: {
     flex: 1,
+    minWidth: 0,
+    flexShrink: 1,
     gap: 4,
   },
   tooltipTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: -0.2,
   },
   tooltipBody: {
-    fontSize: 13,
+    fontSize: 12.5,
     color: 'rgba(255, 255, 255, 0.82)',
-    lineHeight: 19,
+    lineHeight: 18,
   },
   footer: {
     flexDirection: 'row',
@@ -435,8 +458,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
   },
   dismissHint: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: 10.5,
+    color: 'rgba(255, 255, 255, 0.48)',
   },
   arrowUp: {
     position: 'absolute',

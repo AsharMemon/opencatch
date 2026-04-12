@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ScrollView,
   View,
@@ -28,38 +28,46 @@ import {
 } from '../services/catchEnhancements';
 import {
   identifySpecies,
-  getSpeciesHints,
+  getAllSpecies,
   type PhotoIdentificationResult,
-  type SpeciesHints,
 } from '../services/fishSpeciesAI';
+import { getAllSaltWaterSpecies } from '../services/coastalFishing';
 import type { CatchReport, CatchReportV2Create } from '../types/models';
 import { shareCatchToSocial, generateCatchPreview } from '../services/socialSharing';
 import type { RootStackProps } from '../types/navigation';
 
 type Props = RootStackProps<'CatchReport'>;
 
-const SPECIES_OPTIONS: string[] = [
-  'Largemouth Bass',
-  'Smallmouth Bass',
-  'Spotted Bass',
-  'Bluegill',
-  'Crappie',
-  'Channel Catfish',
-  'Walleye',
-  'Rainbow Trout',
-  'Northern Pike',
-  'Other',
-];
-
 const ACCENT = '#0A6EBD';
+
+function parseOptionalInteger(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const parsed = Number.parseInt(trimmed, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) return undefined;
+  return parsed;
+}
+
+function parseOptionalDecimal(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const parsed = Number.parseFloat(trimmed);
+  if (!Number.isFinite(parsed) || parsed < 0) return undefined;
+  return parsed;
+}
+
+function hasUsableCoordinates(lat: number, lon: number): boolean {
+  return Number.isFinite(lat) && Number.isFinite(lon) && !(lat === 0 && lon === 0);
+}
 
 export function CatchReportScreen({ route, navigation }: Props) {
   const passedLat = route.params?.lat;
   const passedLon = route.params?.lon;
 
-  const [species, setSpecies] = useState<string>('Largemouth Bass');
+  const [species, setSpecies] = useState<string>('');
+  const [speciesQuery, setSpeciesQuery] = useState<string>('');
   const [numberCaught, setNumberCaught] = useState('');
-  const [numberKept, setNumberKept] = useState('0');
+  const [numberKept, setNumberKept] = useState('');
   const [largestWeight, setLargestWeight] = useState('');
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState('');
@@ -89,6 +97,39 @@ export function CatchReportScreen({ route, navigation }: Props) {
   const [bait, setBait] = useState('');
   const [technique, setTechnique] = useState('');
   const [lengthIn, setLengthIn] = useState('');
+
+  const allSpeciesOptions = useMemo(() => {
+    const freshwater = getAllSpecies().map((item) => item.commonName.trim());
+    const saltwater = getAllSaltWaterSpecies().map((item) => item.name.trim());
+    const seen = new Set<string>();
+    const combined = [...freshwater, ...saltwater]
+      .filter(Boolean)
+      .filter((name) => {
+        const key = name.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => a.localeCompare(b));
+
+    return [...combined, 'Other'];
+  }, []);
+
+  const filteredSpeciesOptions = useMemo(() => {
+    const query = speciesQuery.trim().toLowerCase();
+    if (!query) return allSpeciesOptions;
+
+    const startsWith = allSpeciesOptions.filter((name) => name.toLowerCase().startsWith(query));
+    const includes = allSpeciesOptions.filter(
+      (name) => !name.toLowerCase().startsWith(query) && name.toLowerCase().includes(query),
+    );
+    return [...startsWith, ...includes];
+  }, [allSpeciesOptions, speciesQuery]);
+
+  const visibleSpeciesOptions = useMemo(
+    () => (speciesQuery.trim() ? filteredSpeciesOptions.slice(0, 60) : filteredSpeciesOptions.slice(0, 24)),
+    [filteredSpeciesOptions, speciesQuery],
+  );
 
   // Auto-detect GPS if not passed
   useEffect(() => {
@@ -142,7 +183,7 @@ export function CatchReportScreen({ route, navigation }: Props) {
     minute: '2-digit',
   });
 
-  const canSubmit = rating > 0 && numberCaught.trim() !== '' && parseInt(numberCaught) >= 0;
+  const canSubmit = !submitting;
 
   /** Run AI species identification on a photo URI. Silent on failure. */
   const runSpeciesAI = async (photoUri: string) => {
@@ -152,6 +193,7 @@ export function CatchReportScreen({ route, navigation }: Props) {
       if (result && result.confidence >= 60) {
         setAiResult(result);
         setSpecies(result.speciesName);
+        setSpeciesQuery(result.speciesName);
         setSpeciesAutoFilled(true);
         // Auto-fill species-specific hints
         if (result.hints) {
@@ -174,6 +216,7 @@ export function CatchReportScreen({ route, navigation }: Props) {
   /** Clear AI auto-fill state when user manually changes species. */
   const handleManualSpeciesChange = (sp: string) => {
     setSpecies(sp);
+    setSpeciesQuery(sp);
     setSpeciesAutoFilled(false);
     setAiResult(null);
   };
@@ -221,14 +264,51 @@ export function CatchReportScreen({ route, navigation }: Props) {
     setSubmitting(true);
 
     const now = new Date();
-    const effortHours = Math.max(0.5, parseFloat(numberCaught) > 0 ? 2.0 : 1.0);
-    const weightLb = largestWeight ? parseFloat(largestWeight) : undefined;
-    const lengthVal = lengthIn ? parseFloat(lengthIn) : undefined;
+    const speciesInput = species.trim();
+    const speciesLabel = speciesInput || 'Unspecified Catch';
+    const catchCount = parseOptionalInteger(numberCaught);
+    const keptCount = parseOptionalInteger(numberKept);
+    const weightLb = parseOptionalDecimal(largestWeight);
+    const lengthVal = parseOptionalDecimal(lengthIn);
+    const effortHours = Math.max(0.5, (catchCount ?? 0) > 0 ? 2.0 : 1.0);
 
-    // Save to local AsyncStorage via catchEnhancements
+    if (numberCaught.trim() && catchCount == null) {
+      Alert.alert('Check catch count', 'Enter a whole number for fish caught, or leave it blank.');
+      setSubmitting(false);
+      return;
+    }
+
+    if (numberKept.trim() && keptCount == null) {
+      Alert.alert('Check kept count', 'Enter a whole number for fish kept, or leave it blank.');
+      setSubmitting(false);
+      return;
+    }
+
+    if (largestWeight.trim() && weightLb == null) {
+      Alert.alert('Check weight', 'Enter a valid weight, or leave it blank.');
+      setSubmitting(false);
+      return;
+    }
+
+    if (lengthIn.trim() && lengthVal == null) {
+      Alert.alert('Check length', 'Enter a valid length, or leave it blank.');
+      setSubmitting(false);
+      return;
+    }
+
+    if (catchCount != null && keptCount != null && keptCount > catchCount) {
+      Alert.alert('Check kept count', 'Number kept cannot exceed number caught.');
+      setSubmitting(false);
+      return;
+    }
+
+    let saved: EnhancedCatch;
     try {
       const catchData: Omit<EnhancedCatch, 'id'> = {
-        species,
+        species: speciesLabel,
+        catchCount,
+        keptCount,
+        rating: rating > 0 ? rating : undefined,
         weight: weightLb,
         length: lengthVal,
         lat,
@@ -242,125 +322,138 @@ export function CatchReportScreen({ route, navigation }: Props) {
         pressure: autoWeather?.pressure,
         cloudCover: autoWeather?.cloudCover,
         notes: notes.trim() || undefined,
-        released: parseInt(numberKept) === 0,
+        released: keptCount == null ? true : keptCount === 0,
         timestamp: now.getTime(),
       };
 
-      const saved = await saveCatch(catchData);
+      saved = await saveCatch(catchData);
+    } catch (localErr) {
+      console.warn('[CatchReport] Failed to save locally:', localErr);
+      Alert.alert(
+        'Unable to save catch',
+        'We could not save this catch to your log right now. Please try again.',
+      );
+      setSubmitting(false);
+      return;
+    }
 
-      // Check if this was a personal best (saveCatch handles PB tracking internally)
-      if (weightLb && weightLb > 0) {
-        // The PB check happens inside saveCatch, but we can notify the user
-        const { getPersonalBests } = await import('../services/catchEnhancements');
-        const bests = await getPersonalBests();
-        const pb = bests.find(
-          (b) => b.species.toLowerCase() === species.toLowerCase() && b.catchId === saved.id,
-        );
-        if (pb) {
-          Alert.alert(
-            'New Personal Best!',
-            `${weightLb} lb ${species} is your new record!\n\nShare to social media?`,
-            [
-              { text: 'Skip', onPress: () => navigation.goBack() },
-              {
-                text: 'Share',
-                onPress: async () => {
-                  await shareCatchToSocial(saved);
-                  navigation.goBack();
-                },
-              },
-            ],
-          );
-          setSubmitting(false);
-          return;
+    let syncedRemotely = false;
+    const shouldSyncRemotely = (
+      speciesInput.length > 0 &&
+      catchCount != null &&
+      rating > 0 &&
+      hasUsableCoordinates(lat, lon)
+    );
+
+    try {
+      if (shouldSyncRemotely) {
+        const reportV2: CatchReportV2Create = {
+          user_id: 'mobile-user',
+          lat,
+          lon,
+          trip_start: new Date(now.getTime() - effortHours * 3600000).toISOString(),
+          trip_end: now.toISOString(),
+          effort_hours: effortHours,
+          species: speciesInput.toLowerCase().replace(/\s+/g, '_'),
+          catch_count: catchCount,
+          kept_count: keptCount ?? 0,
+          largest_weight_lb: weightLb,
+          rating,
+          reported_at: now.toISOString(),
+          notes: notes.trim() || undefined,
+        };
+
+        const legacyReport: CatchReport = {
+          species: speciesInput,
+          numberCaught: catchCount,
+          numberKept: keptCount ?? 0,
+          largestWeight: weightLb,
+          rating,
+          lat,
+          lon,
+          date: now.toISOString(),
+          notes: notes.trim() || undefined,
+          photoUri: photos[0]?.uri ?? undefined,
+        };
+
+        try {
+          await api.submitCatchReportV2(reportV2);
+          syncedRemotely = true;
+        } catch (v2Err) {
+          if (v2Err instanceof ApiError && v2Err.status >= 400 && v2Err.status < 500) {
+            throw v2Err;
+          }
+          await api.submitCatchReport(legacyReport);
+          syncedRemotely = true;
         }
       }
+    } catch (err) {
+      console.warn('[CatchReport] Remote sync failed after local save:', err);
+    }
 
-      // Offer to share the catch
+    if (weightLb && weightLb > 0 && speciesInput.length > 0) {
+      const { getPersonalBests } = await import('../services/catchEnhancements');
+      const bests = await getPersonalBests();
+      const pb = bests.find(
+        (b) => b.species.toLowerCase() === speciesLabel.toLowerCase() && b.catchId === saved.id,
+      );
+      if (pb) {
+        const pbMessage = syncedRemotely
+          ? `${weightLb} lb ${speciesLabel} is your new record.\n\nSaved to your log, activity calendar, and synced. Share it now?`
+          : `${weightLb} lb ${speciesLabel} is your new record.\n\nSaved to your log and activity calendar. Share it now?`;
+        Alert.alert(
+          'New Personal Best!',
+          pbMessage,
+          [
+            { text: 'Skip', onPress: () => navigation.goBack() },
+            {
+              text: 'Share',
+              onPress: async () => {
+                await shareCatchToSocial(saved);
+                navigation.goBack();
+              },
+            },
+          ],
+        );
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    const successMessage = syncedRemotely
+      ? 'Saved to your log, activity calendar, and synced.'
+      : 'Saved to your log and activity calendar.';
+    const shouldOfferShare = (
+      speciesInput.length > 0 ||
+      weightLb != null ||
+      lengthVal != null ||
+      photos.length > 0 ||
+      !!notes.trim()
+    );
+
+    if (shouldOfferShare) {
       const preview = generateCatchPreview(saved);
       Alert.alert(
-        'Catch Logged!',
-        `${preview}\n\nShare to social media?`,
+        'Catch Saved!',
+        `${successMessage}\n\n${preview}\n\nShare it now?`,
         [
-          { text: 'Skip', onPress: () => {} },
+          { text: 'Skip', onPress: () => navigation.goBack() },
           {
             text: 'Share',
-            onPress: () => shareCatchToSocial(saved),
+            onPress: async () => {
+              await shareCatchToSocial(saved);
+              navigation.goBack();
+            },
           },
         ],
       );
-    } catch (localErr) {
-      console.warn('[CatchReport] Failed to save locally:', localErr);
-      // Continue to submit to server even if local save fails
+    } else {
+      Alert.alert('Catch Saved!', successMessage, [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
     }
 
-    // Build V2 report matching FastAPI CatchReportCreate schema
-    const reportV2: CatchReportV2Create = {
-      user_id: 'mobile-user', // placeholder until auth is wired
-      lat,
-      lon,
-      trip_start: new Date(now.getTime() - effortHours * 3600000).toISOString(),
-      trip_end: now.toISOString(),
-      effort_hours: effortHours,
-      species: species.toLowerCase().replace(/\s+/g, '_'),
-      catch_count: parseInt(numberCaught) || 0,
-      kept_count: parseInt(numberKept) || 0,
-      largest_weight_lb: weightLb,
-      rating,
-      reported_at: now.toISOString(),
-      notes: notes.trim() || undefined,
-    };
-
-    // Also build legacy report for backward compat with mock path
-    const legacyReport: CatchReport = {
-      species,
-      numberCaught: parseInt(numberCaught),
-      numberKept: parseInt(numberKept) || 0,
-      largestWeight: weightLb,
-      rating,
-      lat,
-      lon,
-      date: now.toISOString(),
-      notes: notes.trim() || undefined,
-      photoUri: photos[0]?.uri ?? undefined,
-    };
-
-    try {
-      // Try V2 endpoint first, fall back to legacy
-      try {
-        const result = await api.submitCatchReportV2(reportV2);
-        Alert.alert(
-          'Catch Logged!',
-          `Report saved (ID: ${result.id}). Status: ${result.status}.`,
-          [{ text: 'OK', onPress: () => navigation.goBack() }],
-        );
-        return;
-      } catch (v2Err) {
-        // If the V2 endpoint fails with a non-4xx error, try legacy
-        if (v2Err instanceof ApiError && v2Err.status >= 400 && v2Err.status < 500) {
-          // Client error — surface it
-          const detail = v2Err.message.includes('kept_count')
-            ? 'Number kept cannot exceed number caught.'
-            : v2Err.message;
-          Alert.alert('Validation Error', detail);
-          return;
-        }
-        // Fall through to legacy endpoint
-        await api.submitCatchReport(legacyReport);
-        Alert.alert('Catch Logged!', 'Your catch report has been submitted.', [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
-      }
-    } catch (err: any) {
-      // Server failed but local save succeeded — still a success
-      Alert.alert(
-        'Saved Locally',
-        'Catch saved to your device. It will sync when you have a connection.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }],
-      );
-    } finally {
-      setSubmitting(false);
-    }
+    setSubmitting(false);
   };
 
   return (
@@ -516,12 +609,33 @@ export function CatchReportScreen({ route, navigation }: Props) {
               </View>
             )}
           </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.speciesScrollContent}
-          >
-            {SPECIES_OPTIONS.map((sp) => (
+          <TextInput
+            style={styles.input}
+            value={speciesQuery}
+            onChangeText={(value) => {
+              setSpeciesQuery(value);
+              setSpeciesAutoFilled(false);
+            }}
+            placeholder="Search all species or leave blank..."
+            placeholderTextColor={palette.textDim}
+            autoCapitalize="words"
+            autoCorrect={false}
+          />
+          <Text style={styles.speciesMetaText}>
+            {filteredSpeciesOptions.length} match{filteredSpeciesOptions.length === 1 ? '' : 'es'} from {allSpeciesOptions.length} species
+          </Text>
+          <View style={styles.speciesSelectedRow}>
+            <Text style={styles.speciesSelectedLabel}>Selected</Text>
+            {species ? (
+              <View style={[styles.speciesChip, styles.speciesChipActive]}>
+                <Text style={[styles.speciesText, styles.speciesTextActive]}>{species}</Text>
+              </View>
+            ) : (
+              <Text style={styles.speciesEmptyText}>Optional</Text>
+            )}
+          </View>
+          <View style={styles.speciesChipWrap}>
+            {visibleSpeciesOptions.map((sp) => (
               <Pressable
                 key={sp}
                 style={[
@@ -540,7 +654,17 @@ export function CatchReportScreen({ route, navigation }: Props) {
                 </Text>
               </Pressable>
             ))}
-          </ScrollView>
+          </View>
+          {!speciesQuery.trim() && allSpeciesOptions.length > visibleSpeciesOptions.length && (
+            <Text style={styles.speciesHintText}>
+              Type to search the full species catalog.
+            </Text>
+          )}
+          {!!speciesQuery.trim() && filteredSpeciesOptions.length > visibleSpeciesOptions.length && (
+            <Text style={styles.speciesHintText}>
+              Narrow the search to see more than the first {visibleSpeciesOptions.length} matches.
+            </Text>
+          )}
         </View>
 
         {/* Number caught / kept */}
@@ -659,7 +783,7 @@ export function CatchReportScreen({ route, navigation }: Props) {
 
         {/* Rating */}
         <View style={styles.field}>
-          <Text style={styles.fieldLabel}>How was the fishing?</Text>
+          <Text style={styles.fieldLabel}>How was the fishing? (optional)</Text>
           <View style={styles.ratingContainer}>
             <StarRating rating={rating} onRate={setRating} size={40} />
             {rating > 0 && (
@@ -689,16 +813,15 @@ export function CatchReportScreen({ route, navigation }: Props) {
         <Pressable
           style={({ pressed }) => [
             styles.submitButton,
-            !canSubmit && styles.submitDisabled,
             pressed && canSubmit && styles.submitPressed,
           ]}
           onPress={handleSubmit}
-          disabled={!canSubmit || submitting}
+          disabled={submitting}
         >
           {submitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.submitText}>Submit Catch Report</Text>
+            <Text style={styles.submitText}>Save Catch</Text>
           )}
         </Pressable>
 
@@ -947,6 +1070,32 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingRight: 4,
   },
+  speciesMetaText: {
+    color: palette.textDim,
+    fontSize: 12,
+  },
+  speciesSelectedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  speciesSelectedLabel: {
+    color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  speciesEmptyText: {
+    color: palette.textMuted,
+    fontSize: 13,
+  },
+  speciesChipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   speciesChip: {
     paddingVertical: 8,
     paddingHorizontal: 16,
@@ -967,6 +1116,11 @@ const styles = StyleSheet.create({
   },
   speciesTextActive: {
     color: ACCENT,
+  },
+  speciesHintText: {
+    color: palette.textDim,
+    fontSize: 12,
+    lineHeight: 16,
   },
   rowFields: {
     flexDirection: 'row',

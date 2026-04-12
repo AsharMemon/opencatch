@@ -24,6 +24,7 @@ import { SettingsToggle } from '../components/SettingsRow';
 import {
   aisReceiver,
   type AISConnectionStatus,
+  type MarineInstrumentData,
 } from '../services/aisWifiReceiver';
 
 const AIS_AUTO_CONNECT_KEY = '@opencatch_ais_auto_connect';
@@ -33,6 +34,7 @@ export function AISSettingsScreen() {
   const [port, setPort] = useState('10110');
   const [status, setStatus] = useState<AISConnectionStatus>('disconnected');
   const [vesselCount, setVesselCount] = useState(0);
+  const [instrumentData, setInstrumentData] = useState<MarineInstrumentData>(() => aisReceiver.getInstrumentData());
   const [error, setError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [autoConnect, setAutoConnect] = useState(false);
@@ -59,6 +61,7 @@ export function AISSettingsScreen() {
       setStatus(state.status);
       setVesselCount(state.vesselCount);
       setError(state.error);
+      setInstrumentData(state.instruments);
     }, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -109,6 +112,12 @@ export function AISSettingsScreen() {
   }, []);
 
   const statusColor = status === 'connected' ? '#4CAF50' : status === 'error' ? '#E53935' : palette.textMuted;
+  const liveSensorCount = [
+    instrumentData.position,
+    instrumentData.heading,
+    instrumentData.depth,
+    instrumentData.wind,
+  ].filter(Boolean).length;
   const statusLabel =
     status === 'connected' ? 'Connected' :
     status === 'connecting' ? 'Connecting...' :
@@ -125,7 +134,7 @@ export function AISSettingsScreen() {
         </View>
         {status === 'connected' && (
           <Text style={styles.statusDetail}>
-            {vesselCount} vessel{vesselCount !== 1 ? 's' : ''} tracked
+            {vesselCount} vessel{vesselCount !== 1 ? 's' : ''} tracked · {liveSensorCount} live sensor{liveSensorCount !== 1 ? 's' : ''}
           </Text>
         )}
         {error && <Text style={styles.errorText}>{error}</Text>}
@@ -133,7 +142,7 @@ export function AISSettingsScreen() {
 
       {/* Connection Settings */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>AIS Receiver</Text>
+        <Text style={styles.sectionTitle}>Marine Electronics</Text>
         <View style={styles.sectionCard}>
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Host / IP Address</Text>
@@ -207,13 +216,66 @@ export function AISSettingsScreen() {
             ) : (
               <>
                 <Ionicons name="search" size={18} color={palette.accent} />
-                <Text style={styles.scanText}>Scan for AIS Devices</Text>
+                <Text style={styles.scanText}>Scan for Marine Devices</Text>
               </>
             )}
           </Pressable>
           <Text style={styles.hintText}>
-            Scans ports 10110, 2000, and 39150 on the specified host.
+            Scans common NMEA/AIS ports 10110, 2000, and 39150 on the specified host.
           </Text>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Live Inputs</Text>
+        <View style={styles.sectionCard}>
+          <View style={styles.deviceRow}>
+            <Ionicons name="navigate-outline" size={16} color={palette.textMuted} />
+            <View style={styles.deviceInfo}>
+              <Text style={styles.deviceName}>External GPS</Text>
+              <Text style={styles.devicePort}>
+                {instrumentData.position
+                  ? `${instrumentData.position.lat.toFixed(4)}, ${instrumentData.position.lon.toFixed(4)} · ${instrumentData.position.sogKnots?.toFixed(1) ?? '0.0'} kt`
+                  : 'No external GPS fix yet'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.separator} />
+          <View style={styles.deviceRow}>
+            <Ionicons name="compass-outline" size={16} color={palette.textMuted} />
+            <View style={styles.deviceInfo}>
+              <Text style={styles.deviceName}>Heading / Compass</Text>
+              <Text style={styles.devicePort}>
+                {instrumentData.heading
+                  ? `${instrumentData.heading.headingDeg.toFixed(0)}° ${instrumentData.heading.reference}`
+                  : 'No external heading yet'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.separator} />
+          <View style={styles.deviceRow}>
+            <Ionicons name="water-outline" size={16} color={palette.textMuted} />
+            <View style={styles.deviceInfo}>
+              <Text style={styles.deviceName}>Depth Sounder</Text>
+              <Text style={styles.devicePort}>
+                {instrumentData.depth
+                  ? `${instrumentData.depth.depthM.toFixed(1)} m via ${instrumentData.depth.sourceSentence}`
+                  : 'No depth sounder data yet'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.separator} />
+          <View style={styles.deviceRow}>
+            <Ionicons name="speedometer-outline" size={16} color={palette.textMuted} />
+            <View style={styles.deviceInfo}>
+              <Text style={styles.deviceName}>Wind Sensor</Text>
+              <Text style={styles.devicePort}>
+                {instrumentData.wind
+                  ? `${instrumentData.wind.speedKnots.toFixed(1)} kt · ${instrumentData.wind.angleDeg.toFixed(0)}° ${instrumentData.wind.reference}`
+                  : 'No wind data yet'}
+              </Text>
+            </View>
+          </View>
         </View>
       </View>
 
@@ -238,7 +300,8 @@ export function AISSettingsScreen() {
             { name: 'Vesper Marine XB Series', port: '39150' },
             { name: 'dAISy AIS Receiver', port: '10110' },
             { name: 'Quark-elec QK-A027', port: '2000' },
-            { name: 'Generic NMEA over WiFi', port: '10110' },
+            { name: 'Generic NMEA 0183 over WiFi', port: '10110' },
+            { name: 'Signal K / NMEA bridge', port: '3000 / bridge port' },
           ].map((device, i) => (
             <View key={device.name}>
               {i > 0 && <View style={styles.separator} />}

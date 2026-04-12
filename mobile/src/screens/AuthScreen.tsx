@@ -21,7 +21,7 @@ import { auth, AuthError } from '../services/auth';
 import type { AuthState } from '../services/auth';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-const IMAGE_HEIGHT = SCREEN_H * 0.55;
+const IMAGE_HEIGHT = Math.min(SCREEN_H * 0.42, 340);
 
 type Mode = 'login' | 'register';
 
@@ -73,6 +73,12 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
     setError(null);
   };
 
+  const handleModeSelect = (nextMode: Mode) => {
+    if (nextMode === mode) return;
+    setMode(nextMode);
+    setError(null);
+  };
+
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
@@ -83,9 +89,10 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
       >
         <ScrollView
           style={styles.flex}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 16 }]}
           keyboardShouldPersistTaps="handled"
           bounces={false}
+          showsVerticalScrollIndicator={false}
         >
           {/* ── Hero illustration ── */}
           <View style={styles.heroContainer}>
@@ -103,7 +110,7 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
           </View>
 
           {/* ── Form area ── */}
-          <View style={[styles.formArea, { paddingBottom: insets.bottom + 24 }]}>
+          <View style={styles.formArea}>
             {/* Logo */}
             <View style={styles.logoContainer}>
               <Image
@@ -117,6 +124,43 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
             <Text style={styles.formTitle}>
               {mode === 'login' ? 'Welcome back' : 'Create your account'}
             </Text>
+
+            <View style={styles.modeToggle}>
+              <TouchableOpacity
+                style={[
+                  styles.modeToggleButton,
+                  mode === 'login' && styles.modeToggleButtonActive,
+                ]}
+                onPress={() => handleModeSelect('login')}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={[
+                    styles.modeToggleText,
+                    mode === 'login' && styles.modeToggleTextActive,
+                  ]}
+                >
+                  Log In
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modeToggleButton,
+                  mode === 'register' && styles.modeToggleButtonActive,
+                ]}
+                onPress={() => handleModeSelect('register')}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={[
+                    styles.modeToggleText,
+                    mode === 'register' && styles.modeToggleTextActive,
+                  ]}
+                >
+                  Sign Up
+                </Text>
+              </TouchableOpacity>
+            </View>
 
             {/* Display name (register only) */}
             {mode === 'register' && (
@@ -304,14 +348,14 @@ const styles = StyleSheet.create({
   // ── Form area ──
   formArea: {
     paddingHorizontal: 28,
-    marginTop: -40, // overlap into the gradient
-    marginBottom: 32, // push content up from bottom edge
+    marginTop: -112,
+    marginBottom: 12,
   },
 
   // ── Logo ──
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 14,
   },
   logoImage: {
     width: SCREEN_W * 0.45,
@@ -331,8 +375,35 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '400',
     color: '#FFFFFF',
-    marginBottom: 16,
+    marginBottom: 12,
     textAlign: 'center',
+  },
+  modeToggle: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 14,
+  },
+  modeToggleButton: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modeToggleButtonActive: {
+    backgroundColor: 'rgba(77, 163, 224, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(77, 163, 224, 0.45)',
+  },
+  modeToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.58)',
+  },
+  modeToggleTextActive: {
+    color: '#FFFFFF',
   },
   inputWrapper: {
     marginBottom: 12,
@@ -394,7 +465,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 12,
+    marginTop: 8,
     // subtle shadow
     shadowColor: '#0A6EBD',
     shadowOpacity: 0.35,
@@ -420,7 +491,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
-    marginTop: 12,
+    marginTop: 10,
   },
   guestText: {
     color: 'rgba(255,255,255,0.7)',
@@ -431,7 +502,7 @@ const styles = StyleSheet.create({
   // ── Switch mode ──
   switchContainer: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 16,
   },
   switchText: {
     fontSize: 14,
@@ -448,7 +519,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.4)',
     textAlign: 'center',
     lineHeight: 18,
-    marginTop: 16,
+    marginTop: 12,
   },
   termsLink: {
     color: 'rgba(255,255,255,0.6)',

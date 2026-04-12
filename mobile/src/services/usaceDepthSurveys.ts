@@ -61,6 +61,16 @@ export interface ChannelSurvey {
   depthRatio: number | null;
 }
 
+/** Maintained channel geometry from the National Channel Framework. */
+export interface MaintainedChannel {
+  id: string;
+  channelName: string;
+  district: string;
+  authorizedDepthFt: number | null;
+  maintainedWidthFt: number | null;
+  geometry: GeoJSON.Geometry | null;
+}
+
 /** Real-time reservoir/lake level from CWMS. */
 export interface ReservoirLevel {
   /** CWMS location identifier. */
@@ -306,6 +316,67 @@ export async function getChannelSurveys(bbox: SurveyBBox): Promise<ChannelSurvey
     return results;
   } catch (err) {
     console.warn('[usaceDepthSurveys] getChannelSurveys failed:', err);
+    return [];
+  }
+}
+
+/**
+ * Fetch maintained channel network geometry from the National Channel Framework.
+ *
+ * This is the better routing backbone than generic survey footprints because it
+ * represents the maintained navigation corridor itself.
+ */
+export async function getMaintainedChannels(bbox: SurveyBBox): Promise<MaintainedChannel[]> {
+  const key = bboxKey('ncf-channel', bbox);
+  const cached = getCached<MaintainedChannel[]>(key);
+  if (cached) return cached;
+
+  const envelope = `${bbox.west},${bbox.south},${bbox.east},${bbox.north}`;
+  const url =
+    `${NCF_CHANNEL_URL}` +
+    `?geometry=${encodeURIComponent(envelope)}` +
+    `&geometryType=esriGeometryEnvelope` +
+    `&inSR=4326&outSR=4326&spatialRel=esriSpatialRelIntersects` +
+    `&outFields=*&f=geojson&resultRecordCount=500`;
+
+  try {
+    const data = await fetchJSON<GeoJSON.FeatureCollection>(url);
+    const results: MaintainedChannel[] = (data.features ?? []).map((f) => {
+      const p = f.properties ?? {};
+      const depth =
+        p.authorizedDepth ??
+        p.AUTHORIZED_DEPTH ??
+        p.auth_depth ??
+        p.channelDepth ??
+        p.designDepth ??
+        null;
+      const width =
+        p.authorizedWidth ??
+        p.AUTHORIZED_WIDTH ??
+        p.maintainedWidth ??
+        p.channelWidth ??
+        p.designWidth ??
+        null;
+      return {
+        id: String(p.OBJECTID ?? p.objectid ?? p.FID ?? p.id ?? ''),
+        channelName:
+          p.channelName ??
+          p.ChannelName ??
+          p.projectName ??
+          p.PROJECT_NAME ??
+          p.name ??
+          'Maintained Channel',
+        district: p.district ?? p.District ?? p.DISTRICT ?? '',
+        authorizedDepthFt: typeof depth === 'number' ? depth : null,
+        maintainedWidthFt: typeof width === 'number' ? width : null,
+        geometry: f.geometry ?? null,
+      };
+    });
+
+    setCache(key, results);
+    return results;
+  } catch (err) {
+    console.warn('[usaceDepthSurveys] getMaintainedChannels failed:', err);
     return [];
   }
 }

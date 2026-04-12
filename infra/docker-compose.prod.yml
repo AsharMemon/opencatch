@@ -98,6 +98,7 @@ services:
       DATABASE_URL: postgresql://opencatch:${POSTGRES_PASSWORD}@db:5432/opencatch
     volumes:
       - ./martin/config.yaml:/config.yaml:ro
+      - ./martin/tiles:/tiles:ro
     command: ["--config", "/config.yaml"]
     depends_on:
       db:

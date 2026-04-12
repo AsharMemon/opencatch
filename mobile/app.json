@@ -23,7 +23,16 @@
         "NSCameraUsageDescription": "OpenCatch uses the camera to photograph your catches.",
         "NSPhotoLibraryUsageDescription": "OpenCatch accesses your photos to attach catch images.",
         "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
+          "NSAllowsArbitraryLoads": true,
+          "NSAllowsLocalNetworking": true,
+          "NSExceptionDomains": {
+            "24.199.80.77": {
+              "NSIncludesSubdomains": false,
+              "NSTemporaryExceptionAllowsInsecureHTTPLoads": true,
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSTemporaryExceptionMinimumTLSVersion": "TLSv1.0"
+            }
+          }
         }
       }
     },

@@ -8,10 +8,15 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import { FeatureLocationPicker } from '../components/FeatureLocationPicker';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
+import {
+  getCurrentFeatureLocation,
+  searchFeatureLocation,
+  type FeatureLocation,
+} from '../services/featureLocation';
 import {
   getFishingAlerts,
   type FishingWeatherAlert,
@@ -88,16 +93,17 @@ export function AlertsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<'all' | 'weather' | 'fishing'>('all');
+  const [selectedLocation, setSelectedLocation] = useState<FeatureLocation | null>(null);
 
-  const fetchAlerts = useCallback(async () => {
+  const fetchAlerts = useCallback(async (location?: FeatureLocation) => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setLoading(false);
-        return;
-      }
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
-      const alerts = await getFishingAlerts(loc.coords.latitude, loc.coords.longitude);
+      const next = location ?? await getCurrentFeatureLocation({
+        lat: 44.98,
+        lon: -93.27,
+        label: 'Default alerts area',
+      });
+      setSelectedLocation(next);
+      const alerts = await getFishingAlerts(next.lat, next.lon);
       setWeatherAlerts(alerts);
     } catch (err) {
       console.warn('[AlertsScreen] Failed to fetch weather alerts:', err);
@@ -114,6 +120,30 @@ export function AlertsScreen() {
     setRefreshing(true);
     await fetchAlerts();
     setRefreshing(false);
+  }, [fetchAlerts]);
+
+  const handleUseCurrentLocation = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const location = await getCurrentFeatureLocation({
+        lat: 44.98,
+        lon: -93.27,
+        label: 'Default alerts area',
+      });
+      await fetchAlerts(location);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchAlerts]);
+
+  const handleSearchLocation = useCallback(async (query: string) => {
+    setRefreshing(true);
+    try {
+      const location = await searchFeatureLocation(query);
+      await fetchAlerts(location);
+    } finally {
+      setRefreshing(false);
+    }
   }, [fetchAlerts]);
 
   const markRead = (id: string) => {
@@ -141,6 +171,19 @@ export function AlertsScreen() {
           </View>
         )}
       </View>
+
+      <FeatureLocationPicker
+        label={selectedLocation?.label ?? 'Finding your location'}
+        helperText={
+          selectedLocation?.source === 'search'
+            ? 'Weather alerts are filtered for the place you searched for.'
+            : 'Weather alerts are filtered for this location.'
+        }
+        loading={loading || refreshing}
+        activeSource={selectedLocation?.source}
+        onUseCurrent={handleUseCurrentLocation}
+        onSearchLocation={handleSearchLocation}
+      />
 
       {/* Tab selector */}
       <View style={styles.tabRow}>

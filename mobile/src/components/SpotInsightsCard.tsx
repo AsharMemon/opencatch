@@ -11,10 +11,11 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/palette';
 import { fonts } from '../theme/typography';
+import { getDailyBiteForecast } from '../services/bestTimeWindows';
 import { type WeatherWarning } from '../services/bestTimeWindows';
-import { type PressureReading } from '../services/fishingPressure';
+import { getCurrentPressure, type PressureReading } from '../services/fishingPressure';
 import { type WaterInsightsDashboard } from '../services/waterInsights';
-import { type SpeciesLikelihood } from '../services/speciesDistribution';
+import { getSpeciesLikelihood, type SpeciesLikelihood } from '../services/speciesDistribution';
 import { getLocationData, getCachedLocationData } from '../services/locationDataCache';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -65,6 +66,23 @@ function getCacheKey(lat: number, lon: number): string {
   return `${lat.toFixed(3)},${lon.toFixed(3)}`;
 }
 
+function buildFallbackInsights(lat: number, lon: number): InsightsData {
+  const bite = getDailyBiteForecast(lat, lon);
+  const pressure = getCurrentPressure({ lat, lon });
+  const topSpecies = getSpeciesLikelihood(lat, lon).slice(0, 5);
+
+  return {
+    biteRating: bite.overallRating,
+    biteLabel: bite.ratingLabel,
+    biteColor: ratingColor(bite.overallRating),
+    bestWindow: bite.bestWindow ? bite.bestWindow.label : null,
+    pressure,
+    water: null,
+    topSpecies,
+    weatherWarnings: bite.weatherWarnings ?? [],
+  };
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export const SpotInsightsCard = memo(function SpotInsightsCard({
@@ -92,7 +110,6 @@ export const SpotInsightsCard = memo(function SpotInsightsCard({
     // Check the shared location data cache (may have been populated by another component)
     const sharedCached = getCachedLocationData(lat, lon);
     if (sharedCached) {
-      const isDiscovered = locationId?.startsWith('osm-') || locationId?.startsWith('water-tap-');
       const bestWin = sharedCached.bite.bestWindow;
       const result: InsightsData = {
         biteRating: sharedCached.bite.overallRating,
@@ -101,7 +118,7 @@ export const SpotInsightsCard = memo(function SpotInsightsCard({
         bestWindow: bestWin ? bestWin.label : null,
         pressure: sharedCached.pressure,
         water: sharedCached.water,
-        topSpecies: isDiscovered ? [] : sharedCached.species.slice(0, 3),
+        topSpecies: sharedCached.species.slice(0, 5),
         weatherWarnings: sharedCached.bite.weatherWarnings ?? [],
       };
       setData(result);
@@ -112,12 +129,9 @@ export const SpotInsightsCard = memo(function SpotInsightsCard({
 
     async function loadInsights() {
       try {
-        const isDiscovered = locationId?.startsWith('osm-') || locationId?.startsWith('water-tap-');
-
         // Use the batched location data cache — fetches all data in one call
         const locData = await getLocationData(lat, lon, {
           locationName,
-          skipSpecies: isDiscovered,
         });
 
         if (cancelled) return;
@@ -130,13 +144,17 @@ export const SpotInsightsCard = memo(function SpotInsightsCard({
           bestWindow: bestWin ? bestWin.label : null,
           pressure: locData.pressure,
           water: locData.water,
-          topSpecies: isDiscovered ? [] : locData.species.slice(0, 3),
+          topSpecies: locData.species.slice(0, 5),
           weatherWarnings: locData.bite.weatherWarnings ?? [],
         };
         setData(result);
         insightsCache.set(key, { data: result, timestamp: Date.now() });
       } catch {
-        // Silently fail — card just won't show
+        const fallback = buildFallbackInsights(lat, lon);
+        if (!cancelled) {
+          setData(fallback);
+          insightsCache.set(key, { data: fallback, timestamp: Date.now() });
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -230,7 +248,7 @@ export const SpotInsightsCard = memo(function SpotInsightsCard({
         <View style={[s.biteBadgeFull, { backgroundColor: data.biteColor + '15' }]}>
           <Ionicons name="fish" size={16} color={data.biteColor} />
           <Text style={[s.biteBadgeFullText, { color: data.biteColor }]}>
-            Bite: {data.biteLabel} ({data.biteRating}%)
+            Nearby area bite: {data.biteLabel} ({data.biteRating}%)
           </Text>
         </View>
       </View>
@@ -416,6 +434,7 @@ const s = StyleSheet.create({
   biteBadgeFullText: {
     fontSize: 14,
     fontWeight: '700',
+    flexShrink: 1,
   },
   biteScore: {
     fontSize: 13,

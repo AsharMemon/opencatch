@@ -104,9 +104,11 @@ function smoothPath(points: { x: number; y: number }[]): string {
 // ── Component ────────────────────────────────────────────────────
 
 export function TideChartScreen({ route }: any) {
-  const { stationId, stationName } = route.params as {
+  const { stationId, stationName, lat: stationLat, lon: stationLon } = route.params as {
     stationId: string;
     stationName: string;
+    lat?: number;
+    lon?: number;
   };
 
   const [hourly, setHourly] = useState<TideHourly[]>([]);
@@ -135,17 +137,16 @@ export function TideChartScreen({ route }: any) {
         setPredictions(predData);
         setNextTide(tidesService.getNextTide(predData));
 
-        // Fetch marine weather using station's coordinates (approximate via location)
-        try {
-          const Location = await import('expo-location');
-          const { status } = await Location.requestForegroundPermissionsAsync();
-          if (status === 'granted') {
-            const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-            const marineFc = await getMarineForecast(pos.coords.latitude, pos.coords.longitude);
+        // Fetch marine weather for the selected station area only when explicit coordinates are available.
+        if (stationLat != null && stationLon != null) {
+          try {
+            const marineFc = await getMarineForecast(stationLat, stationLon);
             if (!cancelled) setMarine(marineFc);
+          } catch {
+            // Marine weather is supplemental — non-critical
           }
-        } catch {
-          // Marine weather is supplemental — non-critical
+        } else if (!cancelled) {
+          setMarine(null);
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -160,7 +161,7 @@ export function TideChartScreen({ route }: any) {
     return () => {
       cancelled = true;
     };
-  }, [stationId]);
+  }, [stationId, stationLat, stationLon]);
 
   // ── Loading state ──────────────────────────────────────────────
   if (loading) {

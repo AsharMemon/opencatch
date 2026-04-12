@@ -98,7 +98,7 @@ const TOOL_CATEGORIES: ToolCategory[] = [
       { label: 'Trip Viz', description: 'Preview & review trips', ionicon: 'analytics', color: '#4CAF50', screen: 'TripVisualization', tags: ['boating', 'planning'] },
       { label: 'Fuel Calc', description: 'Trip fuel & range', ionicon: 'calculator-outline', color: '#E65100', screen: 'FuelCalculator', tags: ['boating'] },
       { label: 'Maintenance', description: 'Engine hours & service', ionicon: 'build', color: '#5D4037', screen: 'Maintenance', tags: ['boating'] },
-      { label: 'AIS Receiver', description: 'WiFi AIS setup', ionicon: 'radio', color: '#00897B', screen: 'AISSettings', tags: ['boating', 'coastal'] },
+      { label: 'Marine Electronics', description: 'AIS, GPS, depth, wind', ionicon: 'radio', color: '#00897B', screen: 'AISSettings', tags: ['boating', 'coastal'] },
       { label: 'USACE Surveys', description: 'Channel depths & locks', ionicon: 'water-outline', color: '#1565C0', screen: 'MapTab', params: { enableOverlay: 'usace-surveys' }, tags: ['boating', 'coastal'] },
       { label: 'Seabed Type', description: 'Bottom & anchoring info', ionicon: 'layers-outline', color: '#4CAF50', screen: 'MapTab', params: { enableOverlay: 'seabed-chars' }, tags: ['boating', 'coastal'] },
       { label: 'Maritime Zones', description: 'Shipping lanes & restricted areas', ionicon: 'shield-outline', color: '#F44336', screen: 'MapTab', params: { enableOverlay: 'maritime-boundaries' }, tags: ['boating', 'coastal'] },

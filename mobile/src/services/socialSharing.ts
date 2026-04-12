@@ -35,11 +35,19 @@ function formatWeight(lbs: number | undefined): string {
   return `${lbs} lb`;
 }
 
+function getCatchLabel(catchData: EnhancedCatch): string {
+  if (catchData.species && catchData.species !== 'Unspecified Catch') {
+    return catchData.species;
+  }
+  return 'Catch';
+}
+
 // ── Share Catch ──────────────────────────────────────────────────────────────
 
 export async function shareCatchToSocial(catchData: EnhancedCatch): Promise<void> {
+  const catchLabel = getCatchLabel(catchData);
   const lines: string[] = [
-    `\u{1F3A3} Caught a ${catchData.species}!`,
+    `\u{1F3A3} Logged a ${catchLabel}!`,
     '',
   ];
 
@@ -66,7 +74,7 @@ export async function shareCatchToSocial(catchData: EnhancedCatch): Promise<void
   try {
     await Share.share({
       message: lines.join('\n'),
-      title: `${catchData.species} catch on OpenCatch`,
+      title: `${catchLabel} on OpenCatch`,
     });
   } catch {
     // User cancelled or share failed — silent
@@ -150,7 +158,7 @@ export async function shareStats(stats: ShareableStats): Promise<void> {
 // ── Generate Catch Card Preview Text ─────────────────────────────────────────
 
 export function generateCatchPreview(catchData: EnhancedCatch): string {
-  const parts: string[] = [catchData.species];
+  const parts: string[] = [getCatchLabel(catchData)];
   if (catchData.weight) parts.push(`${formatWeight(catchData.weight)}`);
   if (catchData.locationName) parts.push(`at ${catchData.locationName}`);
   parts.push(`on ${formatDate(catchData.timestamp)}`);

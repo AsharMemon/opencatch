@@ -303,15 +303,21 @@ export async function getActiveStormCells(
   userLon?: number,
 ): Promise<StormCell[]> {
   const bboxStr = bbox.map((v) => v.toFixed(4)).join(',');
+  const [south, west, north, east] = bbox;
+  const centerLat = (south + north) / 2;
+  const centerLon = (west + east) / 2;
 
   if (cachedStorms && Date.now() - cachedAt < CACHE_TTL_MS && cachedBbox === bboxStr) {
     return cachedStorms;
   }
 
+  // NWS severe polygon products are for US coverage. Avoid noisy 400s in Canada.
+  if (centerLat > 49.2 || centerLon < -141 || centerLon > -52) {
+    return cachedStorms ?? [];
+  }
+
   try {
-    // NWS alerts API supports area parameter for bounding box queries
-    const [south, west, north, east] = bbox;
-    const url = `${NWS_BASE_URL}/alerts/active?status=actual&severity=Extreme,Severe&limit=50`;
+    const url = `${NWS_BASE_URL}/alerts/active?status=actual&limit=80`;
 
     const data = await nwsFetch<NWSAlertCollection>(url);
 

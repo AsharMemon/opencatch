@@ -1,7 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { palette } from '../theme/palette';
-import { getAllCatches, type EnhancedCatch } from '../services/catchEnhancements';
+import {
+  getAllCatches,
+  subscribeToCatchUpdates,
+  type EnhancedCatch,
+} from '../services/catchEnhancements';
 import { trackRecorder, type FishingTrack } from '../services/trackRecorder';
 
 // ── Heatmap color scale ─────────────────────────────────────────────────────
@@ -116,21 +120,34 @@ export function ActivityHeatmap() {
   const [tracks, setTracks] = useState<FishingTrack[]>([]);
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([getAllCatches(), trackRecorder.getSavedTracks()])
-      .then(([c, t]) => {
-        if (!cancelled) {
-          setCatches(c);
-          setTracks(t);
-          setLoaded(true);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setLoaded(true);
-      });
-    return () => { cancelled = true; };
+  const loadData = useCallback(async (cancelledRef: { current: boolean }) => {
+    try {
+      const [c, t] = await Promise.all([getAllCatches(), trackRecorder.getSavedTracks()]);
+      if (!cancelledRef.current) {
+        setCatches(c);
+        setTracks(t);
+      }
+    } finally {
+      if (!cancelledRef.current) {
+        setLoaded(true);
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    const cancelledRef = { current: false };
+    loadData(cancelledRef);
+    const unsubscribe = subscribeToCatchUpdates((nextCatches) => {
+      if (!cancelledRef.current) {
+        setCatches(nextCatches);
+        setLoaded(true);
+      }
+    });
+    return () => {
+      cancelledRef.current = true;
+      unsubscribe();
+    };
+  }, [loadData]);
 
   const { trips, dateStrings } = useMemo(
     () => buildTripData(catches, tracks),

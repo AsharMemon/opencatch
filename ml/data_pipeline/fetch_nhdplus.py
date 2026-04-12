@@ -206,6 +206,14 @@ def download_file(
 
             return True
 
+        except requests.HTTPError as e:
+            status = getattr(e.response, "status_code", None)
+            if status == 404:
+                log.warning(f"  Hard 404 for {url} — skipping without further retries")
+                return False
+            log.warning(f"  Attempt {attempt + 1}/{max_retries} failed: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(5 * (attempt + 1))
         except Exception as e:
             log.warning(f"  Attempt {attempt + 1}/{max_retries} failed: {e}")
             if attempt < max_retries - 1:
@@ -258,6 +266,12 @@ def discover_huc4_urls(huc2_filter: Optional[list[str]] = None) -> dict[str, str
         for item in items:
             title = item.get("title", "")
             url = item.get("downloadURL", "")
+            title_upper = title.upper()
+            url_upper = url.upper()
+            if "GDB" not in title_upper and "_GDB" not in url_upper:
+                continue
+            if "RASTER" in title_upper or "_RASTER" in url_upper:
+                continue
             # Extract HUC4 from title — format like "NHDPLUS_H_0101_HU4_GDB.zip"
             for part in title.replace("_", " ").split():
                 if len(part) == 4 and part.isdigit():
@@ -385,6 +399,28 @@ def extract_features_from_gdb(
                     col_map[col] = "reachcode"
 
             gdf = gdf.rename(columns=col_map)
+
+            # Some NHDPlus layers expose multiple source columns that normalize
+            # to the same logical field (for example Permanent_Identifier and
+            # NHDPlusID -> permanent_id). GeoPandas then carries duplicate
+            # column names, which later breaks GeoParquet writes and downstream
+            # reads. Coalesce duplicate logical columns into one canonical field.
+            if gdf.columns.duplicated().any():
+                deduped = gdf.loc[:, ~gdf.columns.duplicated()].copy()
+                for dup_name in gdf.columns[gdf.columns.duplicated()].unique():
+                    dup_block = gdf.loc[:, gdf.columns == dup_name].copy()
+                    if dup_name == "geometry":
+                        deduped[dup_name] = dup_block.iloc[:, 0]
+                        continue
+
+                    dup_block = dup_block.replace("", np.nan)
+                    merged = dup_block.bfill(axis=1).iloc[:, 0]
+                    if dup_name in deduped.columns:
+                        base = deduped[dup_name].replace("", np.nan)
+                        deduped[dup_name] = base.where(base.notna(), merged)
+                    else:
+                        deduped[dup_name] = merged
+                gdf = deduped
 
             # Compute area for polygons if not present
             if "area_sq_km" not in gdf.columns:
@@ -519,7 +555,7 @@ def fetch_waterbodies_wfs(
     """
     import geopandas as gpd
 
-    url = f"{USGS_WFS}/6/query"  # Layer 6 = NHDWaterbody
+    url = f"{USGS_WFS}/12/query"  # Layer 12 = Waterbody - Large Scale
     params = {
         "where": f"AreaSqKm >= {min_area_sq_km}",
         "geometry": f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}",

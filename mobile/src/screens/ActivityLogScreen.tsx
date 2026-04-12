@@ -20,7 +20,11 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/palette';
 import { fonts } from '../theme/typography';
-import { getAllCatches, type EnhancedCatch } from '../services/catchEnhancements';
+import {
+  getAllCatches,
+  subscribeToCatchUpdates,
+  type EnhancedCatch,
+} from '../services/catchEnhancements';
 import { trackRecorder, type FishingTrack } from '../services/trackRecorder';
 import { shareCatchToSocial } from '../services/socialSharing';
 import { exportCatches, type ExportOptions } from '../services/catchExport';
@@ -165,22 +169,32 @@ export function ActivityLogScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedCatch, setSelectedCatch] = useState<EnhancedCatch | null>(null);
 
+  const load = useCallback(async () => {
+    try {
+      const [catches, tracks] = await Promise.all([
+        getAllCatches(),
+        trackRecorder.getSavedTracks(),
+      ]);
+      setEntries(buildEntries(catches, tracks));
+    } catch {
+      // Silently fail
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    async function load() {
+    load();
+    const unsubscribe = subscribeToCatchUpdates(async (catches) => {
       try {
-        const [catches, tracks] = await Promise.all([
-          getAllCatches(),
-          trackRecorder.getSavedTracks(),
-        ]);
+        const tracks = await trackRecorder.getSavedTracks();
         setEntries(buildEntries(catches, tracks));
       } catch {
         // Silently fail
-      } finally {
-        setLoading(false);
       }
-    }
-    load();
-  }, []);
+    });
+    return unsubscribe;
+  }, [load]);
 
   const filtered = entries.filter((e) => {
     if (filter === 'All') return true;

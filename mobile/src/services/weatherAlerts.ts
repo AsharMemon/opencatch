@@ -280,6 +280,9 @@ function parseAlert(feature: NWSAlertFeature): WeatherAlert {
  * ```
  */
 export async function getActiveAlerts(lat: number, lon: number): Promise<WeatherAlert[]> {
+  if (isLikelyCanada(lat, lon)) {
+    return [];
+  }
   const cacheKey = `point:${lat.toFixed(4)},${lon.toFixed(4)}`;
   const cached = getCached(cacheKey);
   if (cached) return cached;

@@ -10,21 +10,56 @@ postgres:
 # PMTiles bathymetry contours (15 tilesets, 640 MB)
 pmtiles:
   sources:
+    al_contours: /tiles/al_contours.pmtiles
+    ak_contours: /tiles/ak_contours.pmtiles
+    ar_contours: /tiles/ar_contours.pmtiles
+    bc_contours: /tiles/bc_contours.pmtiles
+    mo_contours: /tiles/mo_contours.pmtiles
     mn_contours: /tiles/mn_contours.pmtiles
     on_contours: /tiles/on_contours.pmtiles
     qc_contours: /tiles/qc_contours.pmtiles
     mi_contours: /tiles/mi_contours.pmtiles
     nh_contours: /tiles/nh_contours.pmtiles
+    ct_contours: /tiles/ct_contours.pmtiles
+    de_contours: /tiles/de_contours.pmtiles
+    nj_contours: /tiles/nj_contours.pmtiles
+    ny_contours: /tiles/ny_contours.pmtiles
+    ri_contours: /tiles/ri_contours.pmtiles
+    nd_contours: /tiles/nd_contours.pmtiles
     fl_contours: /tiles/fl_contours.pmtiles
+    hi_contours: /tiles/hi_contours.pmtiles
+    in_contours: /tiles/in_contours.pmtiles
     il_contours: /tiles/il_contours.pmtiles
+    ks_contours: /tiles/ks_contours.pmtiles
     ab_contours: /tiles/ab_contours.pmtiles
     mt_contours: /tiles/mt_contours.pmtiles
     wa_contours: /tiles/wa_contours.pmtiles
     ma_contours: /tiles/ma_contours.pmtiles
     oh_contours: /tiles/oh_contours.pmtiles
+    ok_contours: /tiles/ok_contours.pmtiles
+    pa_contours: /tiles/pa_contours.pmtiles
+    va_contours: /tiles/va_contours.pmtiles
     ne_contours: /tiles/ne_contours.pmtiles
+    tx_contours: /tiles/tx_contours.pmtiles
     vt_contours: /tiles/vt_contours.pmtiles
+    wv_contours: /tiles/wv_contours.pmtiles
     ia_contours: /tiles/ia_contours.pmtiles
-    lagos_contours: /tiles/lagos_contours.pmtiles
+    wi_contours: /tiles/wi_contours.pmtiles
+    nb_contours: /tiles/nb_contours.pmtiles
+    ga_pfa_contours: /tiles/ga_pfa_contours.pmtiles
+    ky_kdfwr_contours: /tiles/ky_kdfwr_contours.pmtiles
+    ms_contours: /tiles/ms_contours.pmtiles
+    ns_contours: /tiles/ns_contours.pmtiles
+    me_contours: /tiles/me_contours.pmtiles
+    nl_contours: /tiles/nl_contours.pmtiles
+    nt_contours: /tiles/nt_contours.pmtiles
+    nu_contours: /tiles/nu_contours.pmtiles
     mb_contours: /tiles/mb_contours.pmtiles
     sk_contours: /tiles/sk_contours.pmtiles
+    pe_contours: /tiles/pe_contours.pmtiles
+    yt_contours: /tiles/yt_contours.pmtiles
+    lagos_contours: /tiles/lagos_contours.pmtiles
+    ocean_contours: /tiles/ocean_contours.pmtiles
+    noaa_marine_navigation: /tiles/noaa_marine_navigation.pmtiles
+    usace_river_navigation: /tiles/usace_river_navigation.pmtiles
+    na_river_network: /tiles/na_river_network.pmtiles

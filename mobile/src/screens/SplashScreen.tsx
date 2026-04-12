@@ -12,7 +12,7 @@ import { palette } from '../theme/palette';
 let ExpoSplashScreen: any = null;
 try { ExpoSplashScreen = require('expo-splash-screen'); } catch {}
 
-const { width: SCREEN_W } = Dimensions.get('window');
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 const LOGO_WIDTH = SCREEN_W * 0.65;
 const LOGO_ASPECT = 1396 / 2560; // OpenCatch text logo aspect ratio (2560x1396)
@@ -75,6 +75,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    transform: [{ translateY: -SCREEN_H * 0.08 }],
   },
   logoImage: {
     width: LOGO_WIDTH,

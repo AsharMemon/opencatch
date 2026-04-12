@@ -32,7 +32,7 @@ import {
 } from '../services/fishSpeciesAI';
 import {
   getSaltWaterSpecies,
-  type SaltwaterSpecies,
+  getAllSaltWaterSpecies,
 } from '../services/coastalFishing';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -60,19 +60,39 @@ export function SpeciesGuideScreen() {
   const [idSize, setIdSize] = useState('');
   const [idResults, setIdResults] = useState<IdentificationResult[]>([]);
 
-  const allSpecies = useMemo(() => getAllSpecies(), []);
-
-  // Coastal/saltwater species from coastalFishing service (shown when saltwater filter active)
-  const [coastalSpecies, setCoastalSpecies] = useState<SaltwaterSpecies[]>([]);
-  React.useEffect(() => {
-    if (waterFilter === 'saltwater') {
-      // Use a generic coastal US coordinate when no location
-      const species = getSaltWaterSpecies(28.5, -80.5); // Florida coast default
-      setCoastalSpecies(species);
-    } else {
-      setCoastalSpecies([]);
-    }
-  }, [waterFilter]);
+  const allSpecies = useMemo(() => {
+    const freshwater = getAllSpecies();
+    const saltwater = getAllSaltWaterSpecies().map((sp) => ({
+      id: `salt-${sp.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+      commonName: sp.name,
+      scientificName: sp.scientificName,
+      family: 'Marine',
+      description: `${sp.name} is a North American saltwater species most associated with ${sp.habitat.toLowerCase()}.`,
+      identifyingFeatures: [
+        `Regional species for ${sp.regions.join(', ')}`,
+        `Peak months: ${sp.peakMonths.join(', ')}`,
+        `Common techniques: ${sp.techniques.join(', ')}`,
+      ],
+      typicalSizeIn: { min: 12, max: 40 },
+      habitat: [sp.habitat, ...sp.regions],
+      range: `Common in ${sp.regions.join(', ')} North American coastal waters`,
+      status: 'sport' as const,
+      icon: '🐟',
+      primaryColors: ['blue', 'silver', 'green'],
+      bodyShape: 'torpedo' as const,
+      funFacts: [
+        `Best temperature range: ${sp.preferredTempF[0]}-${sp.preferredTempF[1]}°F`,
+        `Popular techniques include ${sp.techniques.slice(0, 2).join(' and ')}`,
+      ],
+    }));
+    const seen = new Set<string>();
+    return [...freshwater, ...saltwater].filter((species) => {
+      const key = species.commonName.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, []);
 
   const filteredSpecies = useMemo(() => {
     let results = searchQuery ? searchSpecies(searchQuery) : [...allSpecies];
@@ -353,25 +373,6 @@ export function SpeciesGuideScreen() {
           ))}
         </ScrollView>
       </View>
-
-      {/* Coastal saltwater species from coastalFishing service */}
-      {coastalSpecies.length > 0 && (
-        <View style={{ paddingHorizontal: 16, gap: 8, marginBottom: 8 }}>
-          <Text style={[styles.resultCount, { fontWeight: '700', fontSize: 13 }]}>
-            In Season Saltwater ({coastalSpecies.length})
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-            {coastalSpecies.slice(0, 8).map((sp) => (
-              <View key={sp.name} style={{ backgroundColor: '#FFFFFF', borderRadius: 10, padding: 10, width: 140, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: palette.text }} numberOfLines={1}>{sp.name}</Text>
-                <Text style={{ fontSize: 10, color: palette.textMuted, fontStyle: 'italic' }} numberOfLines={1}>{sp.scientificName}</Text>
-                <Text style={{ fontSize: 10, color: palette.textSecondary, marginTop: 4 }} numberOfLines={2}>{sp.habitat}</Text>
-                <Text style={{ fontSize: 10, color: palette.accent, marginTop: 2 }}>{sp.techniques.slice(0, 2).join(', ')}</Text>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
 
       {/* Species count */}
       <Text style={styles.resultCount}>{filteredSpecies.length} species</Text>

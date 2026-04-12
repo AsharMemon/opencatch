@@ -28,6 +28,7 @@ import {
   type ShippingLane,
   type BBox as MaritimeBBox,
 } from './maritimeRoutes';
+import { getMaintainedChannels } from './usaceDepthSurveys';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -124,9 +125,25 @@ export interface RouteProbeResult {
 
 export type RouteProbe = (point: LatLng) => Promise<RouteProbeResult>;
 
+interface SurveyedRouteLine {
+  id: string;
+  name: string;
+  coordinates: LatLng[];
+  source: 'maintained_channel' | 'shipping_lane';
+  depthFt: number | null;
+}
+
 // ── Storage ──────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = '@opencatch/saved_routes';
+const CHANNEL_GRAPH_SNAP_NM = 2.5;
+const CHANNEL_GRAPH_VERTEX_PRECISION = 4;
+const CHANNEL_ROUTE_DISTANCE_MULTIPLIER = 2.5;
+const CHANNEL_ROUTE_SCORE_BONUS = 180;
+const GRID_ROUTING_MAX_CELLS = 196;
+const GRID_ROUTING_MIN_SPACING_NM = 0.12;
+const GRID_ROUTING_MAX_SPACING_NM = 0.55;
+const GRID_ROUTING_SHALLOW_BUFFER_M = 0.8;
 
 // ── Known speed limit / no-wake zones (expandable) ──────────────────────────
 
@@ -182,6 +199,461 @@ function offsetPointNm(from: LatLng, to: LatLng, offsetNm: number, side: 1 | -1)
     lat: midpoint.lat + ny * offsetDegLat,
     lon: midpoint.lon + nx * offsetDegLon,
   };
+}
+
+function getPathDistanceNm(path: LatLng[]): number {
+  return path.slice(1).reduce((sum, point, index) => {
+    return sum + calculateDistance(
+      { lat: path[index].lat, lon: path[index].lon },
+      { lat: point.lat, lon: point.lon },
+    );
+  }, 0);
+}
+
+function nmToLatDegrees(nm: number): number {
+  return nm / 60;
+}
+
+function nmToLonDegrees(nm: number, latitude: number): number {
+  const cosLat = Math.max(Math.cos((latitude * Math.PI) / 180), 0.2);
+  return nm / (60 * cosLat);
+}
+
+function simplifyRoutePath(path: LatLng[]): LatLng[] {
+  if (path.length <= 2) return path;
+  const simplified: LatLng[] = [path[0]];
+
+  for (let i = 1; i < path.length - 1; i++) {
+    const prev = simplified[simplified.length - 1];
+    const current = path[i];
+    const next = path[i + 1];
+
+    const distToPrev = calculateDistance(
+      { lat: prev.lat, lon: prev.lon },
+      { lat: current.lat, lon: current.lon },
+    );
+    if (distToPrev < 0.03) {
+      continue;
+    }
+
+    const bearingA = calculateBearing(
+      { lat: prev.lat, lon: prev.lon },
+      { lat: current.lat, lon: current.lon },
+    );
+    const bearingB = calculateBearing(
+      { lat: current.lat, lon: current.lon },
+      { lat: next.lat, lon: next.lon },
+    );
+    const delta = Math.abs((((bearingB - bearingA) + 540) % 360) - 180);
+    if (delta < 10) {
+      continue;
+    }
+
+    simplified.push(current);
+  }
+
+  simplified.push(path[path.length - 1]);
+  return simplified;
+}
+
+interface GridCell {
+  key: string;
+  point: LatLng;
+  onWater: boolean;
+  depthM: number | null;
+}
+
+async function tryGridWaterPath(
+  start: LatLng,
+  end: LatLng,
+  draftMeters: number,
+  probe: RouteProbe,
+): Promise<LatLng[] | null> {
+  const segmentNm = calculateDistance(
+    { lat: start.lat, lon: start.lon },
+    { lat: end.lat, lon: end.lon },
+  );
+  const centerLat = (start.lat + end.lat) / 2;
+  const paddingNm = Math.min(Math.max(segmentNm * 0.25, 0.45), 3.5);
+  const minLat = Math.min(start.lat, end.lat) - nmToLatDegrees(paddingNm);
+  const maxLat = Math.max(start.lat, end.lat) + nmToLatDegrees(paddingNm);
+  const minLon = Math.min(start.lon, end.lon) - nmToLonDegrees(paddingNm, centerLat);
+  const maxLon = Math.max(start.lon, end.lon) + nmToLonDegrees(paddingNm, centerLat);
+
+  let spacingNm = Math.min(
+    GRID_ROUTING_MAX_SPACING_NM,
+    Math.max(GRID_ROUTING_MIN_SPACING_NM, segmentNm / 14),
+  );
+  let rows = Math.ceil((maxLat - minLat) / nmToLatDegrees(spacingNm)) + 1;
+  let cols = Math.ceil((maxLon - minLon) / nmToLonDegrees(spacingNm, centerLat)) + 1;
+  while (rows * cols > GRID_ROUTING_MAX_CELLS && spacingNm < GRID_ROUTING_MAX_SPACING_NM) {
+    spacingNm = Math.min(GRID_ROUTING_MAX_SPACING_NM, spacingNm * 1.18);
+    rows = Math.ceil((maxLat - minLat) / nmToLatDegrees(spacingNm)) + 1;
+    cols = Math.ceil((maxLon - minLon) / nmToLonDegrees(spacingNm, centerLat)) + 1;
+  }
+
+  const latStep = rows > 1 ? (maxLat - minLat) / (rows - 1) : 0;
+  const lonStep = cols > 1 ? (maxLon - minLon) / (cols - 1) : 0;
+  const cells = new Map<string, GridCell>();
+  const waterKeys: string[] = [];
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const key = `${row},${col}`;
+      const point = {
+        lat: minLat + row * latStep,
+        lon: minLon + col * lonStep,
+      };
+      const result = await probe(point);
+      const cell: GridCell = {
+        key,
+        point,
+        onWater: result.onWater,
+        depthM: result.depthM,
+      };
+      cells.set(key, cell);
+      if (cell.onWater) {
+        waterKeys.push(key);
+      }
+    }
+  }
+
+  if (waterKeys.length === 0) return null;
+
+  const nearestWaterKey = (target: LatLng): string | null => {
+    let bestKey: string | null = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    for (const key of waterKeys) {
+      const cell = cells.get(key);
+      if (!cell) continue;
+      const distance = calculateDistance(
+        { lat: target.lat, lon: target.lon },
+        { lat: cell.point.lat, lon: cell.point.lon },
+      );
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestKey = key;
+      }
+    }
+    return bestDistance <= Math.max(segmentNm * 0.5, 1.5) ? bestKey : null;
+  };
+
+  const startKey = nearestWaterKey(start);
+  const endKey = nearestWaterKey(end);
+  if (!startKey || !endKey) return null;
+
+  const heuristic = (fromKey: string): number => {
+    const from = cells.get(fromKey);
+    const to = cells.get(endKey);
+    if (!from || !to) return Number.POSITIVE_INFINITY;
+    return calculateDistance(
+      { lat: from.point.lat, lon: from.point.lon },
+      { lat: to.point.lat, lon: to.point.lon },
+    );
+  };
+
+  const open = new Set<string>([startKey]);
+  const cameFrom = new Map<string, string>();
+  const gScore = new Map<string, number>([[startKey, 0]]);
+  const fScore = new Map<string, number>([[startKey, heuristic(startKey)]]);
+
+  const neighborOffsets = [
+    [-1, -1], [-1, 0], [-1, 1],
+    [0, -1],           [0, 1],
+    [1, -1],  [1, 0],  [1, 1],
+  ] as const;
+
+  while (open.size > 0) {
+    let currentKey: string | null = null;
+    let currentBest = Number.POSITIVE_INFINITY;
+    for (const key of open) {
+      const score = fScore.get(key) ?? Number.POSITIVE_INFINITY;
+      if (score < currentBest) {
+        currentBest = score;
+        currentKey = key;
+      }
+    }
+    if (!currentKey) break;
+    if (currentKey === endKey) {
+      const pathKeys: string[] = [currentKey];
+      let cursor = currentKey;
+      while (cameFrom.has(cursor)) {
+        cursor = cameFrom.get(cursor)!;
+        pathKeys.unshift(cursor);
+      }
+      const gridPath = pathKeys
+        .map((key) => cells.get(key)?.point)
+        .filter(Boolean) as LatLng[];
+      return simplifyRoutePath([start, ...gridPath, end]);
+    }
+
+    open.delete(currentKey);
+    const [row, col] = currentKey.split(',').map(Number);
+    const currentCell = cells.get(currentKey);
+    if (!currentCell) continue;
+
+    for (const [dRow, dCol] of neighborOffsets) {
+      const nextKey = `${row + dRow},${col + dCol}`;
+      const nextCell = cells.get(nextKey);
+      if (!nextCell || !nextCell.onWater) continue;
+      if (nextCell.depthM != null && nextCell.depthM < draftMeters) continue;
+
+      const stepCost = calculateDistance(
+        { lat: currentCell.point.lat, lon: currentCell.point.lon },
+        { lat: nextCell.point.lat, lon: nextCell.point.lon },
+      );
+      const shallowPenalty =
+        nextCell.depthM != null && nextCell.depthM < draftMeters + GRID_ROUTING_SHALLOW_BUFFER_M
+          ? 2.4
+          : 0;
+      const tentative = (gScore.get(currentKey) ?? Number.POSITIVE_INFINITY) + stepCost + shallowPenalty;
+
+      if (tentative < (gScore.get(nextKey) ?? Number.POSITIVE_INFINITY)) {
+        cameFrom.set(nextKey, currentKey);
+        gScore.set(nextKey, tentative);
+        fScore.set(nextKey, tentative + heuristic(nextKey));
+        open.add(nextKey);
+      }
+    }
+  }
+
+  return null;
+}
+
+function buildRouteBBox(start: LatLng, end: LatLng, paddingDeg: number): MaritimeBBox {
+  return {
+    minLat: Math.min(start.lat, end.lat) - paddingDeg,
+    maxLat: Math.max(start.lat, end.lat) + paddingDeg,
+    minLon: Math.min(start.lon, end.lon) - paddingDeg,
+    maxLon: Math.max(start.lon, end.lon) + paddingDeg,
+  };
+}
+
+function geometryToLineStrings(geometry: GeoJSON.Geometry | null): LatLng[][] {
+  if (!geometry) return [];
+  if (geometry.type === 'LineString') {
+    return [geometry.coordinates.map(([lon, lat]) => ({ lat, lon }))];
+  }
+  if (geometry.type === 'MultiLineString') {
+    return geometry.coordinates.map((line) => line.map(([lon, lat]) => ({ lat, lon })));
+  }
+  return [];
+}
+
+function vertexKey(point: LatLng): string {
+  return `${point.lat.toFixed(CHANNEL_GRAPH_VERTEX_PRECISION)},${point.lon.toFixed(CHANNEL_GRAPH_VERTEX_PRECISION)}`;
+}
+
+function dedupePathPoints(points: LatLng[]): LatLng[] {
+  const deduped: LatLng[] = [];
+  for (const point of points) {
+    const last = deduped[deduped.length - 1];
+    if (!last) {
+      deduped.push(point);
+      continue;
+    }
+    if (calculateDistance({ lat: last.lat, lon: last.lon }, { lat: point.lat, lon: point.lon }) > 0.01) {
+      deduped.push(point);
+    }
+  }
+  return deduped;
+}
+
+function findNearestVertex(
+  nodes: Map<string, LatLng>,
+  point: LatLng,
+): { key: string; point: LatLng; distanceNm: number } | null {
+  let best: { key: string; point: LatLng; distanceNm: number } | null = null;
+  for (const [key, nodePoint] of nodes.entries()) {
+    const distanceNm = calculateDistance(
+      { lat: point.lat, lon: point.lon },
+      { lat: nodePoint.lat, lon: nodePoint.lon },
+    );
+    if (!best || distanceNm < best.distanceNm) {
+      best = { key, point: nodePoint, distanceNm };
+    }
+  }
+  return best;
+}
+
+function buildChannelGraph(lines: SurveyedRouteLine[]): {
+  nodes: Map<string, LatLng>;
+  edges: Map<string, Array<{ to: string; cost: number }>>;
+} {
+  const nodes = new Map<string, LatLng>();
+  const edges = new Map<string, Array<{ to: string; cost: number }>>();
+
+  const addEdge = (from: string, to: string, cost: number) => {
+    const list = edges.get(from) ?? [];
+    list.push({ to, cost });
+    edges.set(from, list);
+  };
+
+  for (const line of lines) {
+    for (let i = 0; i < line.coordinates.length - 1; i++) {
+      const fromPoint = line.coordinates[i];
+      const toPoint = line.coordinates[i + 1];
+      const fromKey = vertexKey(fromPoint);
+      const toKey = vertexKey(toPoint);
+      nodes.set(fromKey, fromPoint);
+      nodes.set(toKey, toPoint);
+      const distanceNm = calculateDistance(
+        { lat: fromPoint.lat, lon: fromPoint.lon },
+        { lat: toPoint.lat, lon: toPoint.lon },
+      );
+      addEdge(fromKey, toKey, distanceNm);
+      addEdge(toKey, fromKey, distanceNm);
+    }
+  }
+
+  return { nodes, edges };
+}
+
+function dijkstraPath(
+  edges: Map<string, Array<{ to: string; cost: number }>>,
+  startKey: string,
+  endKey: string,
+): string[] | null {
+  const distances = new Map<string, number>([[startKey, 0]]);
+  const previous = new Map<string, string>();
+  const pending = new Set<string>([startKey]);
+
+  while (pending.size > 0) {
+    let current: string | null = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    for (const key of pending) {
+      const distance = distances.get(key) ?? Number.POSITIVE_INFINITY;
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        current = key;
+      }
+    }
+    if (!current) break;
+    if (current === endKey) break;
+    pending.delete(current);
+
+    for (const edge of edges.get(current) ?? []) {
+      const candidate = bestDistance + edge.cost;
+      if (candidate < (distances.get(edge.to) ?? Number.POSITIVE_INFINITY)) {
+        distances.set(edge.to, candidate);
+        previous.set(edge.to, current);
+        pending.add(edge.to);
+      }
+    }
+  }
+
+  if (!distances.has(endKey)) return null;
+  const path: string[] = [];
+  let current = endKey;
+  path.unshift(current);
+  while (current !== startKey) {
+    const prev = previous.get(current);
+    if (!prev) return null;
+    current = prev;
+    path.unshift(current);
+  }
+  return path;
+}
+
+function shippingLanesToRouteLines(lanes: ShippingLane[]): SurveyedRouteLine[] {
+  return lanes
+    .filter((lane) => lane.coordinates.length >= 2)
+    .map((lane) => ({
+      id: lane.id,
+      name: lane.name,
+      coordinates: lane.coordinates,
+      source: 'shipping_lane' as const,
+      depthFt: null,
+    }));
+}
+
+function maintainedChannelsToRouteLines(
+  channels: Awaited<ReturnType<typeof getMaintainedChannels>>,
+  draftMeters: number,
+): SurveyedRouteLine[] {
+  const minimumDepthFt = draftMeters * 3.28084;
+  const lines: SurveyedRouteLine[] = [];
+  for (const channel of channels) {
+    if (
+      channel.authorizedDepthFt != null &&
+      channel.authorizedDepthFt > 0 &&
+      channel.authorizedDepthFt + 1 < minimumDepthFt
+    ) {
+      continue;
+    }
+    for (const coordinates of geometryToLineStrings(channel.geometry)) {
+      if (coordinates.length < 2) continue;
+      lines.push({
+        id: channel.id,
+        name: channel.channelName,
+        coordinates,
+        source: 'maintained_channel',
+        depthFt: channel.authorizedDepthFt,
+      });
+    }
+  }
+  return lines;
+}
+
+async function trySurveyedChannelPath(
+  start: LatLng,
+  end: LatLng,
+  draftMeters: number,
+): Promise<LatLng[] | null> {
+  const segmentNm = calculateDistance(
+    { lat: start.lat, lon: start.lon },
+    { lat: end.lat, lon: end.lon },
+  );
+  const paddingDeg = Math.min(Math.max(segmentNm / 120, 0.06), 0.4);
+  const bbox = buildRouteBBox(start, end, paddingDeg);
+  const surveyBbox = {
+    west: bbox.minLon,
+    south: bbox.minLat,
+    east: bbox.maxLon,
+    north: bbox.maxLat,
+  };
+
+  let maintainedChannels: Awaited<ReturnType<typeof getMaintainedChannels>> = [];
+  let shippingLanes: ShippingLane[] = [];
+  try {
+    [maintainedChannels, shippingLanes] = await Promise.all([
+      getMaintainedChannels(surveyBbox),
+      getShippingLanes(bbox),
+    ]);
+  } catch {
+    return null;
+  }
+
+  const lines = [
+    ...maintainedChannelsToRouteLines(maintainedChannels, draftMeters),
+    ...shippingLanesToRouteLines(shippingLanes),
+  ];
+  if (lines.length === 0) return null;
+
+  const graph = buildChannelGraph(lines);
+  if (graph.nodes.size < 2) return null;
+
+  const startSnap = findNearestVertex(graph.nodes, start);
+  const endSnap = findNearestVertex(graph.nodes, end);
+  if (!startSnap || !endSnap) return null;
+  if (startSnap.distanceNm > CHANNEL_GRAPH_SNAP_NM || endSnap.distanceNm > CHANNEL_GRAPH_SNAP_NM) {
+    return null;
+  }
+
+  const pathKeys = dijkstraPath(graph.edges, startSnap.key, endSnap.key);
+  if (!pathKeys || pathKeys.length === 0) return null;
+
+  const pathPoints = pathKeys
+    .map((key) => graph.nodes.get(key))
+    .filter(Boolean) as LatLng[];
+  const routed = dedupePathPoints([start, ...pathPoints, end]);
+  if (routed.length < 2) return null;
+
+  const routedDistanceNm = getPathDistanceNm(routed);
+  if (routedDistanceNm > segmentNm * CHANNEL_ROUTE_DISTANCE_MULTIPLIER) {
+    return null;
+  }
+  return routed;
 }
 
 async function scoreRoutePath(
@@ -249,6 +721,36 @@ export async function autorouteWaypoints(
       { lat: start.lat, lon: start.lon },
       { lat: end.lat, lon: end.lon },
     );
+
+    const surveyedChannelPath = await trySurveyedChannelPath(start, end, draftMeters);
+    if (surveyedChannelPath) {
+      const channelScore = await scoreRoutePath(surveyedChannelPath, draftMeters, probe);
+      const effectiveChannelScore = Math.max(0, channelScore.score - CHANNEL_ROUTE_SCORE_BONUS);
+      if (
+        channelScore.landHits === 0 &&
+        channelScore.shallowHits <= directScore.shallowHits + 1 &&
+        effectiveChannelScore < bestScore
+      ) {
+        bestPath = surveyedChannelPath;
+        bestScore = effectiveChannelScore;
+      }
+    }
+
+    if (directScore.landHits > 0 || directScore.shallowHits > 0) {
+      const gridPath = await tryGridWaterPath(start, end, draftMeters, probe);
+      if (gridPath) {
+        const gridScore = await scoreRoutePath(gridPath, draftMeters, probe);
+        if (
+          gridScore.landHits === 0 &&
+          (gridScore.score < bestScore ||
+            (directScore.landHits > 0 && gridScore.shallowHits <= directScore.shallowHits))
+        ) {
+          bestPath = gridPath;
+          bestScore = gridScore.score;
+        }
+      }
+    }
+
     const offsets = [0.25, 0.5, 1, 2, Math.min(Math.max(segmentNm * 0.2, 0.75), 3)];
 
     for (const offsetNm of offsets) {
@@ -627,10 +1129,13 @@ export async function getDefaultBoatRouteProfile(): Promise<BoatRouteProfile> {
   const boat = await getDefaultBoat();
   const boatType = boat?.type ?? 'other';
   const estimates = FUEL_CONSUMPTION_ESTIMATES[boatType] ?? FUEL_CONSUMPTION_ESTIMATES.other;
+  const draftMeters = boat?.draftFt && boat.draftFt > 0
+    ? boat.draftFt * 0.3048
+    : 0.6;
 
   return {
     cruiseSpeedKnots: 20,
-    draftMeters: 0.6, // ~2ft default recreational boat draft
+    draftMeters,
     fuelConsumptionGPH: estimates.cruise,
     fuelCapacityGallons: boat?.fuelCapacity ?? 30,
     fuelPricePerGallon: 4.50, // default fuel price

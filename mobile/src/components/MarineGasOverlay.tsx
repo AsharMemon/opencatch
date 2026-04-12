@@ -9,7 +9,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { palette } from '../theme/palette';
 import {
-  getMarineGasStations,
+  getMarineGasStationsForLake,
   marineGasToGeoJSON,
   type MarineGasBBox,
 } from '../services/marineGasStations';
@@ -19,6 +19,8 @@ import {
 interface Props {
   lat: number;
   lon: number;
+  lakeId?: string | null;
+  bbox?: MarineGasBBox;
   ShapeSource: any;
   CircleLayer: any;
   SymbolLayer: any;
@@ -45,7 +47,7 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function MarineGasOverlay({ lat, lon, ShapeSource, CircleLayer, SymbolLayer }: Props) {
+export function MarineGasOverlay({ lat, lon, lakeId, bbox, ShapeSource, CircleLayer, SymbolLayer }: Props) {
   const [geoJSON, setGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
   const lastCenter = useRef<{ lat: number; lon: number } | null>(null);
   const loadingRef = useRef(false);
@@ -62,13 +64,13 @@ export function MarineGasOverlay({ lat, lon, ShapeSource, CircleLayer, SymbolLay
     lastCenter.current = { lat: centerLat, lon: centerLon };
 
     try {
-      const bbox: MarineGasBBox = {
+      const searchBox: MarineGasBBox = bbox ?? {
         south: centerLat - SEARCH_RADIUS_DEG,
         north: centerLat + SEARCH_RADIUS_DEG,
         west: centerLon - SEARCH_RADIUS_DEG,
         east: centerLon + SEARCH_RADIUS_DEG,
       };
-      const stations = await getMarineGasStations(bbox);
+      const stations = await getMarineGasStationsForLake(searchBox, lakeId);
       if (stations.length > 0) {
         setGeoJSON(marineGasToGeoJSON(stations));
       } else {
@@ -79,11 +81,15 @@ export function MarineGasOverlay({ lat, lon, ShapeSource, CircleLayer, SymbolLay
     } finally {
       loadingRef.current = false;
     }
-  }, []);
+  }, [bbox, lakeId]);
 
   useEffect(() => {
     fetchData(lat, lon);
   }, [lat, lon, fetchData]);
+
+  useEffect(() => {
+    lastCenter.current = null;
+  }, [lakeId, bbox?.south, bbox?.west, bbox?.north, bbox?.east]);
 
   if (!geoJSON || geoJSON.features.length === 0) return null;
 

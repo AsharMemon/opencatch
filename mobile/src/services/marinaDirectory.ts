@@ -6,6 +6,9 @@
  * given location. Results are cached in memory for 1 hour.
  */
 
+import type { WaterbodyBounds } from './accessPointService';
+import { getLocalLakeMarinaPois } from './lakePoiCatalog';
+
 // ── Types ────────────────────────────────────────────────────────
 
 /** The kind of point-of-interest returned by the directory. */
@@ -50,11 +53,20 @@ interface CacheEntry {
 
 const cache = new Map<string, CacheEntry>();
 
-function cacheKey(lat: number, lon: number, radiusMeters: number): string {
+function cacheKey(
+  lat: number,
+  lon: number,
+  radiusMeters: number,
+  bounds?: WaterbodyBounds,
+  lakeId?: string,
+): string {
   // Round coords to ~110 m so nearby requests share a cache slot.
   const latR = Math.round(lat * 1000) / 1000;
   const lonR = Math.round(lon * 1000) / 1000;
-  return `${latR},${lonR},${radiusMeters}`;
+  const bboxKey = bounds
+    ? `${Math.round(bounds.south * 1000) / 1000},${Math.round(bounds.west * 1000) / 1000},${Math.round(bounds.north * 1000) / 1000},${Math.round(bounds.east * 1000) / 1000}`
+    : 'no-bounds';
+  return `${latR},${lonR},${radiusMeters},${bboxKey},${lakeId ?? 'no-lake'}`;
 }
 
 function getCached(key: string): MarinaPOI[] | null {
@@ -81,8 +93,15 @@ function buildOverpassQuery(
   lat: number,
   lon: number,
   radiusMeters: number,
+  bounds?: WaterbodyBounds,
 ): string {
-  const around = `(around:${radiusMeters},${lat},${lon})`;
+  const around = bounds
+    ? (() => {
+        const latPad = radiusMeters / 111_320;
+        const lonPad = radiusMeters / (111_320 * Math.cos((lat * Math.PI) / 180));
+        return `(${bounds.south - latPad},${bounds.west - lonPad},${bounds.north + latPad},${bounds.east + lonPad})`;
+      })()
+    : `(around:${radiusMeters},${lat},${lon})`;
   return `
 [out:json][timeout:25];
 (
@@ -245,13 +264,16 @@ export async function fetchNearbyMarinas(
   lat: number,
   lon: number,
   radiusMeters: number = 25_000,
+  bounds?: WaterbodyBounds,
+  lakeId?: string,
 ): Promise<MarinaPOI[]> {
-  const key = cacheKey(lat, lon, radiusMeters);
+  const key = cacheKey(lat, lon, radiusMeters, bounds, lakeId);
   const cached = getCached(key);
   if (cached) return attachDistances(cached, lat, lon);
+  const localPois = getLocalLakeMarinaPois(lakeId, lat, lon);
 
   try {
-    const query = buildOverpassQuery(lat, lon, radiusMeters);
+    const query = buildOverpassQuery(lat, lon, radiusMeters, bounds);
     const elements = await runOverpassQuery(query);
     const pois = elements
       .map(elementToPOI)
@@ -259,7 +281,7 @@ export async function fetchNearbyMarinas(
 
     // De-duplicate by id (ways can duplicate node results).
     const seen = new Set<string>();
-    const unique = pois.filter((p) => {
+    const unique = [...localPois, ...pois].filter((p) => {
       if (seen.has(p.id)) return false;
       seen.add(p.id);
       return true;
@@ -269,7 +291,7 @@ export async function fetchNearbyMarinas(
     return attachDistances(unique, lat, lon);
   } catch (err) {
     console.warn('[marinaDirectory] fetchNearbyMarinas failed:', err);
-    return [];
+    return attachDistances(localPois, lat, lon);
   }
 }
 
@@ -306,8 +328,9 @@ export async function getNearbyByType(
   lon: number,
   type: MarinaPOIType,
   radiusMeters: number = 25_000,
+  lakeId?: string,
 ): Promise<MarinaPOI[]> {
-  const all = await fetchNearbyMarinas(lat, lon, radiusMeters);
+  const all = await fetchNearbyMarinas(lat, lon, radiusMeters, undefined, lakeId);
   return all.filter((p) => p.type === type);
 }
 

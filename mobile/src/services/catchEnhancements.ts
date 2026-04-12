@@ -25,6 +25,9 @@ export interface CatchPhoto {
 export interface EnhancedCatch {
   id: string;
   species: string;
+  catchCount?: number;
+  keptCount?: number;
+  rating?: number;
   weight?: number;       // lbs
   length?: number;       // inches
   girth?: number;        // inches
@@ -76,7 +79,18 @@ export interface SpeciesStats {
 
 const CATCHES_KEY = '@opencatch/catches';
 const PB_KEY = '@opencatch/personal_bests';
+const catchListeners = new Set<(catches: EnhancedCatch[]) => void>();
 // Photos stored at their picker URIs — no filesystem copy needed in modern Expo
+
+function notifyCatchListeners(catches: EnhancedCatch[]): void {
+  for (const listener of catchListeners) {
+    try {
+      listener(catches);
+    } catch (error) {
+      console.warn('[catchEnhancements] catch listener failed:', error);
+    }
+  }
+}
 
 // ── Photo Management ─────────────────────────────────────────────────────────
 
@@ -183,6 +197,7 @@ export async function saveCatch(catchData: Omit<EnhancedCatch, 'id'>): Promise<E
 
   catches.unshift(newCatch);
   await AsyncStorage.setItem(CATCHES_KEY, JSON.stringify(catches));
+  notifyCatchListeners(catches);
 
   // Check for personal best
   if (newCatch.weight) {
@@ -202,6 +217,15 @@ export async function getAllCatches(): Promise<EnhancedCatch[]> {
   } catch {
     return [];
   }
+}
+
+export function subscribeToCatchUpdates(
+  listener: (catches: EnhancedCatch[]) => void,
+): () => void {
+  catchListeners.add(listener);
+  return () => {
+    catchListeners.delete(listener);
+  };
 }
 
 /**

@@ -16,9 +16,15 @@ import Svg, {
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { SkeletonLoader } from '../components/ui/SkeletonLoader';
+import { FeatureLocationPicker } from '../components/FeatureLocationPicker';
 import { palette, getConditionBand, conditionConfig, scoreColor } from '../theme/palette';
 import { fonts, type as typeStyles } from '../theme/typography';
 import { getDailyBiteForecast, getWeeklyBiteForecast, formatHour, computeWeatherPenalty, type DailyBiteForecast as BiteFC, type TimeWindow } from '../services/bestTimeWindows';
+import {
+  getCurrentFeatureLocation,
+  searchFeatureLocation,
+  type FeatureLocation,
+} from '../services/featureLocation';
 import { getCurrentPressure, type PressureReading } from '../services/fishingPressure';
 import { getWaterInsights, type WaterInsightsDashboard } from '../services/waterInsights';
 import type { TabProps } from '../types/navigation';
@@ -526,7 +532,9 @@ function DailyRow({ day, dayIndex, bite, isExpanded, onToggle }: {
       {/* Main row */}
       <View style={st.dailyRowMain}>
         <View style={st.dailyDayCol}>
-          <Text style={st.dailyDayName}>{dayName}</Text>
+          <Text style={st.dailyDayName} numberOfLines={1}>
+            {dayName}
+          </Text>
           <Text style={st.dailyDate}>{cardDate.getDate()}</Text>
         </View>
 
@@ -661,9 +669,7 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
   const [weekForecast, setWeekForecast] = useState<DayForecast[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [userLat, setUserLat] = useState<number | null>(null);
-  const [userLon, setUserLon] = useState<number | null>(null);
-  const [locationName, setLocationName] = useState<string | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<FeatureLocation | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedDayIdx, setExpandedDayIdx] = useState<number | null>(null);
 
@@ -676,27 +682,29 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
   const [weeklyBite, setWeeklyBite] = useState<BiteFC[]>([]);
   const [pressureInfo, setPressureInfo] = useState<PressureReading | null>(null);
   const [waterData, setWaterData] = useState<WaterInsightsDashboard | null>(null);
+  const activeLat = selectedLocation?.lat ?? null;
+  const activeLon = selectedLocation?.lon ?? null;
 
   // Load inline insights when location is known
   useEffect(() => {
-    if (userLat == null || userLon == null) return;
+    if (activeLat == null || activeLon == null) return;
     let cancelled = false;
 
-    const bite = getDailyBiteForecast(userLat, userLon);
-    const weekly = getWeeklyBiteForecast(userLat, userLon);
-    const pressure = getCurrentPressure({ lat: userLat, lon: userLon });
+    const bite = getDailyBiteForecast(activeLat, activeLon);
+    const weekly = getWeeklyBiteForecast(activeLat, activeLon);
+    const pressure = getCurrentPressure({ lat: activeLat, lon: activeLon });
     if (!cancelled) {
       setBiteForecast(bite);
       setWeeklyBite(weekly);
       setPressureInfo(pressure);
     }
 
-    getWaterInsights(userLat, userLon).then((w) => {
+    getWaterInsights(activeLat, activeLon).then((w) => {
       if (!cancelled) setWaterData(w);
     }).catch(() => {});
 
     return () => { cancelled = true; };
-  }, [userLat, userLon]);
+  }, [activeLat, activeLon]);
 
   const fetchForecast = useCallback(async (lat: number, lon: number, isRetry = false) => {
     setLoading(true);
@@ -719,56 +727,61 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
     }
   }, []);
 
-  // Reverse geocode to get location name
-  useEffect(() => {
-    if (userLat == null || userLon == null) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const results = await Location.reverseGeocodeAsync({
-          latitude: userLat,
-          longitude: userLon,
-        });
-        if (!cancelled && results.length > 0) {
-          const r = results[0];
-          const parts: string[] = [];
-          if (r.city) parts.push(r.city);
-          if (r.region) parts.push(r.region);
-          if (parts.length === 0 && r.name) parts.push(r.name);
-          setLocationName(parts.join(', ') || null);
-        }
-      } catch {
-        // Silently fail
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [userLat, userLon]);
-
   const handleRefresh = useCallback(async () => {
-    if (userLat == null || userLon == null) return;
+    if (activeLat == null || activeLon == null) return;
     setRefreshing(true);
     forecastCache = null;
-    await fetchForecast(userLat, userLon);
+    await fetchForecast(activeLat, activeLon);
     setRefreshing(false);
-  }, [userLat, userLon, fetchForecast]);
+  }, [activeLat, activeLon, fetchForecast]);
+
+  const applyLocation = useCallback(async (next: FeatureLocation) => {
+    setSelectedLocation(next);
+    await fetchForecast(next.lat, next.lon);
+  }, [fetchForecast]);
+
+  const handleUseCurrentLocation = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      const next = await getCurrentFeatureLocation({
+        lat: 44.98,
+        lon: -93.27,
+        label: 'Default forecast area',
+      });
+      await applyLocation(next);
+      setError(null);
+    } catch (err: any) {
+      setError(err?.message ?? 'Unable to get your current location.');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [applyLocation]);
+
+  const handleSearchLocation = useCallback(async (query: string) => {
+    try {
+      setRefreshing(true);
+      const next = await searchFeatureLocation(query);
+      await applyLocation(next);
+      setError(null);
+    } catch (err: any) {
+      setError(err?.message ?? 'Unable to find that place.');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [applyLocation]);
 
   useEffect(() => {
     (async () => {
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setError('Location permission needed for forecast.');
-          setLoading(false);
-          return;
-        }
-        const loc = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
+        const next = await getCurrentFeatureLocation({
+          lat: 44.98,
+          lon: -93.27,
+          label: 'Default forecast area',
         });
-        setUserLat(loc.coords.latitude);
-        setUserLon(loc.coords.longitude);
-        await fetchForecast(loc.coords.latitude, loc.coords.longitude);
-      } catch {
-        setError('Unable to get your location. Please enable GPS.');
+        setSelectedLocation(next);
+        await fetchForecast(next.lat, next.lon);
+      } catch (err: any) {
+        setError(err?.message ?? 'Unable to load forecast location.');
         setLoading(false);
       }
     })();
@@ -826,7 +839,7 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
         <Text style={st.errorTitle}>{error}</Text>
         <Pressable
           style={st.retryButton}
-          onPress={() => userLat != null && userLon != null && fetchForecast(userLat, userLon)}
+          onPress={() => activeLat != null && activeLon != null && fetchForecast(activeLat, activeLon)}
         >
           <Text style={st.retryText}>Retry</Text>
         </Pressable>
@@ -843,13 +856,25 @@ export function ForecastsScreen(_props: TabProps<'ForecastsTab'>) {
       >
         {/* ── Top: Score Gauge + Summary ──────────────────────────── */}
         <View style={st.heroSection}>
+          <FeatureLocationPicker
+            label={selectedLocation?.label ?? 'Loading location'}
+            helperText={
+              selectedLocation?.source === 'search'
+                ? 'Forecast, bite windows, and water insights are using the place you searched for.'
+                : 'Forecast, bite windows, and water insights are using this location.'
+            }
+            loading={refreshing}
+            activeSource={selectedLocation?.source}
+            onUseCurrent={handleUseCurrentLocation}
+            onSearchLocation={handleSearchLocation}
+          />
           <View style={st.heroRow}>
             <BiteScoreGauge score={currentScore} />
             <View style={st.heroSummary}>
               <View style={st.locationRow}>
                 <Ionicons name="location-outline" size={14} color={palette.accent} />
                 <Text style={st.locationText} numberOfLines={1}>
-                  {locationName ?? 'Current Location'}
+                  {selectedLocation?.label ?? 'Current Location'}
                 </Text>
                 <Pressable onPress={handleRefresh} hitSlop={12}>
                   {refreshing ? (
@@ -1107,7 +1132,7 @@ const st = StyleSheet.create({
 
   // ── Hero Section ──────────────────────────────────────────────
   heroSection: {
-    paddingTop: 52,
+    paddingTop: 20,
     paddingHorizontal: 16,
     paddingBottom: 8,
   },
@@ -1248,11 +1273,12 @@ const st = StyleSheet.create({
     gap: 8,
   },
   dailyDayCol: {
-    width: 36,
-    alignItems: 'center',
+    width: 48,
+    alignItems: 'flex-start',
   },
   dailyDayName: {
-    fontSize: 12,
+    width: '100%',
+    fontSize: 11,
     fontWeight: '700',
     color: palette.text,
   },
@@ -1260,6 +1286,7 @@ const st = StyleSheet.create({
     fontSize: 10,
     color: palette.textMuted,
     fontWeight: '500',
+    textAlign: 'left',
   },
   dailyScoreBarCol: {
     flex: 1,

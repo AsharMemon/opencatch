@@ -20,8 +20,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import * as Location from 'expo-location';
 import Svg, { Circle, Line, Rect, Text as SvgText } from 'react-native-svg';
+import { FeatureLocationPicker } from '../components/FeatureLocationPicker';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
 import { hapticLight } from '../utils/haptics';
@@ -32,6 +32,11 @@ import {
   type DailyBiteForecast,
   type TimeWindow,
 } from '../services/bestTimeWindows';
+import {
+  getCurrentFeatureLocation,
+  searchFeatureLocation,
+  type FeatureLocation,
+} from '../services/featureLocation';
 
 // ── Defaults ─────────────────────────────────────────────────────────────────
 
@@ -216,7 +221,13 @@ export function BestTimesScreen() {
   const navigation = useNavigation<any>();
   const [forecast, setForecast] = useState<DailyBiteForecast | null>(null);
   const [weekly, setWeekly] = useState<DailyBiteForecast[]>([]);
-  const [locationLabel, setLocationLabel] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState<FeatureLocation | null>(null);
+
+  const loadForLocation = useCallback((location: FeatureLocation) => {
+    setSelectedLocation(location);
+    setForecast(getDailyBiteForecast(location.lat, location.lon));
+    setWeekly(getWeeklyBiteForecast(location.lat, location.lon));
+  }, []);
 
   const handleShowOnMap = useCallback(() => {
     hapticLight();
@@ -229,27 +240,40 @@ export function BestTimesScreen() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      let lat = DEFAULT_LAT;
-      let lon = DEFAULT_LON;
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === 'granted') {
-          const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-          lat = pos.coords.latitude;
-          lon = pos.coords.longitude;
-          if (!cancelled) setLocationLabel(`${lat.toFixed(2)}, ${lon.toFixed(2)}`);
-        }
+        const location = await getCurrentFeatureLocation({
+          lat: DEFAULT_LAT,
+          lon: DEFAULT_LON,
+          label: 'Default bite area',
+        });
+        if (!cancelled) loadForLocation(location);
       } catch {
-        // Use defaults
+        if (!cancelled) {
+          loadForLocation({
+            lat: DEFAULT_LAT,
+            lon: DEFAULT_LON,
+            label: 'Default bite area',
+            source: 'default',
+          });
+        }
       }
-      if (cancelled) return;
-      const f = getDailyBiteForecast(lat, lon);
-      setForecast(f);
-      const w = getWeeklyBiteForecast(lat, lon);
-      setWeekly(w);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [loadForLocation]);
+
+  const handleUseCurrentLocation = useCallback(async () => {
+    const location = await getCurrentFeatureLocation({
+      lat: DEFAULT_LAT,
+      lon: DEFAULT_LON,
+      label: 'Default bite area',
+    });
+    loadForLocation(location);
+  }, [loadForLocation]);
+
+  const handleSearchLocation = useCallback(async (query: string) => {
+    const location = await searchFeatureLocation(query);
+    loadForLocation(location);
+  }, [loadForLocation]);
 
   if (!forecast) {
     return (
@@ -276,12 +300,24 @@ export function BestTimesScreen() {
         <Ionicons name="chevron-forward" size={18} color="#FFFFFF80" />
       </Pressable>
 
+      <FeatureLocationPicker
+        label={selectedLocation?.label ?? 'Finding your location'}
+        helperText={
+          selectedLocation?.source === 'search'
+            ? 'Bite windows and the weekly outlook are using your searched place.'
+            : 'Bite windows and the weekly outlook are using this location.'
+        }
+        activeSource={selectedLocation?.source}
+        onUseCurrent={handleUseCurrentLocation}
+        onSearchLocation={handleSearchLocation}
+      />
+
       {/* Overall Rating Hero */}
       <View style={styles.heroCard}>
-        {locationLabel ? (
+        {selectedLocation?.label ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 }}>
             <Ionicons name="location-outline" size={12} color={palette.textMuted} />
-            <Text style={{ fontSize: 11, color: palette.textMuted }}>{locationLabel}</Text>
+            <Text style={{ fontSize: 11, color: palette.textMuted }}>{selectedLocation.label}</Text>
           </View>
         ) : null}
         <View style={styles.heroRow}>

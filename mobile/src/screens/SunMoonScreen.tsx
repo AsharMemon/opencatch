@@ -18,9 +18,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
-import * as ExpoLocation from 'expo-location';
+import { FeatureLocationPicker } from '../components/FeatureLocationPicker';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
+import {
+  getCurrentFeatureLocation,
+  searchFeatureLocation,
+  type FeatureLocation,
+} from '../services/featureLocation';
 
 // ── Astronomical Calculations ────────────────────────────────────────────────
 
@@ -159,47 +164,50 @@ export function SunMoonScreen() {
   const [lat, setLat] = useState(44.98);
   const [lon, setLon] = useState(-93.27);
   const [locationReady, setLocationReady] = useState(false);
-  const [locationName, setLocationName] = useState<string | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<FeatureLocation | null>(null);
 
   // Live sunrise/sunset from Open-Meteo (authoritative)
   const [liveSunrise, setLiveSunrise] = useState<Date | null>(null);
   const [liveSunset, setLiveSunset] = useState<Date | null>(null);
+
+  const applyLocation = (location: FeatureLocation) => {
+    setSelectedLocation(location);
+    setLat(location.lat);
+    setLon(location.lon);
+    setLocationReady(true);
+  };
 
   // Get user location on mount
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
-        if (status !== 'granted') { setLocationReady(true); return; }
-        const loc = await ExpoLocation.getCurrentPositionAsync({
-          accuracy: ExpoLocation.Accuracy.Balanced,
+        const location = await getCurrentFeatureLocation({
+          lat: 44.98,
+          lon: -93.27,
+          label: 'Default sun & moon area',
         });
-        if (!cancelled) {
-          setLat(loc.coords.latitude);
-          setLon(loc.coords.longitude);
-          setLocationReady(true);
-        }
-        // Reverse geocode
-        try {
-          const results = await ExpoLocation.reverseGeocodeAsync({
-            latitude: loc.coords.latitude,
-            longitude: loc.coords.longitude,
-          });
-          if (!cancelled && results.length > 0) {
-            const r = results[0];
-            const parts: string[] = [];
-            if (r.city) parts.push(r.city);
-            if (r.region) parts.push(r.region);
-            setLocationName(parts.join(', ') || null);
-          }
-        } catch {}
+        if (!cancelled) applyLocation(location);
       } catch {
         if (!cancelled) setLocationReady(true);
       }
     })();
     return () => { cancelled = true; };
   }, []);
+
+  const handleUseCurrentLocation = async () => {
+    const location = await getCurrentFeatureLocation({
+      lat: 44.98,
+      lon: -93.27,
+      label: 'Default sun & moon area',
+    });
+    applyLocation(location);
+  };
+
+  const handleSearchLocation = async (query: string) => {
+    const location = await searchFeatureLocation(query);
+    applyLocation(location);
+  };
 
   // Fetch live sunrise/sunset from Open-Meteo (correct timezone handling)
   useEffect(() => {
@@ -295,12 +303,20 @@ export function SunMoonScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <FeatureLocationPicker
+        label={selectedLocation?.label ?? 'Finding your location'}
+        helperText="Sunrise, sunset, moon phase, and solunar windows are using this location."
+        activeSource={selectedLocation?.source}
+        onUseCurrent={handleUseCurrentLocation}
+        onSearchLocation={handleSearchLocation}
+      />
+
       {/* Location header */}
-      {locationName && (
+      {selectedLocation?.label && (
         <View style={styles.ratingCard}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Ionicons name="location-outline" size={18} color={palette.accent} />
-            <Text style={{ fontSize: 15, fontWeight: '600', color: palette.text }}>{locationName}</Text>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: palette.text }}>{selectedLocation.label}</Text>
           </View>
         </View>
       )}

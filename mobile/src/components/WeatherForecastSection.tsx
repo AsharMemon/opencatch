@@ -7,6 +7,22 @@ import type { FishingLocation, CurrentConditions } from '../types/models';
 // ── Props ──────────────────────────────────────────────────────────
 interface Props {
   location: FishingLocation;
+  units?: 'imperial' | 'metric';
+}
+
+function toDisplayTemp(tempF: number, units: 'imperial' | 'metric'): number {
+  return units === 'metric' ? Math.round(((tempF - 32) * 5) / 9) : Math.round(tempF);
+}
+
+function toDisplayWind(windMph: number, units: 'imperial' | 'metric'): number {
+  return units === 'metric' ? Math.round(windMph * 1.60934) : Math.round(windMph);
+}
+
+function toDisplayPressure(pressureInHg: number, units: 'imperial' | 'metric'): string {
+  if (units === 'metric') {
+    return `${Math.round(pressureInHg * 33.8639)} hPa`;
+  }
+  return `${pressureInHg.toFixed(2)} inHg`;
 }
 
 // ── Weather icon helper ──────────────────────────────────────────
@@ -77,13 +93,16 @@ function windArrowRotation(dir: string): string {
 interface HourData {
   hour: string;
   weatherIcon: string;
-  temp: number;
-  wind: number;
-  pressure: number;
+  tempLabel: string;
+  windLabel: string;
+  pressureLabel: string;
   period: 'night' | 'morning' | 'afternoon' | 'evening';
 }
 
-function generateHourlyData(conditions: CurrentConditions): HourData[] {
+function generateHourlyData(
+  conditions: CurrentConditions,
+  units: 'imperial' | 'metric',
+): HourData[] {
   const hours: HourData[] = [];
   const now = new Date();
   const currentHour = now.getHours();
@@ -101,8 +120,8 @@ function generateHourlyData(conditions: CurrentConditions): HourData[] {
     else period = 'night';
 
     const tempOffset = Math.sin(((h - 6) / 24) * Math.PI * 2) * 8;
-    const temp = Math.round(conditions.airTemp + tempOffset + (Math.random() * 2 - 1));
-    const wind = Math.max(0, Math.round(conditions.windSpeed + (Math.random() * 6 - 3)));
+    const tempF = Math.round(conditions.airTemp + tempOffset + (Math.random() * 2 - 1));
+    const windMph = Math.max(0, Math.round(conditions.windSpeed + (Math.random() * 6 - 3)));
     const pressureDrift = (Math.random() - 0.5) * 0.04;
     const pressure = +(conditions.pressure + pressureDrift * i).toFixed(2);
 
@@ -113,7 +132,14 @@ function generateHourlyData(conditions: CurrentConditions): HourData[] {
       weatherIcon = 'moon-outline';
     }
 
-    hours.push({ hour: label, weatherIcon, temp, wind, pressure, period });
+    hours.push({
+      hour: label,
+      weatherIcon,
+      tempLabel: `${toDisplayTemp(tempF, units)}°`,
+      windLabel: `${toDisplayWind(windMph, units)} ${units === 'metric' ? 'km/h' : 'mph'}`,
+      pressureLabel: toDisplayPressure(pressure, units),
+      period,
+    });
   }
 
   return hours;
@@ -144,9 +170,19 @@ const COND_GRID_ICONS: Record<string, string> = {
 };
 
 // ── A. Current Conditions Summary Card ─────────────────────────────
-function CurrentConditionsSummary({ conditions }: { conditions: CurrentConditions }) {
+function CurrentConditionsSummary({
+  conditions,
+  units,
+}: {
+  conditions: CurrentConditions;
+  units: 'imperial' | 'metric';
+}) {
   const pTrend = pressureTrendConfig(conditions.pressureTrend);
   const solunar = solunarBadgeConfig(conditions.solunarRating);
+  const waterTemp = toDisplayTemp(conditions.waterTemp, units);
+  const airTemp = toDisplayTemp(conditions.airTemp, units);
+  const windSpeed = toDisplayWind(conditions.windSpeed, units);
+  const speedUnit = units === 'metric' ? 'km/h' : 'mph';
 
   return (
     <View style={s.card}>
@@ -155,12 +191,12 @@ function CurrentConditionsSummary({ conditions }: { conditions: CurrentCondition
       {/* Temperature row */}
       <View style={s.tempRow}>
         <View style={s.tempBlock}>
-          <Text style={s.waterTempValue}>{conditions.waterTemp}{'°'}</Text>
+          <Text style={s.waterTempValue}>{waterTemp}{'°'}</Text>
           <Text style={s.waterTempLabel}>Water</Text>
         </View>
         <View style={s.tempDivider} />
         <View style={s.tempBlock}>
-          <Text style={s.airTempValue}>{conditions.airTemp}{'°'}</Text>
+          <Text style={s.airTempValue}>{airTemp}{'°'}</Text>
           <Text style={s.airTempLabel}>Air</Text>
         </View>
         <View style={s.weatherIconBlock}>
@@ -174,7 +210,7 @@ function CurrentConditionsSummary({ conditions }: { conditions: CurrentCondition
         {/* Wind */}
         <View style={s.metaCell}>
           <View style={s.windRow}>
-            <Text style={s.metaCellValue}>{conditions.windSpeed} mph</Text>
+            <Text style={s.metaCellValue}>{windSpeed} {speedUnit}</Text>
             <View style={{ transform: [{ rotate: windArrowRotation(conditions.windDirection) }] }}>
               <Ionicons name="arrow-up" size={14} color={palette.accent} />
             </View>
@@ -184,7 +220,7 @@ function CurrentConditionsSummary({ conditions }: { conditions: CurrentCondition
 
         {/* Pressure */}
         <View style={s.metaCell}>
-          <Text style={s.metaCellValue}>{conditions.pressure} inHg</Text>
+          <Text style={s.metaCellValue}>{toDisplayPressure(conditions.pressure, units)}</Text>
           <View style={[s.trendPill, { backgroundColor: pTrend.bg }]}>
             <Text style={[s.trendPillText, { color: pTrend.color }]}>{pTrend.label}</Text>
           </View>
@@ -209,8 +245,14 @@ function CurrentConditionsSummary({ conditions }: { conditions: CurrentCondition
 }
 
 // ── B. Hourly Forecast Strip ───────────────────────────────────────
-function HourlyForecastStrip({ conditions }: { conditions: CurrentConditions }) {
-  const hourlyData = generateHourlyData(conditions);
+function HourlyForecastStrip({
+  conditions,
+  units,
+}: {
+  conditions: CurrentConditions;
+  units: 'imperial' | 'metric';
+}) {
+  const hourlyData = generateHourlyData(conditions, units);
 
   let lastPeriod: HourData['period'] | null = null;
 
@@ -232,9 +274,9 @@ function HourlyForecastStrip({ conditions }: { conditions: CurrentConditions }) 
               <View style={[s.hourlyCol, i === 0 && s.hourlyColNow]}>
                 <Text style={[s.hourlyHour, i === 0 && s.hourlyHourNow]}>{h.hour}</Text>
                 <Ionicons name={h.weatherIcon as any} size={18} color={palette.textSecondary} />
-                <Text style={s.hourlyTemp}>{h.temp}{'°'}</Text>
-                <Text style={s.hourlyWind}>{h.wind} mph</Text>
-                <Text style={s.hourlyPressure}>{h.pressure}</Text>
+                <Text style={s.hourlyTemp}>{h.tempLabel}</Text>
+                <Text style={s.hourlyWind}>{h.windLabel}</Text>
+                <Text style={s.hourlyPressure}>{h.pressureLabel}</Text>
               </View>
             </React.Fragment>
           );
@@ -245,13 +287,19 @@ function HourlyForecastStrip({ conditions }: { conditions: CurrentConditions }) 
 }
 
 // ── C. Conditions Grid ─────────────────────────────────────────────
-function ConditionsGrid({ conditions }: { conditions: CurrentConditions }) {
+function ConditionsGrid({
+  conditions,
+  units,
+}: {
+  conditions: CurrentConditions;
+  units: 'imperial' | 'metric';
+}) {
   const cloudCover = conditions.weather.toLowerCase().includes('cloud')
     ? conditions.weather.toLowerCase().includes('partly') ? 45 : 80
     : conditions.weather.toLowerCase().includes('rain') || conditions.weather.toLowerCase().includes('storm')
       ? 90
       : 10;
-  const visibility = cloudCover > 70 ? 5 : cloudCover > 40 ? 8 : 10;
+  const visibilityMi = cloudCover > 70 ? 5 : cloudCover > 40 ? 8 : 10;
   const uvIndex = conditions.weather.toLowerCase().includes('sunny') ? 7
     : conditions.weather.toLowerCase().includes('partly') ? 5
     : 3;
@@ -259,15 +307,19 @@ function ConditionsGrid({ conditions }: { conditions: CurrentConditions }) {
     : conditions.weather.toLowerCase().includes('storm') ? 85
     : conditions.weather.toLowerCase().includes('snow') ? 55
     : 10;
-  const dewPoint = Math.round(conditions.airTemp - ((100 - conditions.humidity) / 5));
+  const dewPointF = Math.round(conditions.airTemp - ((100 - conditions.humidity) / 5));
+  const visibilityLabel = units === 'metric'
+    ? `${Math.round(visibilityMi * 1.60934)} km`
+    : `${visibilityMi} mi`;
+  const dewPointLabel = `${toDisplayTemp(dewPointF, units)}°${units === 'metric' ? 'C' : 'F'}`;
 
   const cells: Array<{ ionicon: string; value: string; label: string }> = [
     { ionicon: 'cloud-outline', value: `${cloudCover}%`, label: 'Cloud Cover' },
-    { ionicon: 'eye-outline', value: `${visibility} mi`, label: 'Visibility' },
+    { ionicon: 'eye-outline', value: visibilityLabel, label: 'Visibility' },
     { ionicon: 'water-outline', value: `${conditions.humidity}%`, label: 'Humidity' },
     { ionicon: 'sunny-outline', value: `${uvIndex}`, label: 'UV Index' },
     { ionicon: 'rainy-outline', value: `${precipChance}%`, label: 'Precip Chance' },
-    { ionicon: 'thermometer-outline', value: `${dewPoint}°F`, label: 'Dew Point' },
+    { ionicon: 'thermometer-outline', value: dewPointLabel, label: 'Dew Point' },
   ];
 
   return (
@@ -374,14 +426,14 @@ function SunMoonCard({ conditions }: { conditions: CurrentConditions }) {
 }
 
 // ── Main Component ─────────────────────────────────────────────────
-export function WeatherForecastSection({ location }: Props) {
+export function WeatherForecastSection({ location, units = 'imperial' }: Props) {
   const { conditions } = location;
 
   return (
     <View style={s.container}>
-      <CurrentConditionsSummary conditions={conditions} />
-      <HourlyForecastStrip conditions={conditions} />
-      <ConditionsGrid conditions={conditions} />
+      <CurrentConditionsSummary conditions={conditions} units={units} />
+      <HourlyForecastStrip conditions={conditions} units={units} />
+      <ConditionsGrid conditions={conditions} units={units} />
       <SunMoonCard conditions={conditions} />
     </View>
   );

@@ -364,6 +364,10 @@ export function getSaltWaterSpecies(
   });
 }
 
+export function getAllSaltWaterSpecies(): SaltwaterSpecies[] {
+  return [...SPECIES_DB];
+}
+
 // ── Reef Fishing Spots ───────────────────────────────────────────
 
 /**

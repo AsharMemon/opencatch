@@ -244,8 +244,8 @@ export function SettingsScreen() {
             }}
           />
           <SettingsButton
-            label="AIS Receiver"
-            value="WiFi AIS Setup"
+            label="Marine Electronics"
+            value="AIS, GPS, depth, wind"
             onPress={() => navigation.navigate('AISSettings')}
           />
         </View>

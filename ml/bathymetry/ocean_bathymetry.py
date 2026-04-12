@@ -54,46 +54,73 @@ CONTOUR_INTERVALS_M = [1, 2, 3, 5, 10, 15, 20, 30, 50, 100, 200, 500, 1000]
 CUDEM_THREDDS_BASE = (
     "https://www.ngdc.noaa.gov/thredds/dodsC/regional/"
 )
+# Official named NOAA CRM regional netCDF downloads. These filenames encode the
+# actual region, which is safer than relying on stale crm_vol* assumptions.
+CUDEM_NAMED_NETCDF_BASE = (
+    "https://www.ngdc.noaa.gov/mgg/coastal/crm/data/netcdf/"
+)
+# Official direct-hosted CRM netCDF files. The older OPeNDAP paths are flaky,
+# but these region files are stable and can be cached locally for chunked runs.
+CUDEM_DIRECT_NETCDF_BASE = (
+    "https://www.ngdc.noaa.gov/mgg/coastal/crm/thredds/"
+)
 # Direct GeoTIFF fallback
 CUDEM_DIRECT_BASE = (
     "https://coast.noaa.gov/htdata/raster2/elevation/"
 )
 
-# GEBCO 2025 OPeNDAP
+# GEBCO 2025 OPeNDAP via the official CEDA THREDDS service.
 GEBCO_OPENDAP_URL = (
-    "https://www.gebco.net/data_and_products/gridded_bathymetry_data/"
-    "gebco_2024/gebco_2024_sub_ice_topo.nc"
+    "https://dap.ceda.ac.uk/thredds/dodsC/bodc/gebco/global/gebco_2025/"
+    "sub_ice_topography_bathymetry/netcdf/gebco_2025_sub_ice.nc"
 )
 
 # EMODnet WCS
 EMODNET_WCS_URL = "https://ows.emodnet-bathymetry.eu/wcs"
 
 # CUDEM regional tile catalogue — region name → THREDDS path suffix
-# Subset of most-used coastal tiles; extend as needed.
+# Subset of most-used coastal tiles; Great Lakes are intentionally omitted here
+# because NOAA CRM is not the right source lane for them in this stack.
 CUDEM_REGIONS: Dict[str, dict] = {
-    "gulf_of_mexico": {
-        "thredds": "crm_vol7.nc",
-        "bbox": (17.0, -98.0, 31.0, -80.0),
+    "northeast_atlantic": {
+        "dataset": "ne_atl_crm_v1.nc.gz",
+        "bbox": (40.0, -80.0, 48.0, -64.0),
     },
     "southeast_atlantic": {
-        "thredds": "crm_vol3.nc",
-        "bbox": (24.0, -82.0, 37.0, -74.0),
+        "dataset": "se_atl_crm_v1.nc.gz",
+        "bbox": (31.0, -85.0, 40.0, -68.0),
     },
-    "northeast_atlantic": {
-        "thredds": "crm_vol1.nc",
-        "bbox": (36.0, -78.0, 46.0, -62.0),
+    "florida_east_gulf": {
+        "dataset": "fl_east_gom_crm_v1.nc.gz",
+        "bbox": (23.5, -87.5, 31.5, -79.0),
+    },
+    "central_gulf_of_mexico": {
+        "dataset": "central_gom_crm_v1.nc.gz",
+        "bbox": (23.0, -94.5, 31.0, -85.0),
+    },
+    "western_gulf_of_mexico": {
+        "dataset": "western_gom_crm_v1.nc.gz",
+        "bbox": (17.0, -98.5, 31.0, -89.5),
     },
     "southern_california": {
-        "thredds": "crm_vol8.nc",
+        "dataset": "southern_calif_crm_v1.nc.gz",
         "bbox": (30.0, -122.0, 37.0, -115.0),
     },
     "pacific_northwest": {
-        "thredds": "crm_vol9.nc",
-        "bbox": (37.0, -130.0, 49.0, -120.0),
+        "dataset": "nw_pacific_crm_v1.nc.gz",
+        "bbox": (44.0, -128.0, 49.0, -116.0),
     },
-    "great_lakes": {
-        "thredds": "crm_vol4.nc",
-        "bbox": (40.0, -93.0, 50.0, -75.0),
+    "hawaii": {
+        "dataset": "hawaii_crm_v1.nc.gz",
+        "bbox": (18.0, -161.0, 23.5, -154.0),
+    },
+    "puerto_rico": {
+        "dataset": "puerto_rico_crm_v1.nc.gz",
+        "bbox": (17.0, -68.5, 19.5, -64.0),
+    },
+    "central_pacific": {
+        "dataset": "central_pacific_crm_v1.nc.gz",
+        "bbox": (5.0, -170.0, 25.0, -145.0),
     },
 }
 
@@ -174,6 +201,72 @@ def _find_cudem_regions_for_bbox(
     return regions
 
 
+def _bbox_overlap_area(
+    a: Tuple[float, float, float, float],
+    b: Tuple[float, float, float, float],
+) -> float:
+    south = max(a[0], b[0])
+    west = max(a[1], b[1])
+    north = min(a[2], b[2])
+    east = min(a[3], b[3])
+    if south >= north or west >= east:
+        return 0.0
+    return (north - south) * (east - west)
+
+
+def _bbox_center(bbox: Tuple[float, float, float, float]) -> Tuple[float, float]:
+    return ((bbox[0] + bbox[2]) / 2.0, (bbox[1] + bbox[3]) / 2.0)
+
+
+def _choose_best_cudem_region_for_bbox(
+    bbox: Tuple[float, float, float, float],
+    regions: List[str],
+) -> Optional[str]:
+    if not regions:
+        return None
+    bbox_center = _bbox_center(bbox)
+
+    def score(region_name: str) -> Tuple[float, float]:
+        region_bbox = CUDEM_REGIONS[region_name]["bbox"]
+        overlap = _bbox_overlap_area(bbox, region_bbox)
+        region_center = _bbox_center(region_bbox)
+        distance = (
+            (bbox_center[0] - region_center[0]) ** 2 +
+            (bbox_center[1] - region_center[1]) ** 2
+        ) ** 0.5
+        return (overlap, -distance)
+
+    return max(regions, key=score)
+
+
+def _order_cudem_regions_for_bbox(
+    bbox: Tuple[float, float, float, float],
+    regions: List[str],
+    preferred_region: Optional[str] = None,
+) -> List[str]:
+    """Rank overlapping CUDEM regions from most to least promising."""
+    if not regions:
+        return []
+
+    bbox_center = _bbox_center(bbox)
+
+    def score(region_name: str) -> Tuple[float, float]:
+        region_bbox = CUDEM_REGIONS[region_name]["bbox"]
+        overlap = _bbox_overlap_area(bbox, region_bbox)
+        region_center = _bbox_center(region_bbox)
+        distance = (
+            (bbox_center[0] - region_center[0]) ** 2 +
+            (bbox_center[1] - region_center[1]) ** 2
+        ) ** 0.5
+        return (overlap, -distance)
+
+    ordered = sorted(regions, key=score, reverse=True)
+    if preferred_region and preferred_region in ordered:
+        ordered.remove(preferred_region)
+        ordered.insert(0, preferred_region)
+    return ordered
+
+
 # ---------------------------------------------------------------------------
 # Main class
 # ---------------------------------------------------------------------------
@@ -246,6 +339,7 @@ class OceanBathymetryLayer:
         self,
         bbox: Tuple[float, float, float, float],
         resolution_m: Optional[float] = None,
+        preferred_cudem_region: Optional[str] = None,
     ) -> Optional[DepthTile]:
         """Get a depth raster tile for a bounding box.
 
@@ -275,7 +369,7 @@ class OceanBathymetryLayer:
         tile = None
         cudem_regions = _find_cudem_regions_for_bbox(bbox)
         if cudem_regions and (resolution_m is None or resolution_m <= 100):
-            tile = self.fetch_cudem_tile(bbox)
+            tile = self.fetch_cudem_tile(bbox, preferred_region=preferred_cudem_region)
 
         if tile is None:
             # Check if in European waters for EMODnet
@@ -295,7 +389,10 @@ class OceanBathymetryLayer:
     # ------------------------------------------------------------------
 
     def fetch_cudem_tile(
-        self, bbox: Tuple[float, float, float, float]
+        self,
+        bbox: Tuple[float, float, float, float],
+        *,
+        preferred_region: Optional[str] = None,
     ) -> Optional[DepthTile]:
         """Fetch CUDEM data via OPeNDAP.
 
@@ -317,47 +414,73 @@ class OceanBathymetryLayer:
             log.debug("No CUDEM region covers bbox")
             return None
 
-        # Use the first matching region (multi-region mosaic is a TODO)
-        region_name = regions[0]
-        region_info = CUDEM_REGIONS[region_name]
-        url = CUDEM_THREDDS_BASE + region_info["thredds"]
+        ordered_regions = _order_cudem_regions_for_bbox(
+            bbox,
+            regions,
+            preferred_region=preferred_region,
+        )
 
-        log.info("Fetching CUDEM from %s  region=%s", url, region_name)
-        try:
-            ds = self._open_opendap(url)
-            # CUDEM variables vary; try common names
-            depth_var = None
-            for var_name in ("z", "Band1", "elevation", "topo"):
-                if var_name in ds.data_vars:
-                    depth_var = var_name
-                    break
-            if depth_var is None:
-                log.warning("Could not identify depth variable in CUDEM dataset")
-                return None
+        for region_name in ordered_regions:
+            region_info = CUDEM_REGIONS[region_name]
+            opendap_name = region_info.get("opendap")
+            url = CUDEM_THREDDS_BASE + opendap_name if opendap_name else None
 
-            # Subset by lat/lon
-            lat_name = "lat" if "lat" in ds.coords else "y"
-            lon_name = "lon" if "lon" in ds.coords else "x"
-            subset = ds[depth_var].sel(
-                **{
-                    lat_name: slice(south, north),
-                    lon_name: slice(west, east),
-                }
+            direct_nc_tile = self._fetch_cudem_direct_netcdf(
+                bbox,
+                region_name,
+                download_if_missing=False,
             )
-            data = subset.values.astype(np.float32)
+            if direct_nc_tile is not None:
+                return direct_nc_tile
 
-            # CUDEM uses negative for water; invert to positive-down
-            data = np.where(data < 0, -data, np.nan)
+            if url:
+                log.info("Fetching CUDEM from %s  region=%s", url, region_name)
+                try:
+                    ds = self._open_opendap(url)
+                    # CUDEM variables vary; try common names
+                    depth_var = None
+                    for var_name in ("z", "Band1", "elevation", "topo"):
+                        if var_name in ds.data_vars:
+                            depth_var = var_name
+                            break
+                    if depth_var is None:
+                        log.warning("Could not identify depth variable in CUDEM dataset")
+                        continue
 
-            return DepthTile(
-                data=data,
-                bbox=bbox,
-                resolution_m=3.0,
-                source="cudem",
+                    # Subset by lat/lon
+                    lat_name = "lat" if "lat" in ds.coords else "y"
+                    lon_name = "lon" if "lon" in ds.coords else "x"
+                    subset = ds[depth_var].sel(
+                        **{
+                            lat_name: slice(south, north),
+                            lon_name: slice(west, east),
+                        }
+                    )
+                    data = subset.values.astype(np.float32)
+                    if data.size == 0 or data.shape[0] < 2 or data.shape[1] < 2:
+                        raise ValueError(f"Empty CUDEM subset for bbox={bbox}")
+
+                    # CUDEM uses negative for water; invert to positive-down
+                    data = np.where(data < 0, -data, np.nan)
+
+                    return DepthTile(
+                        data=data,
+                        bbox=bbox,
+                        resolution_m=3.0,
+                        source="cudem",
+                    )
+                except Exception as exc:
+                    log.error("CUDEM OPeNDAP fetch failed for region=%s: %s", region_name, exc)
+
+            direct_nc_tile = self._fetch_cudem_direct_netcdf(
+                bbox,
+                region_name,
+                download_if_missing=True,
             )
-        except Exception as exc:
-            log.error("CUDEM OPeNDAP fetch failed: %s", exc)
-            return self._fetch_cudem_geotiff_fallback(bbox)
+            if direct_nc_tile is not None:
+                return direct_nc_tile
+
+        return self._fetch_cudem_geotiff_fallback(bbox)
 
     def fetch_gebco_subset(
         self, bbox: Tuple[float, float, float, float]
@@ -755,6 +878,89 @@ class OceanBathymetryLayer:
         except Exception as exc:
             log.warning("GeoTIFF fallback failed: %s", exc)
         return None
+
+    def _fetch_cudem_direct_netcdf(
+        self,
+        bbox: Tuple[float, float, float, float],
+        region_name: str,
+        *,
+        download_if_missing: bool = True,
+    ) -> Optional[DepthTile]:
+        """Download a NOAA CRM regional netCDF once, then subset it locally."""
+        import gzip
+        import requests
+        import shutil
+        import xarray as xr
+
+        region_info = CUDEM_REGIONS[region_name]
+        dataset_name = region_info.get("dataset") or region_info.get("thredds")
+        if not dataset_name:
+            return None
+        cache_name = dataset_name[:-3] if dataset_name.endswith(".gz") else dataset_name
+        cache_path = self.cache_dir / f"cudem_{cache_name}"
+        download_path = self.cache_dir / f"cudem_{dataset_name}"
+        if not cache_path.exists():
+            if not download_if_missing:
+                return None
+            if region_info.get("direct_url"):
+                url = region_info["direct_url"]
+            elif dataset_name.endswith(".gz"):
+                url = CUDEM_NAMED_NETCDF_BASE + dataset_name
+            else:
+                url = CUDEM_DIRECT_NETCDF_BASE + dataset_name
+            log.info("Downloading CUDEM CRM fallback from %s", url)
+            try:
+                response = requests.get(url, timeout=300, stream=True)
+                response.raise_for_status()
+                with open(download_path, "wb") as fh:
+                    for chunk in response.iter_content(chunk_size=8 * 1024 * 1024):
+                        if chunk:
+                            fh.write(chunk)
+                if dataset_name.endswith(".gz"):
+                    with gzip.open(download_path, "rb") as src, open(cache_path, "wb") as dst:
+                        shutil.copyfileobj(src, dst)
+                elif download_path != cache_path:
+                    shutil.move(str(download_path), str(cache_path))
+            except Exception as exc:
+                log.warning("CUDEM direct netCDF download failed: %s", exc)
+                return None
+
+        try:
+            ds = xr.open_dataset(cache_path, engine="netcdf4")
+            depth_var = None
+            for var_name in ("z", "Band1", "elevation", "topo"):
+                if var_name in ds.data_vars:
+                    depth_var = var_name
+                    break
+            if depth_var is None:
+                log.warning("Could not identify depth variable in cached CUDEM dataset")
+                ds.close()
+                return None
+
+            lat_name = "lat" if "lat" in ds.coords else "y"
+            lon_name = "lon" if "lon" in ds.coords else "x"
+            south, west, north, east = bbox
+            lat_values = ds[lat_name].values
+            lon_values = ds[lon_name].values
+            lat_slice = slice(south, north) if float(lat_values[0]) <= float(lat_values[-1]) else slice(north, south)
+            lon_slice = slice(west, east) if float(lon_values[0]) <= float(lon_values[-1]) else slice(east, west)
+            subset = ds[depth_var].sel(**{lat_name: lat_slice, lon_name: lon_slice})
+            data = subset.values.astype(np.float32)
+            if data.size == 0 or data.shape[0] < 2 or data.shape[1] < 2:
+                ds.close()
+                log.warning("Cached CUDEM netCDF subset was empty for bbox=%s region=%s", bbox, region_name)
+                return None
+            data = np.where(data < 0, -data, np.nan)
+            ds.close()
+            return DepthTile(
+                data=data,
+                bbox=bbox,
+                resolution_m=3.0,
+                source="cudem",
+            )
+        except Exception as exc:
+            log.warning("Cached CUDEM netCDF subset failed: %s", exc)
+            return None
 
     def _load_emodnet_nc(
         self, nc_path: Path, bbox: Tuple[float, float, float, float]

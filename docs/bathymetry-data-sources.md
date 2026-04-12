@@ -148,9 +148,15 @@ curl -o nb_bathy.geojson "https://gis-erd-der.gnb.ca/server/rest/services/OpenDa
 ### New York - DEC Lake Contour Maps
 - **GIS Clearinghouse:** `https://data.gis.ny.gov/`
 - **Contour Index:** `https://elevation.its.ny.gov/arcgis/rest/services/indexes/contour_index/FeatureServer`
+- **DEC fishing/maps hub:** `https://dec.ny.gov/outdoor/7749.html`
+- **DEC lake contour search:** `https://dec.ny.gov/places-to-go/maps?text=&f%5B0%5D=map_type%3A6256`
 - **DEC Maps viewer:** `https://nysdec.maps.arcgis.com/apps/webappviewer/index.html?id=ae91142c812a4ab997ba739ed9723e6e`
+- **Sitemap:** `https://dec.ny.gov/sitemap.xml`
 - **USGS East of Hudson:** `https://data.usgs.gov/datacatalog/data/USGS:5f7c85a082ce1d74e7db5363` (shapefiles for reservoirs)
-- **Status:** DEC has 100s of lake maps but mostly as PDFs/images. USGS has some reservoir shapefiles.
+- **Status:** promoted into a live official statewide contour-page index lane built from the public sitemap and page URLs. Direct automated fetch of the DEC landing pages is still bot-protected from this machine, so the live lane uses public geocodes plus official contour-page links rather than pretending direct PDF extraction is solved.
+- **Local inventory artifact:** `/Users/Ashar/Documents/fish/data/bathymetry/ny/ny_dec_map_inventory.csv`
+- **Local refined contour inventory:** `/Users/Ashar/Documents/fish/data/bathymetry/ny/ny_dec_contour_pages.csv` (`421` official contour-map landing pages)
+- **Local statewide index artifacts:** `/Users/Ashar/Documents/fish/data/bathymetry/ny/ny_dec_contour_inventory.csv`, `/Users/Ashar/Documents/fish/data/bathymetry/ny/ny_waterbody_index.geojson`
 
 ### Maine - IF&W Lake Depth Points
 - **KML index:** `https://www.maine.gov/ifw/fishing/kml/Lake_Depths.kml` (68 regional KMZ files)
@@ -171,11 +177,17 @@ curl -o me_lake_depths.kml "https://www.maine.gov/ifw/fishing/kml/Lake_Depths.km
 - **OWRB portal:** `https://oklahoma.gov/owrb/data-and-maps/bathymetric-mapping.html`
 - **GIS data:** `https://oklahoma.gov/owrb/data-and-maps/gis-data.html`
 - **Open Data Hub:** `https://home-owrb.opendata.arcgis.com/`
+- **Official statewide lake workbook:** `https://oklahoma.gov/content/dam/ok/en/owrb/documents/maps-and-data/lakes-of-oklahoma-data.xlsx`
 - **Format:** Shapefiles, geodatabases, or KMZ
+- **Status:** promoted into a live official statewide depth-point lane using OWRB coordinates + max-depth values.
+- **Local inventory artifacts:** `/Users/Ashar/Documents/fish/data/bathymetry/ok/ok_lakes_inventory.xlsx`, `/Users/Ashar/Documents/fish/data/bathymetry/ok/ok_lakes_inventory.csv`, `/Users/Ashar/Documents/fish/data/bathymetry/ok/ok_depth_points.geojson`
 
 ### Pennsylvania - PFBC / PASDA
 - **PASDA portal:** `https://www.pasda.psu.edu/`
 - **Dataset:** `https://www.pasda.psu.edu/uci/DataSummary.aspx?dataset=1103`
+- **Direct official ZIP:** `https://www.pasda.psu.edu/download/pafish/Lakes_PFBCDatabase202411.zip`
+- **Status:** promoted into a live official statewide lake-footprint lane; still not bathymetry contours, but now usable as a Pennsylvania-specific coverage layer.
+- **Local artifacts:** `/Users/Ashar/Documents/fish/data/bathymetry/pa/Lakes_PFBCDatabase202411.zip`, `/Users/Ashar/Documents/fish/data/bathymetry/pa/pa_pasda_inventory.txt`, `/Users/Ashar/Documents/fish/data/bathymetry/pa/pa_lake_footprints.geojson`
 
 ### Vermont - ANR Lake Champlain + Inland
 - **Lake Champlain Bathymetry:** `https://geodata.vermont.gov/datasets/vt-lake-champlain-bathymetry`
@@ -185,6 +197,9 @@ curl -o me_lake_depths.kml "https://www.maine.gov/ifw/fishing/kml/Lake_Depths.km
 ### Virginia - DWR GIS Data
 - **DWR GIS Download:** `https://dwr.virginia.gov/gis/data/download/`
 - **GIS Clearinghouse:** `https://vgin.vdem.virginia.gov/pages/cl-data-download`
+- **Waterbody sitemap:** `https://dwr.virginia.gov/wp-sitemap-posts-waterbody-1.xml`
+- **Status:** promoted into a live official statewide survey-index lane built from DWR waterbody pages with embedded map coordinates and official map/report PDF links.
+- **Local artifacts:** `/Users/Ashar/Documents/fish/data/bathymetry/va/va_dwr_waterbody_inventory.csv`, `/Users/Ashar/Documents/fish/data/bathymetry/va/va_waterbody_index.geojson`
 
 ### Kentucky - KyGovMaps / KDFWR
 - **Open Data Portal:** `https://opengisdata.ky.gov/`
@@ -199,6 +214,9 @@ curl -o me_lake_depths.kml "https://www.maine.gov/ifw/fishing/kml/Lake_Depths.km
 ### Georgia - DNR Wildlife Resources
 - **Open Data Hub:** `https://gis-gadnrwrd.opendata.arcgis.com/`
 - **Contact:** Jan.McKinnon@dnr.ga.gov (DEM files too large for download)
+- **Partial official subset:** Georgia DNR PFAs expose fishing-guide / contour-depth PDF leads for some lakes, so Georgia should be treated as a `PDF / partial official subset`, not a pure no-data state.
+- **Local inventory artifact:** `/Users/Ashar/Documents/fish/data/bathymetry/ga/ga_pfa_pdf_inventory.csv` (`21` candidate PFAs, `7` verified PDFs)
+- **Downloaded subset manifest:** `/Users/Ashar/Documents/fish/data/bathymetry/ga/pdfs/download_manifest.json`
 
 ### South Carolina - SCDNR
 - **Open Data:** `https://data-scdnr.opendata.arcgis.com/`
@@ -212,6 +230,12 @@ curl -o me_lake_depths.kml "https://www.maine.gov/ifw/fishing/kml/Lake_Depths.km
 ### North Carolina - NCWRC
 - **DEQ Open Data:** `https://data-ncdenr.opendata.arcgis.com/`
 - **NC OneMap:** `https://www.nconemap.gov/`
+- **Status:** Treat North Carolina as a `reservoir subset`, not a blank state. Official NCDEQ reservoir assessment reports exist, and Jordan Lake reservoir modeling explicitly cites a recent UNC bathymetry survey for below-normal-pool bathymetry.
+- **Local lead artifact:** `/Users/Ashar/Documents/fish/data/bathymetry/nc/nc_reservoir_bathymetry_leads.csv`
+- **Inventory artifact:** `/Users/Ashar/Documents/fish/data/bathymetry/nc/nc_reservoir_report_inventory.csv`
+- **Downloaded subset manifest:** `/Users/Ashar/Documents/fish/data/bathymetry/nc/pdfs/download_manifest.json`
+- **Extracted calibration signals:** `/Users/Ashar/Documents/fish/data/bathymetry/nc/extracted/nc_reservoir_report_signals.csv`
+- **Calibration metadata:** `/Users/Ashar/Documents/fish/data/bathymetry/nc/calibration/nc_reservoir_calibration_metadata.csv`
 
 ### Utah - DWR
 - **DWR Data Hub:** `https://dwr-data-utahdnr.hub.arcgis.com/`
@@ -248,7 +272,13 @@ curl -o me_lake_depths.kml "https://www.maine.gov/ifw/fishing/kml/Lake_Depths.km
 
 ### Delaware
 - **DNREC Open Data:** `https://dnrec.delaware.gov/dnrec-open-data/`
-- **Status:** Very few natural lakes. No bathymetry layer found.
+- **Confirmed ArcGIS service:** `https://enterprise.firstmaptest.delaware.gov/arcgis/rest/services/Hydrology/DE_Public_Ponds/MapServer`
+- **Layers:** `0=Depths` (point soundings), `5=Bathemetry` (polyline contours)
+- **Fields:** layer `5` exposes `POND` + `LABEL`, where `LABEL` is the contour depth in feet
+- **Status:** acquired, normalized, tiled, and published live as `de_contours`
+```bash
+curl -o de_bathy.geojson "https://enterprise.firstmaptest.delaware.gov/arcgis/rest/services/Hydrology/DE_Public_Ponds/MapServer/5/query?where=1%3D1&outFields=*&resultOffset=0&resultRecordCount=1000&f=geojson"
+```
 
 ### Hawaii
 - **State GIS:** `https://geoportal.hawaii.gov/`
@@ -260,7 +290,17 @@ curl -o me_lake_depths.kml "https://www.maine.gov/ifw/fishing/kml/Lake_Depths.km
 
 ### Louisiana
 - **LDWF:** `https://www.wlf.louisiana.gov/page/wma-gis-data-download`
-- **USGS individual lakes:** Lake Maurepas contours
+- **Inland plan trail:** `https://www.wlf.louisiana.gov/resources/category/freshwater-inland-fish/inland-waterbody-management-plans`
+- **Vegetation plan trail:** `https://www.wlf.louisiana.gov/resources/category/freshwater-inland-fish/aquatic-vegetation-control-plans`
+- **Status:** Promote Louisiana into `PDF upgrade`. LDWF has a real inland lake-by-lake plan trail even though the category pages are bot-protected to automated fetches.
+- **Local lead artifact:** `/Users/Ashar/Documents/fish/data/bathymetry/la/la_official_bathymetry_leads.csv`
+- **Inventory artifact:** `/Users/Ashar/Documents/fish/data/bathymetry/la/la_ldwf_plan_inventory.csv`
+- **Planned manifest:** `/Users/Ashar/Documents/fish/data/bathymetry/la/pdfs/download_manifest.json`
+- **Protected fetch workflow:** `/Users/Ashar/Documents/fish/ml/bathymetry/download_pdf_inventory_playwright.py`, `/Users/Ashar/Documents/fish/ml/bathymetry/deploy_protected_pdf_fetch_vast.sh`
+- **Reality check:** even a full Playwright/Chromium browser session on Vast still returned `403` for all seeded LDWF asset URLs, so this lane currently needs search-index or manual-browser-assisted retrieval rather than ordinary automation.
+- **Saved retry manifest:** `/Users/Ashar/Documents/fish/data/bathymetry/la/remote_manifests/la_ldwf_retry_download_manifest.json`
+- **Manual retrieval queue:** `/Users/Ashar/Documents/fish/data/bathymetry/la/manual_queue/la_ldwf_manual_retrieval_queue.csv`
+- **Search-index hits:** `/Users/Ashar/Documents/fish/data/bathymetry/la/manual_queue/la_ldwf_search_index_hits.csv`
 
 ### Maryland
 - **iMap (deprecated, migrating):** Chesapeake Bay + Ocean contours only
@@ -275,7 +315,11 @@ curl -o me_lake_depths.kml "https://www.maine.gov/ifw/fishing/kml/Lake_Depths.km
 
 ### New Jersey
 - **NJDEP Fish & Wildlife (PDF maps):** `https://dep.nj.gov/njfw/fishing/freshwater/lake-survey-maps/`
+- **NJ Geological Survey lake map index:** `https://www.nj.gov/dep/njgs/pricelst/njlakes.pdf`
+- **NJDEP lake management plans:** `https://www.nj.gov/dep/fgw/fshresmgt_lakeplans.htm`
 - **Offshore contours only:** `https://gisdata-njdep.opendata.arcgis.com/datasets/njdep::bathymetric-contours-of-new-jersey`
+- **Status:** promoted into a live official survey-index lane from the accessible lake-plan PDFs, while the primary Fish & Wildlife page remains Incapsula-protected.
+- **Local inventory artifacts:** `/Users/Ashar/Documents/fish/data/bathymetry/nj/nj_lake_plan_inventory.csv`, `/Users/Ashar/Documents/fish/data/bathymetry/nj/pdfs/`, `/Users/Ashar/Documents/fish/data/bathymetry/nj/nj_waterbody_index.geojson`
 
 ### New Mexico
 - **RGIS:** `https://rgis.unm.edu/`
@@ -283,11 +327,19 @@ curl -o me_lake_depths.kml "https://www.maine.gov/ifw/fishing/kml/Lake_Depths.km
 
 ### Rhode Island
 - **DEM maps (PDF):** `https://dem.ri.gov/sites/g/files/xkgbur861/files/maps/mapfile/pondbath.pdf`
+- **Freshwater lakes page:** `https://dem.ri.gov/natural-resources-bureau/fish-wildlife/reports-publications/freshwater-lakes-ponds-and-reservoirs`
+- **Lake management planning projects:** `https://dem.ri.gov/node/28786`
+- **Bowdish Lake plan (PDF):** `https://dem.ri.gov/sites/g/files/xkgbur861/files/2025-12/bowdish-lake-mgnt-plan.pdf`
+- **Smith and Sayles Reservoir plan (PDF):** `https://dem.ri.gov/sites/g/files/xkgbur861/files/2025-12/smith-sayles-lake-mgnt-plan.pdf`
 - **RIGIS:** `https://www.rigis.org/`
+- **Status:** promoted into a live official lake-management index lane built from DEM project pages and plan PDFs for `8` Rhode Island waterbodies. The direct automated fetch blocker on the broader DEM bathymetry PDF path still exists, but Rhode Island no longer depends only on the national coarse fallback.
+- **Local inventory artifacts:** `/Users/Ashar/Documents/fish/data/bathymetry/ri/ri_lake_management_inventory.csv`, `/Users/Ashar/Documents/fish/data/bathymetry/ri/ri_waterbody_index.geojson`
 
 ### West Virginia
 - **DNR GIS:** `https://wvdnr.gov/gis-mapping/`
-- **Status:** Lake fishing maps (PDF). No GIS bathymetry layer found.
+- **Lake map links:** `https://wvdnr.gov/gis-mapping/lake-map-links/`
+- **Status:** promoted into a live official survey-index lane from the WVDNR lake-map directory. No statewide GIS bathymetry contours found yet.
+- **Local inventory artifacts:** `/Users/Ashar/Documents/fish/data/bathymetry/wv/wv_lake_map_inventory.csv`, `/Users/Ashar/Documents/fish/data/bathymetry/wv/wv_waterbody_index.geojson`
 
 ---
 
@@ -318,11 +370,16 @@ curl -o sk_bathy_index.geojson "https://gis.saskatchewan.ca/arcgis/rest/services
 ### Prince Edward Island
 - **Open Data:** `https://data.princeedwardisland.ca/`
 - **GIS Catalog:** `https://gov.pe.ca/gis/`
-- **Status:** Very few lakes. No bathymetry data found.
+- **Angling hub:** `https://www.princeedwardisland.ca/en/information/environment-energy-and-climate-action/angling-resources-and-information-centre`
+- **Status:** Treat PEI as `project / index-supported`, not fully blank. Official angling/fishing-location and GIS/project resources exist, even though a direct inland bathymetry dataset has not surfaced.
+- **Local index artifact:** `/Users/Ashar/Documents/fish/data/bathymetry/pe/pei_project_index.csv`
+- **Direct publication inventory:** `/Users/Ashar/Documents/fish/data/bathymetry/pe/pei_publication_inventory.csv`
+- **Downloaded subset manifest:** `/Users/Ashar/Documents/fish/data/bathymetry/pe/pdfs/download_manifest.json`
 
 ### Newfoundland & Labrador
 - **Open Data:** `http://opendata.gov.nl.ca/`
-- **Status:** No inland lake bathymetry found. Ocean bathymetry from CHS available.
+- **Status:** No direct province-wide inland bathymetry dataset found, but this is stronger than a blank state: official water-resources atlas, hydrology reporting, and project/report mapping exist. Treat as `project / index-supported`.
+- **Local index artifact:** `/Users/Ashar/Documents/fish/data/bathymetry/nl/nl_water_resources_index.csv` (`152` structured links)
 
 ### Northwest Territories
 - **NT GoMap:** `https://www.maps.geomatics.gov.nt.ca/`
@@ -330,11 +387,12 @@ curl -o sk_bathy_index.geojson "https://gis.saskatchewan.ca/arcgis/rest/services
 
 ### Yukon
 - **Geomatics Yukon:** `https://geomaticsyukon.ca/`
-- **Status:** Lake bathymetry as scanned maps only, not geospatial.
+- **Status:** Distinct `withdrawn official data` case. The old Yukon bathymetry maps/data record was removed from distribution for poor accuracy, while separate Yukon boating e-charts still exist for contextual navigation use.
 
 ### Nunavut
 - **Canada-Nunavut Geoscience Office**
-- **Status:** No inland lake bathymetry data found.
+- **Status:** Treat Nunavut as `project / index-supported`, not fully blank. Official procurement and coastal-resource inventory documents confirm real bathymetry project activity, but not a territory-wide inland dataset.
+- **Local index artifact:** `/Users/Ashar/Documents/fish/data/bathymetry/nu/nunavut_bathymetry_project_index.csv`
 
 ---
 
@@ -601,17 +659,17 @@ curl -o nb_bathy.geojson \
 # NS Lake Survey Points: https://open.canada.ca/data/en/dataset/e852a640-8deb-9a75-d086-ccd1c20d12b9
 ```
 
-### 14. Prince Edward Island (PE) - Very few lakes
-**Status:** No bathymetry data found. Very few natural inland lakes.
+### 14. Prince Edward Island (PE) - Project/index-supported
+**Status:** No direct inland bathymetry dataset surfaced, but official angling/fishing-location and GIS/project resources are real enough to treat PEI as project/index-supported instead of blank.
 - Open Data: https://data.princeedwardisland.ca/
 - GIS Catalog: https://gov.pe.ca/gis/index.php3?amp=&lang=E&number=77543
-- **Recommendation:** Skip or use GLOBathy synthetic estimates.
+- **Recommendation:** Build a PEI waterbody/project index first, then use GLOBathy only as geometry fallback.
 
-### 15. Newfoundland & Labrador (NL) - No inland data found
-**Status:** No inland lake bathymetry GIS data available.
+### 15. Newfoundland & Labrador (NL) - Project/index-supported, not blank
+**Status:** No direct inland lake bathymetry GIS dataset found, but official atlas/reporting and project-style water-resources mapping are available.
 - Open Data: http://opendata.gov.nl.ca/
 - CHS ocean bathymetry available but not relevant for inland lakes
-- **Recommendation:** Use GLOBathy synthetic estimates or contact NL Dept of Environment.
+- **Recommendation:** Build an NL project/index-supported lane first, then use GLOBathy only as fallback.
 
 ### 16. Northwest Territories (NT) - No data found
 **Status:** No public inland lake bathymetry data.
@@ -619,16 +677,16 @@ curl -o nb_bathy.geojson \
 - GNWT open data: limited to administrative/mining datasets
 - **Recommendation:** Use GLOBathy or NONNA-10 (ocean/coastal only).
 
-### 17. Yukon (YT) - Scanned maps only
-**Status:** Lake bathymetry exists as scanned maps only, not geospatial vector data.
+### 17. Yukon (YT) - Withdrawn official data
+**Status:** Yukon had an official bathymetry record, but it was withdrawn for poor accuracy. Separate Yukon boating e-charts still exist for contextual water features.
 - Geomatics Yukon: https://geomaticsyukon.ca/
 - Yukon Open Data: https://yukon.ca/en/open-data
-- **Recommendation:** Use GLOBathy synthetic estimates.
+- **Recommendation:** Track Yukon separately from ordinary weak-source hunting and use fallback/boating e-chart context unless a newer bathymetry program appears.
 
-### 18. Nunavut (NU) - No data
-**Status:** No inland lake bathymetry data found.
-- Very remote territory, no public GIS bathymetry datasets
-- **Recommendation:** Use GLOBathy synthetic estimates.
+### 18. Nunavut (NU) - Project/index-supported
+**Status:** No territory-wide inland bathymetry dataset surfaced, but official procurement and coastal-resource inventory documents confirm real bathymetry project activity.
+- Very remote territory with project-scale rather than territory-scale public bathymetry
+- **Recommendation:** Build a Nunavut project index first, then use GLOBathy as geometry fallback.
 
 ---
 
@@ -657,6 +715,7 @@ curl -o nb_bathy.geojson \
 | MED | New Brunswick | varies | FeatureServer retry + GeoNB | WMS/WFS alternative |
 | MED | Nova Scotia | 1000+ maps | Contact inland@novascotia.ca | PDF maps + ArcGIS Hub layer |
 | MED | Saskatchewan | 945 index | Index only, PDFs behind | - |
-| LOW | Prince Edward Island | ~0 | No data - skip | GLOBathy |
-| LOW | Newfoundland | ~0 | No inland data | GLOBathy |
-| LOW | NWT/Yukon/Nunavut | ~0 | No data | GLOBathy |
+| LOW | Prince Edward Island | limited | Project/index-supported | Build waterbody/project index + GLOBathy fallback |
+| LOW | Newfoundland | limited | Project/index-supported | Atlas/project lane + GLOBathy fallback |
+| LOW | Nunavut | limited | Project/index-supported | Project index + GLOBathy fallback |
+| LOW | Yukon | limited | Withdrawn official data | E-chart context + fallback |

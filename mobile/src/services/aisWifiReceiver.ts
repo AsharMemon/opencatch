@@ -13,6 +13,13 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+let TcpSocket: any = null;
+try {
+  TcpSocket = require('react-native-tcp-socket');
+} catch {
+  // TCP transport is optional; WebSocket fallback remains available.
+}
+
 // ── Types ────────────────────────────────────────────────────────
 
 /** Connection status for the AIS receiver. */
@@ -59,6 +66,46 @@ export interface NMEASentence {
   checksum: string;
 }
 
+export interface InstrumentPosition {
+  lat: number;
+  lon: number;
+  sogKnots: number | null;
+  cogDeg: number | null;
+  fixQuality: number | null;
+  receivedAt: number;
+  source: 'nmea0183';
+}
+
+export interface InstrumentHeading {
+  headingDeg: number;
+  reference: 'true' | 'magnetic';
+  receivedAt: number;
+}
+
+export interface InstrumentDepth {
+  depthM: number;
+  offsetM: number | null;
+  sourceSentence: 'DBT' | 'DPT';
+  receivedAt: number;
+}
+
+export interface InstrumentWind {
+  angleDeg: number;
+  speedKnots: number;
+  reference: 'true' | 'relative';
+  receivedAt: number;
+}
+
+export interface MarineInstrumentData {
+  position: InstrumentPosition | null;
+  heading: InstrumentHeading | null;
+  depth: InstrumentDepth | null;
+  wind: InstrumentWind | null;
+  waterSpeedKnots: number | null;
+  lastUpdatedAt: number | null;
+  sourceTypes: string[];
+}
+
 /** Current state of the AIS receiver. */
 export interface AISReceiverState {
   status: AISConnectionStatus;
@@ -68,6 +115,7 @@ export interface AISReceiverState {
   vesselCount: number;
   lastMessageAt: number | null;
   error: string | null;
+  instruments: MarineInstrumentData;
 }
 
 // ── Constants ────────────────────────────────────────────────────
@@ -75,6 +123,9 @@ export interface AISReceiverState {
 const STORAGE_KEY = '@opencatch_ais_settings';
 const VESSEL_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 const COMMON_PORTS = [10110, 2000, 39150];
+const KMH_TO_KNOTS = 0.539957;
+const MS_TO_KNOTS = 1.94384;
+const FATHOMS_TO_METERS = 1.8288;
 
 /** 6-bit ASCII character table for AIS payload decoding. */
 const AIS_CHARSET = '@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_ !"#$%&\'()*+,-./0123456789:;<=>?';
@@ -132,6 +183,45 @@ function decodeLon(raw: number): number | null {
 function decodeLat(raw: number): number | null {
   if (raw === 0x3412140) return null; // 91 degrees = not available
   return raw / 600000;
+}
+
+function parseFloatSafe(value: string | undefined): number | null {
+  if (!value) return null;
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeDegrees(value: number): number {
+  return ((value % 360) + 360) % 360;
+}
+
+function parseNMEACoordinate(value: string | undefined, hemisphere: string | undefined): number | null {
+  if (!value || !hemisphere) return null;
+  const hemi = hemisphere.toUpperCase();
+  const degreeDigits = hemi === 'N' || hemi === 'S' ? 2 : 3;
+  if (value.length <= degreeDigits) return null;
+
+  const degrees = parseInt(value.slice(0, degreeDigits), 10);
+  const minutes = parseFloat(value.slice(degreeDigits));
+  if (!Number.isFinite(degrees) || !Number.isFinite(minutes)) return null;
+
+  const decimal = degrees + minutes / 60;
+  return hemi === 'S' || hemi === 'W' ? -decimal : decimal;
+}
+
+function convertWindToKnots(speed: number, units: string | undefined): number | null {
+  const normalizedUnits = units?.toUpperCase();
+  if (!Number.isFinite(speed) || speed < 0) return null;
+  switch (normalizedUnits) {
+    case 'N':
+      return speed;
+    case 'K':
+      return speed * KMH_TO_KNOTS;
+    case 'M':
+      return speed * MS_TO_KNOTS;
+    default:
+      return null;
+  }
 }
 
 // ── NMEA Parser ──────────────────────────────────────────────────
@@ -269,6 +359,7 @@ interface MultiPartMessage {
 // ── AIS WiFi Receiver Class ──────────────────────────────────────
 
 type AISListener = (vessel: AISVesselUpdate) => void;
+type InstrumentListener = (data: MarineInstrumentData) => void;
 
 class AISWifiReceiver {
   private status: AISConnectionStatus = 'disconnected';
@@ -277,12 +368,24 @@ class AISWifiReceiver {
   private error: string | null = null;
   private vessels = new Map<string, AISVesselUpdate>();
   private listeners = new Set<AISListener>();
+  private instrumentListeners = new Set<InstrumentListener>();
   private lastMessageAt: number | null = null;
   private ws: WebSocket | null = null;
+  private tcpSocket: any = null;
   private multiParts = new Map<string, MultiPartMessage>();
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private buffer = '';
+  private instrumentSourceTypes = new Set<string>();
+  private instrumentData: MarineInstrumentData = {
+    position: null,
+    heading: null,
+    depth: null,
+    wind: null,
+    waterSpeedKnots: null,
+    lastUpdatedAt: null,
+    sourceTypes: [],
+  };
 
   constructor() {
     // Start periodic cleanup of expired vessels
@@ -306,52 +409,15 @@ class AISWifiReceiver {
     this.status = 'connecting';
     this.error = null;
 
-    try {
-      // Try WebSocket connection (works with AIS receivers that expose WS)
-      // For raw TCP, a native module or WS-to-TCP bridge is needed
-      const wsUrl = `ws://${host}:${port}`;
-      this.ws = new WebSocket(wsUrl);
-
-      return new Promise<boolean>((resolve) => {
-        const timeout = setTimeout(() => {
-          if (this.status === 'connecting') {
-            this.status = 'error';
-            this.error = 'Connection timed out';
-            this.ws?.close();
-            resolve(false);
-          }
-        }, 10_000);
-
-        this.ws!.onopen = () => {
-          clearTimeout(timeout);
-          this.status = 'connected';
-          this.error = null;
-          this.saveSettings();
-          resolve(true);
-        };
-
-        this.ws!.onmessage = (event) => {
-          this.handleData(typeof event.data === 'string' ? event.data : '');
-        };
-
-        this.ws!.onerror = (_event) => {
-          clearTimeout(timeout);
-          this.status = 'error';
-          this.error = 'Connection failed';
-          resolve(false);
-        };
-
-        this.ws!.onclose = () => {
-          if (this.status === 'connected') {
-            this.status = 'disconnected';
-          }
-        };
-      });
-    } catch (err) {
-      this.status = 'error';
-      this.error = err instanceof Error ? err.message : 'Unknown error';
-      return false;
+    const tcpSupported = !!TcpSocket?.createConnection;
+    if (tcpSupported) {
+      const tcpConnected = await this.connectViaTcp(host, port);
+      if (tcpConnected) return true;
+      this.status = 'connecting';
+      this.error = null;
     }
+
+    return this.connectViaWebSocket(host, port);
   }
 
   /** Disconnect from the AIS receiver. */
@@ -368,9 +434,30 @@ class AISWifiReceiver {
       this.ws.close();
       this.ws = null;
     }
+    if (this.tcpSocket) {
+      try {
+        this.tcpSocket.removeAllListeners?.();
+        this.tcpSocket.destroy?.();
+        this.tcpSocket.end?.();
+      } catch {
+        // Ignore transport cleanup errors.
+      }
+      this.tcpSocket = null;
+    }
     this.status = 'disconnected';
     this.error = null;
     this.buffer = '';
+    this.instrumentSourceTypes.clear();
+    this.instrumentData = {
+      position: null,
+      heading: null,
+      depth: null,
+      wind: null,
+      waterSpeedKnots: null,
+      lastUpdatedAt: null,
+      sourceTypes: [],
+    };
+    this.emitInstrumentUpdate();
   }
 
   /** Get current connection status. */
@@ -383,6 +470,7 @@ class AISWifiReceiver {
       vesselCount: this.vessels.size,
       lastMessageAt: this.lastMessageAt,
       error: this.error,
+      instruments: this.getInstrumentData(),
     };
   }
 
@@ -394,10 +482,29 @@ class AISWifiReceiver {
     };
   }
 
+  addInstrumentListener(callback: InstrumentListener): () => void {
+    this.instrumentListeners.add(callback);
+    return () => {
+      this.instrumentListeners.delete(callback);
+    };
+  }
+
   /** Get all currently tracked vessels (not expired). */
   getVessels(): AISVesselUpdate[] {
     this.cleanupExpired();
     return Array.from(this.vessels.values());
+  }
+
+  getInstrumentData(): MarineInstrumentData {
+    return {
+      position: this.instrumentData.position ? { ...this.instrumentData.position } : null,
+      heading: this.instrumentData.heading ? { ...this.instrumentData.heading } : null,
+      depth: this.instrumentData.depth ? { ...this.instrumentData.depth } : null,
+      wind: this.instrumentData.wind ? { ...this.instrumentData.wind } : null,
+      waterSpeedKnots: this.instrumentData.waterSpeedKnots,
+      lastUpdatedAt: this.instrumentData.lastUpdatedAt,
+      sourceTypes: [...this.instrumentData.sourceTypes],
+    };
   }
 
   /** Get a GeoJSON FeatureCollection of tracked vessels. */
@@ -482,6 +589,422 @@ class AISWifiReceiver {
     }
   }
 
+  private connectViaTcp(host: string, port: number): Promise<boolean> {
+    if (!TcpSocket?.createConnection) {
+      return Promise.resolve(false);
+    }
+
+    return new Promise<boolean>((resolve) => {
+      let settled = false;
+      const timeout = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        this.status = 'error';
+        this.error = 'TCP connection timed out';
+        try {
+          this.tcpSocket?.destroy?.();
+        } catch {
+          // ignore
+        }
+        this.tcpSocket = null;
+        resolve(false);
+      }, 10_000);
+
+      try {
+        this.tcpSocket = TcpSocket.createConnection({ host, port }, () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          this.status = 'connected';
+          this.error = null;
+          this.saveSettings();
+          resolve(true);
+        });
+
+        this.tcpSocket.on('data', (data: any) => {
+          const payload = typeof data === 'string'
+            ? data
+            : typeof data?.toString === 'function'
+              ? data.toString('utf8')
+              : '';
+          this.handleData(payload);
+        });
+
+        this.tcpSocket.on('error', (err: any) => {
+          clearTimeout(timeout);
+          this.error = err instanceof Error ? err.message : 'TCP connection failed';
+          this.status = 'error';
+          try {
+            this.tcpSocket?.destroy?.();
+          } catch {
+            // ignore
+          }
+          this.tcpSocket = null;
+          if (!settled) {
+            settled = true;
+            resolve(false);
+          }
+        });
+
+        this.tcpSocket.on('close', () => {
+          if (this.status === 'connected') {
+            this.status = 'disconnected';
+          }
+        });
+      } catch (err) {
+        clearTimeout(timeout);
+        this.status = 'error';
+        this.error = err instanceof Error ? err.message : 'TCP connection failed';
+        if (!settled) {
+          settled = true;
+          resolve(false);
+        }
+      }
+    });
+  }
+
+  private connectViaWebSocket(host: string, port: number): Promise<boolean> {
+    try {
+      const wsUrl = `ws://${host}:${port}`;
+      this.ws = new WebSocket(wsUrl);
+
+      return new Promise<boolean>((resolve) => {
+        let settled = false;
+        const timeout = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          this.status = 'error';
+          this.error = 'Connection timed out';
+          this.ws?.close();
+          resolve(false);
+        }, 10_000);
+
+        this.ws!.onopen = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          this.status = 'connected';
+          this.error = null;
+          this.saveSettings();
+          resolve(true);
+        };
+
+        this.ws!.onmessage = (event) => {
+          this.handleData(typeof event.data === 'string' ? event.data : '');
+        };
+
+        this.ws!.onerror = () => {
+          clearTimeout(timeout);
+          this.status = 'error';
+          this.error = 'Connection failed';
+          if (!settled) {
+            settled = true;
+            resolve(false);
+          }
+        };
+
+        this.ws!.onclose = () => {
+          if (this.status === 'connected') {
+            this.status = 'disconnected';
+          }
+        };
+      });
+    } catch (err) {
+      this.status = 'error';
+      this.error = err instanceof Error ? err.message : 'Unknown error';
+      return Promise.resolve(false);
+    }
+  }
+
+  private emitInstrumentUpdate(): void {
+    const snapshot = this.getInstrumentData();
+    for (const listener of this.instrumentListeners) {
+      try {
+        listener(snapshot);
+      } catch {
+        // Listener issues should never break the stream parser.
+      }
+    }
+  }
+
+  private updateInstrumentData(
+    patch: Partial<MarineInstrumentData>,
+    sentenceType: string,
+    receivedAt: number,
+  ): void {
+    let changed = false;
+
+    if (patch.position) {
+      const previous = this.instrumentData.position;
+      const next: InstrumentPosition = {
+        lat: patch.position.lat ?? previous?.lat ?? 0,
+        lon: patch.position.lon ?? previous?.lon ?? 0,
+        sogKnots: patch.position.sogKnots ?? previous?.sogKnots ?? null,
+        cogDeg: patch.position.cogDeg ?? previous?.cogDeg ?? null,
+        fixQuality: patch.position.fixQuality ?? previous?.fixQuality ?? null,
+        receivedAt,
+        source: 'nmea0183',
+      };
+      if (
+        !previous ||
+        previous.lat !== next.lat ||
+        previous.lon !== next.lon ||
+        previous.sogKnots !== next.sogKnots ||
+        previous.cogDeg !== next.cogDeg ||
+        previous.fixQuality !== next.fixQuality
+      ) {
+        this.instrumentData.position = next;
+        changed = true;
+      }
+    }
+
+    if (patch.heading) {
+      const previous = this.instrumentData.heading;
+      const next: InstrumentHeading = {
+        headingDeg: normalizeDegrees(patch.heading.headingDeg),
+        reference: patch.heading.reference,
+        receivedAt,
+      };
+      if (
+        !previous ||
+        previous.headingDeg !== next.headingDeg ||
+        previous.reference !== next.reference
+      ) {
+        this.instrumentData.heading = next;
+        changed = true;
+      }
+    }
+
+    if (patch.depth) {
+      const previous = this.instrumentData.depth;
+      const next: InstrumentDepth = {
+        depthM: patch.depth.depthM,
+        offsetM: patch.depth.offsetM ?? null,
+        sourceSentence: patch.depth.sourceSentence,
+        receivedAt,
+      };
+      if (
+        !previous ||
+        previous.depthM !== next.depthM ||
+        previous.offsetM !== next.offsetM ||
+        previous.sourceSentence !== next.sourceSentence
+      ) {
+        this.instrumentData.depth = next;
+        changed = true;
+      }
+    }
+
+    if (patch.wind) {
+      const previous = this.instrumentData.wind;
+      const next: InstrumentWind = {
+        angleDeg: normalizeDegrees(patch.wind.angleDeg),
+        speedKnots: patch.wind.speedKnots,
+        reference: patch.wind.reference,
+        receivedAt,
+      };
+      if (
+        !previous ||
+        previous.angleDeg !== next.angleDeg ||
+        previous.speedKnots !== next.speedKnots ||
+        previous.reference !== next.reference
+      ) {
+        this.instrumentData.wind = next;
+        changed = true;
+      }
+    }
+
+    if (patch.waterSpeedKnots != null && patch.waterSpeedKnots !== this.instrumentData.waterSpeedKnots) {
+      this.instrumentData.waterSpeedKnots = patch.waterSpeedKnots;
+      changed = true;
+    }
+
+    if (!changed) return;
+
+    this.instrumentSourceTypes.add(sentenceType);
+    this.instrumentData.lastUpdatedAt = receivedAt;
+    this.instrumentData.sourceTypes = Array.from(this.instrumentSourceTypes).slice(-8);
+    this.emitInstrumentUpdate();
+  }
+
+  private processInstrumentSentence(nmea: NMEASentence, receivedAt: number): void {
+    switch (nmea.type) {
+      case 'RMC': {
+        if (nmea.fields[2] !== 'A') return;
+        const lat = parseNMEACoordinate(nmea.fields[3], nmea.fields[4]);
+        const lon = parseNMEACoordinate(nmea.fields[5], nmea.fields[6]);
+        if (lat == null || lon == null) return;
+        this.updateInstrumentData({
+          position: {
+            lat,
+            lon,
+            sogKnots: parseFloatSafe(nmea.fields[7]),
+            cogDeg: parseFloatSafe(nmea.fields[8]),
+            fixQuality: 1,
+            receivedAt,
+            source: 'nmea0183',
+          },
+        }, 'RMC', receivedAt);
+        return;
+      }
+      case 'GGA': {
+        const lat = parseNMEACoordinate(nmea.fields[2], nmea.fields[3]);
+        const lon = parseNMEACoordinate(nmea.fields[4], nmea.fields[5]);
+        const fixQuality = parseFloatSafe(nmea.fields[6]);
+        if (lat == null || lon == null || !fixQuality || fixQuality <= 0) return;
+        this.updateInstrumentData({
+          position: {
+            lat,
+            lon,
+            sogKnots: this.instrumentData.position?.sogKnots ?? null,
+            cogDeg: this.instrumentData.position?.cogDeg ?? null,
+            fixQuality,
+            receivedAt,
+            source: 'nmea0183',
+          },
+        }, 'GGA', receivedAt);
+        return;
+      }
+      case 'GLL': {
+        if (nmea.fields[6] && nmea.fields[6] !== 'A') return;
+        const lat = parseNMEACoordinate(nmea.fields[1], nmea.fields[2]);
+        const lon = parseNMEACoordinate(nmea.fields[3], nmea.fields[4]);
+        if (lat == null || lon == null) return;
+        this.updateInstrumentData({
+          position: {
+            lat,
+            lon,
+            sogKnots: this.instrumentData.position?.sogKnots ?? null,
+            cogDeg: this.instrumentData.position?.cogDeg ?? null,
+            fixQuality: this.instrumentData.position?.fixQuality ?? null,
+            receivedAt,
+            source: 'nmea0183',
+          },
+        }, 'GLL', receivedAt);
+        return;
+      }
+      case 'VTG': {
+        const cogDeg = parseFloatSafe(nmea.fields[1]);
+        const sogKnots = parseFloatSafe(nmea.fields[5]);
+        const position = this.instrumentData.position;
+        if (position && (cogDeg != null || sogKnots != null)) {
+          this.updateInstrumentData({
+            position: {
+              lat: position.lat,
+              lon: position.lon,
+              sogKnots: sogKnots ?? position.sogKnots,
+              cogDeg: cogDeg ?? position.cogDeg,
+              fixQuality: position.fixQuality,
+              receivedAt,
+              source: 'nmea0183',
+            },
+          }, 'VTG', receivedAt);
+        }
+        return;
+      }
+      case 'HDT': {
+        const heading = parseFloatSafe(nmea.fields[1]);
+        if (heading == null) return;
+        this.updateInstrumentData({
+          heading: {
+            headingDeg: heading,
+            reference: 'true',
+            receivedAt,
+          },
+        }, 'HDT', receivedAt);
+        return;
+      }
+      case 'HDG':
+      case 'HDM': {
+        const heading = parseFloatSafe(nmea.fields[1]);
+        if (heading == null) return;
+        this.updateInstrumentData({
+          heading: {
+            headingDeg: heading,
+            reference: 'magnetic',
+            receivedAt,
+          },
+        }, nmea.type, receivedAt);
+        return;
+      }
+      case 'VHW': {
+        const heading = parseFloatSafe(nmea.fields[1]);
+        const waterSpeedKnots = parseFloatSafe(nmea.fields[5]);
+        const patch: Partial<MarineInstrumentData> = {};
+        if (heading != null) {
+          patch.heading = {
+            headingDeg: heading,
+            reference: 'true',
+            receivedAt,
+          };
+        }
+        if (waterSpeedKnots != null) {
+          patch.waterSpeedKnots = waterSpeedKnots;
+        }
+        if (patch.heading || patch.waterSpeedKnots != null) {
+          this.updateInstrumentData(patch, 'VHW', receivedAt);
+        }
+        return;
+      }
+      case 'MWV': {
+        if (nmea.fields[5] !== 'A') return;
+        const angleDeg = parseFloatSafe(nmea.fields[1]);
+        const speed = parseFloatSafe(nmea.fields[3]);
+        const speedKnots = speed != null ? convertWindToKnots(speed, nmea.fields[4]) : null;
+        if (angleDeg == null || speedKnots == null) return;
+        this.updateInstrumentData({
+          wind: {
+            angleDeg,
+            speedKnots,
+            reference: nmea.fields[2] === 'T' ? 'true' : 'relative',
+            receivedAt,
+          },
+        }, 'MWV', receivedAt);
+        return;
+      }
+      case 'MWD': {
+        const angleDeg = parseFloatSafe(nmea.fields[1]);
+        const speedKnots = parseFloatSafe(nmea.fields[5]);
+        if (angleDeg == null || speedKnots == null) return;
+        this.updateInstrumentData({
+          wind: {
+            angleDeg,
+            speedKnots,
+            reference: 'true',
+            receivedAt,
+          },
+        }, 'MWD', receivedAt);
+        return;
+      }
+      case 'DPT': {
+        const depthM = parseFloatSafe(nmea.fields[1]);
+        if (depthM == null) return;
+        this.updateInstrumentData({
+          depth: {
+            depthM,
+            offsetM: parseFloatSafe(nmea.fields[2]),
+            sourceSentence: 'DPT',
+            receivedAt,
+          },
+        }, 'DPT', receivedAt);
+        return;
+      }
+      case 'DBT': {
+        const depthM = parseFloatSafe(nmea.fields[3])
+          ?? (parseFloatSafe(nmea.fields[1]) != null ? parseFloatSafe(nmea.fields[1])! * 0.3048 : null)
+          ?? (parseFloatSafe(nmea.fields[5]) != null ? parseFloatSafe(nmea.fields[5])! * FATHOMS_TO_METERS : null);
+        if (depthM == null) return;
+        this.updateInstrumentData({
+          depth: {
+            depthM,
+            offsetM: null,
+            sourceSentence: 'DBT',
+            receivedAt,
+          },
+        }, 'DBT', receivedAt);
+      }
+    }
+  }
+
   /** Handle incoming data (may contain multiple lines). */
   private handleData(data: string): void {
     this.buffer += data;
@@ -499,9 +1022,6 @@ class AISWifiReceiver {
 
   /** Process a single NMEA sentence. */
   private processSentence(sentence: string): void {
-    // Only process AIS sentences
-    if (!sentence.includes('VDM') && !sentence.includes('VDO')) return;
-
     if (!verifyChecksum(sentence)) {
       // Skip invalid checksum but don't error out
       return;
@@ -509,6 +1029,13 @@ class AISWifiReceiver {
 
     const nmea = parseNMEA(sentence);
     if (!nmea) return;
+
+    const receivedAt = Date.now();
+    this.lastMessageAt = receivedAt;
+    this.processInstrumentSentence(nmea, receivedAt);
+
+    // Only process AIS payloads below this point
+    if (nmea.type !== 'VDM' && nmea.type !== 'VDO') return;
 
     // AIVDM fields: !AIVDM,fragCount,fragNum,seqId,channel,payload,fillBits*checksum
     const fragCount = parseInt(nmea.fields[1], 10);
@@ -548,8 +1075,6 @@ class AISWifiReceiver {
     // Parse AIS payload
     const update = parseAISPayload(fullPayload, fillBits);
     if (!update || !update.mmsi) return;
-
-    this.lastMessageAt = Date.now();
 
     // Merge with existing vessel data
     const existing = this.vessels.get(update.mmsi);

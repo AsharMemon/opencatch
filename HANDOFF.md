@@ -1,4 +1,74 @@
-# OpenCatch Session Handoff — March 21, 2026 (Night Session)
+# OpenCatch Session Handoff
+
+## Current Handoff — April 12, 2026
+
+This is the current baton-pass section for the next chat. The older March snapshot below is preserved as historical context, but it is no longer the best operational handoff.
+
+### Branch / Repo State
+- Branch: `deploy-clean`
+- There is a large in-progress working set spanning app UX, survey-source ingestion, POI harvesting, coastal/ocean bathymetry, routing, and deployment.
+- This handoff is paired with:
+  - [/Users/Ashar/Documents/fish/memory/2026-04-11.md](/Users/Ashar/Documents/fish/memory/2026-04-11.md)
+  - [/Users/Ashar/Documents/fish/memory/2026-04-12.md](/Users/Ashar/Documents/fish/memory/2026-04-12.md)
+
+### What Is True Right Now
+- The scraped US/Canada GPS lake backbone is real and large:
+  - `29,123` app-catalog lakes
+  - `35,275` completion-queue rows
+- POIs are partially integrated into the app and growing fast, but not complete for all lakes.
+- Coastal/ocean bathymetry styling is much improved, but full dense navigation-grade coastal coverage is still in progress.
+- Rivers now have a dedicated build lane, but they are not “complete everywhere.”
+- The app has seen substantial recent map, routing, catch-log, and detail-screen UX work.
+
+### High-Signal Recent App Fixes
+- Catch logging:
+  - all fields are now optional in [/Users/Ashar/Documents/fish/mobile/src/screens/CatchReportScreen.tsx](/Users/Ashar/Documents/fish/mobile/src/screens/CatchReportScreen.tsx)
+  - local save is the source of truth
+  - activity/calendar screens now update immediately via catch-store subscriptions
+- Activity views:
+  - [/Users/Ashar/Documents/fish/mobile/src/components/ActivityHeatmap.tsx](/Users/Ashar/Documents/fish/mobile/src/components/ActivityHeatmap.tsx)
+  - [/Users/Ashar/Documents/fish/mobile/src/screens/ActivityScreen.tsx](/Users/Ashar/Documents/fish/mobile/src/screens/ActivityScreen.tsx)
+  - [/Users/Ashar/Documents/fish/mobile/src/screens/ActivityLogScreen.tsx](/Users/Ashar/Documents/fish/mobile/src/screens/ActivityLogScreen.tsx)
+  - [/Users/Ashar/Documents/fish/mobile/src/screens/StatsScreen.tsx](/Users/Ashar/Documents/fish/mobile/src/screens/StatsScreen.tsx)
+- Nearby sheet / blank-card cleanup:
+  - [/Users/Ashar/Documents/fish/mobile/src/components/SpotInsightsCard.tsx](/Users/Ashar/Documents/fish/mobile/src/components/SpotInsightsCard.tsx)
+  - [/Users/Ashar/Documents/fish/mobile/src/components/EnhancedSearchBar.tsx](/Users/Ashar/Documents/fish/mobile/src/components/EnhancedSearchBar.tsx)
+  - [/Users/Ashar/Documents/fish/mobile/src/screens/MapScreen.tsx](/Users/Ashar/Documents/fish/mobile/src/screens/MapScreen.tsx)
+  - insight cards now have a fallback path instead of rendering mostly empty
+  - blank/whitespace-only nearby rows are filtered or normalized
+- Routing:
+  - route builder is bottom-sheet based
+  - route corridor / no-go / turn sheet work exists
+  - land + shallow fallback routing improved in [/Users/Ashar/Documents/fish/mobile/src/services/routePlanner.ts](/Users/Ashar/Documents/fish/mobile/src/services/routePlanner.ts)
+
+### High-Signal Recent Data / Infra Progress
+- Maine was promoted into a major official PDF source lane:
+  - `1,718` Maine scraped lakes matched official IF&W PDFs
+  - `1,153` unique executable Maine PDF inventory rows
+- Kentucky KDFWR KML contours were promoted into a real packaged/app-wired contour lane.
+- Maryland official PDFs were relaunched with insecure TLS handling after cert failures blocked downloads.
+- Direct-source fetch lane reached full launcher support for:
+  - `USACE`
+  - `TVA`
+  - Pennsylvania PFBC/state-agency
+- Coastal tile placeholder was replaced with a real partial coastal PMTiles build:
+  - live `ocean_contours.pmtiles` is now meaningful, but still partial
+
+### Current Gaps / Risks
+- Not all `29,123` lakes are fully sourced and live yet.
+- Some coasts/oceans/rivers are still incomplete or not fine-grained enough for ideal navigation.
+- The repo contains many concurrent edits; future work should avoid “cleanup by deletion” unless verified carefully.
+- Some render issues users notice are real data gaps, not only styling bugs.
+
+### Best Next Moves
+1. Continue source-promotion on remaining jurisdictions using the Maine/Kentucky pattern.
+2. Keep merging live POI shard outputs back into the app bundle.
+3. Finish broader coastal/ocean vector contour build and publish over remaining sparse areas.
+4. Keep tightening map UX around blank/partial states instead of hiding data aggressively.
+
+---
+
+## Historical Snapshot — March 21, 2026 (Night Session)
 
 ## Project Overview
 OpenCatch is a professional fishing app that now **exceeds** Navionics, FishAngler, and Fishbrain in core fishing intelligence:

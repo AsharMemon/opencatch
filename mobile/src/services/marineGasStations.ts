@@ -7,6 +7,8 @@
  * All data sources are free and require no API key.
  */
 
+import { getLocalLakeMarineFuelPois } from './lakePoiCatalog';
+
 // ── Types ────────────────────────────────────────────────────────
 
 export interface MarineGasStation {
@@ -49,6 +51,10 @@ function bboxKey(bbox: MarineGasBBox): string {
   return `fuel:${r(bbox.west)},${r(bbox.south)},${r(bbox.east)},${r(bbox.north)}`;
 }
 
+function scopedBboxKey(bbox: MarineGasBBox, lakeId?: string | null): string {
+  return `${bboxKey(bbox)}:${lakeId ?? 'no-lake'}`;
+}
+
 function getCached(key: string): MarineGasStation[] | null {
   const entry = cache.get(key);
   if (!entry) return null;
@@ -59,11 +65,17 @@ function getCached(key: string): MarineGasStation[] | null {
   return entry.data;
 }
 
+function setCache(key: string, data: MarineGasStation[]): void {
+  cache.set(key, { data, timestamp: Date.now() });
+}
+
 // ── Overpass query ───────────────────────────────────────────────
 
 function buildOverpassQuery(bbox: MarineGasBBox): string {
   return `[out:json][timeout:20];
 (
+  node["amenity"="fuel"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
+  way["amenity"="fuel"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
   node["amenity"="fuel"]["boat"="yes"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
   node["seamark:type"="fuel_station"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
   way["amenity"="fuel"]["boat"="yes"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
@@ -71,6 +83,22 @@ function buildOverpassQuery(bbox: MarineGasBBox): string {
   node["amenity"="fuel"]["seamark:type"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
 );
 out center body qt 200;`;
+}
+
+function looksMarineRelated(text: string | undefined): boolean {
+  const normalized = (text ?? '').toLowerCase();
+  return ['marina', 'yacht', 'harbour', 'harbor', 'boat', 'dock', 'landing', 'marine', 'wharf']
+    .some((token) => normalized.includes(token));
+}
+
+function isMarineFuel(tags: Record<string, string>): boolean {
+  if (tags['seamark:type'] === 'fuel_station') return true;
+  if (tags.amenity !== 'fuel') return false;
+  if (tags.boat === 'yes') return true;
+  if (tags.harbour === 'yes') return true;
+  if (tags.waterway === 'dock' || tags.waterway === 'boatyard' || tags.waterway === 'fuel') return true;
+  if (looksMarineRelated(tags.name) || looksMarineRelated(tags.operator)) return true;
+  return false;
 }
 
 // ── Parse fuel types from OSM tags ──────────────────────────────
@@ -94,10 +122,47 @@ function parseFuelTypes(tags: Record<string, string>): string[] {
  * Fetch marine fuel docks within a bounding box from OpenStreetMap.
  */
 export async function getMarineGasStations(bbox: MarineGasBBox): Promise<MarineGasStation[]> {
-  const key = bboxKey(bbox);
+  return getMarineGasStationsForLake(bbox);
+}
+
+function normalizeLocalLakeFuelStations(lakeId?: string | null): MarineGasStation[] {
+  return getLocalLakeMarineFuelPois(lakeId).map((poi) => ({
+    id: poi.id,
+    name: poi.name || 'Marine Fuel Dock',
+    lat: poi.lat,
+    lon: poi.lon,
+    fuelTypes: (poi.fuelTypes && poi.fuelTypes.length > 0 ? poi.fuelTypes : ['fuel']).map((value) => value.toLowerCase()),
+    hours: null,
+    operator: poi.operator || null,
+  }));
+}
+
+function dedupeStations(stations: MarineGasStation[]): MarineGasStation[] {
+  return stations.filter((station, index) => {
+    for (let k = 0; k < index; k += 1) {
+      const existing = stations[k];
+      if (station.id === existing.id) return false;
+      const dx = (station.lat - existing.lat) * 111000;
+      const dy = (station.lon - existing.lon) * 111000 * Math.cos((station.lat * Math.PI) / 180);
+      if (Math.sqrt(dx * dx + dy * dy) < 50) return false;
+    }
+    return true;
+  });
+}
+
+/**
+ * Fetch marine fuel docks within a bounding box from OpenStreetMap,
+ * merged with any lake-local harvested fuel POIs when a focused lake id exists.
+ */
+export async function getMarineGasStationsForLake(
+  bbox: MarineGasBBox,
+  lakeId?: string | null,
+): Promise<MarineGasStation[]> {
+  const key = scopedBboxKey(bbox, lakeId);
   const cached = getCached(key);
   if (cached) return cached;
 
+  const local = normalizeLocalLakeFuelStations(lakeId);
   const query = buildOverpassQuery(bbox);
 
   const controller = new AbortController();
@@ -111,40 +176,37 @@ export async function getMarineGasStations(bbox: MarineGasBBox): Promise<MarineG
       signal: controller.signal,
     });
 
-    if (!res.ok) return [];
+    if (!res.ok) {
+      setCache(key, local);
+      return local;
+    }
     const data = await res.json();
 
-    const stations: MarineGasStation[] = (data.elements ?? []).map((el: any) => {
-      const lat = el.lat ?? el.center?.lat ?? 0;
-      const lon = el.lon ?? el.center?.lon ?? 0;
-      const tags = el.tags ?? {};
+    const remote: MarineGasStation[] = (data.elements ?? [])
+      .map((el: any) => {
+        const lat = el.lat ?? el.center?.lat ?? 0;
+        const lon = el.lon ?? el.center?.lon ?? 0;
+        const tags = el.tags ?? {};
+        if (!isMarineFuel(tags)) return null;
 
-      return {
-        id: `fuel-${el.id}`,
-        name: tags.name ?? tags['seamark:name'] ?? 'Marine Fuel Dock',
-        lat,
-        lon,
-        fuelTypes: parseFuelTypes(tags),
-        hours: tags.opening_hours ?? null,
-        operator: tags.operator ?? null,
-      };
-    });
+        return {
+          id: `fuel-${el.id}`,
+          name: tags.name ?? tags['seamark:name'] ?? 'Marine Fuel Dock',
+          lat,
+          lon,
+          fuelTypes: parseFuelTypes(tags),
+          hours: tags.opening_hours ?? null,
+          operator: tags.operator ?? null,
+        };
+      })
+      .filter((station: MarineGasStation | null): station is MarineGasStation => station !== null);
 
-    // Deduplicate by proximity (within 50m)
-    const deduped = stations.filter((s, idx) => {
-      for (let k = 0; k < idx; k++) {
-        const dx = (s.lat - stations[k].lat) * 111000;
-        const dy = (s.lon - stations[k].lon) * 111000 * Math.cos((s.lat * Math.PI) / 180);
-        if (Math.sqrt(dx * dx + dy * dy) < 50) return false;
-      }
-      return true;
-    });
-
-    cache.set(key, { data: deduped, timestamp: Date.now() });
-    return deduped;
+    const merged = dedupeStations([...local, ...remote]);
+    cache.set(key, { data: merged, timestamp: Date.now() });
+    return merged;
   } catch (err) {
     console.warn('[marineGasStations] fetch failed:', err);
-    return [];
+    return local;
   } finally {
     clearTimeout(timer);
   }

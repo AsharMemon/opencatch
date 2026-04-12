@@ -7,6 +7,8 @@
  * Results are cached in memory for 1 hour.
  */
 
+import { getLocalLakeAccessPoints } from './lakePoiCatalog';
+
 // ── Types ────────────────────────────────────────────────────────
 
 /** Access-point category. */
@@ -82,10 +84,19 @@ interface CacheEntry {
 
 const cache = new Map<string, CacheEntry>();
 
-function cacheKey(lat: number, lon: number, radiusMeters: number): string {
+function cacheKey(
+  lat: number,
+  lon: number,
+  radiusMeters: number,
+  bounds?: WaterbodyBounds,
+  lakeId?: string,
+): string {
   const latR = Math.round(lat * 1000) / 1000;
   const lonR = Math.round(lon * 1000) / 1000;
-  return `ap-${latR},${lonR},${radiusMeters}`;
+  const bboxKey = bounds
+    ? `${Math.round(bounds.south * 1000) / 1000},${Math.round(bounds.west * 1000) / 1000},${Math.round(bounds.north * 1000) / 1000},${Math.round(bounds.east * 1000) / 1000}`
+    : 'no-bounds';
+  return `ap-${latR},${lonR},${radiusMeters},${bboxKey},${lakeId ?? 'no-lake'}`;
 }
 
 function getCached(key: string): AccessPoint[] | null {
@@ -384,11 +395,13 @@ export async function fetchNearbyAccessPoints(
   lon: number,
   radiusMeters: number = 15_000,
   bounds?: WaterbodyBounds,
+  lakeId?: string,
 ): Promise<AccessPoint[]> {
   // Use a minimum search radius of 5 km to avoid missing spots
   const effectiveRadius = Math.max(radiusMeters, 5_000);
+  const localPoints = getLocalLakeAccessPoints(lakeId);
 
-  const key = cacheKey(lat, lon, effectiveRadius);
+  const key = cacheKey(lat, lon, effectiveRadius, bounds, lakeId);
   const cached = getCached(key);
   if (cached) return cached;
 
@@ -398,10 +411,11 @@ export async function fetchNearbyAccessPoints(
     const points = elements
       .map(elementToAccessPoint)
       .filter((p): p is AccessPoint => p !== null);
+    const mergedPoints = [...localPoints, ...points];
 
     // De-duplicate: first by OSM id, then by proximity (50 m)
     const seen = new Set<string>();
-    const uniqueById = points.filter((p) => {
+    const uniqueById = mergedPoints.filter((p) => {
       if (seen.has(p.id)) return false;
       seen.add(p.id);
       return true;
@@ -419,18 +433,32 @@ export async function fetchNearbyAccessPoints(
     ];
     const recreationalPoints = unique.filter((p) => recreationalTypes.includes(p.type));
     const filtered = unique.filter((p) => {
-      if (p.type !== 'parking' && p.type !== 'picnic_site') return true;
-      // Keep if within 200m of a recreational access point
-      return recreationalPoints.some(
-        (rp) => haversineMeters(p.lat, p.lon, rp.lat, rp.lon) < 200,
-      );
+      if (p.type === 'parking') {
+        return recreationalPoints.some(
+          (rp) => haversineMeters(p.lat, p.lon, rp.lat, rp.lon) < 120,
+        );
+      }
+      if (p.type === 'picnic_site') {
+        return recreationalPoints.some(
+          (rp) => haversineMeters(p.lat, p.lon, rp.lat, rp.lon) < 160,
+        );
+      }
+      if (p.type === 'shore_fishing' && !bounds && !lakeId) {
+        return recreationalPoints.some(
+          (rp) =>
+            rp.id !== p.id &&
+            rp.type !== 'shore_fishing' &&
+            haversineMeters(p.lat, p.lon, rp.lat, rp.lon) < 180,
+        );
+      }
+      return true;
     });
 
     setCache(key, filtered);
     return filtered;
   } catch (err) {
     console.warn('[accessPointService] fetchNearbyAccessPoints failed:', err);
-    return [];
+    return deduplicateByProximity(localPoints, 50);
   }
 }
 

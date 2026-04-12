@@ -1,14 +1,11 @@
 /**
- * OpenCatch — Animated Wind Overlay (Windy-Style)
+ * OpenCatch — Wind Overlay
  *
- * Full-screen wind visualization inspired by Windy.app:
- *   1. Dense color heat map background via large blurred circles
- *      (blue=calm, cyan, green, yellow, orange, red=gale)
- *   2. Small white directional arrows simulating particle flow
- *   3. Speed badges at city-scale zoom (purple circles with "X m/s")
+ * The old version behaved like a soft heatmap with a few arrows on top.
+ * This version flips that: the wind field should read as a dense vector net
+ * first, with only a faint speed tint behind it.
  *
  * Data: Open-Meteo forecast API — no API key needed.
- * Grid: ~0.10° spacing (~10 km) for heat map, denser than before.
  * Updates every 15 minutes while active.
  */
 
@@ -25,9 +22,17 @@ interface WindGridPoint {
   gustKn?: number;
 }
 
+interface WindViewportBounds {
+  minLat: number;
+  minLon: number;
+  maxLat: number;
+  maxLon: number;
+}
+
 interface Props {
   lat: number;
   lon: number;
+  bounds?: WindViewportBounds | null;
   ShapeSource: any;
   SymbolLayer: any;
   CircleLayer: any;
@@ -38,17 +43,23 @@ interface Props {
   onLoadStart?: () => void;
   /** Called when the overlay finishes loading data */
   onLoadEnd?: () => void;
+  /** Called when fresh or cached wind vectors are ready */
+  onDataLoaded?: (payload: { vectorCount: number; center: { lat: number; lon: number } }) => void;
 }
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const OPEN_METEO_BASE = 'https://api.open-meteo.com/v1/forecast';
 
-/** Dense grid spacing for heat map (~10 km at mid-latitudes). */
-const GRID_SPACING_DEG = 0.10;
-
-/** Radius of the grid around center in degrees. */
-const GRID_RADIUS_DEG = 1.2;
+const DEFAULT_GRID_RADIUS_DEG = 1.4;
+const TARGET_GRID_COLUMNS_NEAR = 18;
+const TARGET_GRID_COLUMNS_MEDIUM = 22;
+const TARGET_GRID_COLUMNS_FAR = 26;
+const TARGET_GRID_ROWS_NEAR = 14;
+const TARGET_GRID_ROWS_MEDIUM = 16;
+const TARGET_GRID_ROWS_FAR = 18;
+const MIN_GRID_SPACING_DEG = 0.025;
+const MAX_GRID_SPACING_DEG = 0.9;
 
 /** Refresh interval: 15 minutes. */
 const REFRESH_INTERVAL_MS = 15 * 60 * 1000;
@@ -114,20 +125,74 @@ function windLabel(kn: number): string {
 
 // ── Build grid coordinates ───────────────────────────────────────────────────
 
-function buildGrid(centerLat: number, centerLon: number): Array<{ lat: number; lon: number }> {
-  const coords: Array<{ lat: number; lon: number }> = [];
-  const latMin = centerLat - GRID_RADIUS_DEG;
-  const latMax = centerLat + GRID_RADIUS_DEG;
-  const lonMin = centerLon - GRID_RADIUS_DEG;
-  const lonMax = centerLon + GRID_RADIUS_DEG;
+function normalizeBounds(
+  centerLat: number,
+  centerLon: number,
+  bounds?: WindViewportBounds | null,
+): WindViewportBounds {
+  if (
+    bounds &&
+    Number.isFinite(bounds.minLat) &&
+    Number.isFinite(bounds.minLon) &&
+    Number.isFinite(bounds.maxLat) &&
+    Number.isFinite(bounds.maxLon) &&
+    bounds.maxLat > bounds.minLat &&
+    bounds.maxLon > bounds.minLon
+  ) {
+    return bounds;
+  }
 
-  for (let lat = latMin; lat <= latMax + 1e-9; lat += GRID_SPACING_DEG) {
-    for (let lon = lonMin; lon <= lonMax + 1e-9; lon += GRID_SPACING_DEG) {
-      coords.push({
+  return {
+    minLat: centerLat - DEFAULT_GRID_RADIUS_DEG,
+    maxLat: centerLat + DEFAULT_GRID_RADIUS_DEG,
+    minLon: centerLon - DEFAULT_GRID_RADIUS_DEG,
+    maxLon: centerLon + DEFAULT_GRID_RADIUS_DEG,
+  };
+}
+
+function boundsKey(bounds: WindViewportBounds): string {
+  return [
+    bounds.minLat.toFixed(2),
+    bounds.minLon.toFixed(2),
+    bounds.maxLat.toFixed(2),
+    bounds.maxLon.toFixed(2),
+  ].join(':');
+}
+
+function buildGrid(
+  centerLat: number,
+  centerLon: number,
+  bounds?: WindViewportBounds | null,
+): Array<{ lat: number; lon: number }> {
+  const coords: Array<{ lat: number; lon: number }> = [];
+  const seen = new Set<string>();
+  const frame = normalizeBounds(centerLat, centerLon, bounds);
+  const latSpan = Math.max(frame.maxLat - frame.minLat, 0.2);
+  const lonSpan = Math.max(frame.maxLon - frame.minLon, 0.2);
+  const maxSpan = Math.max(latSpan, lonSpan);
+  const targetColumns =
+    maxSpan > 10 ? TARGET_GRID_COLUMNS_FAR : maxSpan > 4 ? TARGET_GRID_COLUMNS_MEDIUM : TARGET_GRID_COLUMNS_NEAR;
+  const targetRows =
+    maxSpan > 10 ? TARGET_GRID_ROWS_FAR : maxSpan > 4 ? TARGET_GRID_ROWS_MEDIUM : TARGET_GRID_ROWS_NEAR;
+  const latSpacing = Math.min(MAX_GRID_SPACING_DEG, Math.max(MIN_GRID_SPACING_DEG, latSpan / targetRows));
+  const lonSpacing = Math.min(MAX_GRID_SPACING_DEG, Math.max(MIN_GRID_SPACING_DEG, lonSpan / targetColumns));
+
+  let rowIndex = 0;
+  for (let lat = frame.minLat; lat <= frame.maxLat + 1e-9; lat += latSpacing) {
+    const stagger = rowIndex % 2 === 0 ? 0 : lonSpacing / 2;
+    for (let lon = frame.minLon - stagger; lon <= frame.maxLon + lonSpacing + 1e-9; lon += lonSpacing) {
+      const clampedLon = Math.min(frame.maxLon, Math.max(frame.minLon, lon));
+      const point = {
         lat: parseFloat(lat.toFixed(4)),
-        lon: parseFloat(lon.toFixed(4)),
-      });
+        lon: parseFloat(clampedLon.toFixed(4)),
+      };
+      const key = `${point.lat}:${point.lon}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        coords.push(point);
+      }
     }
+    rowIndex += 1;
   }
   return coords;
 }
@@ -145,7 +210,7 @@ interface OpenMeteoHourlyResponse {
 }
 
 async function fetchWindBatch(coords: Array<{ lat: number; lon: number }>): Promise<WindGridPoint[]> {
-  const BATCH_SIZE = 25;
+  const BATCH_SIZE = 40;
   const results: WindGridPoint[] = [];
 
   for (let i = 0; i < coords.length; i += BATCH_SIZE) {
@@ -225,6 +290,7 @@ function windGridToArrowGeoJSON(points: WindGridPoint[]): GeoJSON.FeatureCollect
         iconRotation: (p.directionDeg + 180) % 360,
         label: `${Math.round(p.speedMs)}`,
         badgeColor: badgeColor(p.speedKn),
+        arrowColor: windyHeatColor(p.speedKn),
         description: windLabel(p.speedKn),
       },
     })),
@@ -238,6 +304,7 @@ let _cache: {
   arrowGeoJSON: GeoJSON.FeatureCollection;
   lat: number;
   lon: number;
+  extentKey: string;
   ts: number;
 } | null = null;
 
@@ -246,27 +313,41 @@ let _cache: {
 export function WindOverlayAnimated({
   lat,
   lon,
+  bounds = null,
   ShapeSource,
   SymbolLayer,
   CircleLayer,
   onLoadStart,
   onLoadEnd,
+  onDataLoaded,
 }: Props) {
   const [heatGeoJSON, setHeatGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
   const [arrowGeoJSON, setArrowGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
   const lastCenter = useRef<{ lat: number; lon: number } | null>(null);
+  const lastExtentKey = useRef<string | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const loadingRef = useRef(false);
 
-  const fetchData = useCallback(async (centerLat: number, centerLon: number, force = false) => {
+  const fetchData = useCallback(async (
+    centerLat: number,
+    centerLon: number,
+    viewportBounds?: WindViewportBounds | null,
+    force = false,
+  ) => {
     if (loadingRef.current) return;
+    const normalizedBounds = normalizeBounds(centerLat, centerLon, viewportBounds);
+    const extent = boundsKey(normalizedBounds);
 
     // Check cache
     if (!force && _cache && Date.now() - _cache.ts < CACHE_TTL_MS) {
       const dist = haversineDistance(centerLat, centerLon, _cache.lat, _cache.lon);
-      if (dist < REFRESH_DISTANCE_M) {
+      if (dist < REFRESH_DISTANCE_M && _cache.extentKey === extent) {
         setHeatGeoJSON(_cache.heatGeoJSON);
         setArrowGeoJSON(_cache.arrowGeoJSON);
+        onDataLoaded?.({
+          vectorCount: _cache.arrowGeoJSON.features.length,
+          center: { lat: _cache.lat, lon: _cache.lon },
+        });
         return;
       }
     }
@@ -274,15 +355,16 @@ export function WindOverlayAnimated({
     // Check if we moved enough
     if (!force && lastCenter.current) {
       const dist = haversineDistance(centerLat, centerLon, lastCenter.current.lat, lastCenter.current.lon);
-      if (dist < REFRESH_DISTANCE_M) return;
+      if (dist < REFRESH_DISTANCE_M && lastExtentKey.current === extent) return;
     }
 
     loadingRef.current = true;
     lastCenter.current = { lat: centerLat, lon: centerLon };
+    lastExtentKey.current = extent;
     onLoadStart?.();
 
     try {
-      const grid = buildGrid(centerLat, centerLon);
+      const grid = buildGrid(centerLat, centerLon, normalizedBounds);
       const points = await fetchWindBatch(grid);
       if (points.length > 0) {
         const heat = windGridToHeatGeoJSON(points);
@@ -292,10 +374,15 @@ export function WindOverlayAnimated({
           arrowGeoJSON: arrows,
           lat: centerLat,
           lon: centerLon,
+          extentKey: extent,
           ts: Date.now(),
         };
         setHeatGeoJSON(heat);
         setArrowGeoJSON(arrows);
+        onDataLoaded?.({
+          vectorCount: arrows.features.length,
+          center: { lat: centerLat, lon: centerLon },
+        });
       }
     } catch {
       // Keep previous data
@@ -303,73 +390,88 @@ export function WindOverlayAnimated({
       loadingRef.current = false;
       onLoadEnd?.();
     }
-  }, [onLoadStart, onLoadEnd]);
+  }, [onDataLoaded, onLoadStart, onLoadEnd]);
 
   // Initial fetch and re-fetch on location change
   useEffect(() => {
-    fetchData(lat, lon);
-  }, [lat, lon, fetchData]);
+    fetchData(lat, lon, bounds);
+  }, [bounds, lat, lon, fetchData]);
 
   // Auto-refresh every 15 minutes
   useEffect(() => {
     refreshTimer.current = setInterval(() => {
       if (lastCenter.current) {
-        fetchData(lastCenter.current.lat, lastCenter.current.lon, true);
+        fetchData(lastCenter.current.lat, lastCenter.current.lon, bounds, true);
       }
     }, REFRESH_INTERVAL_MS);
 
     return () => {
       if (refreshTimer.current) clearInterval(refreshTimer.current);
     };
-  }, [fetchData]);
+  }, [bounds, fetchData]);
 
-  if (!heatGeoJSON || heatGeoJSON.features.length === 0) return null;
+  if ((!arrowGeoJSON || arrowGeoJSON.features.length === 0) && (!heatGeoJSON || heatGeoJSON.features.length === 0)) {
+    return null;
+  }
 
   return (
     <>
-      {/* Layer 1: Full-screen color heat map background */}
-      <ShapeSource id="wind-heat-source" shape={heatGeoJSON}>
-        {/* Large, heavily blurred circles create a continuous color field */}
-        <CircleLayer
-          id="wind-heat-field"
-          style={{
-            circleRadius: [
-              'interpolate',
-              ['exponential', 1.5],
-              ['zoom'],
-              4, 40,
-              7, 60,
-              10, 80,
-              13, 120,
-            ],
-            circleColor: ['get', 'color'],
-            circleOpacity: 0.35,
-            circleBlur: 1.0,
-          }}
-        />
-        {/* Secondary smaller circles for color intensity at grid centers */}
-        <CircleLayer
-          id="wind-heat-core"
-          style={{
-            circleRadius: [
-              'interpolate',
-              ['exponential', 1.5],
-              ['zoom'],
-              4, 15,
-              7, 25,
-              10, 35,
-              13, 50,
-            ],
-            circleColor: ['get', 'color'],
-            circleOpacity: 0.25,
-            circleBlur: 0.6,
-          }}
-        />
-      </ShapeSource>
+      {heatGeoJSON ? (
+        <ShapeSource id="wind-heat-source" shape={heatGeoJSON}>
+          <CircleLayer
+            id="wind-heat-field"
+            style={{
+              circleRadius: [
+                'interpolate',
+                ['exponential', 1.22],
+                ['zoom'],
+                4, 8,
+                7, 11,
+                10, 14,
+                13, 17,
+              ],
+              circleColor: ['get', 'color'],
+              circleOpacity: [
+                'interpolate',
+                ['linear'],
+                ['get', 'speedKn'],
+                0, 0.003,
+                10, 0.006,
+                20, 0.009,
+                35, 0.012,
+              ],
+              circleBlur: 0.95,
+            }}
+          />
+        </ShapeSource>
+      ) : null}
 
-      {/* Layer 2: White directional arrows (particle-flow look) */}
       {arrowGeoJSON && (
         <ShapeSource id="wind-arrow-source" shape={arrowGeoJSON}>
+          <SymbolLayer
+            id="wind-flow-arrows-backdrop"
+            style={{
+              iconImage: 'triangle-11',
+              iconSize: [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                3, 0.22,
+                6, 0.26,
+                9, 0.31,
+                12, 0.38,
+                14, 0.44,
+              ],
+              iconRotate: ['get', 'iconRotation'],
+              iconAllowOverlap: true,
+              iconIgnorePlacement: true,
+              iconColor: 'rgba(255,255,255,0.74)',
+              iconOpacity: 0.32,
+              iconPitchAlignment: 'map',
+              iconRotationAlignment: 'map',
+            }}
+          />
+
           <SymbolLayer
             id="wind-flow-arrows"
             style={{
@@ -377,45 +479,46 @@ export function WindOverlayAnimated({
               iconSize: [
                 'interpolate',
                 ['linear'],
-                ['get', 'speedKn'],
-                0, 0.5,
-                10, 0.7,
-                20, 0.9,
-                30, 1.1,
+                ['zoom'],
+                3, 0.18,
+                6, 0.22,
+                9, 0.28,
+                12, 0.34,
+                14, 0.4,
               ],
               iconRotate: ['get', 'iconRotation'],
               iconAllowOverlap: true,
               iconIgnorePlacement: true,
-              iconColor: '#FFFFFF',
-              iconOpacity: 0.85,
-              iconHaloColor: 'rgba(0,0,0,0.3)',
-              iconHaloWidth: 1,
+              iconColor: ['get', 'arrowColor'],
+              iconOpacity: 0.95,
+              iconHaloColor: 'rgba(7, 27, 39, 0.08)',
+              iconHaloWidth: 0.2,
+              iconPitchAlignment: 'map',
+              iconRotationAlignment: 'map',
             }}
           />
 
-          {/* Layer 3: Speed badges at higher zoom (purple circles like Windy) */}
           <SymbolLayer
             id="wind-speed-badges"
-            minZoomLevel={8}
+            minZoomLevel={13.6}
             style={{
               textField: ['concat', ['get', 'label'], ' m/s'],
               textSize: [
                 'interpolate',
                 ['linear'],
                 ['zoom'],
-                8, 9,
-                11, 11,
-                14, 13,
+                12.8, 9,
+                14, 10.5,
               ],
               textColor: '#FFFFFF',
               textHaloColor: ['get', 'badgeColor'],
-              textHaloWidth: 2.5,
+              textHaloWidth: 2.1,
               textFont: ['Open Sans Bold'],
-              textOffset: [0, 1.8],
+              textOffset: [0, 1.45],
               textAnchor: 'top',
               textOptional: true,
               textAllowOverlap: false,
-              textPadding: 12,
+              textPadding: 8,
             }}
           />
         </ShapeSource>

@@ -11,7 +11,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme/palette';
 import { type as typeStyles } from '../theme/typography';
 import { ActivityHeatmap } from '../components/ActivityHeatmap';
-import { getAllCatches, type EnhancedCatch } from '../services/catchEnhancements';
+import {
+  getAllCatches,
+  subscribeToCatchUpdates,
+  type EnhancedCatch,
+} from '../services/catchEnhancements';
 import { trackRecorder, type FishingTrack } from '../services/trackRecorder';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -78,9 +82,9 @@ function buildEntries(catches: EnhancedCatch[]): ActivityEntry[] {
       id: c.id,
       date: formatDate(c.timestamp),
       time: formatTime(c.timestamp),
-      location: c.locationName || c.species || 'Catch',
-      fishCount: 1,
-      speciesIcons: c.species ? ['fish-outline'] : [],
+      location: c.locationName || (c.species && c.species !== 'Unspecified Catch' ? c.species : 'Catch'),
+      fishCount: c.catchCount ?? 1,
+      speciesIcons: c.species && c.species !== 'Unspecified Catch' ? ['fish-outline'] : [],
       temperature: c.airTemp ?? null,
       weatherIonicon: 'partly-sunny-outline',
       photoPlaceholder: !(c.photos && c.photos.length > 0),
@@ -92,14 +96,16 @@ function buildStats(catches: EnhancedCatch[], tracks: FishingTrack[]): StatCard[
   const dayCounts = new Map<string, number>();
   for (const c of catches) {
     const d = new Date(c.timestamp).toISOString().slice(0, 10);
-    const count = (dayCounts.get(d) ?? 0) + 1;
+    const count = (dayCounts.get(d) ?? 0) + (c.catchCount ?? 1);
     dayCounts.set(d, count);
     if (count > bestDay) bestDay = count;
   }
 
+  const totalFish = catches.reduce((sum, c) => sum + (c.catchCount ?? 1), 0);
+
   return [
     { label: 'Total Trips', value: String(tracks.length), ionicon: 'boat-outline' },
-    { label: 'Total Fish', value: String(catches.length), ionicon: 'fish-outline' },
+    { label: 'Total Fish', value: String(totalFish), ionicon: 'fish-outline' },
     { label: 'Best Day', value: String(bestDay), ionicon: 'trophy-outline' },
   ];
 }
@@ -189,21 +195,36 @@ export function ActivityScreen() {
   const [tracks, setTracks] = useState<FishingTrack[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([getAllCatches(), trackRecorder.getSavedTracks()])
-      .then(([c, t]) => {
-        if (!cancelled) {
-          setCatches(c);
-          setTracks(t);
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => { cancelled = true; };
+  const loadData = useCallback(async (cancelledRef: { current: boolean }) => {
+    try {
+      const [c, t] = await Promise.all([getAllCatches(), trackRecorder.getSavedTracks()]);
+      if (!cancelledRef.current) {
+        setCatches(c);
+        setTracks(t);
+      }
+    } catch {
+      // Best-effort screen
+    } finally {
+      if (!cancelledRef.current) {
+        setLoading(false);
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    const cancelledRef = { current: false };
+    loadData(cancelledRef);
+    const unsubscribe = subscribeToCatchUpdates((nextCatches) => {
+      if (!cancelledRef.current) {
+        setCatches(nextCatches);
+        setLoading(false);
+      }
+    });
+    return () => {
+      cancelledRef.current = true;
+      unsubscribe();
+    };
+  }, [loadData]);
 
   const entries = buildEntries(catches);
   const stats = buildStats(catches, tracks);

@@ -19,16 +19,6 @@ const RECENT_SEARCHES_KEY = '@opencatch_recent_searches';
 const MAX_RECENT = 10;
 const MAX_NEARBY_DISTANCE_MI = 124; // ~200 km
 
-// Species quick filters
-const SPECIES_FILTERS = [
-  { key: 'bass', label: 'Bass spots', icon: 'fish' as const, query: 'bass' },
-  { key: 'trout', label: 'Trout streams', icon: 'water' as const, query: 'trout' },
-  { key: 'walleye', label: 'Walleye lakes', icon: 'fish' as const, query: 'walleye' },
-  { key: 'pike', label: 'Pike waters', icon: 'fish' as const, query: 'pike' },
-  { key: 'catfish', label: 'Catfish holes', icon: 'fish' as const, query: 'catfish' },
-  { key: 'crappie', label: 'Crappie spots', icon: 'fish' as const, query: 'crappie' },
-];
-
 interface NearbySpot {
   id: string;
   name: string;
@@ -43,10 +33,13 @@ interface EnhancedSearchBarProps {
   onClear: () => void;
   onSubmit?: (text: string) => void;
   onSelectLocation?: (id: string) => void;
+  onStartRoute?: () => void;
+  onStartRouteToLocation?: (id: string) => void;
   nearbySpots?: NearbySpot[];
   allLocations?: NearbySpot[];
   /** Called when the search panel should close (e.g. tap outside) */
   onDismiss?: () => void;
+  routeActive?: boolean;
 }
 
 function getWaterbodyIcon(type?: string): keyof typeof Ionicons.glyphMap {
@@ -65,15 +58,37 @@ function formatDistance(mi?: number): string {
   return `${Math.round(mi)} mi`;
 }
 
+function cleanSpotText(value?: string): string {
+  return (value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function getSpotName(spot: NearbySpot): string {
+  return cleanSpotText(spot.name) || cleanSpotText(spot.subtitle) || 'Unnamed spot';
+}
+
+function getSpotSubtitle(spot: NearbySpot): string {
+  const name = cleanSpotText(spot.name);
+  const subtitle = cleanSpotText(spot.subtitle);
+  if (subtitle && subtitle !== name) return subtitle;
+  return 'Water body';
+}
+
+function isRenderableSpot(spot: NearbySpot): boolean {
+  return Boolean(cleanSpotText(spot.name) || cleanSpotText(spot.subtitle));
+}
+
 export function EnhancedSearchBar({
   value,
   onChangeText,
   onClear,
   onSubmit,
   onSelectLocation,
+  onStartRoute,
+  onStartRouteToLocation,
   nearbySpots = [],
   allLocations = [],
   onDismiss,
+  routeActive = false,
 }: EnhancedSearchBarProps) {
   const [focused, setFocused] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -138,10 +153,12 @@ export function EnhancedSearchBar({
     setFocused(false);
   };
 
-  const handleSelectSpecies = (query: string) => {
-    onChangeText(query);
-    saveRecentSearch(query);
-    onSubmit?.(query);
+  const handleStartRoute = (locationId?: string) => {
+    if (locationId) {
+      onStartRouteToLocation?.(locationId);
+    } else {
+      onStartRoute?.();
+    }
     Keyboard.dismiss();
     setFocused(false);
   };
@@ -149,9 +166,10 @@ export function EnhancedSearchBar({
   // Autocomplete suggestions from all locations
   const suggestions = value.trim().length >= 2
     ? allLocations
+        .filter((l) => isRenderableSpot(l))
         .filter((l) => {
           const q = value.toLowerCase();
-          return l.name.toLowerCase().includes(q) || l.subtitle.toLowerCase().includes(q);
+          return cleanSpotText(l.name).toLowerCase().includes(q) || cleanSpotText(l.subtitle).toLowerCase().includes(q);
         })
         .slice(0, 8)
     : [];
@@ -167,6 +185,7 @@ export function EnhancedSearchBar({
 
   // Filter nearby spots to within ~200km
   const topNearby = nearbySpots
+    .filter((s) => isRenderableSpot(s))
     .filter((s) => s.distanceMi == null || s.distanceMi <= MAX_NEARBY_DISTANCE_MI)
     .slice(0, 5);
 
@@ -188,7 +207,7 @@ export function EnhancedSearchBar({
           style={styles.input}
           value={value}
           onChangeText={onChangeText}
-          placeholder="Search lakes, rivers, species..."
+          placeholder="Search named lakes and spots..."
           placeholderTextColor={palette.textDim}
           selectionColor={palette.accent}
           returnKeyType="search"
@@ -205,6 +224,22 @@ export function EnhancedSearchBar({
             <Ionicons name="close-circle" size={18} color={palette.textMuted} />
           </Pressable>
         )}
+        {onStartRoute && (
+          <>
+            <View style={styles.actionDivider} />
+            <Pressable
+              style={[styles.routeButton, routeActive && styles.routeButtonActive]}
+              onPress={() => handleStartRoute()}
+              hitSlop={8}
+            >
+              <Ionicons
+                name={routeActive ? 'navigate' : 'navigate-outline'}
+                size={16}
+                color={routeActive ? '#FFFFFF' : palette.accent}
+              />
+            </Pressable>
+          </>
+        )}
       </View>
 
       {/* Autocomplete suggestions while typing — scrollable FlatList */}
@@ -218,9 +253,10 @@ export function EnhancedSearchBar({
             renderItem={({ item: spot }) => (
               <Pressable
                 style={styles.suggestionRow}
-                onPress={() => {
-                  onChangeText(spot.name);
-                  saveRecentSearch(spot.name);
+                  onPress={() => {
+                  const spotName = getSpotName(spot);
+                  onChangeText(spotName);
+                  saveRecentSearch(spotName);
                   onSelectLocation?.(spot.id);
                   Keyboard.dismiss();
                   setFocused(false);
@@ -228,9 +264,23 @@ export function EnhancedSearchBar({
               >
                 <Ionicons name={getWaterbodyIcon(spot.type)} size={16} color={palette.textMuted} />
                 <View style={styles.suggestionTextArea}>
-                  <Text style={styles.suggestionName} numberOfLines={1}>{spot.name}</Text>
-                  <Text style={styles.suggestionSub} numberOfLines={1}>{spot.subtitle}</Text>
+                  <Text style={styles.suggestionName} numberOfLines={1}>{getSpotName(spot)}</Text>
+                  <Text style={styles.suggestionSub} numberOfLines={1}>{getSpotSubtitle(spot)}</Text>
                 </View>
+                {onStartRouteToLocation && (
+                  <Pressable
+                    style={styles.inlineActionButton}
+                    onPress={() => {
+                      const spotName = getSpotName(spot);
+                      onChangeText(spotName);
+                      saveRecentSearch(spotName);
+                      handleStartRoute(spot.id);
+                    }}
+                    hitSlop={8}
+                  >
+                    <Ionicons name="navigate-outline" size={15} color={palette.accent} />
+                  </Pressable>
+                )}
                 {spot.distanceMi != null && (
                   <Text style={styles.suggestionDistance}>{formatDistance(spot.distanceMi)}</Text>
                 )}
@@ -275,8 +325,9 @@ export function EnhancedSearchBar({
                     key={spot.id}
                     style={styles.suggestionRow}
                     onPress={() => {
-                      onChangeText(spot.name);
-                      saveRecentSearch(spot.name);
+                      const spotName = getSpotName(spot);
+                      onChangeText(spotName);
+                      saveRecentSearch(spotName);
                       onSelectLocation?.(spot.id);
                       Keyboard.dismiss();
                       setFocused(false);
@@ -284,9 +335,23 @@ export function EnhancedSearchBar({
                   >
                     <Ionicons name={getWaterbodyIcon(spot.type)} size={16} color={palette.accent} />
                     <View style={styles.suggestionTextArea}>
-                      <Text style={styles.suggestionName} numberOfLines={1}>{spot.name}</Text>
-                      <Text style={styles.suggestionSub} numberOfLines={1}>{spot.subtitle}</Text>
+                      <Text style={styles.suggestionName} numberOfLines={1}>{getSpotName(spot)}</Text>
+                      <Text style={styles.suggestionSub} numberOfLines={1}>{getSpotSubtitle(spot)}</Text>
                     </View>
+                    {onStartRouteToLocation && (
+                      <Pressable
+                        style={styles.inlineActionButton}
+                        onPress={() => {
+                          const spotName = getSpotName(spot);
+                          onChangeText(spotName);
+                          saveRecentSearch(spotName);
+                          handleStartRoute(spot.id);
+                        }}
+                        hitSlop={8}
+                      >
+                        <Ionicons name="navigate-outline" size={15} color={palette.accent} />
+                      </Pressable>
+                    )}
                     {spot.distanceMi != null && (
                       <Text style={styles.suggestionDistance}>{formatDistance(spot.distanceMi)}</Text>
                     )}
@@ -294,23 +359,6 @@ export function EnhancedSearchBar({
                 ))}
               </View>
             )}
-
-            {/* Species Filter */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Search by Species</Text>
-              <View style={styles.speciesGrid}>
-                {SPECIES_FILTERS.map((sp) => (
-                  <Pressable
-                    key={sp.key}
-                    style={styles.speciesChip}
-                    onPress={() => handleSelectSpecies(sp.query)}
-                  >
-                    <Ionicons name={sp.icon} size={14} color={palette.accent} />
-                    <Text style={styles.speciesChipText}>{sp.label}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
           </ScrollView>
         </Animated.View>
       )}
@@ -341,6 +389,22 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 15,
     padding: 0,
+  },
+  actionDivider: {
+    width: StyleSheet.hairlineWidth,
+    alignSelf: 'stretch',
+    backgroundColor: palette.borderLight,
+  },
+  routeButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.accentDim,
+  },
+  routeButtonActive: {
+    backgroundColor: palette.accent,
   },
   dropdown: {
     backgroundColor: '#FFFFFF',
@@ -402,6 +466,14 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 1,
   },
+  inlineActionButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.accentDim,
+  },
   suggestionName: {
     color: palette.text,
     fontSize: 14,
@@ -413,25 +485,6 @@ const styles = StyleSheet.create({
   },
   suggestionDistance: {
     color: palette.textDim,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  speciesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  speciesChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 16,
-    backgroundColor: palette.accentDim,
-  },
-  speciesChipText: {
-    color: palette.accent,
     fontSize: 12,
     fontWeight: '600',
   },

@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { UnitSystem } from '../types/models';
-
-const UNITS_KEY = '@opencatch_settings_units';
+import { getStoredSettings, subscribeToUnitSystem, updateStoredSettings } from '../services/userSettings';
 
 /**
  * Hook to read and persist the user's preferred unit system.
@@ -18,18 +16,33 @@ export function useUnits() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(UNITS_KEY).then((val) => {
-      if (val === 'metric' || val === 'imperial') {
-        setUnitsState(val);
-      }
+    let active = true;
+
+    getStoredSettings().then((settings) => {
+      if (!active) return;
+      setUnitsState(settings.units);
       setLoaded(true);
     });
+
+    const unsubscribe = subscribeToUnitSystem((next) => {
+      if (!active) return;
+      setUnitsState(next);
+      setLoaded(true);
+    });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   const setUnits = useCallback(async (next: UnitSystem) => {
     setUnitsState(next);
-    await AsyncStorage.setItem(UNITS_KEY, next);
-  }, []);
+    await updateStoredSettings({ units: next });
+    if (!loaded) {
+      setLoaded(true);
+    }
+  }, [loaded]);
 
   const toggle = useCallback(async () => {
     const next: UnitSystem = units === 'imperial' ? 'metric' : 'imperial';
